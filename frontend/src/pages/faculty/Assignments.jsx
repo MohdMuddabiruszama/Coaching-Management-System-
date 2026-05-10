@@ -3,6 +3,7 @@
  * Priority inbox, analytics, grading, resubmit management
  */
 import { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import api from '../../services/api';
 import { resolveFileUrl } from '../../utils/resolveUrl';
 import '../admin/Dashboard.css';
@@ -57,6 +58,7 @@ function CountdownBadge({ dueDate }) {
 }
 
 export default function FacultyAssignments() {
+    const navigate = useNavigate();
     const [view, setView] = useState('list'); // list | create | submissions | grade
     const [assignments, setAssignments] = useState([]);
     const [selected, setSelected] = useState(null);
@@ -248,7 +250,7 @@ export default function FacultyAssignments() {
                             + Create Assignment
                         </button>
                     )}
-                    <button className="animated-btn secondary btn btn-secondary" onClick={() => window.location.href = "/faculty/dashboard"}>
+                    <button className="animated-btn secondary btn btn-secondary" onClick={() => navigate('/faculty/dashboard')}>
                         <span className="icon icon-back">←</span> <b> Back to Dashboard </b>
                     </button>
                 </div>

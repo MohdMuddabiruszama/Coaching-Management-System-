@@ -2,8 +2,8 @@
  * Native shell: parent role only (bundled when VITE_APP_VARIANT=parent).
  */
 
-import { Routes, Route, Navigate } from "react-router-dom";
-import { lazy, Suspense } from "react";
+import { Routes, Route, Navigate, useNavigate } from "react-router-dom";
+import { lazy, Suspense, useEffect } from "react";
 import ProtectedRoute from "./ProtectedRoute";
 import LoadingSpinner from "../components/common/LoadingSpinner";
 
@@ -41,7 +41,21 @@ function ParentArea() {
 }
 
 export default function MobileParentRoutes() {
+  const navigate = useNavigate();
   const home = "/parent/dashboard";
+
+  // Listen for API interceptor navigation events
+  useEffect(() => {
+    const handler = (e) => {
+      const { path, clearSession } = e.detail || {};
+      if (!path) return;
+      if (clearSession) sessionStorage.clear();
+      navigate(path, { replace: true });
+    };
+    window.addEventListener("app_navigate", handler);
+    return () => window.removeEventListener("app_navigate", handler);
+  }, [navigate]);
+
   return (
     <Suspense fallback={<PageLoader />}>
       <Routes>

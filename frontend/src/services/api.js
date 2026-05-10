@@ -1,7 +1,16 @@
 import axios from "axios";
+import { Capacitor } from "@capacitor/core";
 
 /**
- * Resolve API Base URL (Production-ready)
+ * Resolve API Base URL
+ * ────────────────────
+ * Priority:
+ *  1. VITE_API_URL from environment (most reliable — set in .env.mobile.student)
+ *  2. Production fallback for native (Capacitor) builds
+ *  3. localhost:5000 for web dev only
+ *
+ * NOTE: On Android, 'localhost' refers to the DEVICE, not the host PC.
+ * Use 10.0.2.2 (AVD emulator) or your LAN IP for local dev on native.
  */
 const getBaseURL = () => {
     let baseURL = import.meta.env.VITE_API_URL;
@@ -12,15 +21,20 @@ const getBaseURL = () => {
     }
 
     if (!baseURL || !baseURL.trim()) {
-        console.warn("⚠️ VITE_API_URL is not defined in environment variables");
+        console.warn("⚠️ VITE_API_URL is not defined — using fallback");
 
-        if (import.meta.env.DEV) {
-            // Development fallback
-            return "http://localhost:5000/api";
-        } else {
-            // Production fallback - Points to the correct Render backend
+        // On native Capacitor (Android/iOS), localhost doesn't refer to the PC
+        // Always use the production API for native builds without explicit URL
+        if (Capacitor.isNativePlatform()) {
+            console.info("📱 Native platform detected — using production API");
             return "https://institutes-saas.onrender.com/api";
         }
+
+        if (import.meta.env.DEV) {
+            return "http://localhost:5000/api";
+        }
+
+        return "https://institutes-saas.onrender.com/api";
     }
 
     return baseURL;
@@ -161,7 +175,7 @@ api.interceptors.response.use(
 );
 
 /**
- * 🚫 Handle Blocked Account Logic (Clean Separation)
+ * 🚫 Handle Blocked Account Logic (Capacitor-safe — uses app_navigate events)
  */
 function handleBlockedAccount() {
     try {
@@ -169,35 +183,40 @@ function handleBlockedAccount() {
 
         if (!storedUser) {
             sessionStorage.clear();
-            window.location.href = "/login";
+            window.dispatchEvent(new CustomEvent('app_navigate', { detail: { path: '/login', clearSession: true } }));
             return;
         }
 
         const user = JSON.parse(storedUser);
 
-        // Student / Parent
+        // Student / Parent — show toast then redirect to login
         if (user.role === "student" || user.role === "parent") {
-            alert("Your account has been blocked. Contact administrator.");
+            // Use react-hot-toast instead of alert() (works in WebView)
+            import("react-hot-toast").then((module) => {
+                const toast = module.default || module.toast;
+                toast.error("Your account has been blocked. Contact your administrator.", { duration: 5000, id: "account_blocked" });
+            });
             sessionStorage.clear();
-            window.location.href = "/login";
+            window.dispatchEvent(new CustomEvent('app_navigate', { detail: { path: '/login', clearSession: true } }));
             return;
         }
 
-        // Admin / Manager
+        // Admin / Manager — mark as blocked in session + navigate to dashboard
         if (user.status !== "blocked") {
             user.status = "blocked";
             sessionStorage.setItem("user", JSON.stringify(user));
         }
 
         if (!window.location.pathname.includes("/admin/dashboard")) {
-            window.location.href = "/admin/dashboard";
+            window.dispatchEvent(new CustomEvent('app_navigate', { detail: { path: '/admin/dashboard' } }));
         }
 
     } catch (err) {
         console.error("⚠️ Blocked account handling error:", err.message);
         sessionStorage.clear();
-        window.location.href = "/login";
+        window.dispatchEvent(new CustomEvent('app_navigate', { detail: { path: '/login', clearSession: true } }));
     }
 }
+
 
 export default api;

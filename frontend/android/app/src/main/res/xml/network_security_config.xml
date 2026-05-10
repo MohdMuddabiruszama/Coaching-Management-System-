@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Android Network Security Configuration — ZF Solution
+  ======================================================
+  This file controls which domains can use HTTP (cleartext) traffic.
+  All other domains default to HTTPS only.
+
+  Allowed cleartext domains:
+    - 10.0.2.2     → Android Emulator host machine (localhost:5000)
+    - 10.0.3.2     → Genymotion emulator host
+    - 192.168.x.x  → LAN IP for physical device testing
+    - localhost     → Local development fallback
+
+  Production API (institutes-saas.onrender.com) uses HTTPS automatically.
+-->
+<network-security-config>
+
+    <!-- ── Development: Allow HTTP to local dev server ── -->
+    <domain-config cleartextTrafficPermitted="true">
+        <!-- Android Emulator (AVD) host machine -->
+        <domain includeSubdomains="false">10.0.2.2</domain>
+        <!-- Genymotion emulator host -->
+        <domain includeSubdomains="false">10.0.3.2</domain>
+        <!-- Common LAN ranges for physical device testing -->
+        <domain includeSubdomains="false">192.168.1.1</domain>
+        <domain includeSubdomains="false">192.168.0.1</domain>
+        <!-- localhost fallback -->
+        <domain includeSubdomains="false">localhost</domain>
+    </domain-config>
+
+    <!-- ── Production API: HTTPS enforced (default, no cleartext) ── -->
+    <domain-config cleartextTrafficPermitted="false">
+        <domain includeSubdomains="true">onrender.com</domain>
+        <domain includeSubdomains="true">vercel.app</domain>
+        <domain includeSubdomains="true">neon.tech</domain>
+    </domain-config>
+
+    <!-- ── Default: Allow cleartext for Capacitor WebView internal assets ── -->
+    <base-config cleartextTrafficPermitted="true">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+
+</network-security-config>
