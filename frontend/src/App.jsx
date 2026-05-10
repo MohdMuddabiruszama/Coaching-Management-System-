@@ -9,6 +9,7 @@ import { ThemeProvider } from "./context/ThemeContext";
 import MobileShell from "mobile-shell";
 import WebAppRoutes from "./routes/WebAppRoutes";
 import NetworkStatus from "./components/NetworkStatus";
+import MobileErrorBoundary from "./components/MobileErrorBoundary";
 import "./styles/global.css";
 import "./styles/responsive.css";       // Always-on responsive design (media queries)
 import "./themes/pro/pro-theme.css";   // Pro theme — activated by html.theme-pro
@@ -30,23 +31,26 @@ const APP_TYPE = String(import.meta.env.VITE_APP_VARIANT || "web").toLowerCase()
 
 function App() {
     return (
-        <BrowserRouter>
-            {/* BrandingProvider wraps AuthProvider so branding is persistent */}
-            <BrandingProvider>
-                <AuthProvider>
-                    {/* ThemeProvider must be INSIDE AuthProvider so it can read user */}
-                    <ThemeProvider>
-                        {/* Animated splash — native→web seamless handoff */}
-                        <SplashOverlay />
-                        {/* Phase 7: Unified mobile init — CSS, push (no-op on web) */}
-                        <MobileAppInit />
-                        <NetworkStatus />
-                        <Toaster position="top-right" />
-                        {isMobileShell ? <MobileShell /> : <WebAppRoutes />}
-                    </ThemeProvider>
-                </AuthProvider>
-            </BrandingProvider>
-        </BrowserRouter>
+        // MobileErrorBoundary catches any unhandled React crash — shows recovery screen
+        <MobileErrorBoundary>
+            <BrowserRouter>
+                {/* BrandingProvider wraps AuthProvider so branding is persistent */}
+                <BrandingProvider>
+                    <AuthProvider>
+                        {/* ThemeProvider must be INSIDE AuthProvider so it can read user */}
+                        <ThemeProvider>
+                            {/* Animated splash — native→web seamless handoff */}
+                            <SplashOverlay />
+                            {/* Phase 7: Unified mobile init — CSS, push (no-op on web) */}
+                            <MobileAppInit />
+                            <NetworkStatus />
+                            <Toaster position="top-right" />
+                            {isMobileShell ? <MobileShell /> : <WebAppRoutes />}
+                        </ThemeProvider>
+                    </AuthProvider>
+                </BrandingProvider>
+            </BrowserRouter>
+        </MobileErrorBoundary>
     );
 }
 

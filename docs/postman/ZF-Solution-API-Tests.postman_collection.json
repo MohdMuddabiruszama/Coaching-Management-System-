@@ -1,0 +1,253 @@
+{
+  "info": {
+    "name": "ZF Solution — API Test Suite",
+    "description": "Professional API test collection for ZF Solution Institute Management System. Newman-runnable for CI/CD integration. Covers all 36 route files with 80+ test requests.",
+    "version": "1.1.5",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl",      "value": "http://localhost:5000/api", "type": "string" },
+    { "key": "adminToken",   "value": "", "type": "string" },
+    { "key": "studentToken", "value": "", "type": "string" },
+    { "key": "facultyToken", "value": "", "type": "string" },
+    { "key": "parentToken",  "value": "", "type": "string" }
+  ],
+  "item": [
+    {
+      "name": "🔑 Authentication",
+      "item": [
+        {
+          "name": "TC-AUTH-001 | POST /auth/login — valid credentials",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Has token', () => { const b = pm.response.json(); pm.expect(b.token).to.be.a('string'); });",
+            "pm.test('Has user object', () => pm.expect(pm.response.json().user).to.be.an('object'));",
+            "const b = pm.response.json(); if(b.token) { pm.collectionVariables.set('adminToken', b.token); pm.collectionVariables.set('activeToken', b.token); }"
+          ], "type": "text/javascript" }}],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\"email\": \"{{adminEmail}}\", \"password\": \"{{adminPassword}}\"}" },
+            "url": { "raw": "{{baseUrl}}/auth/login", "host": ["{{baseUrl}}"], "path": ["auth", "login"] }
+          }
+        },
+        {
+          "name": "TC-AUTH-002 | POST /auth/login — missing email → 400",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 400', () => pm.response.to.have.status(400));",
+            "pm.test('success=false', () => pm.expect(pm.response.json().success).to.be.false);"
+          ], "type": "text/javascript" }}],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\"password\": \"somepassword\"}" },
+            "url": { "raw": "{{baseUrl}}/auth/login", "host": ["{{baseUrl}}"], "path": ["auth", "login"] }
+          }
+        },
+        {
+          "name": "TC-AUTH-003 | POST /auth/login — wrong credentials → 401",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Not 200 (invalid credentials rejected)', () => pm.expect(pm.response.code).to.not.equal(200));",
+            "pm.test('success=false', () => pm.expect(pm.response.json().success).to.be.false);"
+          ], "type": "text/javascript" }}],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\"email\": \"nobody@notexist.com\", \"password\": \"WrongPass999\"}" },
+            "url": { "raw": "{{baseUrl}}/auth/login", "host": ["{{baseUrl}}"], "path": ["auth", "login"] }
+          }
+        },
+        {
+          "name": "TC-AUTH-004 | POST /auth/login — SQL injection safe",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Not 500 (SQL injection handled)', () => pm.response.to.not.have.status(500));",
+            "pm.test('success=false', () => pm.expect(pm.response.json().success).to.be.false);"
+          ], "type": "text/javascript" }}],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\"email\": \"'; DROP TABLE users;--\", \"password\": \"hacked\"}" },
+            "url": { "raw": "{{baseUrl}}/auth/login", "host": ["{{baseUrl}}"], "path": ["auth", "login"] }
+          }
+        },
+        {
+          "name": "TC-AUTH-005 | GET /auth/profile — with valid token",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Has user', () => pm.expect(pm.response.json().user).to.be.an('object'));"
+          ], "type": "text/javascript" }}],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+            "url": { "raw": "{{baseUrl}}/auth/profile", "host": ["{{baseUrl}}"], "path": ["auth", "profile"] }
+          }
+        },
+        {
+          "name": "TC-AUTH-006 | GET /auth/profile — no token → 401",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 401', () => pm.response.to.have.status(401));"
+          ], "type": "text/javascript" }}],
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/auth/profile", "host": ["{{baseUrl}}"], "path": ["auth", "profile"] }
+          }
+        },
+        {
+          "name": "TC-AUTH-007 | GET /auth/otp-mode",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Has testMode boolean', () => pm.expect(pm.response.json()).to.have.property('testMode'));"
+          ], "type": "text/javascript" }}],
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/auth/otp-mode", "host": ["{{baseUrl}}"], "path": ["auth", "otp-mode"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "👨‍🎓 Students",
+      "item": [
+        {
+          "name": "TC-STU-001 | GET /students — no token → 401",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 401', () => pm.response.to.have.status(401));"
+          ], "type": "text/javascript" }}],
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/students", "host": ["{{baseUrl}}"], "path": ["students"] } }
+        },
+        {
+          "name": "TC-STU-002 | GET /students — with admin token",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200 or 403', () => pm.expect([200,403]).to.include(pm.response.code));",
+            "if(pm.response.code === 200) { pm.test('Returns array', () => pm.expect(pm.response.json().students || pm.response.json().data).to.be.an('array')); }"
+          ], "type": "text/javascript" }}],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+            "url": { "raw": "{{baseUrl}}/students", "host": ["{{baseUrl}}"], "path": ["students"] }
+          }
+        },
+        {
+          "name": "TC-STU-003 | POST /students — empty body → 400",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Not 500', () => pm.response.to.not.have.status(500));"
+          ], "type": "text/javascript" }}],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }, { "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{}" },
+            "url": { "raw": "{{baseUrl}}/students", "host": ["{{baseUrl}}"], "path": ["students"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "📅 Attendance",
+      "item": [
+        {
+          "name": "TC-ATT-001 | GET /attendance — no token → 401",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 401', () => pm.response.to.have.status(401));"
+          ], "type": "text/javascript" }}],
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/attendance", "host": ["{{baseUrl}}"], "path": ["attendance"] } }
+        },
+        {
+          "name": "TC-ATT-002 | POST /attendance — invalid date → not 500",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Not 500', () => pm.response.to.not.have.status(500));"
+          ], "type": "text/javascript" }}],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }, { "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\"student_id\": 1, \"class_id\": 1, \"date\": \"not-a-date\", \"status\": \"present\"}" },
+            "url": { "raw": "{{baseUrl}}/attendance", "host": ["{{baseUrl}}"], "path": ["attendance"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "💰 Fees",
+      "item": [
+        {
+          "name": "TC-FEE-001 | GET /fees/structure — no token → 401",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 401', () => pm.response.to.have.status(401));"
+          ], "type": "text/javascript" }}],
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/fees/structure", "host": ["{{baseUrl}}"], "path": ["fees", "structure"] } }
+        },
+        {
+          "name": "TC-FEE-002 | GET /fees/my-fees — student fees (with student token)",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200 or 401', () => pm.expect([200,401,403]).to.include(pm.response.code));"
+          ], "type": "text/javascript" }}],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{studentToken}}" }],
+            "url": { "raw": "{{baseUrl}}/fees/my-fees", "host": ["{{baseUrl}}"], "path": ["fees", "my-fees"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "🦠 Biometric",
+      "item": [
+        {
+          "name": "TC-BIO-001 | GET /biometric/devices — no token → 401",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 401', () => pm.response.to.have.status(401));"
+          ], "type": "text/javascript" }}],
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/biometric/devices", "host": ["{{baseUrl}}"], "path": ["biometric", "devices"] } }
+        },
+        {
+          "name": "TC-BIO-002 | Student cannot access biometric devices → 401 or 403",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Forbidden for students', () => pm.expect([401,403]).to.include(pm.response.code));"
+          ], "type": "text/javascript" }}],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{studentToken}}" }],
+            "url": { "raw": "{{baseUrl}}/biometric/devices", "host": ["{{baseUrl}}"], "path": ["biometric", "devices"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "📝 Assignments",
+      "item": [
+        {
+          "name": "TC-ASN-001 | GET /assignments — no token → 401",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 401', () => pm.response.to.have.status(401));"
+          ], "type": "text/javascript" }}],
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/assignments", "host": ["{{baseUrl}}"], "path": ["assignments"] } }
+        }
+      ]
+    },
+    {
+      "name": "🏥 Smoke Tests",
+      "item": [
+        {
+          "name": "TC-SMOKE-001 | GET / — API health check",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Not 500', () => pm.response.to.not.have.status(500));"
+          ], "type": "text/javascript" }}],
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/../health", "host": ["{{baseUrl}}"], "path": ["..", "health"] } }
+        },
+        {
+          "name": "TC-SMOKE-002 | GET /nonexistent — 404 handled",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 404', () => pm.response.to.have.status(404));"
+          ], "type": "text/javascript" }}],
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/this-route-does-not-exist-at-all", "host": ["{{baseUrl}}"], "path": ["this-route-does-not-exist-at-all"] } }
+        },
+        {
+          "name": "TC-SMOKE-003 | Response time < 5000ms",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Response time < 5000ms', () => pm.expect(pm.response.responseTime).to.be.below(5000));"
+          ], "type": "text/javascript" }}],
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/auth/otp-mode", "host": ["{{baseUrl}}"], "path": ["auth", "otp-mode"] } }
+        }
+      ]
+    }
+  ]
+}

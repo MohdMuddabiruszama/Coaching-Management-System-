@@ -28,5 +28,25 @@ export default defineConfig(({ mode }) => {
             port: 5173,
             strictPort: false,
         },
+        // ── Vitest configuration ───────────────────────────────────────────
+        test: {
+            globals:     true,
+            environment: 'jsdom',
+            setupFiles:  ['./src/test-setup.js'],
+            include:     ['src/__tests__/**/*.{test,spec}.{js,jsx}'],
+            coverage: {
+                provider: 'v8',
+                reporter: ['text', 'json', 'html'],
+                include:  ['src/**/*.{js,jsx}'],
+                exclude:  [
+                    'src/test-setup.js',
+                    'src/__tests__/**',
+                    'src/main.jsx',
+                    'src/styles/**',
+                    'src/themes/**',
+                    'src/assets/**',
+                ],
+            },
+        },
     }
 })

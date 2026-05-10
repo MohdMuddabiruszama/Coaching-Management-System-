@@ -2,8 +2,8 @@
  * Full web + all roles (loaded only when VITE_APP_VARIANT is web / unset).
  */
 
-import { Routes, Route, Navigate } from "react-router-dom";
-import { lazy, Suspense } from "react";
+import { Routes, Route, Navigate, useNavigate } from "react-router-dom";
+import { lazy, Suspense, useEffect } from "react";
 import ProtectedRoute from "./ProtectedRoute";
 import LoadingSpinner from "../components/common/LoadingSpinner";
 
@@ -99,7 +99,25 @@ const PageLoader = () => (
 );
 
 export default function WebAppRoutes() {
-  const isNative = Capacitor.isNativePlatform();
+  const isNative  = Capacitor.isNativePlatform();
+  const navigate  = useNavigate();
+
+  /**
+   * Global navigation handler — listens for 'app_navigate' events dispatched
+   * by api.js interceptors so ALL redirects (401 logout, 402 checkout, 403
+   * suspend) flow through React Router instead of window.location.href.
+   * This is critical for Capacitor WebView which breaks on hard location assigns.
+   */
+  useEffect(() => {
+    const handler = (e) => {
+      const { path, clearSession } = e.detail || {};
+      if (!path) return;
+      if (clearSession) sessionStorage.clear();
+      navigate(path, { replace: true });
+    };
+    window.addEventListener("app_navigate", handler);
+    return () => window.removeEventListener("app_navigate", handler);
+  }, [navigate]);
 
   return (
     <Suspense fallback={<PageLoader />}>

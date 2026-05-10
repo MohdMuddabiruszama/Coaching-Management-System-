@@ -38,10 +38,13 @@ const api = axios.create({
 });
 
 /**
- * 🔐 Request Interceptor (Attach Token)
+ * 🔐 Request Interceptor (Attach Token + Timing)
  */
 api.interceptors.request.use(
     (config) => {
+        // Track request start time for slow API detection
+        config.metadata = { startTime: Date.now() };
+
         try {
             const token = sessionStorage.getItem("token");
 
@@ -74,10 +77,24 @@ api.interceptors.request.use(
 );
 
 /**
- * ⚠️ Response Interceptor (Centralized Error Handling)
+ * ⚠️ Response Interceptor (Centralized Error Handling + Timing)
  */
 api.interceptors.response.use(
-    (response) => response,
+    (response) => {
+        // ── Slow API detection ──────────────────────────────────────────────
+        const duration = response.config?.metadata
+            ? Date.now() - response.config.metadata.startTime
+            : null;
+
+        if (duration !== null) {
+            if (duration > 10000) {
+                console.error(`🐢 [VERY SLOW API] ${response.config.url}: ${duration}ms`);
+            } else if (duration > 3000) {
+                console.warn(`⚠️ [SLOW API] ${response.config.url}: ${duration}ms`);
+            }
+        }
+        return response;
+    },
     (error) => {
         // Handle client-side rejected requests (Plan Expired Read-only)
         if (error.customName === "PLAN_EXPIRED_READONLY") {
@@ -109,18 +126,18 @@ api.interceptors.response.use(
         try {
             // 💳 Payment Required
             if (status === 402 && !window.location.pathname.includes("/checkout")) {
-                window.location.href = "/checkout";
+                window.dispatchEvent(new CustomEvent('app_navigate', { detail: { path: '/checkout' } }));
             }
 
             // ⏳ Subscription Expired
             if (status === 403 && data?.code === "SUBSCRIPTION_EXPIRED") {
-                window.location.href = "/renew-plan";
+                window.dispatchEvent(new CustomEvent('app_navigate', { detail: { path: '/renew-plan' } }));
             }
 
             // ⚠️ Suspended Institute Account
             if (status === 403 && data?.code === "INSTITUTE_SUSPENDED") {
                 sessionStorage.clear();
-                window.location.href = "/suspended";
+                window.dispatchEvent(new CustomEvent('app_navigate', { detail: { path: '/suspended', clearSession: true } }));
                 return Promise.reject(error);
             }
 
@@ -129,10 +146,10 @@ api.interceptors.response.use(
                 handleBlockedAccount();
             }
 
-            // 🔑 Unauthorized
+            // 🔑 Unauthorized — dispatch event instead of hard redirect
             if (status === 401 && window.location.pathname !== "/login") {
                 sessionStorage.clear();
-                window.location.href = "/login";
+                window.dispatchEvent(new CustomEvent('app_navigate', { detail: { path: '/login', clearSession: true } }));
             }
 
         } catch (err) {

@@ -1,0 +1,205 @@
+# ═══════════════════════════════════════════════════════════════
+# ZF Solution — Mobile QA CI/CD Pipeline
+# ───────────────────────────────────────
+# Runs on every push / PR to main, testing, and div branches.
+#
+# Jobs:
+#   1. backend-tests   → Jest + Supertest (all modules)
+#   2. frontend-tests  → Vitest (unit + component tests)
+#   3. security-audit  → npm audit for both packages
+#   4. build-apk       → Android APK (debug) — on main/testing only
+# ═══════════════════════════════════════════════════════════════
+
+name: 🧪 Mobile QA Pipeline
+
+on:
+  push:
+    branches: [main, testing, div, "shazeb/**"]
+  pull_request:
+    branches: [main, testing]
+
+env:
+  NODE_VERSION: "20"
+  JAVA_VERSION: "17"
+
+# ─────────────────────────────────────────────────────────────────
+# JOB 1: Backend Tests (Jest + Supertest)
+# ─────────────────────────────────────────────────────────────────
+jobs:
+  backend-tests:
+    name: "🔧 Backend — Jest Tests"
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_USER:     test_user
+          POSTGRES_PASSWORD: test_pass
+          POSTGRES_DB:       zf_test_db
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: "📥 Checkout"
+        uses: actions/checkout@v4
+
+      - name: "⚙️ Setup Node.js ${{ env.NODE_VERSION }}"
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+          cache-dependency-path: backend/package-lock.json
+
+      - name: "📦 Install backend dependencies"
+        run: npm ci
+        working-directory: backend
+
+      - name: "🧪 Run backend Jest tests"
+        run: npm test -- --ci --forceExit --detectOpenHandles
+        working-directory: backend
+        env:
+          NODE_ENV:     test
+          DATABASE_URL: postgres://test_user:test_pass@localhost:5432/zf_test_db
+          JWT_SECRET:   ci-test-jwt-secret-key-minimum-32-chars
+          OTP_TEST_MODE: "true"
+          CLOUDINARY_CLOUD_NAME: test
+          CLOUDINARY_API_KEY:    test
+          CLOUDINARY_API_SECRET: test
+
+      - name: "📊 Upload backend coverage"
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: backend-coverage
+          path: backend/coverage/
+          retention-days: 7
+
+  # ─────────────────────────────────────────────────────────────────
+  # JOB 2: Frontend Tests (Vitest)
+  # ─────────────────────────────────────────────────────────────────
+  frontend-tests:
+    name: "🎨 Frontend — Vitest Tests"
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: "📥 Checkout"
+        uses: actions/checkout@v4
+
+      - name: "⚙️ Setup Node.js ${{ env.NODE_VERSION }}"
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: "📦 Install frontend dependencies"
+        run: npm ci
+        working-directory: frontend
+
+      - name: "🧪 Run Vitest tests"
+        run: npm test
+        working-directory: frontend
+        env:
+          VITE_API_URL:      http://localhost:5000/api
+          VITE_APP_VARIANT:  web
+          NODE_ENV:          test
+
+      - name: "📊 Upload frontend coverage"
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: frontend-coverage
+          path: frontend/coverage/
+          retention-days: 7
+
+  # ─────────────────────────────────────────────────────────────────
+  # JOB 3: Security Audit
+  # ─────────────────────────────────────────────────────────────────
+  security-audit:
+    name: "🔐 Security — npm audit"
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: "📥 Checkout"
+        uses: actions/checkout@v4
+
+      - name: "⚙️ Setup Node.js"
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: "🔍 Backend security audit"
+        run: npm audit --audit-level=high --omit=dev
+        working-directory: backend
+        continue-on-error: true   # Don't block CI — report only
+
+      - name: "🔍 Frontend security audit"
+        run: npm audit --audit-level=high --omit=dev
+        working-directory: frontend
+        continue-on-error: true
+
+  # ─────────────────────────────────────────────────────────────────
+  # JOB 4: Android APK Build (main + testing branches only)
+  # ─────────────────────────────────────────────────────────────────
+  build-apk:
+    name: "📱 Android — Build Debug APK"
+    runs-on: ubuntu-latest
+    needs: [backend-tests, frontend-tests]
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/testing'
+
+    steps:
+      - name: "📥 Checkout"
+        uses: actions/checkout@v4
+
+      - name: "⚙️ Setup Node.js"
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: "☕ Setup Java ${{ env.JAVA_VERSION }}"
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: "temurin"
+
+      - name: "📦 Install frontend dependencies"
+        run: npm ci
+        working-directory: frontend
+
+      - name: "🏗️ Build Student Variant (Vite + Capacitor sync)"
+        run: npm run build:mobile:student
+        working-directory: frontend
+        env:
+          VITE_API_URL:     https://institutes-saas.onrender.com/api
+          VITE_APP_VARIANT: student
+
+      - name: "🔨 Build Debug APK (Gradle)"
+        run: ./gradlew assembleDebug --no-daemon
+        working-directory: frontend/android
+
+      - name: "📤 Upload APK artifact"
+        uses: actions/upload-artifact@v4
+        with:
+          name: zf-solution-student-debug-${{ github.sha }}
+          path: frontend/android/app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 30
+
+      - name: "📋 APK Build Summary"
+        run: |
+          APK_PATH="frontend/android/app/build/outputs/apk/debug/app-debug.apk"
+          if [ -f "$APK_PATH" ]; then
+            SIZE=$(du -sh "$APK_PATH" | cut -f1)
+            echo "✅ APK built successfully — Size: $SIZE"
+            echo "APK_SIZE=$SIZE" >> $GITHUB_ENV
+          else
+            echo "❌ APK not found"
+            exit 1
+          fi
