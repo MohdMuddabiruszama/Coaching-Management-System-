@@ -1,0 +1,16 @@
+# Docker ignore — exclude from build context
+node_modules
+npm-debug.log
+coverage
+tests
+*.test.js
+.env
+.env.test
+.env.example
+.git
+.gitignore
+.github
+uploads
+*.md
+jest.config.js
+.eslintrc.*

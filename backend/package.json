@@ -11,16 +11,13 @@
     "start": "node server.js",
     "migrate:safe": "node scripts/apply-startup-migrations.js",
     "fix-indexes": "node scripts/fix-indexes.js",
-    "test": "jest",
-    "test:coverage": "jest --coverage",
-    "test:watch": "jest --watch",
-    "test:smoke": "jest __tests__/smoke",
-    "test:auth": "jest __tests__/auth",
-    "test:biometric": "jest __tests__/biometric",
-    "test:fees": "jest __tests__/fees",
-    "test:student": "jest __tests__/student"
+    "test": "cross-env NODE_ENV=test jest --runInBand",
+    "test:watch": "cross-env NODE_ENV=test jest --watch --runInBand",
+    "test:coverage": "cross-env NODE_ENV=test jest --coverage --runInBand"
   },
   "dependencies": {
+    "@sentry/node": "^10.52.0",
+    "@sentry/profiling-node": "^10.52.0",
     "@upstash/redis": "^1.37.0",
     "axios": "^1.14.0",
     "bcrypt": "^6.0.0",
@@ -34,6 +31,7 @@
     "express-rate-limit": "^8.3.2",
     "fs": "^0.0.1-security",
     "helmet": "^8.1.0",
+    "joi": "^18.2.1",
     "jsonwebtoken": "^9.0.3",
     "mime-types": "^3.0.2",
     "multer": "^2.1.1",
@@ -42,34 +40,18 @@
     "nodemailer": "^8.0.4",
     "path": "^0.12.7",
     "pdfkit": "^0.17.2",
-    "pg": "^8.20.0",
     "pg-hstore": "^2.3.4",
     "qrcode": "^1.5.4",
     "razorpay": "^2.9.6",
+    "resend": "^6.12.3",
     "sequelize": "^6.37.1",
     "xss": "^1.0.15"
   },
   "devDependencies": {
+    "cross-env": "^10.1.0",
     "jest": "^29.7.0",
     "nodemon": "^3.1.11",
-    "supertest": "^7.1.0"
-  },
-  "jest": {
-    "testEnvironment": "node",
-    "testTimeout": 30000,
-    "verbose": true,
-    "forceExit": true,
-    "clearMocks": true,
-    "globalSetup": "./__tests__/helpers/globalSetup.js",
-    "globalTeardown": "./__tests__/helpers/globalTeardown.js",
-    "testMatch": [
-      "**/__tests__/**/*.test.js"
-    ],
-    "collectCoverageFrom": [
-      "controllers/**/*.js",
-      "routes/**/*.js",
-      "middlewares/**/*.js",
-      "!**/node_modules/**"
-    ]
+    "pg": "^8.20.0",
+    "supertest": "^7.2.2"
   }
 }

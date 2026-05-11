@@ -59,6 +59,7 @@ const InstituteDiscount = require("./instituteDiscount");
 
 const Lead = require("./lead");
 const LandingPageView = require("./landingPageView");
+const RefreshToken = require("./refreshToken"); // ✅ Phase 7: Refresh Token model
 
 // Associations
 
@@ -437,6 +438,10 @@ Institute.hasMany(BulkImportLog, { foreignKey: "institute_id" });
 BulkImportLog.belongsTo(User, { as: "importer", foreignKey: "imported_by" });
 User.hasMany(BulkImportLog, { foreignKey: "imported_by" });
 
+// ✅ Phase 7: Refresh Token Associations
+RefreshToken.belongsTo(User, { foreignKey: "user_id" });
+User.hasMany(RefreshToken, { foreignKey: "user_id" });
+
 module.exports = {
     sequelize,
     Plan,
@@ -494,4 +499,5 @@ module.exports = {
     AuditLog,
     SlowRequestLog,
     BulkImportLog,
+    RefreshToken,
 };

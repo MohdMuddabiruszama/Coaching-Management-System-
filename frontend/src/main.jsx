@@ -7,7 +7,21 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import * as Sentry from "@sentry/react";
 import App from './App';
+
+Sentry.init({
+  dsn: "https://af7b019b353ff61b097fd3342c7085a0@o4511373536133120.ingest.de.sentry.io/4511373573619792",
+  integrations: [
+    Sentry.browserTracingIntegration(),
+    Sentry.replayIntegration(),
+  ],
+  tracesSampleRate: 1.0, 
+  tracePropagationTargets: ["localhost", /^\/api/],
+  replaysSessionSampleRate: 0.1, 
+  replaysOnErrorSampleRate: 1.0, 
+});
+
 
 // ✅ Phase 4.1: Global React Query client configuration
 const queryClient = new QueryClient({

@@ -7,6 +7,7 @@
  * ✅ Phase 7: Security Hardening (Helmet, XSS, OTP Rate Limiting)
  */
 
+require("./instrument"); // ✅ Sentry initialization MUST be the very first line
 const express = require("express");
 const cors = require("cors");
 const path = require("path");
@@ -127,36 +128,48 @@ app.use("/api/auth/resend-otp", otpLimiter);
 // ============================================
 // ✅ PHASE 1.3: OPTIMIZED CORS CONFIGURATION
 // ============================================
-
 /**
- * CORS Configuration
- * Specific origins only (faster than wildcard) + preflight cache (24h)
+ * ✅ Phase 7: Environment-Aware CORS Configuration
+ * Production: only allow origins from ALLOWED_ORIGINS env var
+ * Development: allow localhost variants + Vercel preview branches
  */
-const allowedOrigins = [
-  "https://students-saas.vercel.app",
-  process.env.FRONTEND_URL,
-  "http://localhost:5173",
-  "http://localhost:5174",
-  "http://localhost:3000",
-  "http://localhost",
-  "capacitor://localhost",
-  "http://10.0.2.2:5000",
-].filter(Boolean);
+const buildAllowedOrigins = () => {
+  // If ALLOWED_ORIGINS is set (production), use ONLY those origins
+  if (process.env.ALLOWED_ORIGINS) {
+    return process.env.ALLOWED_ORIGINS.split(",").map(o => o.trim()).filter(Boolean);
+  }
+  // Development: permissive list
+  return [
+    "https://students-saas.vercel.app",
+    process.env.FRONTEND_URL,
+    "http://localhost:5173",
+    "http://localhost:5174",
+    "http://localhost:3000",
+    "http://localhost",
+    "capacitor://localhost",
+    "http://10.0.2.2:5000",
+  ].filter(Boolean);
+};
+const allowedOrigins = buildAllowedOrigins();
+const isProduction = !!process.env.ALLOWED_ORIGINS;
 
 app.use(cors({
   origin: (origin, callback) => {
     // Allow requests with no origin (mobile apps, Postman, server-to-server)
-    // Also allow ANY .vercel.app domain to support dynamic Vercel preview branch URLs
-    if (!origin || allowedOrigins.includes(origin) || origin.endsWith(".vercel.app")) {
-      callback(null, true);
-    } else {
-      callback(new Error(`Not allowed by CORS: ${origin}`));
-    }
+    if (!origin) return callback(null, true);
+    // Exact match
+    if (allowedOrigins.includes(origin)) return callback(null, true);
+    // In dev only: allow Vercel preview URLs
+    if (!isProduction && origin.endsWith(".vercel.app")) return callback(null, true);
+    // In dev only: allow capacitor origins
+    if (!isProduction && origin.startsWith("capacitor://")) return callback(null, true);
+    // Blocked
+    callback(new Error(`Not allowed by CORS: ${origin}`));
   },
   credentials: true,
   methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
   allowedHeaders: ["Content-Type", "Authorization"],
-  maxAge: 86400, // âœ… Cache preflight for 24 hours â€” reduces OPTIONS requests
+  maxAge: 86400, // Cache preflight for 24 hours
 }));
 
 
@@ -303,6 +316,13 @@ app.use("/api/leads", require("./routes/lead.routes"));
 app.use("/api/lifetime", require("./routes/lifetime.routes")); // Lifetime plan
 
 // ============================================
+// SENTRY TEST ENDPOINT
+// ============================================
+app.get("/debug-sentry", function mainHandler(req, res) {
+  throw new Error("My first Sentry error!");
+});
+
+// ============================================
 // 404 HANDLER
 // ============================================
 
@@ -325,6 +345,9 @@ app.use((req, res) => {
  * Central Error Handling Middleware
  * Catches all errors and returns standardized response
  */
+const Sentry = require("@sentry/node");
+Sentry.setupExpressErrorHandler(app); // ✅ Setup Sentry Express Error Handler BEFORE custom error middleware
+
 app.use((err, req, res, next) => {
   console.error("âŒ Error:", err);
 

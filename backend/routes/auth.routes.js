@@ -4,6 +4,8 @@ const rateLimit  = require("express-rate-limit");
 const authController = require("../controllers/auth.controller");
 const verifyToken    = require("../middlewares/auth.middleware");
 const uploadLogo     = require("../middlewares/upload.middleware");
+const validate       = require("../middlewares/validate.middleware"); // ✅ Phase 7: Joi Validation
+const authValidator  = require("../validators/auth.validator");
 
 // ── Rate limiter: max 5 OTP-email requests per IP per 15 minutes ────────────
 const otpLimiter = rateLimit({
@@ -23,21 +25,25 @@ router.post("/send-otp",           authController.sendOtp);
 router.get("/otp-mode", authController.getOtpMode);
 
 // ── Auth ─────────────────────────────────────────────────────────────────────
-router.post("/login",            authController.login);
+router.post("/login",            validate(authValidator.login), authController.login);
 router.post("/logout",           authController.logout);
-router.post("/change-password",  verifyToken, authController.changePassword);
+router.post("/change-password",  verifyToken, validate(authValidator.changePassword), authController.changePassword);
 router.get( "/profile",          verifyToken, authController.getProfile);
 router.put( "/profile",          verifyToken, authController.updateProfile);
 router.put( "/theme",            verifyToken, authController.saveTheme);
 
 // ── NEW: Registration with OTP ───────────────────────────────────────────────
-router.post("/register-init",       otpLimiter, authController.registerInit);
-router.post("/verify-registration", uploadLogo.single("logo"), authController.verifyRegistrationOtp);
+router.post("/register-init",       otpLimiter, validate(authValidator.registerInit), authController.registerInit);
+router.post("/verify-registration", uploadLogo.single("logo"), validate(authValidator.verifyRegistration), authController.verifyRegistrationOtp);
 router.post("/resend-otp",                      authController.resendOtp);
 
 // ── NEW: Forgot Password with OTP ────────────────────────────────────────────
-router.post("/forgot-password",  otpLimiter, authController.forgotPassword);
-router.post("/reset-password",               authController.resetPassword);
+router.post("/forgot-password",  otpLimiter, validate(authValidator.forgotPassword), authController.forgotPassword);
+router.post("/reset-password",               validate(authValidator.resetPassword), authController.resetPassword);
+
+// ── ✅ Phase 7: Token Refresh & Session Management ───────────────────────────
+router.post("/refresh",          validate(authValidator.refreshToken), authController.refreshAccessToken);      // No auth — refresh token is the credential
+router.post("/revoke-sessions",  verifyToken, authController.revokeAllSessions); // Requires auth — logout all devices
 
 // ── DB Health Check ──────────────────────────────────────────────────────────
 const sequelize = require("../config/database");

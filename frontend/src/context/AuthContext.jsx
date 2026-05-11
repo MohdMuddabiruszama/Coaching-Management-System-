@@ -82,7 +82,7 @@ export const AuthProvider = ({ children }) => {
   const login = async (data) => {
     const response = await loginUser(data);
 
-    const { token, user } = response.data;
+    const { token, refreshToken, user } = response.data;
 
     // === LIFETIME BYPASS: Lifetime members NEVER expire ===
     const isLifetime = user.is_lifetime_member || false;
@@ -100,6 +100,10 @@ export const AuthProvider = ({ children }) => {
     persistSession(token, user);
     sessionStorage.setItem("isPlanExpired", isExpired ? "true" : "false");
     sessionStorage.setItem("isLifetimeMember", isLifetime ? "true" : "false");
+    // ✅ Phase 7: Store refresh token for auto-refresh
+    if (refreshToken) {
+        sessionStorage.setItem("refreshToken", refreshToken);
+    }
 
     // ── Dynamic branding: save institute branding after login ──
     setBranding(user);

@@ -1,4 +1,10 @@
 const nodemailer = require('nodemailer');
+const { Resend } = require('resend');
+
+// ✅ Phase 7: Production Email Provider (Resend)
+const resend = process.env.EMAIL_PROVIDER === 'resend' && process.env.RESEND_API_KEY
+    ? new Resend(process.env.RESEND_API_KEY)
+    : null;
 
 // Create transporter once — reused for all emails
 const createTransporter = () => {
@@ -12,9 +18,32 @@ const createTransporter = () => {
       pass: process.env.EMAIL_PASS,
     },
     tls: {
-      rejectUnauthorized: false,  // fixes certificate issues in dev
+      rejectUnauthorized: process.env.NODE_ENV === "production",  // fixes certificate issues in dev, strict in prod
     },
   });
+};
+
+/**
+ * Unified email sender that routes through Resend (Prod) or Nodemailer (Dev)
+ */
+const sendEmail = async ({ to, subject, html }) => {
+    const from = process.env.EMAIL_FROM || "ZF Solution <noreply@yourdomain.com>";
+    
+    if (resend) {
+        const { data, error } = await resend.emails.send({
+            from,
+            to: Array.isArray(to) ? to : [to],
+            subject,
+            html
+        });
+        if (error) throw new Error(`Resend Error: ${error.message}`);
+        return { messageId: data.id, provider: 'resend' };
+    } else {
+        const transporter = createTransporter();
+        await transporter.verify();
+        const info = await transporter.sendMail({ from, to, subject, html });
+        return { messageId: info.messageId, provider: 'smtp' };
+    }
 };
 
 exports.sendOtpEmail = async (to, otp, type) => {
@@ -48,19 +77,9 @@ exports.sendOtpEmail = async (to, otp, type) => {
     </div>
   `;
 
-  const transporter = createTransporter();
+  const info = await sendEmail({ to, subject, html });
 
-  // Verify connection before sending
-  await transporter.verify();
-
-  const info = await transporter.sendMail({
-    from: process.env.EMAIL_FROM,
-    to,
-    subject,
-    html,
-  });
-
-  console.log(`✅ Real email sent to ${to} | ID: ${info.messageId}`);
+  console.log(`✅ Real email sent to ${to} via ${info.provider} | ID: ${info.messageId}`);
   return info;
 };
 
@@ -125,14 +144,12 @@ exports.sendStudentWelcomeEmail = async ({ to, studentName, instituteName, email
     </div>
   `;
 
-  await transporter.verify();
-  const info = await transporter.sendMail({
-    from: process.env.EMAIL_FROM,
+  const info = await sendEmail({
     to,
     subject: `Your Login Credentials — ${instituteName}`,
     html,
   });
 
-  console.log(`✅ Welcome email sent to ${to}`);
+  console.log(`✅ Welcome email sent to ${to} via ${info.provider}`);
   return info;
 };

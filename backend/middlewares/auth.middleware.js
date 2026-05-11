@@ -76,7 +76,14 @@ const verifyToken = async (req, res, next) => {
 
     next();
   } catch (error) {
-    // Pass JWT errors to the global error middleware
+    // ✅ Phase 7: Return specific error codes for frontend token refresh logic
+    if (error.name === "TokenExpiredError") {
+      return sendError(res, "Access token expired. Please refresh.", 401, { code: "TOKEN_EXPIRED" });
+    }
+    if (error.name === "JsonWebTokenError") {
+      return sendError(res, "Invalid token.", 401, { code: "TOKEN_INVALID" });
+    }
+    // Pass other errors to the global error middleware
     next(error);
   }
 };

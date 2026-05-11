@@ -111,7 +111,7 @@ api.interceptors.response.use(
         }
         return response;
     },
-    (error) => {
+    async (error) => {
         // Handle client-side rejected requests (Plan Expired Read-only)
         if (error.customName === "PLAN_EXPIRED_READONLY") {
             import("react-hot-toast").then((module) => {
@@ -121,7 +121,7 @@ api.interceptors.response.use(
             return Promise.reject(error);
         }
         
-        const { response } = error;
+        const { response, config } = error;
 
         // 🌐 Network error (Server Unreachable)
         if (!response) {
@@ -132,6 +132,36 @@ api.interceptors.response.use(
 
         const status = response.status;
         const data = response.data;
+
+        // ✅ Phase 7: Auto-refresh on TOKEN_EXPIRED
+        if (status === 401 && data?.code === "TOKEN_EXPIRED" && !config._retry) {
+            config._retry = true; // Prevent infinite retry loops
+
+            const refreshToken = sessionStorage.getItem("refreshToken");
+            if (refreshToken) {
+                try {
+                    const refreshResponse = await axios.post(
+                        `${getBaseURL()}/auth/refresh`,
+                        { refreshToken },
+                        { headers: { "Content-Type": "application/json" } }
+                    );
+
+                    if (refreshResponse.data?.success && refreshResponse.data?.token) {
+                        const newToken = refreshResponse.data.token;
+                        sessionStorage.setItem("token", newToken);
+
+                        // Retry the original request with the new token
+                        config.headers.Authorization = `Bearer ${newToken}`;
+                        return api(config);
+                    }
+                } catch (refreshError) {
+                    console.warn("🔑 Token refresh failed — logging out.");
+                    sessionStorage.clear();
+                    window.dispatchEvent(new CustomEvent('app_navigate', { detail: { path: '/login', clearSession: true } }));
+                    return Promise.reject(refreshError);
+                }
+            }
+        }
 
         // 🛑 Backend/Database Down (5xx Errors)
         if (status >= 500) {
@@ -162,8 +192,8 @@ api.interceptors.response.use(
                 handleBlockedAccount();
             }
 
-            // 🔑 Unauthorized — dispatch event instead of hard redirect
-            if (status === 401 && window.location.pathname !== "/login") {
+            // 🔑 Unauthorized (not TOKEN_EXPIRED) — hard logout
+            if (status === 401 && data?.code !== "TOKEN_EXPIRED" && window.location.pathname !== "/login") {
                 sessionStorage.clear();
                 window.dispatchEvent(new CustomEvent('app_navigate', { detail: { path: '/login', clearSession: true } }));
             }

@@ -1,9 +1,9 @@
 const authService  = require("../services/auth.service");
-const generateToken = require("../utils/generateToken");
+const { generateAccessToken, generateRefreshToken, hashRefreshToken, generateToken } = require("../utils/generateToken");
 const emailService  = require("../services/email.service");
 const bcrypt        = require("bcrypt");
 const jwt           = require("jsonwebtoken");
-const { InstitutePublicProfile } = require("../models");
+const { InstitutePublicProfile, RefreshToken } = require("../models");
 const { generateOtp, saveOtp, validateOtp, invalidateOtp } = require("../utils/otp.util");
 const { Institute, OtpVerification } = require("../models");
 const { Op } = require("sequelize");
@@ -143,7 +143,7 @@ exports.registerInstitute = async (req, res) => {
             status: "pending" // Institute starts as pending until payment
         });
 
-        const token = generateToken(result.adminUser);
+        const token = generateAccessToken(result.adminUser);
 
         res.status(201).json({
             success: true,
@@ -197,7 +197,21 @@ exports.login = async (req, res) => {
         }
 
         const user = await authService.loginUser(email, password);
-        const token = generateToken(user);
+
+        // ✅ Phase 7: Dual-token auth — short access token + long refresh token
+        const accessToken = generateAccessToken(user);
+        const refresh = generateRefreshToken();
+
+        // Store refresh token hash in DB (enables revocation & session management)
+        await RefreshToken.create({
+            user_id: user.id,
+            token_hash: refresh.hash,
+            expires_at: refresh.expiresAt,
+            device_info: req.headers["user-agent"] || null,
+            ip_address: req.ip,
+        });
+
+        const token = accessToken; // backward compatibility — frontend uses 'token' field
 
         let features = {};
         
@@ -238,6 +252,8 @@ exports.login = async (req, res) => {
             success: true,
             message: "Login successful",
             token,
+            accessToken,
+            refreshToken: refresh.token,
             user: {
                 id: user.id,
                 name: user.name,
@@ -487,7 +503,7 @@ exports.verifyRegistrationOtp = async (req, res) => {
         await invalidateOtp(record);
 
         // Generate JWT
-        const token = generateToken(result.adminUser);
+        const token = generateAccessToken(result.adminUser);
 
         res.status(201).json({
             success: true,
@@ -677,5 +693,80 @@ exports.resendOtp = async (req, res) => {
     } catch (error) {
         console.error("resendOtp error:", error);
         res.status(500).json({ success: false, message: error.message || "Failed to resend OTP." });
+    }
+};
+
+/**
+ * ✅ Phase 7: POST /api/auth/refresh
+ * Exchange a valid refresh token for a new access token.
+ * The refresh token itself is NOT rotated (simplifies mobile clients).
+ */
+exports.refreshAccessToken = async (req, res) => {
+    try {
+        const { refreshToken } = req.body;
+
+        if (!refreshToken) {
+            return res.status(400).json({ success: false, message: "Refresh token is required." });
+        }
+
+        // Hash the incoming token and look it up in DB
+        const tokenHash = hashRefreshToken(refreshToken);
+        const stored = await RefreshToken.findOne({
+            where: { token_hash: tokenHash, is_revoked: false },
+            include: [{ model: require("../models").User, attributes: ["id", "role", "institute_id", "status"] }],
+        });
+
+        if (!stored) {
+            return res.status(401).json({ success: false, message: "Invalid or revoked refresh token.", code: "REFRESH_INVALID" });
+        }
+
+        // Check expiry
+        if (new Date() > new Date(stored.expires_at)) {
+            await stored.update({ is_revoked: true });
+            return res.status(401).json({ success: false, message: "Refresh token expired. Please log in again.", code: "REFRESH_EXPIRED" });
+        }
+
+        // Check user still exists and is active
+        const user = stored.User;
+        if (!user || user.status === "blocked") {
+            await stored.update({ is_revoked: true });
+            return res.status(401).json({ success: false, message: "Account is blocked or not found.", code: "ACCOUNT_BLOCKED" });
+        }
+
+        // Issue new access token
+        const newAccessToken = generateAccessToken(user);
+
+        res.json({
+            success: true,
+            message: "Token refreshed successfully.",
+            token: newAccessToken,
+            accessToken: newAccessToken,
+        });
+    } catch (error) {
+        console.error("refreshAccessToken error:", error);
+        res.status(500).json({ success: false, message: "Failed to refresh token." });
+    }
+};
+
+/**
+ * ✅ Phase 7: POST /api/auth/revoke-sessions
+ * Revoke all refresh tokens for the current user (logout from all devices).
+ */
+exports.revokeAllSessions = async (req, res) => {
+    try {
+        const userId = req.user.id;
+
+        const count = await RefreshToken.update(
+            { is_revoked: true },
+            { where: { user_id: userId, is_revoked: false } }
+        );
+
+        res.json({
+            success: true,
+            message: `All sessions revoked. ${count[0]} device(s) logged out.`,
+        });
+    } catch (error) {
+        console.error("revokeAllSessions error:", error);
+        res.status(500).json({ success: false, message: "Failed to revoke sessions." });
     }
 };
