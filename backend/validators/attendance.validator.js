@@ -88,11 +88,16 @@ const markByQR = {
 
 const markByStudentQR = {
     body: Joi.object({
-        session_id: Joi.number().integer().positive().optional(),
-        student_id: Joi.number().integer().positive().required(),
-        class_id: Joi.number().integer().positive().optional(),
-        subject_id: Joi.number().integer().positive().optional().allow(null),
-        date: Joi.string().pattern(/^\d{4}-\d{2}-\d{2}$/).optional(),
+        qr_code: Joi.string().min(1).required()
+            .messages({ "string.empty": "QR code is required", "any.required": "QR code is required" }),
+        class_id: Joi.number().integer().positive().required()
+            .messages({ "any.required": "Class is required" }),
+        subject_id: Joi.alternatives().try(
+            Joi.number().integer().positive(),
+            Joi.string().valid("", "null")
+        ).optional().allow(null),
+        date: Joi.string().pattern(/^\d{4}-\d{2}-\d{2}$/).optional()
+            .messages({ "string.pattern.base": "Date must be YYYY-MM-DD" }),
     }),
 };
 

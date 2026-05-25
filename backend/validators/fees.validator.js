@@ -9,11 +9,21 @@ const createStructure = {
     body: Joi.object({
         class_id: Joi.number().integer().positive().required()
             .messages({ "any.required": "Class ID is required" }),
-        subject_id: Joi.number().integer().positive().optional().allow(null),
-        individual_student_id: Joi.number().integer().positive().optional().allow(null),
+        subject_id: Joi.alternatives().try(
+            Joi.number().integer().positive(),
+            Joi.string().valid("", "null")
+        ).optional().allow(null, ""),
+        individual_student_id: Joi.alternatives().try(
+            Joi.number().integer().positive(),
+            Joi.string().valid("", "null")
+        ).optional().allow(null, ""),
+        student_target: Joi.string().valid("all", "individual").optional().default("all"),
         fee_type: feeTypeEnum,
-        amount: Joi.number().positive().max(10000000).required()
-            .messages({ "number.positive": "Amount must be greater than 0" }),
+        amount: Joi.alternatives().try(
+            Joi.number().positive().max(10000000),
+            Joi.string().pattern(/^\d+(\.\d{1,2})?$/)
+        ).required()
+            .messages({ "any.required": "Amount is required" }),
         due_date: dateISO.required()
             .messages({ "any.required": "Due date is required" }),
         description: Joi.string().max(500).optional().allow("", null),
@@ -45,15 +55,24 @@ const getStructures = {
 
 const recordPayment = {
     body: Joi.object({
-        student_id: Joi.number().integer().positive().optional(), // Optional for student self-pay
-        fee_structure_id: Joi.number().integer().positive().required(),
-        amount: Joi.number().positive().max(10000000).required()
-            .messages({ "number.positive": "Payment amount must be positive" }),
+        student_id: Joi.alternatives().try(
+            Joi.number().integer().positive(),
+            Joi.string().pattern(/^\d+$/)
+        ).optional().allow(null), // Optional for student self-pay; also sent as string from some clients
+        fee_structure_id: Joi.alternatives().try(
+            Joi.number().integer().positive(),
+            Joi.string().pattern(/^\d+$/)
+        ).optional().allow(null), // Optional — dummy fees have no fee_structure_id
+        amount: Joi.alternatives().try(
+            Joi.number().positive().max(10000000),
+            Joi.string().pattern(/^\d+(\.\d{1,2})?$/)
+        ).required()
+            .messages({ "any.required": "Payment amount is required", "alternatives.match": "Payment amount must be a positive number" }),
         payment_method: paymentMethodEnum,
         transaction_id: Joi.string().max(100).optional().allow("", null),
-        payment_date: dateISO.optional(),
+        payment_date: Joi.alternatives().try(dateISO, Joi.string().pattern(/^\d{4}-\d{2}-\d{2}$/)).optional(),
         remarks: Joi.string().max(500).optional().allow("", null),
-        reminder_date: dateISO.optional().allow(null),
+        reminder_date: Joi.alternatives().try(dateISO, Joi.string().pattern(/^\d{4}-\d{2}-\d{2}$/)).optional().allow(null, ""),
     }),
 };
 

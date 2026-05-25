@@ -888,8 +888,11 @@ exports.markAttendanceByStudentQR = async (req, res) => {
 
         const student_id = qr_code.split("STUDENT_QR_")[1];
 
-        // Find Student
-        const student = await Student.findOne({ where: { id: student_id, institute_id } });
+        // Find Student (include User for name in response messages)
+        const student = await Student.findOne({
+            where: { id: student_id, institute_id },
+            include: [{ model: User, attributes: ['name', 'email'] }]
+        });
         if (!student) {
             return res.status(404).json({ success: false, message: "Student record not found in your institute" });
         }
@@ -965,9 +968,7 @@ exports.markAttendanceByStudentQR = async (req, res) => {
             remarks: "Smart Attendance (QR)"
         });
 
-        const userRecord = await User.findByPk(student.user_id);
-
-        res.status(200).json({ success: true, message: `Attendance marked successfully for ${userRecord?.name || 'Student'}! ✅` });
+        res.status(200).json({ success: true, message: `Attendance marked successfully for ${student.User?.name || 'Student'}! ✅` });
 
     } catch (error) {
         console.error("Mark by Student QR error:", error);

@@ -227,7 +227,7 @@ exports.recordPayment = async (req, res) => {
                 });
                 const totalPaidSoFar = existingPayments.reduce((sum, p) => sum + parseFloat(p.amount_paid), 0);
                 if (totalPaidSoFar >= parseFloat(fee.amount) && amount > 0) {
-                    return res.status(400).json({ success: false, message: "Already enrolled in that subject and fees fully paid." });
+                    return res.status(400).json({ success: false, message: "This fee is already fully paid." });
                 }
 
                 if (fee.subject_id) {

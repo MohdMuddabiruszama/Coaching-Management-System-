@@ -148,28 +148,35 @@ function Fees() {
 
     const handleCollect = async (e) => {
         e.preventDefault();
-        if (!payForm.amount || parseFloat(payForm.amount) <= 0) {
-            setPayError('Please enter a valid amount.');
+        const parsedAmount = parseFloat(payForm.amount);
+        if (!payForm.amount || isNaN(parsedAmount) || parsedAmount <= 0) {
+            setPayError('Please enter a valid amount greater than ₹0.');
             return;
+        }
+        // Warn if paying more than due (but allow — could be advance)
+        if (collectingStudent.due_amount > 0 && parsedAmount > parseFloat(collectingStudent.due_amount)) {
+            const ok = window.confirm(`You are paying ₹${parsedAmount.toLocaleString()} which is more than the due amount ₹${parseFloat(collectingStudent.due_amount).toLocaleString()}. Continue?`);
+            if (!ok) return;
         }
         try {
             setCollecting(true);
+            setPayError('');
             await api.post('/fees/pay', {
                 student_id: collectingStudent.student_id,
-                fee_structure_id: collectingStudent.fee_structure_id,
-                amount: payForm.amount,
+                fee_structure_id: collectingStudent.fee_structure_id || null,
+                amount: parsedAmount,   // send as number, not string
                 payment_method: payForm.payment_method,
-                transaction_id: payForm.transaction_id,
-                payment_date: payForm.payment_date,
-                remarks: payForm.remarks,
-                reminder_date: payForm.reminder_date
+                transaction_id: payForm.transaction_id || null,
+                payment_date: payForm.payment_date || undefined,
+                remarks: payForm.remarks || null,
+                reminder_date: payForm.reminder_date || null   // empty string → null
             });
             setCollectingStudent(null);
-            setSuccess(`✅ Payment of ₹${parseFloat(payForm.amount).toLocaleString()} collected successfully`);
+            setSuccess(`✅ Payment of ₹${parsedAmount.toLocaleString()} collected successfully`);
             setTimeout(() => setSuccess(''), 5000);
             await refreshPayments();
         } catch (err) {
-            setPayError(err.response?.data?.message || 'Failed to record payment.');
+            setPayError(err.response?.data?.message || 'Failed to record payment. Please try again.');
         } finally {
             setCollecting(false);
         }
@@ -1264,10 +1271,10 @@ function Fees() {
                                         <p style={{ margin: 0 }}><strong>Email Id:</strong> {user?.Institute?.email || "info@excelpublicschool.edu"}</p>
                                     </div>
                                     <div style={{ flex: 1, textAlign: 'right', fontSize: '1.1rem', fontWeight: '600', color: '#0f172a', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', alignItems: 'flex-end' }}>
-                                        <div style={{ display: 'flex', alignItems: 'flex-end', gap: '0.75rem' }}>
-                                            <span style={{ paddingBottom: '2px' }}>Date:</span>
-                                            <span style={{ display: 'inline-block', width: '180px', borderBottom: '1.5px solid #0f172a' }}></span>
-                                        </div>
+                                            <div style={{ display: 'flex', alignItems: 'flex-end', gap: '0.75rem' }}>
+                                                <span style={{ paddingBottom: '2px' }}>Date:</span>
+                                                <span style={{ display: 'inline-block', width: '180px', borderBottom: '1.5px solid #0f172a' }}></span>
+                                            </div>
                                     </div>
                                 </div>
 

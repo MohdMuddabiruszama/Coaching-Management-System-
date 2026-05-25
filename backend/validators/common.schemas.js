@@ -65,8 +65,13 @@ const genderEnum = Joi.string()
     .allow("", null);
 
 const paymentMethodEnum = Joi.string()
-    .valid("Cash", "UPI", "Credit Card", "Debit Card", "Net Banking", "Cheque", "Online", "Other", "online")
-    .default("Cash");
+    .valid(
+        // Capitalized (canonical)
+        "Cash", "UPI", "Credit Card", "Debit Card", "Net Banking", "Cheque", "Online", "Other",
+        // Lowercase (sent by frontend buttons)
+        "cash", "online", "cheque", "upi", "credit_card", "debit_card", "net_banking", "other"
+    )
+    .default("cash");
 
 const feeTypeEnum = Joi.string()
     .valid("Tuition Fee", "Exam Fee", "Library Fee", "Transport Fee", "Other")

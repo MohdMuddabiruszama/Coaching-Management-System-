@@ -441,7 +441,7 @@ function PayFees() {
                                             <p style={{ margin: 0 }}><strong>Email Id:</strong> {user?.Institute?.email || "-"}</p>
                                         </div>
                                         <div style={{ flex: 1, textAlign: 'right', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', alignItems: 'flex-end' }}>
-                                            <div style={{ display: 'flex', alignItems: 'flex-end', gap: '0.75rem', fontWeight: '600', fontSize: '1.1rem', color: '#0f172a' }}>
+                                        <div style={{ display: 'flex', alignItems: 'flex-end', gap: '0.75rem', fontWeight: '600', fontSize: '1.1rem', color: '#0f172a' }}>
                                                 <span style={{ paddingBottom: '2px' }}>Date:</span>
                                                 <span style={{ display: 'inline-block', width: '180px', borderBottom: '1.5px solid #0f172a' }}></span>
                                             </div>
