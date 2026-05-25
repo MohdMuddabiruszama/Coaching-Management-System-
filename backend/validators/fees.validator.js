@@ -7,39 +7,64 @@ const { idParam, pagination, feeTypeEnum, paymentMethodEnum, dateISO } = require
 
 const createStructure = {
     body: Joi.object({
-        class_id: Joi.number().integer().positive().required()
-            .messages({ "any.required": "Class ID is required" }),
-        subject_id: Joi.alternatives().try(
-            Joi.number().integer().positive(),
-            Joi.string().valid("", "null")
-        ).optional().allow(null, ""),
-        individual_student_id: Joi.alternatives().try(
-            Joi.number().integer().positive(),
-            Joi.string().valid("", "null")
-        ).optional().allow(null, ""),
+        class_id: Joi.alternatives()
+            .try(Joi.number().integer().positive(), Joi.string().pattern(/^\d+$/))
+            .required()
+            .messages({ "any.required": "Class ID is required", "alternatives.match": "Class ID must be a valid number" }),
+        subject_id: Joi.alternatives()
+            .try(
+                Joi.number().integer().positive(),
+                Joi.string().pattern(/^\d+$/),
+                Joi.string().valid("", "null").allow("", null)
+            )
+            .optional()
+            .allow(null, ""),
+        individual_student_id: Joi.alternatives()
+            .try(
+                Joi.number().integer().positive(),
+                Joi.string().pattern(/^\d+$/),
+                Joi.string().valid("", "null").allow("", null)
+            )
+            .optional()
+            .allow(null, ""),
         student_target: Joi.string().valid("all", "individual").optional().default("all"),
-        fee_type: feeTypeEnum,
-        amount: Joi.alternatives().try(
-            Joi.number().positive().max(10000000),
-            Joi.string().pattern(/^\d+(\.\d{1,2})?$/)
-        ).required()
+        fee_type: Joi.string().trim().min(1).max(100).required()
+            .messages({ "any.required": "Fee type is required" }),
+        amount: Joi.alternatives()
+            .try(Joi.number().positive().max(10000000), Joi.string().pattern(/^\d+(\.\d{1,2})?$/))
+            .required()
             .messages({ "any.required": "Amount is required" }),
         due_date: dateISO.required()
             .messages({ "any.required": "Due date is required" }),
+
         description: Joi.string().max(500).optional().allow("", null),
+
+        // student_target and custom_fee_type are sent from frontend — allow but will be stripped
+        student_target: Joi.string().valid("all", "individual").optional(),
+        custom_fee_type: Joi.string().max(100).optional().allow("", null),
     }),
 };
 
 const updateStructure = {
     params: idParam,
     body: Joi.object({
-        class_id: Joi.number().integer().positive().optional(),
-        subject_id: Joi.number().integer().positive().optional().allow(null),
-        individual_student_id: Joi.number().integer().positive().optional().allow(null),
-        fee_type: Joi.string().valid("Tuition Fee", "Exam Fee", "Library Fee", "Transport Fee", "Other").optional(),
-        amount: Joi.number().positive().max(10000000).optional(),
+        class_id: Joi.alternatives()
+            .try(Joi.number().integer().positive(), Joi.string().pattern(/^\d+$/))
+            .optional(),
+        subject_id: Joi.alternatives()
+            .try(Joi.number().integer().positive(), Joi.string().pattern(/^\d+$/), Joi.string().allow("", null))
+            .optional().allow(null),
+        individual_student_id: Joi.alternatives()
+            .try(Joi.number().integer().positive(), Joi.string().pattern(/^\d+$/), Joi.string().allow("", null))
+            .optional().allow(null),
+        fee_type: Joi.string().trim().min(1).max(100).optional(),
+        amount: Joi.alternatives()
+            .try(Joi.number().positive().max(10000000), Joi.string().pattern(/^\d+(\.\d+)?$/))
+            .optional(),
         due_date: dateISO.optional(),
         description: Joi.string().max(500).optional().allow("", null),
+        student_target: Joi.string().valid("all", "individual").optional(),
+        custom_fee_type: Joi.string().max(100).optional().allow("", null),
     }),
 };
 

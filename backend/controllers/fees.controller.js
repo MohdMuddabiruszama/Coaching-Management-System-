@@ -8,8 +8,21 @@ const { Op } = require("sequelize");
 
 exports.createFeeStructure = async (req, res) => {
     try {
-        const { class_id, subject_id, fee_type, amount, due_date, description, individual_student_id } = req.body;
+        let { class_id, subject_id, fee_type, amount, due_date, description, individual_student_id } = req.body;
         const institute_id = req.user.institute_id;
+
+        // Coerce string values from HTML form to proper types
+        class_id = class_id ? parseInt(class_id, 10) : null;
+        subject_id = (subject_id && subject_id !== '') ? parseInt(subject_id, 10) : null;
+        individual_student_id = (individual_student_id && individual_student_id !== '') ? parseInt(individual_student_id, 10) : null;
+        amount = parseFloat(amount);
+
+        if (!class_id || isNaN(class_id)) {
+            return res.status(400).json({ success: false, message: "Class is required" });
+        }
+        if (isNaN(amount) || amount <= 0) {
+            return res.status(400).json({ success: false, message: "Amount must be greater than 0" });
+        }
 
         const feeStructure = await FeesStructure.create({
             institute_id,
@@ -21,6 +34,7 @@ exports.createFeeStructure = async (req, res) => {
             due_date,
             description,
         });
+
 
         // ── Auto-assign StudentFee records ──────────────────────────────────
         const makeFeeRecord = (student_id_val) => ({
@@ -366,7 +380,13 @@ exports.updateFeeStructure = async (req, res) => {
     try {
         const { id } = req.params;
         const institute_id = req.user.institute_id;
-        const { class_id, subject_id, fee_type, amount, due_date, description, individual_student_id } = req.body;
+        let { class_id, subject_id, fee_type, amount, due_date, description, individual_student_id } = req.body;
+
+        // Coerce string values from HTML selects to proper types
+        if (class_id !== undefined) class_id = class_id ? parseInt(class_id, 10) : null;
+        if (subject_id !== undefined) subject_id = (subject_id && subject_id !== '') ? parseInt(subject_id, 10) : null;
+        if (individual_student_id !== undefined) individual_student_id = (individual_student_id && individual_student_id !== '') ? parseInt(individual_student_id, 10) : null;
+        if (amount !== undefined) amount = parseFloat(amount);
 
         const feeStructure = await FeesStructure.findOne({ where: { id, institute_id } });
 
@@ -376,8 +396,8 @@ exports.updateFeeStructure = async (req, res) => {
 
         await feeStructure.update({
             class_id,
-            subject_id: subject_id || null,
-            individual_student_id: individual_student_id || null,
+            subject_id: subject_id !== undefined ? (subject_id || null) : feeStructure.subject_id,
+            individual_student_id: individual_student_id !== undefined ? (individual_student_id || null) : feeStructure.individual_student_id,
             fee_type,
             amount,
             due_date,
