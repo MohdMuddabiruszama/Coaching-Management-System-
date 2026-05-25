@@ -60,16 +60,22 @@ const resetPassword = {
     body: Joi.object({
         email: Joi.string().email().required().trim().lowercase(),
         otp: Joi.string().length(6).pattern(/^[0-9]+$/).required(),
-        newPassword: Joi.string().min(6).max(100).required()
+        new_password: Joi.string().min(6).max(100).required()
             .messages({ "string.min": "New password must be at least 6 characters" }),
+        confirm_password: Joi.string().min(6).max(100).required()
+            .messages({ "string.min": "Confirm password must be at least 6 characters" }),
     }),
 };
 
 const changePassword = {
     body: Joi.object({
-        currentPassword: Joi.string().min(1).required(),
-        newPassword: Joi.string().min(6).max(100).required()
-            .messages({ "string.min": "New password must be at least 6 characters" }),
+        oldPassword: Joi.string().min(1).required()
+            .messages({ "string.empty": "Current password is required" }),
+        newPassword: Joi.string().min(8).max(100).required()
+            .messages({ 
+                "string.min": "New password must be at least 8 characters",
+                "string.empty": "New password is required"
+            }),
     }),
 };
 
