@@ -174,20 +174,27 @@ function PaymentPage() {
     const isFree = plan?.is_free_trial && !hasUsedTrial;
     const isLifetime = plan?.is_lifetime;
 
+    // Base price (before GST) — mirrors backend getPlanAmountForCycle logic
+    // Force Number() to avoid string coercion when values come from the DB as strings
     const price = isFree ? 0
-        : isLifetime ? (plan?.lifetime_price || plan?.price || 0)
+        : isLifetime ? Number(plan?.lifetime_price || plan?.price || 0)
         : billingCycle === "yearly"
-            ? Math.round((plan?.price || 0) * 12 * 0.8)
-            : (plan?.price || 0);
+            ? Math.round(Number(plan?.price || 0) * 12 * 0.8)
+            : Number(plan?.price || 0);
+
+    // GST @ 2% (matches backend: amount * 0.02)
+    const GST_RATE = 0.02;
+    const gstAmount = isFree ? 0 : parseFloat((price * GST_RATE).toFixed(2));
+    const totalWithGst = isFree ? 0 : parseFloat(((price + gstAmount)).toFixed(2));
 
     const monthlyEquiv = isFree ? 0
         : isLifetime ? 0
         : billingCycle === "yearly"
-            ? Math.round((plan?.price || 0) * 0.8)
-            : (plan?.price || 0);
+            ? Math.round(Number(plan?.price || 0) * 0.8)
+            : Number(plan?.price || 0);
 
     const savings = !isFree && !isLifetime && billingCycle === "yearly"
-        ? Math.round((plan?.price || 0) * 12 * 0.2)
+        ? Math.round(Number(plan?.price || 0) * 12 * 0.2)
         : 0;
 
     if (loading) {
@@ -259,7 +266,7 @@ function PaymentPage() {
                         <div className="checkout-price-main">
                             <span className="checkout-currency">₹</span>
                             <span className="checkout-amount">
-                                {isFree ? "0" : price.toLocaleString("en-IN")}
+                                {isFree ? "0" : totalWithGst.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                             </span>
                             {!isFree && !isLifetime && (
                                 <span className="checkout-period">
@@ -270,6 +277,11 @@ function PaymentPage() {
                                 <span className="checkout-period"> / One-Time</span>
                             )}
                         </div>
+                        {!isFree && (
+                            <div className="checkout-price-sub" style={{ color: 'rgba(255,255,255,0.75)', fontSize: '0.82rem', marginTop: '4px' }}>
+                                ₹{price.toLocaleString("en-IN")} + 2% GST (₹{gstAmount.toLocaleString("en-IN", { minimumFractionDigits: 2 })})
+                            </div>
+                        )}
                         {!isFree && billingCycle === "yearly" && (
                             <div className="checkout-price-sub">
                                 ₹{monthlyEquiv.toLocaleString("en-IN")}/mo · You save ₹{savings.toLocaleString("en-IN")}/year
@@ -354,13 +366,35 @@ function PaymentPage() {
                                     <span className="checkout-row-value discount-value">-₹{savings.toLocaleString("en-IN")}</span>
                                 </div>
                             )}
+                            {!isFree && (
+                                <>
+                                    <div className="checkout-summary-row">
+                                        <span className="checkout-row-label">Subtotal</span>
+                                        <span className="checkout-row-value">₹{price.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                                    </div>
+                                    <div className="checkout-summary-row gst-row">
+                                        <span className="checkout-row-label">
+                                            GST (2%)
+                                            <span className="gst-badge">Govt. Tax</span>
+                                        </span>
+                                        <span className="checkout-row-value gst-value">
+                                            +₹{gstAmount.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                        </span>
+                                    </div>
+                                </>
+                            )}
                             <div className="checkout-summary-divider" />
                             <div className="checkout-summary-row total-row">
                                 <span className="checkout-row-label">Total due today</span>
                                 <span className="checkout-row-value total-value">
-                                    {isFree ? "Free" : `₹${price.toLocaleString("en-IN")}`}
+                                    {isFree ? "Free" : `₹${totalWithGst.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
                                 </span>
                             </div>
+                            {!isFree && (
+                                <div className="checkout-gst-note">
+                                    * All prices are inclusive of 2% GST as applicable under Indian tax law
+                                </div>
+                            )}
                         </div>
                     </div>
 
@@ -407,7 +441,7 @@ function PaymentPage() {
                             <span className="checkout-btn-text">
                                 {isFree
                                     ? "🚀 Start Free Trial"
-                                    : `🔒 Pay ₹${price.toLocaleString("en-IN")}`}
+                                    : `🔒 Pay ₹${totalWithGst.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
                             </span>
                         )}
                     </button>

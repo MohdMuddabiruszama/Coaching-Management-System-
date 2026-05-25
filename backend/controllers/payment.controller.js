@@ -115,8 +115,8 @@ exports.initiatePayment = async (req, res) => {
         // Calculate amount for paid plans
         const amount = getPlanAmountForCycle(plan, billingCycle);
         
-        // Let's add GST 18% as per docs
-        const tax_amount = amount * 0.18;
+        // Apply GST @ 2%
+        const tax_amount = amount * 0.02;
         const total = amount + tax_amount;
 
         let orderInfo;
@@ -216,7 +216,7 @@ exports.verifyPayment = async (req, res) => {
             durationMonths = 12;
         }
 
-        const tax_amount = amount * 0.18;
+        const tax_amount = amount * 0.02;
         const final_paid = amount + tax_amount;
 
         const startDate = new Date();
