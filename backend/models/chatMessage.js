@@ -42,8 +42,12 @@ const ChatMessage = sequelize.define("ChatMessage", {
 }, {
     timestamps: true,
     createdAt: "created_at",
-    updatedAt: false, // Only need created_at essentially
-    tableName: "chat_messages"
+    updatedAt: false,
+    tableName: "chat_messages",
+    indexes: [
+        { fields: ["room_id", "created_at"] },
+        { fields: ["sender_id"] },
+    ]
 });
 
 module.exports = ChatMessage;

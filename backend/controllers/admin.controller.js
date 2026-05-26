@@ -1,72 +1,54 @@
-const { Student, Faculty, Class, User, StudentFee, Announcement, ChatMessage, ChatRoom } = require("../models");
+const { Student, Faculty, Class, User, StudentFee, Announcement, ChatMessage, ChatRoom, sequelize } = require("../models");
 const { Op } = require("sequelize");
 
 exports.getDashboardStats = async (req, res) => {
     try {
         const institute_id = req.user.institute_id;
 
-        // Total Students
-        const totalStudents = await Student.count({
-            where: { institute_id }
-        });
+        const currentUser = await User.findByPk(req.user.id, { attributes: ['last_chat_seen_at', 'last_announcement_seen_at'] });
+        const lastChatSeenAt = currentUser?.last_chat_seen_at || new Date(0);
+        const lastAnnouncementSeenAt = currentUser?.last_announcement_seen_at || new Date(0);
 
-        // Total Faculty
-        const totalFaculty = await Faculty.count({
-            where: { institute_id }
-        });
-
-        // Total Classes
-        const totalClasses = await Class.count({
-            where: { institute_id }
-        });
-
-        // Total Admins (New)
-        const totalAdmins = await User.count({
-            where: {
-                institute_id,
-                role: 'admin'
-            }
-        });
-
-        // Active Students (User status = active)
-        const activeStudents = await Student.count({
-            include: [
-                {
-                    model: User,
-                    where: { status: "active" }
+        // Run all counts in parallel for performance
+        const [
+            totalStudents,
+            totalFaculty,
+            totalClasses,
+            totalAdmins,
+            activeStudents,
+            studentFees,
+            unreadChatCount,
+            unreadAnnouncementCount
+        ] = await Promise.all([
+            Student.count({ where: { institute_id } }),
+            Faculty.count({ where: { institute_id } }),
+            Class.count({ where: { institute_id } }),
+            User.count({ where: { institute_id, role: 'admin' } }),
+            Student.count({
+                include: [{ model: User, where: { status: "active" } }],
+                where: { institute_id }
+            }),
+            StudentFee.findAll({ where: { institute_id } }),
+            ChatMessage.count({
+                where: {
+                    created_at: { [Op.gt]: lastChatSeenAt },
+                    sender_id: { [Op.ne]: req.user.id },
+                    room_id: {
+                        [Op.in]: sequelize.literal(`(SELECT id FROM chat_rooms WHERE institute_id = ${institute_id})`)
+                    }
                 }
-            ],
-            where: { institute_id }
-        });
+            }),
+            Announcement.count({
+                where: {
+                    institute_id,
+                    createdAt: { [Op.gt]: lastAnnouncementSeenAt },
+                    created_by: { [Op.ne]: req.user.id }
+                }
+            })
+        ]);
 
-        // Fees metrics
-        const studentFees = await StudentFee.findAll({ where: { institute_id } });
         const totalDiscount = studentFees.reduce((sum, sf) => sum + parseFloat(sf.discount_amount || 0), 0);
         const totalDue = studentFees.reduce((sum, sf) => sum + parseFloat(sf.due_amount || 0), 0);
-
-        // Unread Counts
-        const currentUser = await User.findByPk(req.user.id);
-        const lastChatSeenAt = currentUser.last_chat_seen_at || new Date(0);
-        const lastAnnouncementSeenAt = currentUser.last_announcement_seen_at || new Date(0);
-
-        const unreadChatCount = await ChatMessage.count({
-            include: [{
-                model: ChatRoom,
-                where: { institute_id }
-            }],
-            where: {
-                created_at: { [Op.gt]: lastChatSeenAt },
-                sender_id: { [Op.ne]: req.user.id }
-            }
-        });
-
-        const unreadAnnouncementCount = await Announcement.count({
-            where: {
-                institute_id,
-                createdAt: { [Op.gt]: lastAnnouncementSeenAt },
-                created_by: { [Op.ne]: req.user.id }
-            }
-        });
 
         res.status(200).json({
             success: true,

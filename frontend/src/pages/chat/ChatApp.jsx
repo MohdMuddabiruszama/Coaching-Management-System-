@@ -52,6 +52,12 @@ function ChatApp() {
     const messagesEndRef = useRef(null);
     const pollRef = useRef(null);
     const activeRoomRef = useRef(null);
+    const pollingRef = useRef(false); // For deduplication
+    
+    // Pagination states
+    const [hasMore, setHasMore] = useState(false);
+    const [loadingOlder, setLoadingOlder] = useState(false);
+    const oldestMessageIdRef = useRef(null);
 
     // Initial load
     useEffect(() => {
@@ -67,31 +73,58 @@ function ChatApp() {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }, [messages]);
 
-    // Poll messages
+    // Poll messages (with deduplication and visibility check)
     useEffect(() => {
         activeRoomRef.current = activeRoom;
-        if (pollRef.current) clearInterval(pollRef.current);
-
-        if (activeRoom && activeRoom.id) { // Only poll if room actually exists in DB
-            loadMessages(activeRoom.id);
-            loadParticipants(activeRoom.id);
-            // Mark as read when entering room
-            markAsRead(activeRoom.id);
-
-            pollRef.current = setInterval(() => {
-                if (activeRoomRef.current && activeRoomRef.current.id) {
-                    loadMessages(activeRoomRef.current.id);
-                }
-                fetchRooms(); // Keep room list (and badges) updated
-            }, 5000);
-        } else {
-            // Even if no active room, poll rooms to see notifications
-            pollRef.current = setInterval(() => {
-                fetchRooms();
-            }, 5000);
+        if (pollRef.current) {
+            clearInterval(pollRef.current);
+            pollRef.current = null;
         }
 
-        return () => { if (pollRef.current) clearInterval(pollRef.current); };
+        const pollTick = async () => {
+            if (pollingRef.current) return; // Deduplication: Skip if previous poll still running
+            pollingRef.current = true;
+            try {
+                const promises = [fetchRooms()];
+                if (activeRoomRef.current?.id) {
+                    // Only load the latest messages on poll, don't use the 'before' cursor
+                    promises.push(loadMessages(activeRoomRef.current.id, false, true));
+                }
+                await Promise.all(promises);
+            } catch (err) {
+                console.error("Poll error:", err);
+            } finally {
+                pollingRef.current = false;
+            }
+        };
+
+        const handleVisibility = () => {
+            if (document.hidden && pollRef.current) {
+                clearInterval(pollRef.current);
+                pollRef.current = null;
+            } else if (!document.hidden) {
+                pollRef.current = setInterval(pollTick, 10000); // 10s interval
+                pollTick(); // Immediate refresh when visible
+            }
+        };
+
+        document.addEventListener('visibilitychange', handleVisibility);
+
+        if (activeRoom && activeRoom.id) {
+            // Initial load for new room
+            loadMessages(activeRoom.id, false);
+            loadParticipants(activeRoom.id);
+            markAsRead(activeRoom.id);
+            
+            pollRef.current = setInterval(pollTick, 10000);
+        } else {
+            pollRef.current = setInterval(pollTick, 10000);
+        }
+
+        return () => {
+            if (pollRef.current) clearInterval(pollRef.current);
+            document.removeEventListener('visibilitychange', handleVisibility);
+        };
     }, [activeRoom?.id]);
 
     const loadInitialData = async () => {
@@ -180,14 +213,45 @@ function ChatApp() {
         }
     };
 
-    const loadMessages = async (roomId) => {
+    const loadMessages = async (roomId, append = false, isPoll = false) => {
         try {
-            const res = await api.get(`/chat/room/${roomId}`);
+            if (append) setLoadingOlder(true);
+            
+            let url = `/chat/room/${roomId}`;
+            const params = new URLSearchParams();
+            params.append('limit', '50');
+            
+            // If appending older messages, use the oldestMessageIdRef
+            if (append && oldestMessageIdRef.current) {
+                params.append('before', oldestMessageIdRef.current);
+            }
+            
+            if (params.toString()) {
+                url += `?${params.toString()}`;
+            }
+
+            const res = await api.get(url);
             if (res.data.success) {
-                setMessages(res.data.data || []);
+                const fetchedMessages = res.data.data || [];
+                
+                if (append) {
+                    setMessages(prev => [...fetchedMessages, ...prev]);
+                } else if (!isPoll) {
+                    // Full refresh (e.g. room select)
+                    setMessages(fetchedMessages);
+                } else {
+                    // Polling: we only want to append NEW messages to the end
+                    // Easiest is just replace the whole array since limit=50 gets the latest 50
+                    setMessages(fetchedMessages); 
+                }
+
+                setHasMore(res.data.hasMore || false);
+                oldestMessageIdRef.current = res.data.oldestId || null;
             }
         } catch (err) {
             console.error("Load messages error:", err);
+        } finally {
+            if (append) setLoadingOlder(false);
         }
     };
 
@@ -244,15 +308,11 @@ function ChatApp() {
             }
 
             await api.post("/chat/send", { room_id: targetRoomId, message: text });
+            // Only reload messages. loadParticipants and fetchChatUsage are redundant here.
             await loadMessages(targetRoomId);
-            await loadParticipants(targetRoomId);
-            fetchChatUsage(); // Refresh usage after sending
 
-            // Re-fetch rooms to update the message count and auto bump to the top
-            const rRes = await api.get("/chat/rooms");
-            if (rRes.data.success) {
-                setRooms(rRes.data.data || []);
-            }
+            // Fire and forget fetchRooms to update badges
+            fetchRooms();
 
         } catch (err) {
             const errCode = err.response?.data?.code;
@@ -321,15 +381,15 @@ function ChatApp() {
             toast.error(err.response?.data?.message || "Failed to create room");
         }
     };
-
     const selectRoom = (room) => {
         setActiveRoom(room);
         setMessages([]);
         setParticipants([]);
+        setHasMore(false);
+        oldestMessageIdRef.current = null;
         if (room.id) {
             markAsRead(room.id);
         }
-        fetchRooms();
         // On mobile: hide participants panel by default
         if (isMobileScreen()) setShowParticipants(false);
     };
@@ -629,7 +689,28 @@ function ChatApp() {
                                         <p>No messages yet. Be the first to say something!</p>
                                     </div>
                                 ) : (
-                                    messages.map((msg, idx) => {
+                                    <>
+                                        {hasMore && (
+                                            <div style={{ textAlign: "center", padding: "10px" }}>
+                                                <button 
+                                                    onClick={() => loadMessages(activeRoom.id, true)}
+                                                    disabled={loadingOlder}
+                                                    style={{
+                                                        background: "var(--surface)",
+                                                        border: "1px solid var(--border)",
+                                                        padding: "5px 15px",
+                                                        borderRadius: "15px",
+                                                        cursor: "pointer",
+                                                        color: "var(--text-secondary)",
+                                                        fontSize: "0.85rem"
+                                                    }}
+                                                >
+                                                    {loadingOlder ? "Loading..." : "Load older messages"}
+                                                </button>
+                                            </div>
+                                        )}
+                                        
+                                        {messages.map((msg, idx) => {
                                         const isMe = Number(msg.sender_id) === myUserId;
                                         const senderName = msg.sender?.display_name || msg.sender?.name || `User #${msg.sender_id}`;
                                         const msgTime = new Date(msg.created_at).toLocaleTimeString([], {
@@ -648,7 +729,8 @@ function ChatApp() {
                                                 <div className="msg-time">{msgTime}</div>
                                             </div>
                                         );
-                                    })
+                                    })}
+                                    </>
                                 )}
                                 <div ref={messagesEndRef} />
                             </div>

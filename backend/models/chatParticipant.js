@@ -32,8 +32,13 @@ const ChatParticipant = sequelize.define("ChatParticipant", {
         defaultValue: DataTypes.NOW
     }
 }, {
-    timestamps: false, // Typically no timestamps needed for simple mapping
-    tableName: "chat_participants"
+    timestamps: false,
+    tableName: "chat_participants",
+    indexes: [
+        { unique: true, fields: ["room_id", "user_id"] },
+        { fields: ["user_id"] },
+        { fields: ["user_id", "last_read_at"] },
+    ]
 });
 
 module.exports = ChatParticipant;

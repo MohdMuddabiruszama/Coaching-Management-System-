@@ -1,13 +1,17 @@
 const { ChatRoom, ChatMessage, ChatParticipant, User, Faculty, Student, Class, Subject, Institute, UsageTracker } = require("../models");
-const { Op, fn, col } = require("sequelize");
+const { Op, fn, col, literal } = require("sequelize");
 
 // ─── HELPERS ──────────────────────────────────────────────────────────────
 
+/**
+ * Ensure participant exists using upsert — avoids extra SELECT before INSERT.
+ * Much faster than findOne + create (2 queries → 1 query).
+ */
 async function ensureParticipant(room_id, user_id, role) {
-    const exists = await ChatParticipant.findOne({ where: { room_id, user_id } });
-    if (!exists) {
-        await ChatParticipant.create({ room_id, user_id, role });
-    }
+    await ChatParticipant.findOrCreate({
+        where: { room_id, user_id },
+        defaults: { room_id, user_id, role }
+    });
 }
 
 // Ensure the direct room exists between a student and a faculty for a specific subject
@@ -133,23 +137,24 @@ exports.sendMessage = async (req, res) => {
         if (!room_id) return res.status(400).json({ success: false, message: "room_id required" });
         if (!message && !req.file) return res.status(400).json({ success: false, message: "message or file required" });
 
-        const room = await ChatRoom.findOne({ where: { id: room_id, institute_id } });
+        // Run room lookup and institute limit check in parallel
+        const [room, institute] = await Promise.all([
+            ChatRoom.findOne({ where: { id: room_id, institute_id } }),
+            Institute.findByPk(institute_id, { attributes: ["current_limit_chat_messages"] })
+        ]);
+
         if (!room) return res.status(404).json({ success: false, message: "Room not found" });
 
-        // ── Chat Message Limit Check ──────────────────────────────────────────
-        const institute = await Institute.findByPk(institute_id, {
-            attributes: ["current_limit_chat_messages"]
-        });
         const limit = institute ? Number(institute.current_limit_chat_messages) : 500;
 
-        // -1 means unlimited (lifetime members)
+        // ── Chat Message Limit Check ──────────────────────────────────────────
+        let tracker = null;
         if (limit !== -1) {
-            // Get or create the usage tracker for this institute's current billing period
             const now = new Date();
-            const periodStart = new Date(now.getFullYear(), now.getMonth(), 1); // 1st of current month
-            const periodEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);  // last day of month
+            const periodStart = new Date(now.getFullYear(), now.getMonth(), 1);
+            const periodEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);
 
-            const [tracker] = await UsageTracker.findOrCreate({
+            [tracker] = await UsageTracker.findOrCreate({
                 where: {
                     institute_id,
                     metric: "chat_messages",
@@ -189,7 +194,7 @@ exports.sendMessage = async (req, res) => {
         // Phase 8: For parent, get their linked student's name to display "Parent of [Child]"
         let sender_display_name = null;
         if (userRole === "parent") {
-            const { Student, User: UserModel } = require("../models");
+            const { User: UserModel } = require("../models");
             const parentUser = await UserModel.findOne({
                 where: { id: userId, institute_id },
                 include: [{
@@ -209,23 +214,15 @@ exports.sendMessage = async (req, res) => {
             sender_id: userId,
             sender_role: userRole,
             message: message || null,
-            attachment_url: req.file ? req.file.path : null,  // Cloudinary permanent URL
+            attachment_url: req.file ? req.file.path : null,
             attachment_type: req.file ? req.file.mimetype : null,
         });
 
         // ── Increment usage after successful message save ─────────────────────
-        if (limit !== -1) {
+        // Reuse the `tracker` already fetched above — no extra DB round-trip
+        if (limit !== -1 && tracker) {
             try {
-                const now2 = new Date();
-                const periodStart2 = new Date(now2.getFullYear(), now2.getMonth(), 1);
-                const tracker2 = await UsageTracker.findOne({
-                    where: {
-                        institute_id,
-                        metric: "chat_messages",
-                        billing_period_start: periodStart2.toISOString().slice(0, 10)
-                    }
-                });
-                if (tracker2) await tracker2.increment("current_value");
+                await tracker.increment("current_value");
             } catch (usageErr) {
                 console.error("[Chat] Usage increment failed (non-fatal):", usageErr.message);
             }
@@ -288,6 +285,8 @@ exports.getRooms = async (req, res) => {
             if (!roomsArray.length) return [];
 
             const roomIds = roomsArray.map(r => r.id);
+
+            // Fetch message stats, participant read markers in parallel
             const [messageStats, participants] = await Promise.all([
                 ChatMessage.findAll({
                     where: { room_id: { [Op.in]: roomIds } },
@@ -315,6 +314,7 @@ exports.getRooms = async (req, res) => {
             ]));
             const participantByRoom = new Map(participants.map(p => [Number(p.room_id), p]));
 
+            // Build unread counts in a single batch query instead of N queries
             const unreadFilters = participants
                 .filter(p => p.last_read_at)
                 .map(p => ({
@@ -398,13 +398,15 @@ exports.getRooms = async (req, res) => {
         if (userRole === "faculty") {
             const faculty = await Faculty.findOne({ where: { user_id: userId, institute_id } });
             if (faculty) {
-                // Rooms created by this faculty
-                const createdRooms = await ChatRoom.findAll({ where: { faculty_id: faculty.id, institute_id } });
+                const createdRooms = await ChatRoom.findAll({
+                    where: { faculty_id: faculty.id, institute_id },
+                    attributes: ["id"]
+                });
                 createdRooms.forEach(r => roomIds.push(r.id));
             }
         }
 
-        // ── Student ── sees rooms matching their subjects and target gender + direct rooms 
+        // ── Student ── sees rooms matching their subjects and target gender + direct rooms
         if (userRole === "student") {
             const student = await Student.findOne({
                 where: { user_id: userId, institute_id },
@@ -426,17 +428,17 @@ exports.getRooms = async (req, res) => {
                         attributes: ["id"]
                     });
                     const allSubIds = allClassSubjects.map(s => s.id);
-                    // Merge with any directly assigned subjects (deduplicate)
                     subIds = [...new Set([...subIds, ...allSubIds])];
                 }
 
-                // If still no subjects after merge, fetch all subjects for classes
                 if (subIds.length === 0 && classIds.length > 0) {
-                    const classSubjects = await Subject.findAll({ where: { class_id: { [Op.in]: classIds } } });
+                    const classSubjects = await Subject.findAll({
+                        where: { class_id: { [Op.in]: classIds } },
+                        attributes: ["id"]
+                    });
                     subIds = classSubjects.map(s => s.id);
                 }
 
-                // Group rooms matching subject AND target gender
                 const eligibleRooms = await ChatRoom.findAll({
                     where: {
                         institute_id,
@@ -446,15 +448,17 @@ exports.getRooms = async (req, res) => {
                             { subject_id: { [Op.in]: subIds } },
                             { subject_id: null, class_id: { [Op.in]: classIds } }
                         ]
-                    }
+                    },
+                    attributes: ["id"]
                 });
 
                 eligibleRooms.forEach(r => roomIds.push(r.id));
             }
         }
 
-        // Fetch joined rooms
+        // Fetch rooms the user has directly joined — SCOPED to institute to avoid cross-tenant leakage
         const myParticipatedRooms = await ChatRoom.findAll({
+            where: { institute_id },   // ← CRITICAL: was missing institute_id scope before
             include: [{
                 model: ChatParticipant,
                 where: { user_id: userId },
@@ -464,14 +468,8 @@ exports.getRooms = async (req, res) => {
         });
 
         myParticipatedRooms.forEach(r => {
-            if (userRole === "student" && r.type !== "direct") {
-                // Students only see group rooms if eligible (added above). 
-                // Direct chats are explicitly kept.
-                return;
-            }
-            if (userRole === "parent" && r.type !== "direct") {
-                return;
-            }
+            if (userRole === "student" && r.type !== "direct") return;
+            if (userRole === "parent" && r.type !== "direct") return;
             roomIds.push(r.id);
         });
 
@@ -496,40 +494,65 @@ exports.getRooms = async (req, res) => {
     }
 };
 
-// 5. Get Room Messages (with Anonymity)
+// 5. Get Room Messages — with Pagination + Anonymity
+// Supports cursor-based pagination: ?limit=50&before=<messageId>
+// Returns the last `limit` messages by default. Pass `before` to load older messages.
 exports.getRoomMessages = async (req, res) => {
     try {
         const { roomId } = req.params;
         const { id: userId, role: userRole, institute_id } = req.user;
 
+        // Pagination params
+        const limit = Math.min(parseInt(req.query.limit) || 50, 100);
+        const beforeId = req.query.before ? parseInt(req.query.before) : null;
+
         const room = await ChatRoom.findOne({ where: { id: roomId, institute_id } });
         if (!room) return res.status(404).json({ success: false, message: "Room not found" });
 
-        // Auto-join non-admins
-        if (userRole !== "admin" && userRole !== "owner") {
-            await ensureParticipant(roomId, userId, userRole);
+        // Auto-join non-admins + update last_read_at in parallel
+        const joinAndMarkRead = async () => {
+            if (userRole !== "admin" && userRole !== "owner") {
+                await ensureParticipant(roomId, userId, userRole);
+            }
+            const participantToUpdate = await ChatParticipant.findOne({ where: { room_id: roomId, user_id: userId } });
+            if (participantToUpdate) {
+                participantToUpdate.last_read_at = new Date();
+                await participantToUpdate.save();
+            }
+        };
+
+        // Build where clause with optional cursor
+        const msgWhere = { room_id: roomId };
+        if (beforeId) {
+            msgWhere.id = { [Op.lt]: beforeId };
         }
 
-        const participantToUpdate = await ChatParticipant.findOne({ where: { room_id: roomId, user_id: userId } });
-        if (participantToUpdate) {
-            participantToUpdate.last_read_at = new Date();
-            await participantToUpdate.save();
-        }
+        // Fetch messages + update read marker in parallel
+        const [rawMessages] = await Promise.all([
+            ChatMessage.findAll({
+                where: msgWhere,
+                include: [{
+                    model: User,
+                    as: "sender",
+                    attributes: ["id", "name", "role"],
+                    include: [{ model: Student, attributes: ["gender"] }]
+                }],
+                order: [["created_at", "DESC"]],   // DESC to get latest N, then reverse
+                limit,
+            }),
+            joinAndMarkRead(),
+        ]);
 
-        let messages = await ChatMessage.findAll({
-            where: { room_id: roomId },
-            include: [{
-                model: User,
-                as: "sender",
-                attributes: ["id", "name", "role"],
-                include: [{ model: Student, attributes: ["gender"] }]
-            }],
-            order: [["created_at", "ASC"]],
-        });
+        // Reverse to chronological order (ASC)
+        let messages = rawMessages.reverse();
 
-        // Apply Phase 4 logic: Anonymize student names if it's a "group" chat
+        // Determine if there are older messages (for "load more" button)
+        const hasMore = rawMessages.length === limit;
+        const oldestId = messages.length > 0 ? messages[0].id : null;
+
+        // Apply Phase 4 logic: Anonymize student names in group chats
         if ((room.type === "group" || room.type === "subject") && userRole === "student") {
-            messages = messages.map(msg => {
+            const plainMessages = messages.map(msg => {
                 const plainMsg = msg.get({ plain: true });
                 if (plainMsg.sender && plainMsg.sender.role === "student") {
                     plainMsg.sender.name = "";
@@ -537,31 +560,58 @@ exports.getRoomMessages = async (req, res) => {
                 }
                 return plainMsg;
             });
-        } else {
-            // Phase 8: Enrich parent sender names with "Parent of [Child]" for faculty/admin viewing
-            const { User: UserModel, Student } = require("../models");
-            const plainMessages = await Promise.all(messages.map(async (msg) => {
-                const plainMsg = msg.get({ plain: true });
-                if (plainMsg.sender && plainMsg.sender.role === "parent") {
-                    const parentUser = await UserModel.findOne({
-                        where: { id: plainMsg.sender.id, institute_id },
-                        include: [{
-                            model: Student,
-                            as: "LinkedStudents",
-                            include: [{ model: User, attributes: ["name"] }]
-                        }]
-                    });
-                    if (parentUser && parentUser.LinkedStudents && parentUser.LinkedStudents.length > 0) {
-                        const childName = parentUser.LinkedStudents[0]?.User?.name || "Child";
-                        plainMsg.sender.display_name = `${plainMsg.sender.name} (Parent of ${childName})`;
-                    }
-                }
-                return plainMsg;
-            }));
-            return res.status(200).json({ success: true, count: plainMessages.length, data: plainMessages });
+            return res.status(200).json({
+                success: true,
+                count: plainMessages.length,
+                data: plainMessages,
+                hasMore,
+                oldestId
+            });
         }
 
-        return res.status(200).json({ success: true, count: messages.length, data: messages });
+        // Phase 8: Enrich parent sender display names — BATCH (1 query, not N queries)
+        const { User: UserModel } = require("../models");
+        const plainMessages = messages.map(msg => msg.get({ plain: true }));
+
+        // Collect unique parent sender IDs
+        const parentIds = [...new Set(
+            plainMessages
+                .filter(msg => msg.sender?.role === "parent")
+                .map(msg => msg.sender.id)
+        )];
+
+        if (parentIds.length > 0) {
+            // ONE batch query instead of one query per parent message
+            const parentUsers = await UserModel.findAll({
+                where: { id: { [Op.in]: parentIds }, institute_id },
+                include: [{
+                    model: Student,
+                    as: "LinkedStudents",
+                    include: [{ model: User, attributes: ["name"] }]
+                }]
+            });
+
+            const parentDisplayMap = new Map();
+            parentUsers.forEach(pu => {
+                const childName = pu.LinkedStudents?.[0]?.User?.name || "Child";
+                parentDisplayMap.set(pu.id, `${pu.name} (Parent of ${childName})`);
+            });
+
+            // Apply display names in memory — no more per-message DB queries
+            plainMessages.forEach(msg => {
+                if (msg.sender?.role === "parent" && parentDisplayMap.has(msg.sender.id)) {
+                    msg.sender.display_name = parentDisplayMap.get(msg.sender.id);
+                }
+            });
+        }
+
+        return res.status(200).json({
+            success: true,
+            count: plainMessages.length,
+            data: plainMessages,
+            hasMore,
+            oldestId
+        });
     } catch (err) {
         console.error("getRoomMessages:", err);
         return res.status(500).json({ success: false, message: err.message });
@@ -574,7 +624,6 @@ exports.getOrCreateRoom = async (req, res) => {
         const { type, subject_id, class_id, faculty_user_id } = req.body;
         const { id: userId, role: userRole, institute_id } = req.user;
 
-        // Ensure this endpoint creates Direct chats
         let room;
         if (type === "direct" && (userRole === "student" || userRole === "parent")) {
             let fid = faculty_user_id;
@@ -586,7 +635,6 @@ exports.getOrCreateRoom = async (req, res) => {
             }
             room = await getOrCreateDirectRoom(institute_id, userId, fid, subject_id, class_id);
         } else {
-            // General fallback
             let whereClause = { institute_id, type: type || "subject" };
             if (subject_id) whereClause.subject_id = subject_id;
 
@@ -624,6 +672,17 @@ exports.getRoomParticipants = async (req, res) => {
             }],
         });
 
+        // Deduplicate participants to handle legacy DB rows without unique constraints
+        const uniqueParticipants = [];
+        const seenUserIds = new Set();
+        for (const p of participants) {
+            if (!seenUserIds.has(p.user_id)) {
+                seenUserIds.add(p.user_id);
+                uniqueParticipants.push(p);
+            }
+        }
+        participants = uniqueParticipants;
+
         // Apply anonymity same as messages
         if ((room.type === "group" || room.type === "subject") && userRole === "student") {
             participants = participants.map(p => {
@@ -646,25 +705,30 @@ exports.getRoomParticipants = async (req, res) => {
 };
 
 // 8. Get Total Unread Chat Count
+// OPTIMIZED: Was N+1 loop (1 COUNT query per room). Now 2 queries total regardless of room count.
 exports.getUnreadChatCount = async (req, res) => {
     try {
         const { id: userId } = req.user;
-        let totalUnread = 0;
 
         const participations = await ChatParticipant.findAll({
             where: { user_id: userId },
-            attributes: ['room_id', 'last_read_at']
+            attributes: ['room_id', 'last_read_at'],
+            raw: true,
         });
 
-        for (const p of participations) {
-            const count = await ChatMessage.count({
-                where: {
-                    room_id: p.room_id,
-                    created_at: { [Op.gt]: p.last_read_at || new Date(0) }
-                }
-            });
-            totalUnread += count;
+        if (!participations.length) {
+            return res.status(200).json({ success: true, count: 0 });
         }
+
+        // Build a single batch OR query — replaces the old for-loop of individual counts
+        const orConditions = participations.map(p => ({
+            room_id: p.room_id,
+            created_at: { [Op.gt]: p.last_read_at || new Date(0) },
+        }));
+
+        const totalUnread = await ChatMessage.count({
+            where: { [Op.or]: orConditions }
+        });
 
         return res.status(200).json({ success: true, count: totalUnread });
     } catch (err) {
@@ -673,6 +737,7 @@ exports.getUnreadChatCount = async (req, res) => {
     }
 };
 
+// 9. Mark Room as Read
 exports.markAsRead = async (req, res) => {
     try {
         const { roomId } = req.params;

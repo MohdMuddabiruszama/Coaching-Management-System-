@@ -576,7 +576,7 @@ const syncDatabase = async () => {
 
     // Auto-sync other schema changes using alter for the explicit models to make sure everything matches
     try {
-      const { InstitutePublicProfile, InstituteGalleryPhoto, InstituteReview, PublicEnquiry, Subscription, Plan, User, LandingPageView, Coupon, AddOn, InstituteAddOn, SubscriptionEvent, UsageTracker } = require('./models');
+      const { Institute, InstitutePublicProfile, InstituteGalleryPhoto, InstituteReview, PublicEnquiry, Subscription, Plan, User, LandingPageView, Coupon, AddOn, InstituteAddOn, SubscriptionEvent, UsageTracker } = require('./models');
       await InstitutePublicProfile.sync({ alter: true });
       await InstituteGalleryPhoto.sync({ alter: true });
       await InstituteReview.sync({ alter: true });
@@ -636,6 +636,20 @@ const syncDatabase = async () => {
 
     // Exams - institute + class lookups
     try { await sequelize.query(`CREATE INDEX idx_exams_inst ON exams(institute_id, class_id);`); } catch (e) { }
+
+    // ── Chat Performance Indexes (Phase 3: Chat Optimization) ──────────────────
+    // chat_messages: most queried table — full table scans without these
+    try { await sequelize.query(`CREATE INDEX IF NOT EXISTS idx_chatmsg_room_created ON chat_messages(room_id, created_at DESC);`); } catch (e) { }
+    try { await sequelize.query(`CREATE INDEX IF NOT EXISTS idx_chatmsg_sender ON chat_messages(sender_id);`); } catch (e) { }
+    // chat_participants: queried on every room load and unread count
+    try { await sequelize.query(`CREATE UNIQUE INDEX IF NOT EXISTS idx_chatpart_room_user ON chat_participants(room_id, user_id);`); } catch (e) { }
+    try { await sequelize.query(`CREATE INDEX IF NOT EXISTS idx_chatpart_user ON chat_participants(user_id);`); } catch (e) { }
+    try { await sequelize.query(`CREATE INDEX IF NOT EXISTS idx_chatpart_lastread ON chat_participants(user_id, last_read_at);`); } catch (e) { }
+    // chat_rooms: always filtered by institute_id
+    try { await sequelize.query(`CREATE INDEX IF NOT EXISTS idx_chatroom_institute ON chat_rooms(institute_id, type);`); } catch (e) { }
+    try { await sequelize.query(`CREATE INDEX IF NOT EXISTS idx_chatroom_faculty ON chat_rooms(faculty_id);`); } catch (e) { }
+    try { await sequelize.query(`CREATE INDEX IF NOT EXISTS idx_chatroom_subject ON chat_rooms(subject_id);`); } catch (e) { }
+    console.log("✅ Chat performance indexes verified/created");
 
     console.log("âœ… Phase 2.2: Performance indexes verified/created");
     }

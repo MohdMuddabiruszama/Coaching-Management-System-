@@ -56,8 +56,13 @@ const ChatRoom = sequelize.define("ChatRoom", {
 }, {
     timestamps: true,
     createdAt: "created_at",
-    updatedAt: false, // We only need created_at according to specs
-    tableName: "chat_rooms"
+    updatedAt: false,
+    tableName: "chat_rooms",
+    indexes: [
+        { fields: ["institute_id", "type"] },
+        { fields: ["faculty_id"] },
+        { fields: ["subject_id"] },
+    ]
 });
 
 module.exports = ChatRoom;
