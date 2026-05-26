@@ -26,6 +26,9 @@ router.get("/rooms", authMiddleware, chatController.getRooms);
 // Get total unread count
 router.get("/unread-count", authMiddleware, chatController.getUnreadChatCount);
 
+// Get chat usage (messages used / limit this billing period)
+router.get("/usage", authMiddleware, chatController.getChatUsage);
+
 // Get messages in a specific room
 router.get("/room/:roomId", authMiddleware, chatController.getRoomMessages);
 

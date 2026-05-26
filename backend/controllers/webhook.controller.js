@@ -110,6 +110,7 @@ async function handleSubscriptionCharged(subscriptionData) {
                 current_limit_faculty: plan.max_faculty,
                 current_limit_classes: plan.max_classes,
                 current_limit_admins: plan.max_admin_users,
+                current_limit_chat_messages: plan.max_chat_messages || 500,
 
                 // Update Snapshot Features
                 current_feature_attendance: plan.feature_attendance,

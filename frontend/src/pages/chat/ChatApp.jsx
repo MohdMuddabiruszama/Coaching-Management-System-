@@ -25,6 +25,7 @@ function ChatApp() {
     const [loadingData, setLoadingData] = useState(true);
     const [sending, setSending] = useState(false);
     const [showParticipants, setShowParticipants] = useState(true);
+    const [chatUsage, setChatUsage] = useState(null); // { used, limit, unlimited, percent }
 
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [createFormData, setCreateFormData] = useState({
@@ -55,6 +56,7 @@ function ChatApp() {
     // Initial load
     useEffect(() => {
         loadInitialData();
+        fetchChatUsage();
         if (['admin', 'manager'].includes(user?.role)) {
             api.post("/admin/clear-unread-chats").catch(err => console.error(err));
         }
@@ -200,6 +202,17 @@ function ChatApp() {
         }
     };
 
+    const fetchChatUsage = async () => {
+        try {
+            const res = await api.get("/chat/usage");
+            if (res.data.success) {
+                setChatUsage(res.data);
+            }
+        } catch (err) {
+            console.error("Fetch usage error:", err);
+        }
+    };
+
     const sendMessage = async (e) => {
         e.preventDefault();
         const text = newMessage.trim();
@@ -233,6 +246,7 @@ function ChatApp() {
             await api.post("/chat/send", { room_id: targetRoomId, message: text });
             await loadMessages(targetRoomId);
             await loadParticipants(targetRoomId);
+            fetchChatUsage(); // Refresh usage after sending
 
             // Re-fetch rooms to update the message count and auto bump to the top
             const rRes = await api.get("/chat/rooms");
@@ -241,7 +255,23 @@ function ChatApp() {
             }
 
         } catch (err) {
-            toast.error(err.response?.data?.message || err.message || "Failed to send message");
+            const errCode = err.response?.data?.code;
+            if (errCode === "CHAT_LIMIT_REACHED") {
+                // Update usage state to trigger the overlay immediately
+                const usage = err.response?.data?.usage;
+                if (usage) {
+                    setChatUsage({ used: usage.used, limit: usage.limit, unlimited: false, percent: 100 });
+                }
+                const isAdmin = ['admin', 'manager', 'owner'].includes(user?.role);
+                toast.error(
+                    isAdmin 
+                        ? "💬 Chat message limit reached! Please upgrade your plan." 
+                        : "💬 Messaging is currently disabled. Please contact your administrator.", 
+                    { duration: 5000 }
+                );
+            } else {
+                toast.error(err.response?.data?.message || err.message || "Failed to send message");
+            }
             setNewMessage(text);
         } finally {
             setSending(false);
@@ -448,6 +478,22 @@ function ChatApp() {
                     )}
                 </div>
 
+                {/* Usage Bar — shown ONLY for admin roles when limit applies */}
+                {chatUsage && !chatUsage.unlimited && ['admin', 'manager', 'owner'].includes(user?.role) && (
+                    <div className="chat-usage-bar-wrapper">
+                        <div className="chat-usage-bar-label">
+                            <span>💬 Messages this month</span>
+                            <span>{chatUsage.used} / {chatUsage.limit}</span>
+                        </div>
+                        <div className="chat-usage-bar-track">
+                            <div
+                                className={`chat-usage-bar-fill${chatUsage.percent >= 100 ? ' danger' : chatUsage.percent >= 80 ? ' warning' : ''}`}
+                                style={{ width: `${Math.min(100, chatUsage.percent || 0)}%` }}
+                            />
+                        </div>
+                    </div>
+                )}
+
                 <div className="chat-room-list">
                     {loadingData ? (
                         <div style={{ padding: 20 }}><LoadingSpinner /></div>
@@ -651,6 +697,36 @@ function ChatApp() {
                         {/* Input Area */}
                         {isReadOnly ? (
                             <div className="chat-monitor-banner">👁️ You are viewing this chat as Admin — read only</div>
+                        ) : chatUsage && !chatUsage.unlimited && chatUsage.percent >= 100 ? (
+                            ['admin', 'manager', 'owner'].includes(user?.role) ? (
+                                <div className="chat-limit-overlay">
+                                    <div className="chat-limit-icon">🔒</div>
+                                    <h3 className="chat-limit-title">Monthly Message Limit Reached</h3>
+                                    <p className="chat-limit-subtitle">
+                                        Your institute has used all <strong>{chatUsage.limit} messages</strong> for this month.
+                                        Resets on the 1st of next month.
+                                    </p>
+                                    <div className="chat-limit-progress">
+                                        <div className="chat-limit-progress-header">
+                                            <span>Usage</span>
+                                            <span>{chatUsage.used} / {chatUsage.limit}</span>
+                                        </div>
+                                        <div className="chat-limit-progress-bar">
+                                            <div className="chat-limit-progress-fill" />
+                                        </div>
+                                    </div>
+                                    <div className="chat-limit-cta">⬆️ Contact Admin to Upgrade</div>
+                                    <p className="chat-limit-reset">Limit resets on the 1st of each month</p>
+                                </div>
+                            ) : (
+                                <div className="chat-limit-overlay" style={{ background: "var(--bg-secondary)", padding: "1.5rem" }}>
+                                    <div className="chat-limit-icon" style={{ fontSize: "2rem", marginBottom: "0.5rem" }}>🔒</div>
+                                    <h3 className="chat-limit-title" style={{ fontSize: "1.2rem", color: "var(--text-primary)" }}>Messaging Disabled</h3>
+                                    <p className="chat-limit-subtitle" style={{ fontSize: "0.9rem", color: "var(--text-secondary)", margin: 0 }}>
+                                        Messaging is currently disabled. Please contact your institute administrator.
+                                    </p>
+                                </div>
+                            )
                         ) : (
                             <form className="chat-input-area" onSubmit={sendMessage}>
                                 <input

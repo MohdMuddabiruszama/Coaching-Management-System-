@@ -308,6 +308,7 @@ exports.updateInstituteLimits = async (req, res) => {
             current_limit_faculty,
             current_limit_classes,
             current_limit_admins,
+            current_limit_chat_messages,
             // Feature overrides
             current_feature_attendance,
             current_feature_auto_attendance,
@@ -325,7 +326,8 @@ exports.updateInstituteLimits = async (req, res) => {
             current_feature_public_page,
             current_feature_assignment,
             current_feature_transport,
-            current_feature_mobile_app
+            current_feature_mobile_app,
+            current_feature_chat
         } = req.body;
 
         const { Plan } = require("../models");
@@ -337,6 +339,7 @@ exports.updateInstituteLimits = async (req, res) => {
         if (current_limit_faculty !== undefined) updates.current_limit_faculty = parseInt(current_limit_faculty);
         if (current_limit_classes !== undefined) updates.current_limit_classes = parseInt(current_limit_classes);
         if (current_limit_admins !== undefined) updates.current_limit_admins = parseInt(current_limit_admins);
+        if (current_limit_chat_messages !== undefined) updates.current_limit_chat_messages = parseInt(current_limit_chat_messages);
         if (current_feature_attendance !== undefined) updates.current_feature_attendance = current_feature_attendance;
         if (current_feature_auto_attendance !== undefined) updates.current_feature_auto_attendance = !!current_feature_auto_attendance;
         if (current_feature_fees !== undefined) updates.current_feature_fees = !!current_feature_fees;
@@ -354,6 +357,7 @@ exports.updateInstituteLimits = async (req, res) => {
         if (current_feature_assignment !== undefined) updates.current_feature_assignment = !!current_feature_assignment;
         if (current_feature_transport !== undefined) updates.current_feature_transport = !!current_feature_transport;
         if (current_feature_mobile_app !== undefined) updates.current_feature_mobile_app = !!current_feature_mobile_app;
+        if (current_feature_chat !== undefined) updates.current_feature_chat = !!current_feature_chat;
 
         // Add 1-month expiration for manually unlocked Add-on features
         let expiries = {};
@@ -366,7 +370,7 @@ exports.updateInstituteLimits = async (req, res) => {
             'current_feature_salary', 'current_feature_announcements', 'current_feature_export',
             'current_feature_timetable', 'current_feature_whatsapp', 'current_feature_custom_branding',
             'current_feature_multi_branch', 'current_feature_api_access', 'current_feature_public_page',
-            'current_feature_assignment', 'current_feature_transport', 'current_feature_mobile_app'
+            'current_feature_assignment', 'current_feature_transport', 'current_feature_mobile_app', 'current_feature_chat'
         ];
 
         booleanFeatures.forEach(feature => {
@@ -806,6 +810,7 @@ exports.upgradePlan = async (req, res) => {
             current_feature_public_page: newPlan.feature_public_page,
             current_feature_assignment: newPlan.feature_assignment || false,
             current_feature_transport: newPlan.feature_transport || false,
+            current_limit_chat_messages: newPlan.max_chat_messages || 500,
             
             // Sync lifetime flags
             is_lifetime_member: newPlan.is_lifetime || false,

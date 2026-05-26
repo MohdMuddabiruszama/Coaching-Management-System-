@@ -44,6 +44,7 @@ const LIFETIME_FEATURES = {
     current_limit_faculty: -1,
     current_limit_classes: -1,
     current_limit_admins: -1,
+    current_limit_chat_messages: -1,  // Unlimited for lifetime members
 };
 
 // ─── 1. GET /api/lifetime/info  (public) ─────────────────────────────────────
@@ -285,6 +286,7 @@ exports.revokeLifetimeAccess = async (req, res) => {
             current_limit_faculty: 5,
             current_limit_classes: 5,
             current_limit_admins: 1,
+            current_limit_chat_messages: 500,
         });
 
         console.log(`[SUPERADMIN] Revoked lifetime for institute ${institute_id}. Reason: ${reason}. By: ${req.user.id}`);

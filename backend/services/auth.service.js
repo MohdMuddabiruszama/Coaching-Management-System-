@@ -75,6 +75,7 @@ exports.registerInstitute = async (data) => {
         current_limit_faculty: plan ? plan.max_faculty : 5,
         current_limit_classes: plan ? plan.max_classes : 5,
         current_limit_admins: plan ? plan.max_admin_users : 1,
+        current_limit_chat_messages: plan ? (plan.max_chat_messages || 500) : 500,
 
         // Snapshot features
         current_feature_attendance: plan ? plan.feature_attendance : 'basic',
@@ -94,6 +95,7 @@ exports.registerInstitute = async (data) => {
         current_feature_transport: plan ? plan.feature_transport : false,
         current_feature_mobile_app: plan ? plan.feature_mobile_app : false,
         current_feature_public_page: plan ? plan.feature_public_page : false,
+        current_feature_chat: plan ? plan.feature_chat : false,
         has_used_trial: hasUsedTrial,
         logo: data.logo || null,
     });

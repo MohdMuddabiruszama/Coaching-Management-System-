@@ -71,6 +71,9 @@ function Plans() {
         lifetime_price: "",
         lifetime_slots_total: 100,
 
+        // Chat limit (only applies when feature_chat is true)
+        max_chat_messages: 500,
+
         razorpay_plan_id: "",
         is_popular: false
     };
@@ -103,6 +106,7 @@ function Plans() {
             payload.max_classes = parseInt(payload.max_classes);
             payload.max_admin_users = parseInt(payload.max_admin_users);
             payload.trial_days = parseInt(payload.trial_days || 0);
+            payload.max_chat_messages = parseInt(payload.max_chat_messages || 500);
             if (payload.lifetime_price) payload.lifetime_price = parseFloat(payload.lifetime_price);
             if (payload.lifetime_slots_total) payload.lifetime_slots_total = parseInt(payload.lifetime_slots_total);
 
@@ -226,6 +230,11 @@ function Plans() {
                                     <div><strong>Faculty:</strong> {plan.max_faculty}</div>
                                     <div><strong>Classes:</strong> {plan.max_classes}</div>
                                     <div><strong>Admins:</strong> {plan.max_admin_users}</div>
+                                    {plan.feature_chat && (
+                                        <div style={{ gridColumn: '1 / -1', color: '#6366f1' }}>
+                                            <strong>💬 Chat Limit:</strong> {plan.max_chat_messages === -1 ? '∞ Unlimited' : `${plan.max_chat_messages} msgs/mo`}
+                                        </div>
+                                    )}
                                     {plan.is_free_trial && (
                                         <div style={{ gridColumn: '1 / -1', color: '#10b981', fontWeight: 'bold' }}>
                                             <strong>Trial Days:</strong> {plan.trial_days}
@@ -467,6 +476,21 @@ function Plans() {
                                                     />
                                                 </div>
                                             </>
+                                        )}
+                                        {formData.feature_chat && (
+                                            <div className="limit-input-group">
+                                                <label>💬 Max Chat/Msg</label>
+                                                <input
+                                                    type="number"
+                                                    name="max_chat_messages"
+                                                    className="form-input"
+                                                    value={formData.max_chat_messages}
+                                                    onChange={handleChange}
+                                                    min="1"
+                                                    placeholder="500"
+                                                    title="Monthly message limit per institute. -1 = unlimited."
+                                                />
+                                            </div>
                                         )}
                                     </div>
                                 </div>

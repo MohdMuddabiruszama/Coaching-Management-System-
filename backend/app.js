@@ -568,6 +568,12 @@ const syncDatabase = async () => {
     try { await sequelize.query(`CREATE INDEX IF NOT EXISTS idx_exams_locked ON exams(marks_locked);`); } catch (e) { }
     console.log('✅ Exam Result System columns ensured');
 
+    // ── Chat Message Limit (Subscription Plan Feature) ────────────────────────
+    try { await sequelize.query(`ALTER TABLE plans ADD COLUMN IF NOT EXISTS max_chat_messages INTEGER NOT NULL DEFAULT 500;`); } catch (e) { }
+    try { await sequelize.query(`ALTER TABLE institutes ADD COLUMN IF NOT EXISTS current_limit_chat_messages INTEGER DEFAULT 500;`); } catch (e) { }
+    try { await sequelize.query(`ALTER TABLE institutes ADD COLUMN IF NOT EXISTS current_feature_chat BOOLEAN DEFAULT FALSE;`); } catch (e) { }
+    console.log('✅ Chat message limit columns ensured');
+
     // Auto-sync other schema changes using alter for the explicit models to make sure everything matches
     try {
       const { InstitutePublicProfile, InstituteGalleryPhoto, InstituteReview, PublicEnquiry, Subscription, Plan, User, LandingPageView, Coupon, AddOn, InstituteAddOn, SubscriptionEvent, UsageTracker } = require('./models');
@@ -586,7 +592,8 @@ const syncDatabase = async () => {
       await SubscriptionEvent.sync({ alter: true });
       
       await Plan.sync({ alter: true });
-      await User.sync({ alter: true });  // âœ… picks up manager_type + manager_type_label
+      await Institute.sync({ alter: true }); // ✅ picks up current_limit_chat_messages
+      await User.sync({ alter: true });  // ✅ picks up manager_type + manager_type_label
       await LandingPageView.sync({ alter: true });
     } catch (e) { console.error("Error auto-syncing explicit models:", e); }
     } else {

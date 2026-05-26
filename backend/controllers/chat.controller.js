@@ -1,4 +1,4 @@
-const { ChatRoom, ChatMessage, ChatParticipant, User, Faculty, Student, Class, Subject } = require("../models");
+const { ChatRoom, ChatMessage, ChatParticipant, User, Faculty, Student, Class, Subject, Institute, UsageTracker } = require("../models");
 const { Op, fn, col } = require("sequelize");
 
 // ─── HELPERS ──────────────────────────────────────────────────────────────
@@ -136,6 +136,52 @@ exports.sendMessage = async (req, res) => {
         const room = await ChatRoom.findOne({ where: { id: room_id, institute_id } });
         if (!room) return res.status(404).json({ success: false, message: "Room not found" });
 
+        // ── Chat Message Limit Check ──────────────────────────────────────────
+        const institute = await Institute.findByPk(institute_id, {
+            attributes: ["current_limit_chat_messages"]
+        });
+        const limit = institute ? Number(institute.current_limit_chat_messages) : 500;
+
+        // -1 means unlimited (lifetime members)
+        if (limit !== -1) {
+            // Get or create the usage tracker for this institute's current billing period
+            const now = new Date();
+            const periodStart = new Date(now.getFullYear(), now.getMonth(), 1); // 1st of current month
+            const periodEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);  // last day of month
+
+            const [tracker] = await UsageTracker.findOrCreate({
+                where: {
+                    institute_id,
+                    metric: "chat_messages",
+                    billing_period_start: periodStart.toISOString().slice(0, 10)
+                },
+                defaults: {
+                    institute_id,
+                    metric: "chat_messages",
+                    current_value: 0,
+                    limit_value: limit,
+                    billing_period_start: periodStart.toISOString().slice(0, 10),
+                    billing_period_end: periodEnd.toISOString().slice(0, 10),
+                    last_reset_at: periodStart
+                }
+            });
+
+            // Sync limit in case plan changed since tracker was created
+            if (tracker.limit_value !== limit) {
+                await tracker.update({ limit_value: limit });
+            }
+
+            if (tracker.current_value >= tracker.limit_value) {
+                return res.status(403).json({
+                    success: false,
+                    code: "CHAT_LIMIT_REACHED",
+                    message: `Your institute has reached its monthly chat message limit (${tracker.current_value}/${tracker.limit_value}). Please contact your admin to upgrade the plan.`,
+                    usage: { used: tracker.current_value, limit: tracker.limit_value }
+                });
+            }
+        }
+        // ─────────────────────────────────────────────────────────────────────
+
         if (userRole !== "admin" && userRole !== "owner") {
             await ensureParticipant(room_id, userId, userRole);
         }
@@ -167,9 +213,67 @@ exports.sendMessage = async (req, res) => {
             attachment_type: req.file ? req.file.mimetype : null,
         });
 
+        // ── Increment usage after successful message save ─────────────────────
+        if (limit !== -1) {
+            try {
+                const now2 = new Date();
+                const periodStart2 = new Date(now2.getFullYear(), now2.getMonth(), 1);
+                const tracker2 = await UsageTracker.findOne({
+                    where: {
+                        institute_id,
+                        metric: "chat_messages",
+                        billing_period_start: periodStart2.toISOString().slice(0, 10)
+                    }
+                });
+                if (tracker2) await tracker2.increment("current_value");
+            } catch (usageErr) {
+                console.error("[Chat] Usage increment failed (non-fatal):", usageErr.message);
+            }
+        }
+        // ─────────────────────────────────────────────────────────────────────
+
         return res.status(201).json({ success: true, sender_display_name });
     } catch (err) {
         console.error("sendMessage:", err);
+        return res.status(500).json({ success: false, message: err.message });
+    }
+};
+
+// 3b. Get Chat Usage for this Institute
+exports.getChatUsage = async (req, res) => {
+    try {
+        const { institute_id } = req.user;
+
+        const institute = await Institute.findByPk(institute_id, {
+            attributes: ["current_limit_chat_messages"]
+        });
+        const limit = institute ? Number(institute.current_limit_chat_messages) : 500;
+
+        if (limit === -1) {
+            return res.status(200).json({ success: true, used: 0, limit: -1, unlimited: true });
+        }
+
+        const now = new Date();
+        const periodStart = new Date(now.getFullYear(), now.getMonth(), 1);
+
+        const tracker = await UsageTracker.findOne({
+            where: {
+                institute_id,
+                metric: "chat_messages",
+                billing_period_start: periodStart.toISOString().slice(0, 10)
+            }
+        });
+
+        const used = tracker ? tracker.current_value : 0;
+        return res.status(200).json({
+            success: true,
+            used,
+            limit,
+            unlimited: false,
+            percent: Math.min(100, Math.round((used / limit) * 100))
+        });
+    } catch (err) {
+        console.error("getChatUsage:", err);
         return res.status(500).json({ success: false, message: err.message });
     }
 };

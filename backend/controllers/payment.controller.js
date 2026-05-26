@@ -36,6 +36,7 @@ const getPlanSnapshot = (plan, billingCycle = "monthly") => ({
     current_limit_branches: plan.max_branches,
     current_limit_storage_mb: plan.max_storage_mb,
     current_limit_ai_messages: plan.max_ai_messages,
+    current_limit_chat_messages: plan.max_chat_messages,
     current_feature_attendance: plan.feature_attendance,
     current_feature_auto_attendance: plan.feature_auto_attendance,
     current_feature_fees: plan.feature_fees,

@@ -116,6 +116,10 @@ const Institute = sequelize.define("Institute", {
         type: DataTypes.BOOLEAN,
         defaultValue: false
     },
+    current_feature_chat: {
+        type: DataTypes.BOOLEAN,
+        defaultValue: false
+    },
     add_on_expiries: {
         type: DataTypes.JSON,
         defaultValue: {}
@@ -141,6 +145,10 @@ const Institute = sequelize.define("Institute", {
     current_limit_ai_messages: {
         type: DataTypes.INTEGER,
         defaultValue: 50
+    },
+    current_limit_chat_messages: {
+        type: DataTypes.INTEGER,
+        defaultValue: 500
     },
     current_feature_push_notifications: {
         type: DataTypes.BOOLEAN,

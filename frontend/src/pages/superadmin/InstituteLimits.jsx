@@ -35,6 +35,7 @@ const BOOL_FEATURES = [
     { key: "current_feature_api_access",      label: "API Access",            icon: "🔌", desc: "External API integration" },
     { key: "current_feature_public_page",     label: "Public Web Page",       icon: "🌐", desc: "Publicly visible institute page" },
     { key: "current_feature_mobile_app",      label: "Mobile App",            icon: "📱", desc: "Mobile application access" },
+    { key: "current_feature_chat",            label: "Academic Chats",        icon: "💬", desc: "In-app messaging for users" },
 ];
 
 // QR sub-features that are gated by Smart Attendance
@@ -144,6 +145,8 @@ function InstituteLimits() {
                 current_feature_public_page: !!inst.current_feature_public_page,
                 current_feature_assignment: !!inst.current_feature_assignment,
                 current_feature_transport: !!inst.current_feature_transport,
+                current_feature_chat: !!inst.current_feature_chat,
+                current_limit_chat_messages: inst.current_limit_chat_messages || 0,
             });
         } catch (e) {
             console.error(e);
@@ -227,6 +230,8 @@ function InstituteLimits() {
             current_feature_public_page: !!plan.feature_public_page,
             current_feature_assignment: !!plan.feature_assignment,
             current_feature_transport: !!plan.feature_transport,
+            current_feature_chat: !!plan.feature_chat,
+            current_limit_chat_messages: plan.max_chat_messages || 0,
         }));
         setMsg("ℹ️ Limits synced from base plan. Click Save to apply.");
     };
@@ -697,7 +702,7 @@ function InstituteLimits() {
 
                                         {/* ── All other feature toggles ── */}
                                         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px,1fr))", gap: "10px", marginTop: "4px" }}>
-                                            {BOOL_FEATURES.slice(1).map(f => {
+                                            {BOOL_FEATURES.slice(1).filter(f => f.key !== "current_feature_chat").map(f => {
                                                 const val = editMode ? !!formData[f.key] : !!inst[f.key];
                                                 return (
                                                     <div
@@ -722,6 +727,61 @@ function InstituteLimits() {
                                                 );
                                             })}
                                         </div>
+
+                                        {/* ── Academic Chats Feature ── */}
+                                        {(() => {
+                                            const chatFeat = BOOL_FEATURES.find(f => f.key === "current_feature_chat");
+                                            if (!chatFeat) return null;
+                                            const val = editMode ? !!formData[chatFeat.key] : !!inst[chatFeat.key];
+                                            return (
+                                                <div style={{ marginTop: "6px" }}>
+                                                    <div
+                                                        onClick={() => editMode && setFormData(p => ({ ...p, [chatFeat.key]: !p[chatFeat.key] }))}
+                                                        style={{
+                                                            display: "flex", alignItems: "center", gap: "12px",
+                                                            padding: "14px 18px", borderRadius: val && editMode ? "14px 14px 0 0" : "14px",
+                                                            border: `2px solid ${val ? "rgba(16,185,129,0.5)" : "var(--border-color)"}`,
+                                                            borderBottom: val && editMode ? "none" : `2px solid ${val ? "rgba(16,185,129,0.5)" : "var(--border-color)"}`,
+                                                            background: val ? "rgba(16,185,129,0.07)" : "var(--card-bg, #f9fafb)",
+                                                            cursor: editMode ? "pointer" : "default",
+                                                            userSelect: "none", transition: "all 0.25s",
+                                                            boxShadow: val ? "0 0 0 3px rgba(16,185,129,0.1)" : "none"
+                                                        }}
+                                                    >
+                                                        <span style={{ fontSize: "22px" }}>{chatFeat.icon}</span>
+                                                        <ToggleSwitch val={val} />
+                                                        <div style={{ flex: 1 }}>
+                                                            <div style={{ fontWeight: 700, fontSize: "14px", color: "var(--text-primary)" }}>{chatFeat.label}</div>
+                                                            <div style={{ fontSize: "12px", color: "var(--text-secondary)", marginTop: "2px" }}>{chatFeat.desc}</div>
+                                                        </div>
+                                                    </div>
+                                                    {val && editMode && (
+                                                        <div style={{
+                                                            padding: "16px 18px",
+                                                            background: "var(--card-bg, #f9fafb)",
+                                                            border: "2px solid rgba(16,185,129,0.5)",
+                                                            borderTop: "1px dashed rgba(16,185,129,0.3)",
+                                                            borderRadius: "0 0 14px 14px",
+                                                            animation: "fadeInDown 0.3s ease"
+                                                        }}>
+                                                            <div style={{ maxWidth: "300px" }}>
+                                                                <label className="form-label" style={{ display: "flex", justifyContent: "space-between", fontSize: "13px" }}>
+                                                                    Max Chat/msg limit <span style={{ color: "var(--text-secondary)", fontWeight: 400 }}>-1 = unlimited, 0 = disabled</span>
+                                                                </label>
+                                                                <input
+                                                                    type="number"
+                                                                    className="form-input"
+                                                                    min="-1"
+                                                                    value={formData.current_limit_chat_messages !== undefined ? formData.current_limit_chat_messages : 0}
+                                                                    onChange={e => setFormData(p => ({ ...p, current_limit_chat_messages: Number(e.target.value) }))}
+                                                                />
+                                                                <p style={{ fontSize: "12px", color: "var(--text-secondary)", marginTop: "6px", marginBottom: 0 }}>Limit messages sent within chat rooms.</p>
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            );
+                                        })()}
                                     </div>
                                 </div>
                             )}

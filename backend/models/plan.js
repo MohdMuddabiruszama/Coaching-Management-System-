@@ -176,6 +176,11 @@ const Plan = sequelize.define("Plan", {
         allowNull: false,
         defaultValue: 50
     },
+    max_chat_messages: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        defaultValue: 500
+    },
     max_biometric_devices: {
         type: DataTypes.INTEGER,
         allowNull: false,

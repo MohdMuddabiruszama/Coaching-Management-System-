@@ -10,7 +10,7 @@ const UsageTracker = sequelize.define("UsageTracker", {
         type: DataTypes.STRING(30),
         allowNull: false,
         validate: {
-            isIn: [["ai_messages", "storage_mb", "sms_sent", "whatsapp_sent"]]
+            isIn: [["ai_messages", "storage_mb", "sms_sent", "whatsapp_sent", "chat_messages"]]
         }
     },
     current_value: {
