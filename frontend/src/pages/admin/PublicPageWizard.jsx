@@ -87,6 +87,7 @@ export default function PublicPageWizard({ onDone, existingData }) {
 
   // Form state — all steps merged
   const [form, setForm] = useState({
+    slug: "",
     tagline: "", description: "", about_text: "", established_year: "",
     years_of_excellence: "", affiliation: "", admission_status: "",
     logo_url: "", cover_photo_url: "",
@@ -147,6 +148,7 @@ export default function PublicPageWizard({ onDone, existingData }) {
 
       setForm(prev => ({
         ...prev,
+        slug: existingData.slug || "",
         tagline: existingData.tagline || "",
         description: existingData.description || "",
         about_text: existingData.about_text || "",
@@ -245,6 +247,25 @@ export default function PublicPageWizard({ onDone, existingData }) {
   const removeManualFaculty = (idx) => {
     setManualFaculty(prev => prev.filter((_, i) => i !== idx));
     setFacultyImageFiles(prev => { const n = { ...prev }; delete n[idx]; return n; });
+  };
+
+  // ── Subdomain logic ───────────────────────────────────────────
+  const [subdomainStatus, setSubdomainStatus] = useState(null); // { available: bool, msg: string }
+  
+  const checkSubdomain = async (val) => {
+    if (!val) return setSubdomainStatus(null);
+    try {
+      const res = await api.get(`/admin/public-page/check-subdomain?subdomain=${val}`);
+      if (res.data.success) {
+        if (res.data.data.available) {
+          setSubdomainStatus({ available: true, msg: "✅ Subdomain is available!" });
+        } else {
+          setSubdomainStatus({ available: false, msg: `❌ ${res.data.data.reason || "Already taken"}` });
+        }
+      }
+    } catch (e) {
+      setSubdomainStatus({ available: false, msg: "❌ Error checking availability" });
+    }
   };
 
   // ── Save current step data to backend ──────────────────────────
@@ -406,6 +427,42 @@ export default function PublicPageWizard({ onDone, existingData }) {
   const renderStep0 = () => (
     <div>
       <h3 style={{ marginTop: 0 }}>📋 Basic Institute Info</h3>
+
+      <div style={{ background: "#f8faff", padding: "1.5rem", borderRadius: "10px", border: "1px solid #e8edf5", marginBottom: "1.5rem" }}>
+        <h4 style={{ margin: "0 0 1rem 0", color: "#1e3a5f" }}>🌐 Subdomain Setup</h4>
+        <div className="form-row">
+          <label>Your Public Website Address</label>
+          <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+            <input 
+              style={{ flex: 1 }}
+              placeholder="e.g., iitcoaching" 
+              value={form.slug} 
+              onChange={e => {
+                set("slug", e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''));
+                setSubdomainStatus(null);
+              }}
+            />
+            <span style={{ color: "#64748b", fontWeight: 600 }}>.zenithflows.in</span>
+            <button 
+              type="button"
+              className="btn btn-secondary"
+              onClick={() => checkSubdomain(form.slug)}
+              disabled={!form.slug || form.slug.length < 3}
+            >
+              Check
+            </button>
+          </div>
+          {subdomainStatus && (
+            <div style={{ marginTop: "8px", fontSize: "0.9rem", color: subdomainStatus.available ? "#10b981" : "#ef4444", fontWeight: 600 }}>
+              {subdomainStatus.msg}
+            </div>
+          )}
+          <div className="form-hint" style={{ marginTop: "8px" }}>
+            Letters, numbers, and hyphens only. This will be your permanent website link.
+          </div>
+        </div>
+      </div>
+
       <div className="form-grid-2">
         <div className="form-row">
           <label>Tagline / Motto</label>

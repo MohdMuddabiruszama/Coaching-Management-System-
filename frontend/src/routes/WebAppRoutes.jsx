@@ -91,6 +91,8 @@ const Unauthorized = lazy(() => import("../pages/common/Unauthorized"));
 
 import { Capacitor } from "@capacitor/core";
 
+import { useSubdomain } from "../hooks/useSubdomain";
+
 const PageLoader = () => (
   <div className="page-loader">
     <LoadingSpinner />
@@ -100,6 +102,7 @@ const PageLoader = () => (
 export default function WebAppRoutes() {
   const isNative  = Capacitor.isNativePlatform();
   const navigate  = useNavigate();
+  const { subdomain, isInstitutePage } = useSubdomain();
 
   /**
    * Global navigation handler — listens for 'app_navigate' events dispatched
@@ -117,6 +120,18 @@ export default function WebAppRoutes() {
     window.addEventListener("app_navigate", handler);
     return () => window.removeEventListener("app_navigate", handler);
   }, [navigate]);
+
+  if (isInstitutePage) {
+    return (
+      <Suspense fallback={<PageLoader />}>
+        <Routes>
+          <Route path="/" element={<InstitutePage subdomain={subdomain} />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="*" element={<InstitutePage subdomain={subdomain} />} />
+        </Routes>
+      </Suspense>
+    );
+  }
 
   return (
     <Suspense fallback={<PageLoader />}>

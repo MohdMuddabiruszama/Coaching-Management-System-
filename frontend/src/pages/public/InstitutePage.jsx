@@ -73,13 +73,16 @@ function Stars({ rating }) {
 }
 
 // ── Main Component ────────────────────────────────────────────────
-export default function InstitutePage() {
-  const { slug } = useParams();
+export default function InstitutePage({ subdomain }) {
+  const { slug: urlSlug } = useParams();
   const navigate = useNavigate();
+
+  const activeSlug = subdomain || urlSlug;
 
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [retryCount, setRetryCount] = useState(0);
 
   // Enquiry form state
   const [form, setForm] = useState({ first_name: "", last_name: "", mobile: "", email: "", course_interest: "", current_class: "", message: "" });
@@ -95,11 +98,22 @@ export default function InstitutePage() {
 
   useEffect(() => {
     const fetchData = async () => {
+      if (!activeSlug) return;
+      setLoading(true);
+      setError(null);
       try {
-        const res = await fetch(`${API_BASE}/public/${slug}`);
-        const json = await res.json();
-        if (!res.ok || json.error === "NOT_FOUND" || !json.data?.is_published) {
+        const res = await fetch(`${API_BASE}/public/${activeSlug}`);
+        if (res.status === 404) {
           navigate("/404", { replace: true });
+          return;
+        }
+        const json = await res.json();
+        if (json.error === "NOT_FOUND" || !json.data?.is_published) {
+          navigate("/404", { replace: true });
+          return;
+        }
+        if (!res.ok || !json.success) {
+          setError("server");
           return;
         }
         setData(json.data);
@@ -108,13 +122,14 @@ export default function InstitutePage() {
         const metaDesc = document.querySelector("meta[name='description']");
         if (metaDesc) metaDesc.setAttribute("content", json.data.seo_description || json.data.description || "");
       } catch (e) {
-        setError("Failed to load page");
+        // Network error — backend unreachable
+        setError("network");
       } finally {
         setLoading(false);
       }
     };
     fetchData();
-  }, [slug, navigate]);
+  }, [activeSlug, navigate, retryCount]);
 
   // Active Link on Scroll
   useEffect(() => {
@@ -171,7 +186,7 @@ export default function InstitutePage() {
 
     setSubmitting(true);
     try {
-      const res = await fetch(`${API_BASE}/public/${slug}/enquiry`, {
+      const res = await fetch(`${API_BASE}/public/${activeSlug}/enquiry`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(form),
@@ -190,7 +205,55 @@ export default function InstitutePage() {
   };
 
   if (loading) return <Skeleton />;
-  if (error) return <div style={{ textAlign: "center", padding: "4rem", color: "#ef4444" }}>{error}</div>;
+  if (error) return (
+    <div style={{
+      minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
+      background: '#f8faff', padding: '2rem'
+    }}>
+      <div style={{
+        textAlign: 'center', maxWidth: 480,
+        background: 'white', borderRadius: 20,
+        padding: '3rem 2.5rem',
+        boxShadow: '0 8px 32px rgba(0,0,0,0.08)',
+        border: '1px solid #e8edf5'
+      }}>
+        <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>
+          {error === 'network' ? '🌐' : '⚠️'}
+        </div>
+        <h2 style={{ color: '#1e3a5f', marginBottom: '0.75rem', fontSize: '1.5rem', fontWeight: 800 }}>
+          {error === 'network' ? 'Connection Error' : 'Page Unavailable'}
+        </h2>
+        <p style={{ color: '#64748b', lineHeight: 1.7, marginBottom: '1.75rem', fontSize: '0.95rem' }}>
+          {error === 'network'
+            ? 'Unable to reach the server. Please check your internet connection and try again.'
+            : 'The page could not be loaded due to a server error. Please try again in a moment.'}
+        </p>
+        <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center', flexWrap: 'wrap' }}>
+          <button
+          onClick={() => { setError(null); setLoading(true); setRetryCount(c => c + 1); }}
+            style={{
+              background: 'linear-gradient(135deg,#1a3c5e,#2563eb)',
+              color: 'white', border: 'none', borderRadius: 10,
+              padding: '0.75rem 1.75rem', cursor: 'pointer',
+              fontWeight: 700, fontSize: '0.95rem'
+            }}
+          >
+            🔄 Try Again
+          </button>
+          <button
+            onClick={() => window.history.back()}
+            style={{
+              background: '#f1f5f9', color: '#475569', border: '1px solid #e2e8f0',
+              borderRadius: 10, padding: '0.75rem 1.75rem', cursor: 'pointer',
+              fontWeight: 600, fontSize: '0.95rem'
+            }}
+          >
+            ← Go Back
+          </button>
+        </div>
+      </div>
+    </div>
+  );
   if (!data) return null;
 
   const logoInitial = (data.name || "I").split(' ').slice(0, 2).map(w => w[0]).join('').toUpperCase();

@@ -38,7 +38,7 @@ function generateSlug(name) {
     return name
         .toLowerCase()
         .trim()
-        .replace(/[^a-z0-9\s-]/g, '')
+        .replace(/[^a-z0-9\s.-]/g, '')
         .replace(/\s+/g, '-')
         .replace(/-+/g, '-')
         .substring(0, 80);
@@ -57,6 +57,26 @@ async function getUniqueSlug(name, excludeId = null) {
         suffix++;
     }
 }
+
+// ── Check Subdomain Availability ───────────────────────────────
+exports.checkSubdomainAvailability = async (req, res) => {
+    try {
+        const { subdomain } = req.query;
+        if (!subdomain || !/^[a-z0-9-.]+$/.test(subdomain)) {
+            return res.json({ success: true, data: { available: false, reason: 'Invalid format' } });
+        }
+        
+        const RESERVED = ['www','app','api','admin','mail','support','help','blog', 'staging'];
+        if (RESERVED.includes(subdomain.toLowerCase())) {
+            return res.json({ success: true, data: { available: false, reason: 'Reserved' } });
+        }
+
+        const existing = await InstitutePublicProfile.findOne({ where: { slug: subdomain } });
+        return res.json({ success: true, data: { available: !existing } });
+    } catch (e) {
+        return res.status(500).json({ success: false, message: 'Server error' });
+    }
+};
 
 // ─────────────────────────────────────────────────────────────────
 // GET /api/admin/public-page  — Get current public page data

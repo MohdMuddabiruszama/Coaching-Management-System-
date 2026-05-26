@@ -14,6 +14,8 @@ const {
     Subject,
     Class
 } = require("../models");
+const { Op } = require("sequelize");
+const { extractSubdomain } = require("../utils/subdomain");
 
 // Simple in-memory rate limiter (per IP per institute per hour)
 const enquiryRateLimit = new Map();
@@ -78,10 +80,21 @@ function normalizeMapUrl(url) {
 // ─────────────────────────────────────────────────────────────────
 exports.getPublicPageData = async (req, res) => {
     try {
-        const { slug } = req.params;
+        let slug = req.query.subdomain || extractSubdomain(req.hostname) || req.params.slug;
+
+        if (!slug) {
+            return res.status(400).json({ success: false, error: 'BAD_REQUEST', message: 'No subdomain or slug provided' });
+        }
 
         const profile = await InstitutePublicProfile.findOne({
-            where: { slug, is_published: true },
+            where: { 
+                [Op.or]: [
+                    { slug: slug },
+                    { slug: slug.replace(/\./g, '-') },
+                    { slug: slug.replace(/-/g, '.') }
+                ],
+                is_published: true 
+            },
             include: [{ model: Institute, attributes: ['id', 'name', 'email', 'phone', 'address', 'logo'] }]
         });
 
@@ -282,11 +295,22 @@ function buildYouTubeEmbedUrl(url) {
 // ─────────────────────────────────────────────────────────────────
 exports.submitEnquiry = async (req, res) => {
     try {
-        const { slug } = req.params;
+        let slug = req.query.subdomain || extractSubdomain(req.hostname) || req.params.slug || req.body.slug;
         const ip = req.ip || req.connection.remoteAddress;
 
+        if (!slug) {
+            return res.status(400).json({ success: false, message: "No subdomain or slug provided" });
+        }
+
         const profile = await InstitutePublicProfile.findOne({
-            where: { slug, is_published: true }
+            where: { 
+                [Op.or]: [
+                    { slug: slug },
+                    { slug: slug.replace(/\./g, '-') },
+                    { slug: slug.replace(/-/g, '.') }
+                ],
+                is_published: true 
+            }
         });
 
         if (!profile) {

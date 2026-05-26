@@ -95,6 +95,7 @@ router.use(verifyToken);
 
 // Check if feature is available
 router.get("/check-feature", publicPageController.checkPublicPageFeature);
+router.get("/check-subdomain", publicPageController.checkSubdomainAvailability);
 
 // Main profile routes
 router.get("/", publicPageController.getPublicPage);
