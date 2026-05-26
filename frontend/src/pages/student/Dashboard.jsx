@@ -1,26 +1,21 @@
 import { useContext, useState, useEffect } from "react";
+import { AnnouncementSidebarContext } from "../../context/AnnouncementSidebarContext";
 import ThemeSelector from "../../components/ThemeSelector";
 import { Link, useNavigate } from "react-router-dom";
 import { AuthContext } from "../../context/AuthContext";
 import api from "../../services/api";
 import InstituteLogo from "../../components/common/InstituteLogo";
+import AnnouncementBell from "../../components/AnnouncementBell";
 import "../admin/Dashboard.css";
 
 function StudentDashboard() {
     const { user, logout } = useContext(AuthContext);
+    const { toggleSidebar } = useContext(AnnouncementSidebarContext);
     const navigate = useNavigate();
     const [unreadCount, setUnreadCount] = useState(0);
     const [chatUnreadCount, setChatUnreadCount] = useState(0);
 
     useEffect(() => {
-        if (user?.features?.announcements) {
-            api.get('/announcements/unread-count').then(res => {
-                if (res.data.success) {
-                    setUnreadCount(res.data.count);
-                }
-            }).catch(err => console.log(err));
-        }
-
         // Fetch chat unread count
         if (user?.features?.chat) {
             api.get('/chat/unread-count').then(res => {
@@ -32,8 +27,8 @@ function StudentDashboard() {
 
     }, [user]);
 
-    const ActionCard = ({ icon, title, path, badge }) => (
-        <div onClick={() => navigate(path)} className="action-card" style={{ cursor: 'pointer', position: 'relative' }}>
+    const ActionCard = ({ icon, title, path, badge, onClick }) => (
+        <div onClick={onClick || (() => navigate(path))} className="action-card" style={{ cursor: 'pointer', position: 'relative' }}>
             <span className="action-icon">{icon}</span>
             <span className="action-title">{title}</span>
             {badge > 0 && (
@@ -57,7 +52,8 @@ function StudentDashboard() {
                         <p>Welcome back, {user?.name || "Student"}! Stay productive.</p>
                     </div>
                 </div>
-                <div className="dashboard-header-right">
+                <div className="dashboard-header-right" style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                    {user?.features?.announcements && <AnnouncementBell size="large" />}
                     <ThemeSelector />
                     <button onClick={logout} className="btn btn-danger">
                         Logout
@@ -84,7 +80,7 @@ function StudentDashboard() {
                         <ActionCard path="/student/timetable" icon="📅" title="My Timetable" />
                     )}
                     {user?.features?.announcements && (
-                        <ActionCard path="/student/announcements" icon="📢" title="Announcements" badge={unreadCount} />
+                        <ActionCard onClick={toggleSidebar} icon={<AnnouncementBell />} title="Announcements" />
                     )}
 
                     {user?.features?.notes && (

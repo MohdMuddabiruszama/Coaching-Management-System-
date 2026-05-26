@@ -14,6 +14,7 @@ const FacultyAttendance = require("./facultyAttendance");
 const FeesStructure = require("./feesStructure");
 const Payment = require("./payment");
 const Announcement = require("./announcement");
+const AnnouncementRead = require("./AnnouncementRead");
 const Exam = require("./exam");
 const Mark = require("./mark");
 const Subscription = require("./subscription");
@@ -187,6 +188,12 @@ Institute.hasMany(Announcement, { foreignKey: "institute_id" });
 
 Announcement.belongsTo(Subject, { foreignKey: "subject_id" });
 Subject.hasMany(Announcement, { foreignKey: "subject_id" });
+
+// AnnouncementRead Associations (Phase 1 — Smart Announcement System)
+Announcement.hasMany(AnnouncementRead, { foreignKey: "announcement_id" });
+AnnouncementRead.belongsTo(Announcement, { foreignKey: "announcement_id" });
+AnnouncementRead.belongsTo(User, { foreignKey: "user_id" });
+User.hasMany(AnnouncementRead, { foreignKey: "user_id" });
 
 // Attendance Associations
 Attendance.belongsTo(Student, { foreignKey: "student_id" });
@@ -478,6 +485,7 @@ module.exports = {
     FeesStructure,
     Payment,
     Announcement,
+    AnnouncementRead,
     Exam,
     Mark,
     Subscription,

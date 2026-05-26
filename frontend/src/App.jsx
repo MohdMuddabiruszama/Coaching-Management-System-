@@ -8,6 +8,8 @@ import { AuthProvider } from "./context/AuthContext";
 import { ThemeProvider } from "./context/ThemeContext";
 import MobileShell from "mobile-shell";
 import WebAppRoutes from "./routes/WebAppRoutes";
+import { AnnouncementSidebarProvider } from "./context/AnnouncementSidebarContext";
+import AnnouncementSidebar from "./components/AnnouncementSidebar";
 import NetworkStatus from "./components/NetworkStatus";
 import MobileErrorBoundary from "./components/MobileErrorBoundary";
 import "./styles/global.css";
@@ -39,13 +41,16 @@ function App() {
                     <AuthProvider>
                         {/* ThemeProvider must be INSIDE AuthProvider so it can read user */}
                         <ThemeProvider>
-                            {/* Animated splash — native→web seamless handoff */}
-                            <SplashOverlay />
-                            {/* Phase 7: Unified mobile init — CSS, push (no-op on web) */}
-                            <MobileAppInit />
-                            <NetworkStatus />
-                            <Toaster position="top-right" />
-                            {isMobileShell ? <MobileShell /> : <WebAppRoutes />}
+                            <AnnouncementSidebarProvider>
+                                {/* Animated splash — native→web seamless handoff */}
+                                <SplashOverlay />
+                                {/* Phase 7: Unified mobile init — CSS, push (no-op on web) */}
+                                <MobileAppInit />
+                                <NetworkStatus />
+                                <Toaster position="top-right" />
+                                {isMobileShell ? <MobileShell /> : <WebAppRoutes />}
+                                <AnnouncementSidebar />
+                            </AnnouncementSidebarProvider>
                         </ThemeProvider>
                     </AuthProvider>
                 </BrandingProvider>

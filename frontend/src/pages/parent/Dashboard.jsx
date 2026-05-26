@@ -1,14 +1,17 @@
 import { useState, useEffect, useContext } from "react";
 import { AuthContext } from "../../context/AuthContext";
+import { AnnouncementSidebarContext } from "../../context/AnnouncementSidebarContext";
 import ThemeSelector from "../../components/ThemeSelector";
 import { useNavigate } from "react-router-dom";
 import * as parentService from "../../services/parent.service";
 import markService from "../../services/mark.service";
 import InstituteLogo from "../../components/common/InstituteLogo";
+import AnnouncementBell from "../../components/AnnouncementBell";
 import "./Dashboard.css";
 
 function ParentDashboard() {
     const { user, logout } = useContext(AuthContext);
+    const { toggleSidebar } = useContext(AnnouncementSidebarContext);
     const navigate = useNavigate();
     const [students, setStudents] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -104,7 +107,8 @@ function ParentDashboard() {
                         <p>Welcome back, <strong>{user?.name}</strong>! Monitoring your child's progress.</p>
                     </div>
                 </div>
-                <div className="dashboard-header-right">
+                <div className="dashboard-header-right" style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                    {user?.features?.announcements && <AnnouncementBell size="large" />}
                     <ThemeSelector />
                     <button onClick={logout} className="btn-logout">Logout</button>
                 </div>
@@ -148,7 +152,8 @@ function ParentDashboard() {
                             { id: 'fees', label: '💳 Fees', featureKey: 'fees' },
                             { id: 'timetable', label: '📅 Timetable', featureKey: 'timetable' },
                             { id: 'assignments', label: '📝 Assignments', featureKey: 'notes' },
-                            { id: 'chat', label: '💬 Chat', featureKey: 'chat' }
+                            { id: 'chat', label: '💬 Chat', featureKey: 'chat' },
+                            { id: 'announcements', label: '📢 Announcements', featureKey: 'announcements' }
                         ].filter(tab => {
                             if (!tab.featureKey) return true;
                             if (tab.featureKey === 'attendance') return user?.features?.attendance !== 'none';
@@ -156,7 +161,13 @@ function ParentDashboard() {
                         }).map(tab => (
                             <button
                                 key={tab.id}
-                                onClick={() => setActiveTab(tab.id)}
+                                onClick={() => {
+                                    if (tab.id === 'announcements') {
+                                        toggleSidebar();
+                                    } else {
+                                        setActiveTab(tab.id);
+                                    }
+                                }}
                                 className={`tab-btn ${activeTab === tab.id ? 'active' : ''}`}
                             >
                                 {tab.label}
@@ -654,6 +665,25 @@ function ParentDashboard() {
                                         }}
                                     >
                                         💬 Open Chat →
+                                    </button>
+                                </div>
+                            )}
+                            {/* ═══ ANNOUNCEMENTS TAB — Phase 9 ═══ */}
+                            {activeTab === 'announcements' && (
+                                <div className="dashboard-card" style={{ textAlign: "center", padding: "3rem" }}>
+                                    <div style={{ fontSize: "4rem", marginBottom: "1rem" }}>📢</div>
+                                    <h3 style={{ justifyContent: "center" }}>Institute Announcements</h3>
+                                    <p>Read important updates and notices from the school administration.</p>
+                                    <button
+                                        onClick={toggleSidebar}
+                                        style={{
+                                            marginTop: "1.5rem", padding: "0.85rem 2rem", borderRadius: "10px",
+                                            background: "linear-gradient(135deg,#3B82F6,#2563EB)", color: "#fff",
+                                            border: "none", fontWeight: "700", fontSize: "1rem", cursor: "pointer",
+                                            boxShadow: "0 4px 16px rgba(59,130,246,0.35)"
+                                        }}
+                                    >
+                                        📢 Open Announcements →
                                     </button>
                                 </div>
                             )}

@@ -273,6 +273,7 @@ export default function WebAppRoutes() {
                 <Route path="dashboard" element={<ParentDashboard />} />
                 <Route path="timetable" element={<ParentTimetable />} />
                 <Route path="assignments" element={<ParentAssignments />} />
+                <Route path="announcements" element={<ViewAnnouncements />} />
                 <Route path="chat" element={<ChatApp />} />
                 <Route path="profile" element={<Profile />} />
                 <Route path="*" element={<Navigate to="/parent/dashboard" />} />

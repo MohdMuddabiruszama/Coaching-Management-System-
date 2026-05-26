@@ -7,6 +7,7 @@ import { useState, useEffect, useContext } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import api from "../../services/api";
 import { AuthContext } from "../../context/AuthContext";
+import { AnnouncementSidebarContext } from "../../context/AnnouncementSidebarContext";
 import ThemeSelector from "../../components/ThemeSelector";
 import BlockedScreen from "./BlockedScreen";
 import InstituteLogo from "../../components/common/InstituteLogo";
@@ -15,6 +16,7 @@ import "./Dashboard.css";
 
 function AdminDashboard() {
     const { user, logout } = useContext(AuthContext);
+    const { toggleSidebar } = useContext(AnnouncementSidebarContext);
     const navigate = useNavigate();
 
     const basePath = '/admin';
@@ -181,7 +183,7 @@ function AdminDashboard() {
         return false;
     };
 
-    const ActionCard = ({ icon, title, path, featureKey, highlight, badge }) => {
+    const ActionCard = ({ icon, title, path, featureKey, highlight, badge, onClick }) => {
         const isTrialLocked = planDetails && planDetails.plan.is_free_trial && getTrialDaysLeft() <= 0;
         const isPlanExpiredLocally = user?.isPlanExpired || isTrialLocked;
         
@@ -194,7 +196,9 @@ function AdminDashboard() {
         return (
             <div
                 onClick={(e) => {
-                    handleNavigation(path, featureKey);
+                    if (isLocked) return;
+                    if (onClick) onClick(e);
+                    else handleNavigation(path, featureKey);
                 }}
                 className={`action-card ${isLocked ? 'disabled-card' : ''}`}
                 style={{

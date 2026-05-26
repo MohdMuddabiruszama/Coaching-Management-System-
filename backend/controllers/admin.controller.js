@@ -41,7 +41,7 @@ exports.getDashboardStats = async (req, res) => {
             Announcement.count({
                 where: {
                     institute_id,
-                    createdAt: { [Op.gt]: lastAnnouncementSeenAt },
+                    created_at: { [Op.gt]: lastAnnouncementSeenAt },
                     created_by: { [Op.ne]: req.user.id }
                 }
             })
