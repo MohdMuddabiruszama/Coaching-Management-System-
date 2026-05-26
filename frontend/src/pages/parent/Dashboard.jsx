@@ -3,6 +3,7 @@ import { AuthContext } from "../../context/AuthContext";
 import ThemeSelector from "../../components/ThemeSelector";
 import { useNavigate } from "react-router-dom";
 import * as parentService from "../../services/parent.service";
+import markService from "../../services/mark.service";
 import InstituteLogo from "../../components/common/InstituteLogo";
 import "./Dashboard.css";
 
@@ -46,11 +47,13 @@ function ParentDashboard() {
         try {
             const [attData, resData, feeData] = await Promise.all([
                 parentService.getLinkedStudentAttendance(student.id),
-                parentService.getLinkedStudentResults(student.id),
+                // Phase 7: use new endpoint that returns total_marks, percentage, subject_name, exam_type
+                markService.getParentChild(student.id).catch(() => []),
                 parentService.getLinkedStudentFees(student.id)
             ]);
             setAttendance(attData.data);
-            setResults(resData.data || []);
+            // resData is already the array (markService resolves to r.data.data)
+            setResults(Array.isArray(resData) ? resData : (resData?.data || []));
             setFees(feeData.data || []);
         } catch (error) {
             console.error("Error fetching details for student", error);
@@ -400,28 +403,79 @@ function ParentDashboard() {
                                     <h3>📈 Exam Results — {selectedStudent?.User?.name}</h3>
                                     {results?.length > 0 ? (
                                         <div style={{ marginTop: "1rem" }}>
-                                            {results.map(mark => (
-                                                <div key={mark.id} className="result-card">
-                                                    <div className="result-card-left">
-                                                        <strong>{mark.Exam?.name}</strong>
-                                                        <p>{mark.Subject?.name}</p>
-                                                        {mark.Exam?.exam_date && (
-                                                            <small style={{ color: 'var(--text-muted)' }}>
-                                                                {new Date(mark.Exam.exam_date).toLocaleDateString()}
-                                                            </small>
-                                                        )}
+                                            {results.map((mark, idx) => {
+                                                const isPassed = mark.status === 'Pass';
+                                                const isAbsent = mark.is_absent;
+                                                const typeLabel = {
+                                                    unit_test: 'Unit Test', midterm: 'Mid-Term',
+                                                    final: 'Final', mock: 'Mock', practical: 'Practical', other: 'Other'
+                                                }[mark.exam_type] || mark.exam_type || '';
+
+                                                return (
+                                                    <div key={`${mark.exam_id}-${idx}`}
+                                                        style={{
+                                                            border: '1px solid #E0E0E0',
+                                                            borderRadius: '10px',
+                                                            padding: '1rem',
+                                                            marginBottom: '0.75rem',
+                                                            background: isAbsent ? '#FFF8E1' : isPassed ? '#F1F8F1' : '#FFF1F1',
+                                                        }}
+                                                    >
+                                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '0.5rem' }}>
+                                                            <div>
+                                                                <b style={{ fontSize: '15px' }}>{mark.exam_name}</b>
+                                                                {typeLabel && (
+                                                                    <span style={{
+                                                                        marginLeft: '8px', fontSize: '11px',
+                                                                        background: '#E3F2FD', color: '#1565C0',
+                                                                        padding: '2px 6px', borderRadius: '4px', fontWeight: 700,
+                                                                    }}>
+                                                                        {typeLabel}
+                                                                    </span>
+                                                                )}
+                                                                <div style={{ fontSize: '13px', color: '#555', marginTop: '4px' }}>
+                                                                    <strong>{mark.subject_name || 'N/A'}</strong>
+                                                                    {mark.exam_date && (
+                                                                        <span style={{ marginLeft: '8px', color: '#888' }}>
+                                                                            · {new Date(mark.exam_date).toLocaleDateString('en-IN')}
+                                                                        </span>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                            <div style={{ textAlign: 'right' }}>
+                                                                {isAbsent ? (
+                                                                    <span style={{ color: '#9E9E9E', fontWeight: 'bold', fontSize: '16px' }}>
+                                                                        Absent
+                                                                    </span>
+                                                                ) : (
+                                                                    <>
+                                                                        <div style={{ fontSize: '22px', fontWeight: '800', color: isPassed ? '#2E7D32' : '#C62828' }}>
+                                                                            {mark.marks_obtained} / {mark.total_marks}
+                                                                        </div>
+                                                                        <div style={{ fontSize: '13px', color: '#666' }}>
+                                                                            {mark.percentage}%
+                                                                            &nbsp;·&nbsp;
+                                                                            <span style={{ color: isPassed ? '#2E7D32' : '#C62828', fontWeight: 700 }}>
+                                                                                {isPassed ? '✓ Pass' : '✗ Fail'}
+                                                                            </span>
+                                                                            <span style={{ color: '#888', marginLeft: '6px', fontSize: '12px' }}>
+                                                                                (Pass: {mark.passing_marks})
+                                                                            </span>
+                                                                        </div>
+                                                                    </>
+                                                                )}
+                                                            </div>
+                                                        </div>
                                                     </div>
-                                                    <div className="result-card-right">
-                                                        <h2>{mark.marks_obtained} / {mark.total_marks}</h2>
-                                                        <p className={mark.remarks === "Pass" ? "pass" : "fail"}>
-                                                            {mark.remarks}
-                                                        </p>
-                                                    </div>
-                                                </div>
-                                            ))}
+                                                );
+                                            })}
                                         </div>
                                     ) : (
-                                        <p>No exam results found for {selectedStudent?.User?.name}.</p>
+                                        <div className="empty-state-mobile">
+                                            <div className="empty-icon">📈</div>
+                                            <div className="empty-title">No Results Yet</div>
+                                            <div className="empty-desc">No exam results have been published for {selectedStudent?.User?.name} yet.</div>
+                                        </div>
                                     )}
                                 </div>
                             )}

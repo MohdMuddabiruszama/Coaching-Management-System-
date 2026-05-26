@@ -553,6 +553,21 @@ const syncDatabase = async () => {
       console.error('Error adding Student Password columns:', e.message);
     }
 
+    // ── Exam Result System (Approach B) ──────────────────────────────────────
+    // Using VARCHAR(20) for exam_type — avoids PostgreSQL ENUM type creation issues
+    // Same pattern as marked_by_type on attendances table
+    try { await sequelize.query(`ALTER TABLE exams ADD COLUMN IF NOT EXISTS exam_type VARCHAR(20) NOT NULL DEFAULT 'unit_test';`); } catch (e) { }
+    try { await sequelize.query(`ALTER TABLE exams ADD COLUMN IF NOT EXISTS marks_locked BOOLEAN NOT NULL DEFAULT FALSE;`); } catch (e) { }
+    try { await sequelize.query(`ALTER TABLE exams ADD COLUMN IF NOT EXISTS marks_locked_at TIMESTAMPTZ NULL;`); } catch (e) { }
+    try { await sequelize.query(`ALTER TABLE exams ADD COLUMN IF NOT EXISTS marks_locked_by INTEGER NULL;`); } catch (e) { }
+    try { await sequelize.query(`ALTER TABLE marks ADD COLUMN IF NOT EXISTS is_absent BOOLEAN NOT NULL DEFAULT FALSE;`); } catch (e) { }
+    try { await sequelize.query(`ALTER TABLE marks ADD COLUMN IF NOT EXISTS remarks VARCHAR(200) NULL;`); } catch (e) { }
+    // Performance indexes for RANK() window function queries
+    try { await sequelize.query(`CREATE INDEX IF NOT EXISTS idx_marks_exam_id ON marks(exam_id);`); } catch (e) { }
+    try { await sequelize.query(`CREATE INDEX IF NOT EXISTS idx_marks_student_id ON marks(student_id);`); } catch (e) { }
+    try { await sequelize.query(`CREATE INDEX IF NOT EXISTS idx_exams_locked ON exams(marks_locked);`); } catch (e) { }
+    console.log('✅ Exam Result System columns ensured');
+
     // Auto-sync other schema changes using alter for the explicit models to make sure everything matches
     try {
       const { InstitutePublicProfile, InstituteGalleryPhoto, InstituteReview, PublicEnquiry, Subscription, Plan, User, LandingPageView, Coupon, AddOn, InstituteAddOn, SubscriptionEvent, UsageTracker } = require('./models');
