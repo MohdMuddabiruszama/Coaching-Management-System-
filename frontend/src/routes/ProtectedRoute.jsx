@@ -37,9 +37,9 @@ function ProtectedRoute({ children, allowedRoles = [], skipFirstLoginCheck = fal
     return <BlockedScreen />;
   }
 
-  // Phase 9: Enforce mandatory password change on first login for students
-  if (user.role === 'student' && user.is_first_login && !skipFirstLoginCheck) {
-    return <Navigate to="/student/change-password" replace />;
+  // Phase 9: Enforce mandatory password change on first login for students, faculty, and parents
+  if (['student', 'faculty', 'parent'].includes(user.role) && user.is_first_login && !skipFirstLoginCheck) {
+    return <Navigate to="/change-password" replace />;
   }
 
   // Check if user has required role

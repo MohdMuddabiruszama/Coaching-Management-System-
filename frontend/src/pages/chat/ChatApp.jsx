@@ -401,9 +401,9 @@ function ChatApp() {
         setParticipants([]);
     };
 
-    // ─── Direct Chats for Student ───
+    // ─── Direct Chats for Student / Parent ───
     const buildStudentSubjectItems = () => {
-        const items = enrolledSubjects.map(sub => {
+        const rawItems = enrolledSubjects.map(sub => {
             const existingRoom = rooms.find(r => r.type === "direct" && r.subject_id === sub.id);
             if (existingRoom) {
                 return existingRoom; // Use the actual DB room
@@ -420,14 +420,28 @@ function ChatApp() {
             }
         });
 
-        // Sort explicitly by last message time (descending), then fallback to creation order if none
-        items.sort((a, b) => {
+        // Sort by last message time (descending)
+        rawItems.sort((a, b) => {
             const timeA = a.last_message_at ? new Date(a.last_message_at).getTime() : 0;
             const timeB = b.last_message_at ? new Date(b.last_message_at).getTime() : 0;
             return timeB - timeA;
         });
 
-        return items;
+        // ── Deduplicate by display name ──
+        // Parents with multiple children enrolled in the same subject with the
+        // same faculty would otherwise see repeated entries. We keep only the
+        // first occurrence (which has the highest priority after sorting).
+        const seenNames = new Set();
+        const uniqueItems = [];
+        for (const item of rawItems) {
+            const displayName = getRoomLabel(item);
+            if (!seenNames.has(displayName)) {
+                seenNames.add(displayName);
+                uniqueItems.push(item);
+            }
+        }
+
+        return uniqueItems;
     };
 
     // ─── Helpers ─────────────────────────────────────────────────────────────
@@ -437,6 +451,12 @@ function ChatApp() {
             if (user?.role === "faculty" && room.ChatParticipants) {
                 const studentP = room.ChatParticipants.find(p => p.role === "student" || p.User?.role === "student" || p.role === "parent" || p.User?.role === "parent");
                 if (studentP && studentP.User) return `${studentP.User.name} - Direct Chat`;
+            }
+            if (user?.role === "student" || user?.role === "parent") {
+                const subject = enrolledSubjects.find(s => s.id === room.subject_id);
+                const facultyName = subject?.Faculty?.User?.name;
+                const subjectName = subject?.name || room.Subject?.name || "Subject";
+                return facultyName ? `${facultyName} - ${subjectName}` : `Direct Chat - ${subjectName}`;
             }
             return `Direct Chat - ${room.Subject?.name || "Subject"}`;
         }
@@ -565,25 +585,29 @@ function ChatApp() {
                                     <div style={{ padding: '8px 16px', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', color: 'var(--text-secondary)' }}>
                                         Direct Chats (1-on-1)
                                     </div>
-                                    {buildStudentSubjectItems().map((room, idx) => (
+                                    {buildStudentSubjectItems().map((room, idx) => {
+                                        const displayName = getRoomLabel(room);
+                                        const isActive = activeRoom?.subject_id === room.subject_id && activeRoom?.type === 'direct';
+                                        
+                                        return (
                                         <div
                                             key={room.id || `pending-${idx}`}
-                                            className={`chat-room-item ${activeRoom?.subject_id === room.subject_id && activeRoom?.type === 'direct' ? "active" : ""}`}
+                                            className={`chat-room-item ${isActive ? "active" : ""}`}
                                             onClick={() => selectRoom(room)}
                                         >
-                                            <div className="room-avatar" style={{ background: 'var(--primary-light)', color: 'var(--primary)' }}>D</div>
+                                            <div className="room-avatar direct-room-avatar" style={{ background: 'var(--primary-light)', color: 'var(--primary)' }}>D</div>
                                             <div className="room-details">
                                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                                    <h4 className="room-name">{room.name || `Direct Chat - ${enrolledSubjects.find(s => s.id === room.subject_id)?.name || "Subject"}`}</h4>
+                                                    <h4 className="room-name">{displayName}</h4>
                                                     {room.unread_count > 0 && (
                                                         <span className="msg-count-badge">{room.unread_count}</span>
                                                     )}
                                                 </div>
-                                                <p className="room-subtitle">Personal chat with faculty</p>
+                                                <p className="room-subtitle">1-on-1 with Faculty</p>
                                             </div>
                                         </div>
-                                    ))}
-                                    {enrolledSubjects.length === 0 && (
+                                    )})}
+                                    {buildStudentSubjectItems().length === 0 && (
                                         <div style={{ padding: '12px 16px', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>You are not enrolled in any subjects.</div>
                                     )}
                                 </div>
@@ -675,6 +699,18 @@ function ChatApp() {
                                 )}
                             </div>
                         </div>
+
+                        {/* ── Safety Monitoring Notice Banner ── */}
+                        {!isReadOnly && (
+                            <div className="chat-monitoring-info-banner">
+                                <div className="chat-monitoring-icon">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                                    </svg>
+                                </div>
+                                <span>For your safety and academic integrity, all chats are monitored by the administration.</span>
+                            </div>
+                        )}
 
                         <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
                             <div className="chat-messages" style={{ flex: 1 }}>

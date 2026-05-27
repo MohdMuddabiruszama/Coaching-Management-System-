@@ -103,7 +103,7 @@ const ChangePassword = () => {
                 sessionStorage.setItem('user', JSON.stringify(updatedUser));
 
                 setSuccess('Password updated successfully! Redirecting to your dashboard…');
-                setTimeout(() => navigate('/student/dashboard'), 1500);
+                setTimeout(() => navigate(`/${user.role}/dashboard`), 1500);
             }
         } catch (err) {
             const msg = err.response?.data?.message || 'Failed to change password. Please try again.';

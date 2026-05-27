@@ -99,7 +99,12 @@ exports.createFaculty = async (req, res) => {
         }
 
         // Hash password
-        const password_hash = await hashPassword(password || "faculty123");
+        const { generateTempPassword } = require('../utils/passwordGenerator');
+        const tempPassword = password || generateTempPassword();
+        const password_hash = await hashPassword(tempPassword);
+
+        const temp_password_expires_at = new Date();
+        temp_password_expires_at.setDate(temp_password_expires_at.getDate() + 7);
 
         // Create user account
         const user = await User.create({
@@ -110,6 +115,10 @@ exports.createFaculty = async (req, res) => {
             phone,
             password_hash,
             status: "active",
+            is_first_login: true,
+            temp_password_expires_at,
+            credentials_sent_at: email ? new Date() : null,
+            initial_password: tempPassword
         });
 
         // Create faculty record

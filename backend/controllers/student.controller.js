@@ -331,7 +331,15 @@ exports.getMe = async (req, res) => {
                 {
                     model: Subject,
                     attributes: ["id", "name"],
-                    through: { attributes: [] }
+                    through: { attributes: [] },
+                    include: [{
+                        model: Faculty,
+                        attributes: ["id", "user_id"],
+                        include: [{
+                            model: User,
+                            attributes: ["name"]
+                        }]
+                    }]
                 },
                 {
                     model: User,
@@ -354,7 +362,15 @@ exports.getMe = async (req, res) => {
             const classIds = responseData.Classes.map(c => c.id);
             const allSubjects = await Subject.findAll({
                 where: { institute_id, class_id: { [Op.in]: classIds } },
-                attributes: ["id", "name"]
+                attributes: ["id", "name"],
+                include: [{
+                    model: Faculty,
+                    attributes: ["id", "user_id"],
+                    include: [{
+                        model: User,
+                        attributes: ["name"]
+                    }]
+                }]
             });
 
             const existingSubIds = new Set((responseData.Subjects || []).map(s => s.id));
@@ -453,7 +469,15 @@ exports.getStudentById = async (req, res) => {
                 {
                     model: Subject,
                     attributes: ["id", "name"],
-                    through: { attributes: [] }
+                    through: { attributes: [] },
+                    include: [{
+                        model: Faculty,
+                        attributes: ["id", "user_id"],
+                        include: [{
+                            model: User,
+                            attributes: ["name"]
+                        }]
+                    }]
                 },
                 {
                     model: User,
@@ -484,7 +508,15 @@ exports.getStudentById = async (req, res) => {
             const classIds = responseData.Classes.map(c => c.id);
             const allSubjects = await Subject.findAll({
                 where: { institute_id, class_id: { [Op.in]: classIds } },
-                attributes: ["id", "name"]
+                attributes: ["id", "name"],
+                include: [{
+                    model: Faculty,
+                    attributes: ["id", "user_id"],
+                    include: [{
+                        model: User,
+                        attributes: ["name"]
+                    }]
+                }]
             });
 
             const existingSubIds = new Set((responseData.Subjects || []).map(s => s.id));

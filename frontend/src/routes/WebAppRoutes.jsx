@@ -150,8 +150,8 @@ export default function WebAppRoutes() {
         <Route path="/register" element={<Register />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/suspended" element={<SuspendedPage />} />
-        <Route path="/student/change-password" element={
-          <ProtectedRoute allowedRoles={["student"]} skipFirstLoginCheck={true}>
+        <Route path="/change-password" element={
+          <ProtectedRoute allowedRoles={["student", "faculty", "parent"]} skipFirstLoginCheck={true}>
             <ChangePassword />
           </ProtectedRoute>
         } />

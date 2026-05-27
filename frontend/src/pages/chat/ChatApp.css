@@ -154,6 +154,51 @@
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
 }
 
+/* ─── Safety Monitoring Info Banner ──────────────────────────────────────── */
+@keyframes fadeInDown {
+    from { opacity: 0; transform: translateY(-8px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+.chat-monitoring-info-banner {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 24px;
+    background: linear-gradient(
+        90deg,
+        rgba(79, 70, 229, 0.06) 0%,
+        rgba(99, 102, 241, 0.03) 100%
+    );
+    border-bottom: 1px solid rgba(79, 70, 229, 0.12);
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+    font-weight: 500;
+    letter-spacing: 0.01em;
+    line-height: 1.4;
+    flex-shrink: 0;
+    animation: fadeInDown 0.35s ease-out;
+}
+
+.chat-monitoring-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: rgba(79, 70, 229, 0.1);
+    color: var(--primary, #4f46e5);
+    flex-shrink: 0;
+}
+
+.direct-room-avatar {
+    background: linear-gradient(135deg, var(--primary, #4f46e5), #818cf8) !important;
+    color: white !important;
+    font-size: 1.1rem !important;
+}
+
+
 /* ─── Messages ────────────────────────────────────────────────────────── */
 .chat-messages {
     flex: 1; padding: 24px;

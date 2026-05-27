@@ -15,6 +15,24 @@ import "../auth/Auth.css";
 import "./Register.css";
 import zfLogo from "../../assets/zf-logo.png";
 
+const EyeIcon = ({ visible }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24"
+         fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        {visible ? (
+            <>
+                <path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94" />
+                <path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19" />
+                <line x1="1" y1="1" x2="23" y2="23" />
+            </>
+        ) : (
+            <>
+                <path d="M1 12S5 4 12 4s11 8 11 8-4 8-11 8S1 12 1 12z" />
+                <circle cx="12" cy="12" r="3" />
+            </>
+        )}
+    </svg>
+);
+
 function RegisterPage() {
     const navigate = useNavigate();
     const { setUser } = useContext(AuthContext);
@@ -24,6 +42,8 @@ function RegisterPage() {
     const [plans, setPlans]                 = useState([]);
     const [errors, setErrors]               = useState({});
     const [showOtpScreen, setShowOtpScreen] = useState(false);
+    const [showPassword, setShowPassword]   = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
     // ── Test Mode state ───────────────────────────────────────────────────
     // Declared further below
@@ -643,11 +663,17 @@ function RegisterPage() {
                                     </div>
                                 </div>
                                 <div className="auth-field" style={{ marginTop: "1rem" }}>
-                                    <label className="auth-label"><span className="auth-label__icon">🖼️</span> Institute Logo (Optional)</label>
+                                    <label className="auth-label" style={{ display: "flex", alignItems: "center", flexWrap: "wrap" }}>
+                                        <span className="auth-label__icon">🖼️</span> 
+                                        <span>Institute Logo (Optional)</span>
+                                        <span style={{ fontSize: "0.75rem", color: "var(--text-muted, #6b7280)", marginLeft: "8px", fontWeight: "normal" }}>
+                                            (Accepted: PNG, JPG, JPEG)
+                                        </span>
+                                    </label>
                                     <input 
                                         type="file" 
                                         name="logo" 
-                                        accept="image/*" 
+                                        accept="image/png, image/jpeg, image/jpg" 
                                         className="auth-input" 
                                         onChange={handleChange} 
                                         style={{ padding: "0.5rem" }}
@@ -660,14 +686,40 @@ function RegisterPage() {
                                 <div className="reg-row">
                                     <div className="auth-field">
                                         <label className="auth-label"><span className="auth-label__icon">🔒</span> Password *</label>
-                                        <input type="password" name="password" className={`auth-input${errors.password ? " auth-input--error" : ""}`}
-                                            placeholder="Min 8 chars, A-Z, 0-9" value={formData.password} onChange={handleChange} />
+                                        <div style={{ position: 'relative' }}>
+                                            <input type={showPassword ? "text" : "password"} name="password" 
+                                                className={`auth-input${errors.password ? " auth-input--error" : ""}`}
+                                                style={{ 
+                                                    paddingRight: '40px',
+                                                    borderColor: formData.password && formData.confirmPassword 
+                                                        ? (formData.password === formData.confirmPassword ? "#10b981" : "#ef4444") 
+                                                        : undefined
+                                                }}
+                                                placeholder="Min 8 chars, A-Z, 0-9" value={formData.password} onChange={handleChange} />
+                                            <button type="button" onClick={() => setShowPassword(!showPassword)}
+                                                style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: '#6b7280', cursor: 'pointer', padding: 0, display: 'flex' }}>
+                                                <EyeIcon visible={showPassword} />
+                                            </button>
+                                        </div>
                                         {errors.password && <span className="reg-error">{errors.password}</span>}
                                     </div>
                                     <div className="auth-field">
                                         <label className="auth-label"><span className="auth-label__icon">✅</span> Confirm Password *</label>
-                                        <input type="password" name="confirmPassword" className={`auth-input${errors.confirmPassword ? " auth-input--error" : ""}`}
-                                            placeholder="Repeat password" value={formData.confirmPassword} onChange={handleChange} />
+                                        <div style={{ position: 'relative' }}>
+                                            <input type={showConfirmPassword ? "text" : "password"} name="confirmPassword" 
+                                                className={`auth-input${errors.confirmPassword ? " auth-input--error" : ""}`}
+                                                style={{ 
+                                                    paddingRight: '40px',
+                                                    borderColor: formData.password && formData.confirmPassword 
+                                                        ? (formData.password === formData.confirmPassword ? "#10b981" : "#ef4444") 
+                                                        : undefined
+                                                }}
+                                                placeholder="Repeat password" value={formData.confirmPassword} onChange={handleChange} />
+                                            <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                                style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: '#6b7280', cursor: 'pointer', padding: 0, display: 'flex' }}>
+                                                <EyeIcon visible={showConfirmPassword} />
+                                            </button>
+                                        </div>
                                         {errors.confirmPassword && <span className="reg-error">{errors.confirmPassword}</span>}
                                     </div>
                                 </div>

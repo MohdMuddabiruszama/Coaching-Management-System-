@@ -23,16 +23,70 @@ function ParentDashboard() {
     const [fees, setFees] = useState([]);
     const [activeTab, setActiveTab] = useState("overview");
     const [detailLoading, setDetailLoading] = useState(false);
+    const [reminderPopup, setReminderPopup] = useState(null);
 
     useEffect(() => {
         fetchDashboard();
     }, []);
+
+    // Helper: calculate days until reminder
+    const getDaysUntilReminder = (reminderDate) => {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const rem = new Date(reminderDate);
+        rem.setHours(0, 0, 0, 0);
+        return Math.ceil((rem - today) / (1000 * 60 * 60 * 24));
+    };
+
+    // Should we show a reminder for this fee? Phased: 8 days, 4 days, ≤2 days, and on/past date
+    const shouldShowReminder = (fee) => {
+        if (!fee.reminder_date || fee.status === 'paid') return false;
+        const daysLeft = getDaysUntilReminder(fee.reminder_date);
+        // Show at exactly 8 days, exactly 4 days, 2 days or less (continuous), and on/past date
+        return daysLeft === 8 || daysLeft === 4 || daysLeft <= 2;
+    };
+
+    // Get urgency level: 'red' = overdue/today, 'orange' = approaching
+    const getReminderUrgency = (reminderDate) => {
+        const daysLeft = getDaysUntilReminder(reminderDate);
+        if (daysLeft <= 0) return 'red';   // On or past reminder date
+        return 'orange';                    // 8, 4, or ≤2 days before
+    };
 
     const fetchDashboard = async () => {
         try {
             const data = await parentService.getParentDashboard();
             const loadedStudents = data.data.students || [];
             setStudents(loadedStudents);
+            
+            // Check for popups using phased reminder logic
+            const popups = [];
+            
+            loadedStudents.forEach(st => {
+                if (st.StudentFees) {
+                    st.StudentFees.forEach(fee => {
+                        if (shouldShowReminder(fee)) {
+                            const daysLeft = getDaysUntilReminder(fee.reminder_date);
+                            popups.push({
+                                studentName: st.User?.name,
+                                amount: fee.due_amount,
+                                date: fee.reminder_date,
+                                daysLeft,
+                                overdue: daysLeft <= 0
+                            });
+                        }
+                    });
+                }
+            });
+            
+            if (popups.length > 0) {
+                const hasShown = sessionStorage.getItem('feePopupShown');
+                if (!hasShown) {
+                    setReminderPopup(popups);
+                    sessionStorage.setItem('feePopupShown', 'true');
+                }
+            }
+
             if (loadedStudents.length > 0) {
                 await selectStudent(loadedStudents[0]);
             }
@@ -40,6 +94,45 @@ function ParentDashboard() {
             console.error("Error fetching parent dashboard:", error);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const getStudentCardStyle = (student) => {
+        const isSelected = selectedStudent?.id === student.id;
+        
+        let worstUrgency = 'none'; // none | orange | red
+
+        if (student.StudentFees && student.StudentFees.length > 0) {
+            student.StudentFees.forEach(fee => {
+                if (shouldShowReminder(fee)) {
+                    const urgency = getReminderUrgency(fee.reminder_date);
+                    if (urgency === 'red') worstUrgency = 'red';
+                    else if (urgency === 'orange' && worstUrgency !== 'red') worstUrgency = 'orange';
+                }
+            });
+        }
+
+        if (worstUrgency === 'red') {
+            return {
+                background: isSelected ? "linear-gradient(135deg, #ef4444, #dc2626)" : "#fee2e2",
+                color: isSelected ? "#fff" : "#991b1b",
+                borderColor: isSelected ? "#ef4444" : "#fca5a5",
+                boxShadow: isSelected ? "0 8px 24px rgba(239,68,68,0.35)" : undefined
+            };
+        } else if (worstUrgency === 'orange') {
+            return {
+                background: isSelected ? "linear-gradient(135deg, #f59e0b, #d97706)" : "#fef3c7",
+                color: isSelected ? "#fff" : "#92400e",
+                borderColor: isSelected ? "#f59e0b" : "#fcd34d",
+                boxShadow: isSelected ? "0 8px 24px rgba(245,158,11,0.35)" : undefined
+            };
+        } else {
+            return {
+                background: isSelected ? "linear-gradient(135deg,#4f46e5,#7c3aed)" : undefined,
+                color: isSelected ? "#fff" : undefined,
+                borderColor: isSelected ? "#4f46e5" : undefined,
+                boxShadow: isSelected ? "0 8px 24px rgba(79,70,229,0.35)" : undefined
+            };
         }
     };
 
@@ -76,14 +169,7 @@ function ParentDashboard() {
     const attPct = attendance?.summary?.attendance_percentage || 0;
 
     const TODAY_STR = new Date().toISOString().split('T')[0];
-    const reminders = fees.filter(f => {
-        if (!f.reminder_date || f.status === 'paid') return false;
-        const remDate = new Date(f.reminder_date);
-        const today = new Date(TODAY_STR);
-        // Start showing 1 day before (diff <= 1 day)
-        const diffDays = (remDate - today) / (1000 * 60 * 60 * 24);
-        return diffDays <= 1;
-    });
+    const reminders = fees.filter(f => shouldShowReminder(f));
 
     if (loading) {
         return (
@@ -123,14 +209,7 @@ function ParentDashboard() {
                         key={student.id}
                         className="student-card-btn"
                         onClick={() => selectStudent(student)}
-                        style={{
-                            background: selectedStudent?.id === student.id
-                                ? "linear-gradient(135deg,#4f46e5,#7c3aed)"
-                                : undefined,
-                            color: selectedStudent?.id === student.id ? "#fff" : undefined,
-                            borderColor: selectedStudent?.id === student.id ? "#4f46e5" : undefined,
-                            boxShadow: selectedStudent?.id === student.id ? "0 8px 24px rgba(79,70,229,0.35)" : undefined
-                        }}
+                        style={getStudentCardStyle(student)}
                     >
                         <span className="icon">🎓</span>
                         <div className="details">
@@ -187,18 +266,34 @@ function ParentDashboard() {
                                     {/* Reminder Alerts */}
                                     {reminders.length > 0 && (
                                         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '1.5rem' }}>
-                                            {reminders.map(rem => (
-                                                <div key={`rem-${rem.id}`} style={{
-                                                    background: 'linear-gradient(135deg,rgba(245,158,11,0.12),rgba(245,158,11,0.05))',
-                                                    border: '1.5px solid rgba(245,158,11,0.5)', borderRadius: '12px',
-                                                    padding: '0.85rem 1.25rem', display: 'flex', alignItems: 'center', gap: '1rem'
-                                                }}>
-                                                    <span style={{ fontSize: '1.25rem' }}>⚠️</span>
-                                                    <div style={{ color: '#d97706', fontWeight: '600', fontSize: '0.95rem' }}>
-                                                        {selectedStudent?.User?.name} and This student Fees Pending. (Reminder Date: {new Date(rem.reminder_date).toLocaleDateString()})
+                                            {reminders.map(rem => {
+                                                const urgency = getReminderUrgency(rem.reminder_date);
+                                                const daysLeft = getDaysUntilReminder(rem.reminder_date);
+                                                const isRed = urgency === 'red';
+                                                const borderColor = isRed ? 'rgba(239,68,68,0.5)' : 'rgba(245,158,11,0.5)';
+                                                const bgGradient = isRed
+                                                    ? 'linear-gradient(135deg,rgba(239,68,68,0.12),rgba(239,68,68,0.05))'
+                                                    : 'linear-gradient(135deg,rgba(245,158,11,0.12),rgba(245,158,11,0.05))';
+                                                const textColor = isRed ? '#dc2626' : '#d97706';
+                                                const icon = isRed ? '🚨' : '⚠️';
+                                                const daysText = daysLeft > 0 
+                                                    ? `${daysLeft} day${daysLeft !== 1 ? 's' : ''} remaining` 
+                                                    : daysLeft === 0 
+                                                        ? 'Due today!' 
+                                                        : `Overdue by ${Math.abs(daysLeft)} day${Math.abs(daysLeft) !== 1 ? 's' : ''}`;
+                                                return (
+                                                    <div key={`rem-${rem.id}`} style={{
+                                                        background: bgGradient,
+                                                        border: `1.5px solid ${borderColor}`, borderRadius: '12px',
+                                                        padding: '0.85rem 1.25rem', display: 'flex', alignItems: 'center', gap: '1rem'
+                                                    }}>
+                                                        <span style={{ fontSize: '1.25rem' }}>{icon}</span>
+                                                        <div style={{ color: textColor, fontWeight: '600', fontSize: '0.95rem' }}>
+                                                            {selectedStudent?.User?.name} has pending fees. Please pay before the reminder date: {new Date(rem.reminder_date).toLocaleDateString()}. <span style={{ fontWeight: 700, fontSize: '0.85rem', opacity: 0.85 }}>({daysText})</span>
+                                                        </div>
                                                     </div>
-                                                </div>
-                                            ))}
+                                                );
+                                            })}
                                         </div>
                                     )}
                                     <div className="stats-grid">
@@ -697,7 +792,54 @@ function ParentDashboard() {
                     <p>No students linked to your account. Please contact administration.</p>
                 </div>
             )}
-        </div >
+
+            {/* Fee Reminder Popup */}
+            {reminderPopup && reminderPopup.length > 0 && (
+                <div style={{
+                    position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh',
+                    background: 'rgba(0,0,0,0.5)', zIndex: 9999,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem', backdropFilter: 'blur(4px)'
+                }}>
+                    <div style={{
+                        background: 'var(--bg-card, #fff)', padding: '2.5rem 2rem', borderRadius: '20px',
+                        maxWidth: '450px', width: '100%', boxShadow: '0 25px 50px rgba(0,0,0,0.25)',
+                        textAlign: 'center', position: 'relative'
+                    }}>
+                        <div style={{ fontSize: '3.5rem', marginBottom: '0.5rem' }}>⚠️</div>
+                        <h2 style={{ color: '#ef4444', marginBottom: '1.5rem', fontWeight: 800 }}>Fee Reminder</h2>
+                        <div style={{ textAlign: 'left', marginBottom: '2rem', maxHeight: '50vh', overflowY: 'auto' }}>
+                            {reminderPopup.map((rem, idx) => (
+                                <div key={idx} style={{
+                                    padding: '1rem', background: rem.overdue ? '#fee2e2' : '#fef3c7',
+                                    borderRadius: '12px', marginBottom: '0.75rem', borderLeft: `4px solid ${rem.overdue ? '#ef4444' : '#f59e0b'}`
+                                }}>
+                                    <p style={{ margin: 0, color: rem.overdue ? '#991b1b' : '#92400e', lineHeight: '1.5' }}>
+                                        <strong>{rem.studentName}</strong> has pending fees of <strong style={{ fontSize: '1.1rem' }}>₹{parseFloat(rem.amount).toLocaleString()}</strong>.
+                                        <br />
+                                        <span style={{ fontSize: '0.85rem', opacity: 0.9, marginTop: '4px', display: 'inline-block' }}>
+                                            {rem.overdue ? 'Overdue since' : 'Reminder Date'}: {new Date(rem.date).toLocaleDateString()}
+                                        </span>
+                                    </p>
+                                </div>
+                            ))}
+                        </div>
+                        <button 
+                            onClick={() => setReminderPopup(null)}
+                            style={{
+                                background: 'linear-gradient(135deg, #ef4444, #dc2626)', color: 'white',
+                                padding: '14px 24px', borderRadius: '12px', border: 'none',
+                                fontWeight: 'bold', fontSize: '1.05rem', cursor: 'pointer', width: '100%',
+                                transition: 'transform 0.1s'
+                            }}
+                            onMouseDown={(e) => e.currentTarget.style.transform = 'scale(0.98)'}
+                            onMouseUp={(e) => e.currentTarget.style.transform = 'scale(1)'}
+                        >
+                            Acknowledge
+                        </button>
+                    </div>
+                </div>
+            )}
+        </div>
     );
 }
 

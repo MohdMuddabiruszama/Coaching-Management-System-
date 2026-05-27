@@ -1,4 +1,4 @@
-const { User, StudentParent, Student, Class, Subject, Institute, Attendance, Mark, Exam, StudentFee, Note, NoteDownload } = require("../models");
+const { User, StudentParent, Student, Class, Subject, Institute, Attendance, Mark, Exam, StudentFee, Note, NoteDownload, Faculty } = require("../models");
 const { hashPassword } = require("../utils/hashPassword");
 const { Op } = require("sequelize");
 
@@ -29,7 +29,12 @@ exports.createParent = async (req, res) => {
             return res.status(409).json({ success: false, message: "User with this email already exists" });
         }
 
-        const password_hash = await hashPassword(password || "parent123");
+        const { generateTempPassword } = require('../utils/passwordGenerator');
+        const tempPassword = password || generateTempPassword();
+        const password_hash = await hashPassword(tempPassword);
+
+        const temp_password_expires_at = new Date();
+        temp_password_expires_at.setDate(temp_password_expires_at.getDate() + 7);
 
         const user = await User.create({
             institute_id,
@@ -38,7 +43,11 @@ exports.createParent = async (req, res) => {
             email,
             phone,
             password_hash,
-            status: "active"
+            status: "active",
+            is_first_login: true,
+            temp_password_expires_at,
+            credentials_sent_at: email ? new Date() : null,
+            initial_password: tempPassword
         });
 
         if (student_ids && student_ids.length > 0) {
@@ -126,7 +135,23 @@ exports.getDashboard = async (req, res) => {
                 },
                 { model: User, attributes: ["name", "email", "phone"] },
                 { model: Class, attributes: ["id", "name"], through: { attributes: [] } },
-                { model: Subject, attributes: ["id", "name"], through: { attributes: [] } }
+                { 
+                    model: Subject, 
+                    attributes: ["id", "name"], 
+                    through: { attributes: [] },
+                    include: [{
+                        model: Faculty,
+                        attributes: ["id", "user_id"],
+                        include: [{
+                            model: User,
+                            attributes: ["name"]
+                        }]
+                    }]
+                },
+                {
+                    model: StudentFee,
+                    attributes: ["status", "reminder_date", "due_amount"]
+                }
             ]
         });
 
@@ -137,7 +162,15 @@ exports.getDashboard = async (req, res) => {
                 const classIds = responseData.Classes.map(c => c.id);
                 const allSubjects = await Subject.findAll({
                     where: { institute_id: req.user.institute_id, class_id: { [Op.in]: classIds } },
-                    attributes: ["id", "name"]
+                    attributes: ["id", "name"],
+                    include: [{
+                        model: Faculty,
+                        attributes: ["id", "user_id"],
+                        include: [{
+                            model: User,
+                            attributes: ["name"]
+                        }]
+                    }]
                 });
 
                 const existingSubIds = new Set((responseData.Subjects || []).map(s => s.id));
@@ -178,7 +211,19 @@ exports.getStudentProfile = async (req, res) => {
             include: [
                 { model: User, attributes: ["name", "email", "phone"] },
                 { model: Class, attributes: ["id", "name"], through: { attributes: [] } },
-                { model: Subject, attributes: ["id", "name"], through: { attributes: [] } }
+                { 
+                    model: Subject, 
+                    attributes: ["id", "name"], 
+                    through: { attributes: [] },
+                    include: [{
+                        model: Faculty,
+                        attributes: ["id", "user_id"],
+                        include: [{
+                            model: User,
+                            attributes: ["name"]
+                        }]
+                    }]
+                }
             ]
         });
 
@@ -187,7 +232,15 @@ exports.getStudentProfile = async (req, res) => {
             const classIds = responseData.Classes.map(c => c.id);
             const allSubjects = await Subject.findAll({
                 where: { institute_id: req.user.institute_id, class_id: { [Op.in]: classIds } },
-                attributes: ["id", "name"]
+                attributes: ["id", "name"],
+                include: [{
+                    model: Faculty,
+                    attributes: ["id", "user_id"],
+                    include: [{
+                        model: User,
+                        attributes: ["name"]
+                    }]
+                }]
             });
 
             const existingSubIds = new Set((responseData.Subjects || []).map(s => s.id));

@@ -333,14 +333,28 @@ function Fees() {
     };
     const overdueCount = studentFees.filter(isOverdue).length;
 
-    // Helper to check if a fee is within the reminder window (1 day before or more)
+    // Helper: calculate days until reminder
+    const getDaysUntilReminder = (reminderDate) => {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const rem = new Date(reminderDate);
+        rem.setHours(0, 0, 0, 0);
+        return Math.ceil((rem - today) / (1000 * 60 * 60 * 24));
+    };
+
+    // Helper to check if a fee is within the reminder window (phased)
     const isReminderActive = (sf) => {
         if (!sf.reminder_date || sf.status === 'paid') return false;
-        const remDate = new Date(sf.reminder_date);
-        const today = new Date(todayDate);
-        // Start showing 1 day before (diff <= 1 day)
-        const diffDays = (remDate - today) / (1000 * 60 * 60 * 24);
-        return diffDays <= 1;
+        const daysLeft = getDaysUntilReminder(sf.reminder_date);
+        // Show at exactly 8 days, exactly 4 days, 2 days or less (continuous), and on/past date
+        return daysLeft === 8 || daysLeft === 4 || daysLeft <= 2;
+    };
+    
+    // Get urgency level: 'red' = overdue/today, 'orange' = approaching
+    const getReminderUrgency = (reminderDate) => {
+        const daysLeft = getDaysUntilReminder(reminderDate);
+        if (daysLeft <= 0) return 'red';   // On or past reminder date
+        return 'orange';                    // 8, 4, or ≤2 days before
     };
 
     return (
@@ -405,18 +419,34 @@ function Fees() {
                 if (reminders.length === 0) return null;
                 return (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '1.5rem' }}>
-                        {reminders.map(rem => (
-                            <div key={`rem-${rem.id}`} style={{
-                                background: 'linear-gradient(135deg,rgba(245,158,11,0.12),rgba(245,158,11,0.05))',
-                                border: '1.5px solid rgba(245,158,11,0.5)', borderRadius: '12px',
-                                padding: '0.85rem 1.25rem', display: 'flex', alignItems: 'center', gap: '1rem'
-                            }}>
-                                <span style={{ fontSize: '1.25rem' }}>⚠️</span>
-                                <div style={{ color: '#d97706', fontWeight: '600', fontSize: '0.95rem' }}>
-                                    {rem.Student?.User?.name} and This student Fees Pending. (Reminder Date: {new Date(rem.reminder_date).toLocaleDateString()})
+                        {reminders.map(rem => {
+                            const urgency = getReminderUrgency(rem.reminder_date);
+                            const daysLeft = getDaysUntilReminder(rem.reminder_date);
+                            const isRed = urgency === 'red';
+                            const borderColor = isRed ? 'rgba(239,68,68,0.5)' : 'rgba(245,158,11,0.5)';
+                            const bgGradient = isRed
+                                ? 'linear-gradient(135deg,rgba(239,68,68,0.12),rgba(239,68,68,0.05))'
+                                : 'linear-gradient(135deg,rgba(245,158,11,0.12),rgba(245,158,11,0.05))';
+                            const textColor = isRed ? '#dc2626' : '#d97706';
+                            const icon = isRed ? '🚨' : '⚠️';
+                            const daysText = daysLeft > 0 
+                                ? `${daysLeft} day${daysLeft !== 1 ? 's' : ''} remaining` 
+                                : daysLeft === 0 
+                                    ? 'Due today!' 
+                                    : `Overdue by ${Math.abs(daysLeft)} day${Math.abs(daysLeft) !== 1 ? 's' : ''}`;
+                            return (
+                                <div key={`rem-${rem.id}`} style={{
+                                    background: bgGradient,
+                                    border: `1.5px solid ${borderColor}`, borderRadius: '12px',
+                                    padding: '0.85rem 1.25rem', display: 'flex', alignItems: 'center', gap: '1rem'
+                                }}>
+                                    <span style={{ fontSize: '1.25rem' }}>{icon}</span>
+                                    <div style={{ color: textColor, fontWeight: '600', fontSize: '0.95rem' }}>
+                                        {rem.Student?.User?.name} has pending fees. Please collect before the reminder date: {new Date(rem.reminder_date).toLocaleDateString()}. <span style={{ fontWeight: 700, fontSize: '0.85rem', opacity: 0.85 }}>({daysText})</span>
+                                    </div>
                                 </div>
-                            </div>
-                        ))}
+                            );
+                        })}
                     </div>
                 );
             })()}

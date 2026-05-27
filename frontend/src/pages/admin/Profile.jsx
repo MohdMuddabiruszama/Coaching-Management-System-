@@ -4,6 +4,24 @@ import api from "../../services/api";
 import { useNavigate } from "react-router-dom";
 import "../admin/Dashboard.css";
 
+const EyeIcon = ({ visible }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24"
+         fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        {visible ? (
+            <>
+                <path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94" />
+                <path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19" />
+                <line x1="1" y1="1" x2="23" y2="23" />
+            </>
+        ) : (
+            <>
+                <path d="M1 12S5 4 12 4s11 8 11 8-4 8-11 8S1 12 1 12z" />
+                <circle cx="12" cy="12" r="3" />
+            </>
+        )}
+    </svg>
+);
+
 function Profile() {
     const { user, setUser } = useContext(AuthContext);
     const navigate = useNavigate();
@@ -23,6 +41,12 @@ function Profile() {
         oldPassword: "",
         newPassword: "",
         confirmPassword: ""
+    });
+
+    const [showPassword, setShowPassword] = useState({
+        oldPassword: false,
+        newPassword: false,
+        confirmPassword: false
     });
 
     const [message, setMessage] = useState({ type: "", text: "" });
@@ -246,36 +270,63 @@ function Profile() {
                         <form onSubmit={handlePasswordChange}>
                             <div className="form-group" style={{ marginBottom: '1.2rem' }}>
                                 <label className="form-label" style={{ fontWeight: "600", color: "#374151", marginBottom: "5px", display: "block" }}>Current Password</label>
-                                <input
-                                    type="password"
-                                    className="form-input"
-                                    value={passwordData.oldPassword}
-                                    onChange={(e) => setPasswordData({ ...passwordData, oldPassword: e.target.value })}
-                                    required
-                                    style={{ width: "100%", padding: "10px", borderRadius: "6px", border: "1px solid #d1d5db" }}
-                                />
+                                <div style={{ position: 'relative' }}>
+                                    <input
+                                        type={showPassword.oldPassword ? "text" : "password"}
+                                        className="form-input"
+                                        value={passwordData.oldPassword}
+                                        onChange={(e) => setPasswordData({ ...passwordData, oldPassword: e.target.value })}
+                                        required
+                                        style={{ width: "100%", padding: "10px", paddingRight: "40px", borderRadius: "6px", border: "1px solid #d1d5db" }}
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowPassword({ ...showPassword, oldPassword: !showPassword.oldPassword })}
+                                        style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#6b7280', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 }}
+                                    >
+                                        <EyeIcon visible={showPassword.oldPassword} />
+                                    </button>
+                                </div>
                             </div>
                             <div className="form-group" style={{ marginBottom: '1.2rem' }}>
                                 <label className="form-label" style={{ fontWeight: "600", color: "#374151", marginBottom: "5px", display: "block" }}>New Password</label>
-                                <input
-                                    type="password"
-                                    className="form-input"
-                                    value={passwordData.newPassword}
-                                    onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
-                                    required
-                                    style={{ width: "100%", padding: "10px", borderRadius: "6px", border: "1px solid #d1d5db" }}
-                                />
+                                <div style={{ position: 'relative' }}>
+                                    <input
+                                        type={showPassword.newPassword ? "text" : "password"}
+                                        className="form-input"
+                                        value={passwordData.newPassword}
+                                        onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
+                                        required
+                                        style={{ width: "100%", padding: "10px", paddingRight: "40px", borderRadius: "6px", border: "1px solid #d1d5db" }}
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowPassword({ ...showPassword, newPassword: !showPassword.newPassword })}
+                                        style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#6b7280', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 }}
+                                    >
+                                        <EyeIcon visible={showPassword.newPassword} />
+                                    </button>
+                                </div>
                             </div>
                             <div className="form-group" style={{ marginBottom: '1.5rem' }}>
                                 <label className="form-label" style={{ fontWeight: "600", color: "#374151", marginBottom: "5px", display: "block" }}>Confirm New Password</label>
-                                <input
-                                    type="password"
-                                    className="form-input"
-                                    value={passwordData.confirmPassword}
-                                    onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
-                                    required
-                                    style={{ width: "100%", padding: "10px", borderRadius: "6px", border: "1px solid #d1d5db" }}
-                                />
+                                <div style={{ position: 'relative' }}>
+                                    <input
+                                        type={showPassword.confirmPassword ? "text" : "password"}
+                                        className="form-input"
+                                        value={passwordData.confirmPassword}
+                                        onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
+                                        required
+                                        style={{ width: "100%", padding: "10px", paddingRight: "40px", borderRadius: "6px", border: "1px solid #d1d5db" }}
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowPassword({ ...showPassword, confirmPassword: !showPassword.confirmPassword })}
+                                        style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#6b7280', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 }}
+                                    >
+                                        <EyeIcon visible={showPassword.confirmPassword} />
+                                    </button>
+                                </div>
                             </div>
                             <button type="submit" className="btn btn-warning" style={{ width: "100%", padding: "12px", borderRadius: "6px", fontWeight: "bold", backgroundColor: '#f59e0b', color: 'white', border: 'none', cursor: "pointer" }}>
                                 Update Password
