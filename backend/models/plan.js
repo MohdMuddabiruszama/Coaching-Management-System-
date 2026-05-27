@@ -319,6 +319,10 @@ const Plan = sequelize.define("Plan", {
         type: DataTypes.BOOLEAN,
         defaultValue: false
     },
+    feature_performance_hub: {
+        type: DataTypes.BOOLEAN,
+        defaultValue: false
+    },
     feature_transport: {
         type: DataTypes.BOOLEAN,
         defaultValue: false

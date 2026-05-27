@@ -387,14 +387,34 @@ exports.getStudentAttendanceReport = async (req, res) => {
             ]
         });
 
-        // Phase 1: Working days EXCLUDES holidays — correct count for percentage
-        const totalDays = records.length;
-        const holidays = records.filter(r => r.status === 'holiday').length;
-        const workingDays = totalDays - holidays; // <-- Holidays excluded properly
-        const presentDays = records.filter(r => r.status === 'present').length;
-        const absentDays = records.filter(r => r.status === 'absent').length;
-        const lateDays = records.filter(r => r.status === 'late').length;
-        const percentage = workingDays > 0 ? ((presentDays / workingDays) * 100).toFixed(2) : 0;
+        // Phase 1: Working days EXCLUDES holidays — calculate distinct dates
+        const uniqueDatesMap = {};
+        records.forEach(r => {
+            if (!uniqueDatesMap[r.date]) uniqueDatesMap[r.date] = [];
+            uniqueDatesMap[r.date].push(r.status);
+        });
+
+        let totalDays = 0, workingDays = 0, presentDays = 0, absentDays = 0, lateDays = 0, holidays = 0;
+
+        Object.values(uniqueDatesMap).forEach(statuses => {
+            totalDays++;
+            if (statuses.includes('holiday')) {
+                holidays++;
+            } else {
+                workingDays++;
+                if (statuses.includes('present')) {
+                    presentDays++;
+                } else if (statuses.includes('late')) {
+                    lateDays++;
+                } else if (statuses.includes('half_day')) {
+                    presentDays++;
+                } else if (statuses.includes('absent')) {
+                    absentDays++;
+                }
+            }
+        });
+
+        const percentage = workingDays > 0 ? (((presentDays + lateDays) / workingDays) * 100).toFixed(2) : 0;
 
         res.status(200).json({
             success: true,
@@ -402,7 +422,7 @@ exports.getStudentAttendanceReport = async (req, res) => {
                 records,
                 summary: {
                     total_days: totalDays,
-                    working_days: workingDays, // Phase 1: correctly excludes holidays
+                    working_days: workingDays, // Correctly distinct working days
                     present_days: presentDays,
                     absent_days: absentDays,
                     late_days: lateDays,
@@ -449,11 +469,33 @@ exports.getClassAttendanceSummary = async (req, res) => {
                 where: { ...whereClause, student_id: student.id }
             });
 
-            const total = records.length;
-            const holidays = records.filter(r => r.status === 'holiday').length;
-            const workingDays = total - holidays;
-            const present = records.filter(r => r.status === 'present').length;
-            const percentage = workingDays > 0 ? ((present / workingDays) * 100).toFixed(2) : 0;
+            const uniqueDatesMap = {};
+            records.forEach(r => {
+                if (!uniqueDatesMap[r.date]) uniqueDatesMap[r.date] = [];
+                uniqueDatesMap[r.date].push(r.status);
+            });
+
+            let total = 0, workingDays = 0, present = 0, absent = 0, late = 0, holidays = 0;
+
+            Object.values(uniqueDatesMap).forEach(statuses => {
+                total++;
+                if (statuses.includes('holiday')) {
+                    holidays++;
+                } else {
+                    workingDays++;
+                    if (statuses.includes('present')) {
+                        present++;
+                    } else if (statuses.includes('late')) {
+                        late++;
+                    } else if (statuses.includes('half_day')) {
+                        present++;
+                    } else if (statuses.includes('absent')) {
+                        absent++;
+                    }
+                }
+            });
+
+            const percentage = workingDays > 0 ? (((present + late) / workingDays) * 100).toFixed(2) : 0;
 
             return {
                 student_id: student.id,
@@ -462,8 +504,8 @@ exports.getClassAttendanceSummary = async (req, res) => {
                 total_days: total,
                 working_days: workingDays,
                 present_days: present,
-                absent_days: records.filter(r => r.status === 'absent').length,
-                late_days: records.filter(r => r.status === 'late').length,
+                absent_days: absent,
+                late_days: late,
                 holiday_days: holidays,
                 percentage: parseFloat(percentage)
             };

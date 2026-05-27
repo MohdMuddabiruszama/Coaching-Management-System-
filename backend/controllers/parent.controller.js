@@ -281,20 +281,41 @@ exports.getStudentAttendance = async (req, res) => {
             order: [['date', 'ASC']]
         });
 
-        const present = records.filter(r => r.status === 'present').length;
-        const absent = records.filter(r => r.status === 'absent').length;
-        const late = records.filter(r => r.status === 'late').length;
-        const holidays = records.filter(r => r.status === 'holiday').length;
-        const total = records.filter(r => r.status !== 'holiday').length; // working days
-        const percentage = total > 0 ? ((present / total) * 100).toFixed(2) : 0;
+        const uniqueDatesMap = {};
+        records.forEach(r => {
+            if (!uniqueDatesMap[r.date]) uniqueDatesMap[r.date] = [];
+            uniqueDatesMap[r.date].push(r.status);
+        });
+
+        let total_days = 0, working_days = 0, present = 0, absent = 0, late = 0, holidays = 0;
+
+        Object.values(uniqueDatesMap).forEach(statuses => {
+            total_days++;
+            if (statuses.includes('holiday')) {
+                holidays++;
+            } else {
+                working_days++;
+                if (statuses.includes('present')) {
+                    present++;
+                } else if (statuses.includes('late')) {
+                    late++;
+                } else if (statuses.includes('half_day')) {
+                    present++;
+                } else if (statuses.includes('absent')) {
+                    absent++;
+                }
+            }
+        });
+
+        const percentage = working_days > 0 ? (((present + late) / working_days) * 100).toFixed(2) : 0;
 
         res.status(200).json({
             success: true,
             data: {
                 records,
                 summary: {
-                    total_days: records.length,
-                    working_days: total,
+                    total_days: total_days,
+                    working_days: working_days,
                     present_days: present,
                     absent_days: absent,
                     late_days: late,

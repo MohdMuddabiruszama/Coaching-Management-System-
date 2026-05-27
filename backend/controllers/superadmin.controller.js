@@ -325,6 +325,7 @@ exports.updateInstituteLimits = async (req, res) => {
             current_feature_api_access,
             current_feature_public_page,
             current_feature_assignment,
+            current_feature_performance_hub,
             current_feature_transport,
             current_feature_mobile_app,
             current_feature_chat
@@ -355,6 +356,7 @@ exports.updateInstituteLimits = async (req, res) => {
         if (current_feature_api_access !== undefined) updates.current_feature_api_access = !!current_feature_api_access;
         if (current_feature_public_page !== undefined) updates.current_feature_public_page = !!current_feature_public_page;
         if (current_feature_assignment !== undefined) updates.current_feature_assignment = !!current_feature_assignment;
+        if (current_feature_performance_hub !== undefined) updates.current_feature_performance_hub = !!current_feature_performance_hub;
         if (current_feature_transport !== undefined) updates.current_feature_transport = !!current_feature_transport;
         if (current_feature_mobile_app !== undefined) updates.current_feature_mobile_app = !!current_feature_mobile_app;
         if (current_feature_chat !== undefined) updates.current_feature_chat = !!current_feature_chat;
@@ -370,7 +372,7 @@ exports.updateInstituteLimits = async (req, res) => {
             'current_feature_salary', 'current_feature_announcements', 'current_feature_export',
             'current_feature_timetable', 'current_feature_whatsapp', 'current_feature_custom_branding',
             'current_feature_multi_branch', 'current_feature_api_access', 'current_feature_public_page',
-            'current_feature_assignment', 'current_feature_transport', 'current_feature_mobile_app', 'current_feature_chat'
+            'current_feature_assignment', 'current_feature_performance_hub', 'current_feature_transport', 'current_feature_mobile_app', 'current_feature_chat'
         ];
 
         booleanFeatures.forEach(feature => {
@@ -809,6 +811,7 @@ exports.upgradePlan = async (req, res) => {
             current_feature_api_access: newPlan.feature_api_access,
             current_feature_public_page: newPlan.feature_public_page,
             current_feature_assignment: newPlan.feature_assignment || false,
+            current_feature_performance_hub: newPlan.feature_performance_hub || false,
             current_feature_transport: newPlan.feature_transport || false,
             current_limit_chat_messages: newPlan.max_chat_messages || 500,
             

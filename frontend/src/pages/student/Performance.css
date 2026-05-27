@@ -1,0 +1,736 @@
+/**
+ * Performance Pages CSS — Student / Faculty / Admin / Parent
+ * Shared stylesheet for all performance views
+ */
+
+/* ── Page Layout ─────────────────────────────────────────────────────────── */
+.perf-page {
+    max-width: 1100px;
+}
+
+.perf-card {
+    background: var(--card-bg, #fff);
+    border-radius: 16px;
+    border: 1px solid var(--border-color, #e5e7eb);
+    padding: 1.5rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+.perf-card-title {
+    margin: 0 0 1.25rem 0;
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+/* ── Section 1 — Score Row ─────────────────────────────────────────────── */
+.perf-score-row {
+    display: grid;
+    grid-template-columns: 220px 1fr;
+    gap: 1.5rem;
+    align-items: start;
+    margin-bottom: 1.5rem;
+}
+
+@media (max-width: 700px) {
+    .perf-score-row {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Main Score Card */
+.perf-main-score-card {
+    background: var(--card-bg, #fff);
+    border-radius: 20px;
+    border: 1px solid var(--border-color, #e5e7eb);
+    padding: 2rem 1.5rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.07);
+}
+
+.perf-score-circle {
+    width: 110px;
+    height: 110px;
+    border-radius: 50%;
+    border: 6px solid;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    background: var(--card-bg, #fff);
+    box-shadow: 0 0 0 3px rgba(99,102,241,0.08);
+}
+
+.perf-score-number {
+    font-size: 2.2rem;
+    font-weight: 900;
+    line-height: 1;
+}
+
+.perf-score-label {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    margin-top: 2px;
+}
+
+.perf-grade-badge {
+    color: #fff;
+    font-size: 1.5rem;
+    font-weight: 900;
+    padding: 0.25rem 1.25rem;
+    border-radius: 30px;
+    letter-spacing: 0.05em;
+}
+
+.perf-status-label {
+    font-size: 0.95rem;
+    font-weight: 700;
+}
+
+/* Metric Cards */
+.perf-metric-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 1rem;
+}
+
+.perf-metric-card {
+    background: var(--card-bg, #fff);
+    border-radius: 14px;
+    border: 1px solid var(--border-color, #e5e7eb);
+    padding: 1.25rem 1rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.35rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.perf-metric-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0,0,0,0.1);
+}
+
+.perf-metric-icon {
+    font-size: 1.5rem;
+}
+
+.perf-metric-value {
+    font-size: 1.6rem;
+    font-weight: 900;
+    line-height: 1;
+}
+
+.perf-metric-label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.perf-metric-sub {
+    font-size: 0.72rem;
+    color: var(--text-secondary);
+}
+
+/* ── Section 2 — Weak Subjects Alert ────────────────────────────────────── */
+.perf-alert-banner {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    background: linear-gradient(135deg, rgba(239,68,68,0.1), rgba(220,38,38,0.05));
+    border: 1.5px solid rgba(239,68,68,0.4);
+    border-radius: 14px;
+    padding: 1.1rem 1.5rem;
+    margin-bottom: 1.5rem;
+    animation: slideIn 0.3s ease;
+}
+
+@keyframes slideIn {
+    from { opacity: 0; transform: translateY(-8px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+.perf-alert-icon {
+    font-size: 1.5rem;
+    flex-shrink: 0;
+}
+
+.perf-alert-title {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #dc2626;
+    margin-bottom: 0.5rem;
+}
+
+.perf-alert-subjects {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.perf-alert-chip {
+    background: rgba(239,68,68,0.12);
+    border: 1px solid rgba(239,68,68,0.3);
+    border-radius: 20px;
+    padding: 0.25rem 0.75rem;
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: #b91c1c;
+}
+
+/* ── Section 3 — Subject Bar Chart ──────────────────────────────────────── */
+.perf-subject-bars {
+    display: flex;
+    flex-direction: column;
+    gap: 0.9rem;
+}
+
+.perf-subject-bar-row {
+    display: grid;
+    grid-template-columns: 140px 1fr 50px;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+@media (max-width: 600px) {
+    .perf-subject-bar-row {
+        grid-template-columns: 100px 1fr 40px;
+    }
+}
+
+.perf-subject-bar-label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    text-align: right;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.perf-subject-bar-track {
+    background: var(--border-color, #e5e7eb);
+    border-radius: 20px;
+    height: 22px;
+    position: relative;
+    overflow: visible;
+}
+
+.perf-subject-bar-fill {
+    height: 100%;
+    border-radius: 20px;
+    transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+    min-width: 4px;
+}
+
+.perf-passing-line {
+    position: absolute;
+    top: -4px;
+    bottom: -4px;
+    width: 2px;
+    background: rgba(148,163,184,0.8);
+    border-left: 2px dashed #94a3b8;
+    z-index: 2;
+}
+
+.perf-subject-bar-value {
+    font-size: 0.85rem;
+    font-weight: 700;
+    text-align: left;
+}
+
+/* ── Section 3B — Trend Bar Chart ───────────────────────────────────────── */
+.perf-trend-chart {
+    display: flex;
+    align-items: flex-end;
+    gap: 1rem;
+    height: 180px;
+    padding: 0.5rem 0;
+}
+
+.perf-trend-bar-col {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.3rem;
+    height: 100%;
+}
+
+.perf-trend-bar-val {
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.perf-trend-bar-wrap {
+    flex: 1;
+    width: 100%;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+}
+
+.perf-trend-bar {
+    width: 60%;
+    min-height: 4px;
+    border-radius: 6px 6px 0 0;
+    transition: height 0.8s ease;
+}
+
+.perf-trend-bar-month {
+    font-size: 0.72rem;
+    color: var(--text-secondary);
+    font-weight: 600;
+}
+
+/* ── Section 4 — Heatmap ────────────────────────────────────────────────── */
+.perf-heatmap-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-bottom: 1.25rem;
+}
+
+.perf-heatmap-months {
+    display: flex;
+    gap: 2rem;
+    flex-wrap: wrap;
+}
+
+.perf-heatmap-month {
+    flex: 1;
+    min-width: 220px;
+}
+
+.perf-heatmap-month-name {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 0.6rem;
+}
+
+.perf-heatmap-weekdays {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 3px;
+    margin-bottom: 4px;
+}
+
+.perf-heatmap-weekday {
+    text-align: center;
+    font-size: 0.68rem;
+    font-weight: 700;
+    color: var(--text-secondary);
+}
+
+.perf-heatmap-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 3px;
+}
+
+.perf-heatmap-day {
+    aspect-ratio: 1;
+    border-radius: 5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: default;
+    transition: transform 0.15s;
+}
+
+.perf-heatmap-day:hover {
+    transform: scale(1.2);
+    z-index: 1;
+}
+
+/* ── Faculty Class Performance ───────────────────────────────────────────── */
+.perf-class-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.perf-class-stat {
+    background: var(--card-bg, #fff);
+    border-radius: 14px;
+    border: 1px solid var(--border-color);
+    padding: 1.1rem;
+    text-align: center;
+}
+
+.perf-class-stat-val {
+    font-size: 1.8rem;
+    font-weight: 900;
+    line-height: 1;
+}
+
+.perf-class-stat-label {
+    font-size: 0.82rem;
+    color: var(--text-secondary);
+    margin-top: 0.35rem;
+    font-weight: 600;
+}
+
+/* Ranked Table */
+.perf-ranked-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+}
+
+.perf-ranked-table th {
+    padding: 0.65rem 0.75rem;
+    text-align: left;
+    font-weight: 700;
+    font-size: 0.78rem;
+    letter-spacing: 0.04em;
+    color: var(--text-secondary);
+    border-bottom: 2px solid var(--border-color);
+    text-transform: uppercase;
+    background: var(--card-bg);
+    position: sticky;
+    top: 0;
+    z-index: 1;
+}
+
+.perf-ranked-table td {
+    padding: 0.65rem 0.75rem;
+    border-bottom: 1px solid var(--border-color, #f3f4f6);
+}
+
+.perf-ranked-table tr:hover td {
+    background: rgba(99,102,241,0.04);
+}
+
+.perf-ranked-table tr.at-risk-row td {
+    background: rgba(239,68,68,0.04);
+}
+
+.perf-status-badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 700;
+}
+
+.perf-status-badge.good {
+    background: rgba(16,185,129,0.15);
+    color: #059669;
+}
+
+.perf-status-badge.average {
+    background: rgba(245,158,11,0.15);
+    color: #d97706;
+}
+
+.perf-status-badge.at_risk {
+    background: rgba(239,68,68,0.15);
+    color: #dc2626;
+}
+
+/* At-risk section */
+.perf-at-risk-section {
+    background: linear-gradient(135deg, rgba(239,68,68,0.06), rgba(220,38,38,0.02));
+    border: 1.5px solid rgba(239,68,68,0.3);
+    border-radius: 14px;
+    padding: 1.25rem;
+    margin-top: 1.5rem;
+}
+
+.perf-at-risk-title {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #dc2626;
+    margin: 0 0 1rem 0;
+}
+
+.perf-at-risk-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+}
+
+.perf-at-risk-chip {
+    background: rgba(239,68,68,0.1);
+    border: 1px solid rgba(239,68,68,0.25);
+    border-radius: 10px;
+    padding: 0.5rem 1rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #b91c1c;
+}
+
+.perf-at-risk-chip small {
+    display: block;
+    font-weight: 500;
+    color: #ef4444;
+    font-size: 0.75rem;
+}
+
+/* ── Grade Distribution Bar ──────────────────────────────────────────────── */
+.perf-grade-dist {
+    display: flex;
+    align-items: flex-end;
+    gap: 0.75rem;
+    height: 100px;
+    margin-top: 0.75rem;
+}
+
+.perf-grade-col {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    height: 100%;
+}
+
+.perf-grade-bar-val {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.perf-grade-bar-wrap {
+    flex: 1;
+    width: 100%;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+}
+
+.perf-grade-bar {
+    width: 70%;
+    min-height: 4px;
+    border-radius: 5px 5px 0 0;
+    transition: height 0.8s ease;
+}
+
+.perf-grade-label {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--text-secondary);
+}
+
+/* ── Admin Overview Cards ───────────────────────────────────────────────── */
+.perf-overview-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.25rem;
+    margin-bottom: 2rem;
+}
+
+.perf-overview-card {
+    background: var(--card-bg, #fff);
+    border-radius: 16px;
+    border: 1px solid var(--border-color, #e5e7eb);
+    padding: 1.5rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.perf-overview-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+}
+
+.perf-overview-icon {
+    font-size: 1.75rem;
+    margin-bottom: 0.75rem;
+}
+
+.perf-overview-value {
+    font-size: 2.2rem;
+    font-weight: 900;
+    line-height: 1;
+    margin-bottom: 0.35rem;
+}
+
+.perf-overview-label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+
+.perf-overview-sub {
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+    margin-top: 0.25rem;
+}
+
+/* ── Class Comparison Bars ──────────────────────────────────────────────── */
+.perf-class-bars {
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+}
+
+.perf-class-bar-row {
+    display: grid;
+    grid-template-columns: 120px 1fr 55px 70px;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+@media (max-width: 600px) {
+    .perf-class-bar-row {
+        grid-template-columns: 80px 1fr 45px;
+    }
+    .perf-class-bar-row .perf-class-bar-extra {
+        display: none;
+    }
+}
+
+.perf-class-bar-name {
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-align: right;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.perf-class-bar-track {
+    background: var(--border-color, #e5e7eb);
+    border-radius: 20px;
+    height: 22px;
+    overflow: hidden;
+}
+
+.perf-class-bar-fill {
+    height: 100%;
+    border-radius: 20px;
+    transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+    min-width: 4px;
+    background: linear-gradient(90deg, #6366f1, #8b5cf6);
+}
+
+.perf-class-bar-val {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #6366f1;
+}
+
+.perf-class-bar-extra {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+}
+
+/* ── Top/Bottom Students Table ──────────────────────────────────────────── */
+.perf-top-bottom-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+    margin-top: 1.5rem;
+}
+
+@media (max-width: 768px) {
+    .perf-top-bottom-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* ── Parent Concern Alerts ───────────────────────────────────────────────── */
+.perf-concern-banner {
+    background: linear-gradient(135deg, rgba(239,68,68,0.08), rgba(220,38,38,0.03));
+    border: 1.5px solid rgba(239,68,68,0.3);
+    border-radius: 12px;
+    padding: 1rem 1.25rem;
+    margin-bottom: 1.25rem;
+}
+
+.perf-concern-title {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: #dc2626;
+    margin-bottom: 0.5rem;
+}
+
+.perf-concern-item {
+    font-size: 0.85rem;
+    color: #b91c1c;
+    padding: 0.2rem 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+/* ── Progress Bars ───────────────────────────────────────────────────────── */
+.perf-progress-group {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    margin: 1rem 0;
+}
+
+.perf-progress-row {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.perf-progress-header {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.perf-progress-track {
+    background: var(--border-color, #e5e7eb);
+    border-radius: 20px;
+    height: 14px;
+    overflow: hidden;
+}
+
+.perf-progress-fill {
+    height: 100%;
+    border-radius: 20px;
+    transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+    min-width: 2px;
+}
+
+/* ── Sparkline ───────────────────────────────────────────────────────────── */
+.perf-sparkline {
+    display: flex;
+    align-items: flex-end;
+    gap: 3px;
+    height: 40px;
+}
+
+.perf-sparkline-bar {
+    flex: 1;
+    border-radius: 3px 3px 0 0;
+    min-height: 2px;
+    transition: height 0.6s ease;
+}
+
+/* ── Responsive tweaks ───────────────────────────────────────────────────── */
+@media (max-width: 480px) {
+    .perf-metric-cards {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .perf-class-stats {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .perf-ranked-table {
+        font-size: 0.78rem;
+    }
+
+    .perf-ranked-table th,
+    .perf-ranked-table td {
+        padding: 0.5rem 0.4rem;
+    }
+}

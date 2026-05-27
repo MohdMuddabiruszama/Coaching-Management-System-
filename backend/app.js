@@ -308,6 +308,7 @@ app.use("/api/parents", require("./routes/parent.routes"));
 app.use("/api/biometric", require("./routes/biometric.routes"));
 app.use("/api/notes", require("./routes/note.routes"));
 app.use("/api/assignments", require("./routes/assignment.routes"));
+app.use("/api/performance", require("./routes/performance.routes")); // ✅ Student Performance System
 
 // Public Web Page routes
 app.use("/api/admin/public-page", require("./routes/publicPage.routes"));

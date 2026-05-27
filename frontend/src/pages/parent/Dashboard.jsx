@@ -5,9 +5,11 @@ import ThemeSelector from "../../components/ThemeSelector";
 import { useNavigate } from "react-router-dom";
 import * as parentService from "../../services/parent.service";
 import markService from "../../services/mark.service";
+import performanceService from "../../services/performance.service";
 import InstituteLogo from "../../components/common/InstituteLogo";
 import AnnouncementBell from "../../components/AnnouncementBell";
 import "./Dashboard.css";
+import "../student/Performance.css";
 
 function ParentDashboard() {
     const { user, logout } = useContext(AuthContext);
@@ -21,6 +23,7 @@ function ParentDashboard() {
     const [attendance, setAttendance] = useState(null);
     const [results, setResults] = useState([]);
     const [fees, setFees] = useState([]);
+    const [performance, setPerformance] = useState(null);
     const [activeTab, setActiveTab] = useState("overview");
     const [detailLoading, setDetailLoading] = useState(false);
     const [reminderPopup, setReminderPopup] = useState(null);
@@ -141,16 +144,18 @@ function ParentDashboard() {
         setActiveTab("overview");
         setDetailLoading(true);
         try {
-            const [attData, resData, feeData] = await Promise.all([
+            const [attData, resData, feeData, perfData] = await Promise.all([
                 parentService.getLinkedStudentAttendance(student.id),
                 // Phase 7: use new endpoint that returns total_marks, percentage, subject_name, exam_type
                 markService.getParentChild(student.id).catch(() => []),
-                parentService.getLinkedStudentFees(student.id)
+                parentService.getLinkedStudentFees(student.id),
+                performanceService.getChildPerformance(student.id).catch(() => null)
             ]);
             setAttendance(attData.data);
             // resData is already the array (markService resolves to r.data.data)
             setResults(Array.isArray(resData) ? resData : (resData?.data || []));
             setFees(feeData.data || []);
+            setPerformance(perfData);
         } catch (error) {
             console.error("Error fetching details for student", error);
         } finally {
@@ -228,6 +233,7 @@ function ParentDashboard() {
                             { id: 'overview', label: '🏠 Overview' },
                             { id: 'attendance', label: '📋 Attendance', featureKey: 'attendance' },
                             { id: 'marks', label: '📈 Marks', featureKey: 'exams' },
+                            { id: 'performance', label: '📊 Performance', featureKey: 'exams' },
                             { id: 'fees', label: '💳 Fees', featureKey: 'fees' },
                             { id: 'timetable', label: '📅 Timetable', featureKey: 'timetable' },
                             { id: 'assignments', label: '📝 Assignments', featureKey: 'notes' },
@@ -581,6 +587,90 @@ function ParentDashboard() {
                                             <div className="empty-icon">📈</div>
                                             <div className="empty-title">No Results Yet</div>
                                             <div className="empty-desc">No exam results have been published for {selectedStudent?.User?.name} yet.</div>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+
+                            {/* ═══ PERFORMANCE TAB ═══ */}
+                            {activeTab === 'performance' && (
+                                <div className="dashboard-card perf-page">
+                                    <h3>📊 Comprehensive Performance — {selectedStudent?.User?.name}</h3>
+                                    {performance ? (
+                                        <div style={{ marginTop: '1.5rem' }}>
+                                            {/* Score Row */}
+                                            <div className="perf-score-row" style={{ gridTemplateColumns: '200px 1fr' }}>
+                                                <div className="perf-main-score-card" style={{ padding: '1.5rem' }}>
+                                                    <div className="perf-score-circle" style={{ width: 90, height: 90, borderColor: performance.score?.status === 'good' ? '#10b981' : performance.score?.status === 'average' ? '#f59e0b' : '#ef4444' }}>
+                                                        <span className="perf-score-number" style={{ fontSize: '1.8rem', color: performance.score?.status === 'good' ? '#10b981' : performance.score?.status === 'average' ? '#f59e0b' : '#ef4444' }}>{performance.score?.score ?? '—'}</span>
+                                                    </div>
+                                                    <div className="perf-grade-badge" style={{ padding: '0.15rem 1rem', fontSize: '1.2rem', background: performance.score?.grade === 'F' ? '#ef4444' : '#6366f1' }}>
+                                                        {performance.score?.grade || '—'}
+                                                    </div>
+                                                </div>
+                                                <div className="perf-metric-cards">
+                                                    <div className="perf-metric-card" style={{ borderTop: '4px solid #6366f1' }}>
+                                                        <div className="perf-metric-icon">📝</div>
+                                                        <div className="perf-metric-value" style={{ color: '#6366f1', fontSize: '1.3rem' }}>{performance.score?.marks_pct ?? '—'}%</div>
+                                                        <div className="perf-metric-label">Marks</div>
+                                                    </div>
+                                                    <div className="perf-metric-card" style={{ borderTop: '4px solid #10b981' }}>
+                                                        <div className="perf-metric-icon">📋</div>
+                                                        <div className="perf-metric-value" style={{ color: '#10b981', fontSize: '1.3rem' }}>{performance.score?.att_pct ?? '—'}%</div>
+                                                        <div className="perf-metric-label">Attendance</div>
+                                                    </div>
+                                                    <div className="perf-metric-card" style={{ borderTop: '4px solid #f59e0b' }}>
+                                                        <div className="perf-metric-icon">📌</div>
+                                                        <div className="perf-metric-value" style={{ color: '#f59e0b', fontSize: '1.3rem' }}>{performance.score?.ass_pct ?? '—'}%</div>
+                                                        <div className="perf-metric-label">Assignments</div>
+                                                    </div>
+                                                    <div className="perf-metric-card" style={{ borderTop: '4px solid #a855f7' }}>
+                                                        <div className="perf-metric-icon">💬</div>
+                                                        <div className="perf-metric-value" style={{ color: '#a855f7', fontSize: '1.3rem' }}>{performance.score?.eng_pct ?? '—'}%</div>
+                                                        <div className="perf-metric-label">Engagement</div>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {/* Concerns */}
+                                            {performance.concerns?.length > 0 && (
+                                                <div className="perf-concern-banner">
+                                                    <div className="perf-concern-title">⚠️ Areas of Concern</div>
+                                                    {performance.concerns.map((c, idx) => (
+                                                        <div key={idx} className="perf-concern-item">
+                                                            • {c.message}
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
+
+                                            {/* Progress Bars */}
+                                            <div className="perf-card" style={{ marginTop: '1.5rem', boxShadow: 'none' }}>
+                                                <h4 style={{ margin: '0 0 1rem 0' }}>Subject Breakdown</h4>
+                                                <div className="perf-progress-group">
+                                                    {performance.subjects?.map(s => (
+                                                        <div key={s.subject_id} className="perf-progress-row">
+                                                            <div className="perf-progress-header">
+                                                                <span>{s.subject_name}</span>
+                                                                <span style={{ color: s.below_passing ? '#ef4444' : '#6366f1' }}>{s.avg_pct}%</span>
+                                                            </div>
+                                                            <div className="perf-progress-track">
+                                                                <div
+                                                                    className="perf-progress-fill"
+                                                                    style={{
+                                                                        width: `${s.avg_pct}%`,
+                                                                        background: s.below_passing ? '#ef4444' : '#6366f1'
+                                                                    }}
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div style={{ textAlign: "center", padding: "2rem", color: "var(--text-secondary)" }}>
+                                            Performance data not available yet.
                                         </div>
                                     )}
                                 </div>

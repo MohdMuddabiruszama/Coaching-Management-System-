@@ -306,13 +306,32 @@ exports.getStudentPerformanceReport = async (req, res) => {
             });
         }
 
-        // Get attendance summary
+        // Get attendance summary using distinct dates
         const attendanceRecords = await Attendance.findAll({
             where: { student_id, institute_id }
         });
-        const totalDays = attendanceRecords.length;
-        const presentDays = attendanceRecords.filter(r => r.status === 'present').length;
-        const attendancePercentage = totalDays > 0 ? ((presentDays / totalDays) * 100).toFixed(2) : 0;
+        
+        const uniqueDatesMap = {};
+        attendanceRecords.forEach(r => {
+            if (!uniqueDatesMap[r.date]) uniqueDatesMap[r.date] = [];
+            uniqueDatesMap[r.date].push(r.status);
+        });
+
+        let totalDays = 0, presentDays = 0, absentDays = 0, lateDays = 0;
+        Object.values(uniqueDatesMap).forEach(statuses => {
+            if (!statuses.includes('holiday')) {
+                totalDays++;
+                if (statuses.includes('present') || statuses.includes('half_day')) {
+                    presentDays++;
+                } else if (statuses.includes('late')) {
+                    lateDays++;
+                } else if (statuses.includes('absent')) {
+                    absentDays++;
+                }
+            }
+        });
+
+        const attendancePercentage = totalDays > 0 ? (((presentDays + lateDays) / totalDays) * 100).toFixed(2) : 0;
 
         // Get payment history
         const payments = await Payment.findAll({
@@ -335,8 +354,8 @@ exports.getStudentPerformanceReport = async (req, res) => {
                 attendance: {
                     total_days: totalDays,
                     present_days: presentDays,
-                    absent_days: attendanceRecords.filter(r => r.status === 'absent').length,
-                    late_days: attendanceRecords.filter(r => r.status === 'late').length,
+                    absent_days: absentDays,
+                    late_days: lateDays,
                     percentage: parseFloat(attendancePercentage)
                 },
                 fees: {
@@ -388,9 +407,26 @@ exports.getClassPerformanceReport = async (req, res) => {
             const records = await Attendance.findAll({
                 where: { student_id: student.id, class_id, institute_id }
             });
-            const total = records.length;
-            const present = records.filter(r => r.status === 'present').length;
-            const percentage = total > 0 ? ((present / total) * 100).toFixed(2) : 0;
+            
+            const uniqueDatesMap = {};
+            records.forEach(r => {
+                if (!uniqueDatesMap[r.date]) uniqueDatesMap[r.date] = [];
+                uniqueDatesMap[r.date].push(r.status);
+            });
+
+            let total = 0, present = 0, late = 0;
+            Object.values(uniqueDatesMap).forEach(statuses => {
+                if (!statuses.includes('holiday')) {
+                    total++;
+                    if (statuses.includes('present') || statuses.includes('half_day')) {
+                        present++;
+                    } else if (statuses.includes('late')) {
+                        late++;
+                    }
+                }
+            });
+
+            const percentage = total > 0 ? (((present + late) / total) * 100).toFixed(2) : 0;
 
             return {
                 student_id: student.id,

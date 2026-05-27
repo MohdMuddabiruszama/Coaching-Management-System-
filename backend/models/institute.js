@@ -106,7 +106,11 @@ const Institute = sequelize.define("Institute", {
     },
     current_feature_assignment: {
         type: DataTypes.BOOLEAN,
-        defaultValue: false
+        allowNull: true
+    },
+    current_feature_performance_hub: {
+        type: DataTypes.BOOLEAN,
+        allowNull: true
     },
     current_feature_transport: {
         type: DataTypes.BOOLEAN,

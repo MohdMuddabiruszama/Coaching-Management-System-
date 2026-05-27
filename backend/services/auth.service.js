@@ -92,6 +92,7 @@ exports.registerInstitute = async (data) => {
         current_feature_multi_branch: plan ? plan.feature_multi_branch : false,
         current_feature_api_access: plan ? plan.feature_api_access : false,
         current_feature_assignment: plan ? plan.feature_assignment : false,
+        current_feature_performance_hub: plan ? plan.feature_performance_hub : false,
         current_feature_transport: plan ? plan.feature_transport : false,
         current_feature_mobile_app: plan ? plan.feature_mobile_app : false,
         current_feature_public_page: plan ? plan.feature_public_page : false,

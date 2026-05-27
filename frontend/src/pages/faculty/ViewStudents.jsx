@@ -7,6 +7,7 @@ function ViewStudents() {
     const [students, setStudents] = useState([]);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState("");
+    const [classFilter, setClassFilter] = useState("");
 
     useEffect(() => {
         fetchStudents();
@@ -23,12 +24,20 @@ function ViewStudents() {
         }
     };
 
+    const uniqueClasses = Array.from(new Set(
+        students.flatMap(s => s.Classes?.map(c => `${c.name}${c.section ? ` - ${c.section}` : ""}`) || [])
+    )).sort();
+
     const filteredStudents = students.filter((s) => {
         const matchesSearch =
             s.User?.name.toLowerCase().includes(search.toLowerCase()) ||
             s.User?.email.toLowerCase().includes(search.toLowerCase()) ||
             s.roll_number.toLowerCase().includes(search.toLowerCase());
-        return matchesSearch;
+            
+        const classStrings = s.Classes?.map(c => `${c.name}${c.section ? ` - ${c.section}` : ""}`) || [];
+        const matchesClass = classFilter === "" || classStrings.includes(classFilter);
+        
+        return matchesSearch && matchesClass;
     });
 
     if (loading) return <div className="dashboard-container">Loading students...</div>;
@@ -48,15 +57,26 @@ function ViewStudents() {
             </div>
 
             <div className="card" style={{ marginBottom: "2rem" }}>
-                <div style={{ padding: "1.5rem", display: "flex", gap: "1rem" }}>
+                <div style={{ padding: "1.5rem", display: "flex", gap: "1rem", flexWrap: "wrap" }}>
                     <input
                         type="text"
                         className="form-input"
                         placeholder="Search by name, email, or roll number..."
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
-                        style={{ flex: "1" }}
+                        style={{ flex: "1", minWidth: "250px" }}
                     />
+                    <select
+                        className="form-input"
+                        value={classFilter}
+                        onChange={(e) => setClassFilter(e.target.value)}
+                        style={{ width: "220px" }}
+                    >
+                        <option value="">All Classes</option>
+                        {uniqueClasses.map((cls, idx) => (
+                            <option key={idx} value={cls}>{cls}</option>
+                        ))}
+                    </select>
                 </div>
             </div>
 

@@ -58,6 +58,7 @@ const AdminBiometric = lazy(() => import("../pages/admin/Biometric"));
 const AdminAssignments = lazy(() => import("../pages/admin/AdminAssignments"));
 const AdminPublicPage = lazy(() => import("../pages/admin/PublicPage"));
 const LifetimeAccess = lazy(() => import("../pages/admin/LifetimeAccess"));
+const AdminPerformance = lazy(() => import("../pages/admin/Performance"));
 const FacultyViewAttendance = lazy(() => import("../pages/faculty/ViewAttendance"));
 
 const FacultyDashboard = lazy(() => import("../pages/faculty/Dashboard"));
@@ -71,6 +72,7 @@ const ScanFacultyQR = lazy(() => import("../pages/faculty/ScanFacultyQR"));
 const FacultyNotes = lazy(() => import("../pages/faculty/FacultyNotes"));
 const FacultyAssignments = lazy(() => import("../pages/faculty/Assignments"));
 const ChatApp = lazy(() => import("../pages/chat/ChatApp"));
+const FacultyClassPerformance = lazy(() => import("../pages/faculty/ClassPerformance"));
 
 const StudentDashboard = lazy(() => import("../pages/student/Dashboard"));
 const ViewAttendance = lazy(() => import("../pages/student/ViewAttendance"));
@@ -81,6 +83,7 @@ const ScanAttendance = lazy(() => import("../pages/student/ScanAttendance"));
 const StudentTimetable = lazy(() => import("../pages/student/Timetable"));
 const StudentNotes = lazy(() => import("../pages/student/StudentNotes"));
 const StudentAssignments = lazy(() => import("../pages/student/Assignments"));
+const StudentPerformance = lazy(() => import("../pages/student/Performance"));
 
 const ParentDashboard = lazy(() => import("../pages/parent/Dashboard"));
 const ParentTimetable = lazy(() => import("../pages/parent/Timetable"));
@@ -212,6 +215,7 @@ export default function WebAppRoutes() {
                 <Route path="chat-monitor" element={<ChatApp />} />
                 <Route path="profile" element={<Profile />} />
                 <Route path="lifetime" element={<LifetimeAccess />} />
+                <Route path="performance" element={<AdminPerformance />} />
                 <Route path="*" element={<Navigate to="/admin/dashboard" />} />
               </Routes>
             </ProtectedRoute>
@@ -236,6 +240,7 @@ export default function WebAppRoutes() {
                 <Route path="assignments" element={<FacultyAssignments />} />
                 <Route path="chat" element={<ChatApp />} />
                 <Route path="profile" element={<Profile />} />
+                <Route path="class-performance" element={<FacultyClassPerformance />} />
                 <Route path="*" element={<Navigate to="/faculty/dashboard" />} />
               </Routes>
             </ProtectedRoute>
@@ -259,6 +264,7 @@ export default function WebAppRoutes() {
                 <Route path="assignments" element={<StudentAssignments />} />
                 <Route path="chat" element={<ChatApp />} />
                 <Route path="profile" element={<Profile />} />
+                <Route path="performance" element={<StudentPerformance />} />
                 <Route path="*" element={<Navigate to="/student/dashboard" />} />
               </Routes>
             </ProtectedRoute>

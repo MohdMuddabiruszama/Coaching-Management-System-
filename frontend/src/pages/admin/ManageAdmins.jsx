@@ -40,6 +40,7 @@ const TOGGLE_MODULES = [
     { val: 'biometric', label: 'Bio-Metric', icon: '🔐', desc: 'Biometric device management' },
     { val: 'finance', label: 'Finance Dashboard', icon: '📊', desc: 'Financial reports and analytics' },
     { val: 'assignments', label: 'Assignments', icon: '📄', desc: 'View & manage assignments' },
+    { val: 'performance_hub', label: 'Performance Hub', icon: '📈', desc: 'View advanced performance analytics' },
 ];
 
 // ── TypeBadge component ──────────────────────────────────

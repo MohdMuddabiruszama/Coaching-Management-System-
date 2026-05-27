@@ -76,7 +76,10 @@ function FacultyDashboard() {
                     )}
                     <ActionCard path="/faculty/scan-attendance" icon="🤳" title="My QRCode" />
                     {user?.features?.exams && (
-                        <ActionCard path="/faculty/marks" icon="📝" title="Enter Marks" />
+                        <>
+                            <ActionCard path="/faculty/marks" icon="📝" title="Enter Marks" />
+                            <ActionCard path="/faculty/class-performance" icon="📊" title="Class Performance" />
+                        </>
                     )}
                     {user?.features?.timetable && (
                         <ActionCard path="/faculty/timetable" icon="📅" title="My Schedule" />

@@ -71,7 +71,10 @@ function StudentDashboard() {
                         <ActionCard path="/student/scan-attendance" icon="🤳" title="My QR Code" />
                     )}
                     {user?.features?.exams && (
-                        <ActionCard path="/student/exams" icon="📝" title="View Marks" />
+                        <>
+                            <ActionCard path="/student/exams" icon="📝" title="View Marks" />
+                            <ActionCard path="/student/performance" icon="📊" title="My Performance" />
+                        </>
                     )}
                     {user?.features?.fees && (
                         <ActionCard path="/student/fees" icon="💳" title="Pay Fees" />

@@ -61,6 +61,7 @@ function Plans() {
         feature_mobile_app: false,
         feature_public_page: false,
         feature_assignment: false,
+        feature_performance_hub: false,
         feature_transport: false,
 
         is_free_trial: false,
@@ -270,6 +271,9 @@ function Plans() {
                                 </li>
                                 <li style={{ marginBottom: "0.3rem", display: "flex", justifyContent: "space-between" }}>
                                     Assignments: <span>{plan.feature_assignment ? "✅" : "❌"}</span>
+                                </li>
+                                <li style={{ marginBottom: "0.3rem", display: "flex", justifyContent: "space-between" }}>
+                                    Performance Hub: <span>{plan.feature_performance_hub ? "✅" : "❌"}</span>
                                 </li>
                                 <li style={{ marginBottom: "0.3rem", display: "flex", justifyContent: "space-between" }}>
                                     Finances & Transport: <span>{plan.feature_transport ? "✅" : "❌"}</span>
@@ -553,6 +557,7 @@ function Plans() {
                                             { key: 'feature_mobile_app', label: 'Mobile App' },
                                             { key: 'feature_public_page', label: '🌐 Public Web Page' },
                                             { key: 'feature_assignment', label: '📝 Assignments' },
+                                            { key: 'feature_performance_hub', label: '📊 Performance Hub' },
                                             { key: 'feature_transport', label: '🚌 Finances & Transport' },
                                             { key: 'is_free_trial', label: 'Start Free Trial' },
                                             { key: 'is_popular', label: 'Mark as Popular' },

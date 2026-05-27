@@ -26,6 +26,7 @@ const computeFeatures = (institute, plan) => {
         notes: plan.feature_notes || false,
         chat: plan.feature_chat || false,
         exams: plan.feature_exams || false,
+        performance_hub: institute.current_feature_performance_hub !== null && institute.current_feature_performance_hub !== undefined ? institute.current_feature_performance_hub : (plan.feature_performance_hub || false),
         public_page: institute.current_feature_public_page !== null && institute.current_feature_public_page !== undefined ? institute.current_feature_public_page : (plan.feature_public_page || false),
         mobile_app: institute.current_feature_mobile_app !== null && institute.current_feature_mobile_app !== undefined ? institute.current_feature_mobile_app : (plan.feature_mobile_app || false)
     };
@@ -359,6 +360,9 @@ const checkFeatureAccess = (featureName) => {
                     break;
                 case 'exams':
                     hasAccess = features.exams === true;
+                    break;
+                case 'performance_hub':
+                    hasAccess = features.performance_hub === true;
                     break;
                 case 'public_page':
                     hasAccess = features.public_page === true;

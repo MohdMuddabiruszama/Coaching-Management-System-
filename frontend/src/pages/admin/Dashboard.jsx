@@ -136,6 +136,9 @@ function AdminDashboard() {
             case 'exams':
                 if (!features.exams) { hasAccess = false; featureName = "Examinations"; }
                 break;
+            case 'performance_hub':
+                if (!features.performance_hub) { hasAccess = false; featureName = "Performance Hub"; }
+                break;
             case 'notes':
                 if (!features.notes) { hasAccess = false; featureName = "Notes Management"; }
                 break;
@@ -598,7 +601,8 @@ function AdminDashboard() {
                     {(isAdmin || hasPermission('finance')) && <ActionCard path={`${basePath}/finance`} icon="📊" title="Finance Dashboard" featureKey="finance" highlight />}
                     {(isAdmin || hasPermission('salary')) && <ActionCard path={`${basePath}/salary`} icon="💼" title="Faculty Salary" featureKey="salary" />}
 
-                    {hasPermission('reports') && <ActionCard path={`${basePath}/reports`} icon="📊" title="Reports & Analytics" featureKey="reports" />}
+                    {hasPermission('reports') && <ActionCard path={`${basePath}/reports`} icon="📉" title="Reports & Analytics" featureKey="reports" />}
+                    {hasPermission('performance_hub') && <ActionCard path={`${basePath}/performance`} icon="📊" title="Performance Hub" featureKey="performance_hub" highlight />}
                     {hasPermission('exams') && <ActionCard path={`${basePath}/exams`} icon="📝" title="Manage Exams" featureKey="exams" />}
                     {hasPermission('classes') && <ActionCard path={`${basePath}/timetable`} icon="📅" title="Master Timetable" featureKey="timetable" />}
                     {hasPermission('announcements') && <ActionCard path={`${basePath}/announcements`} icon="📢" title="Announcements" featureKey="announcements" badge={stats.unreadAnnouncementCount || 0} />}
