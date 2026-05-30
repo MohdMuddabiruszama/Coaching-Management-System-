@@ -25,4 +25,7 @@ router.get("/date/:date", verifyToken, allowRoles("admin", "super_admin"), contr
 // Manual Mark (Admin)
 router.post("/manual", verifyToken, allowRoles("admin", "super_admin"), controller.markManual);
 
+// Bulk Update Grid (Admin)
+router.post("/grid-update", verifyToken, allowRoles("admin", "super_admin"), controller.updateGridBulk);
+
 module.exports = router;

@@ -422,7 +422,7 @@ function AdminPerformance() {
                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                     <button onClick={() => navigate('/admin/dashboard')} style={{ background: 'none', border: '1.5px solid var(--border-color)', borderRadius: '8px', padding: '0.4rem 0.85rem', cursor: 'pointer', color: 'var(--text-primary)', fontWeight: 600 }}>← Back</button>
                     <div>
-                        <h1 style={{ margin: 0 }}>📊 Performance Hub</h1>
+                        <h1 style={{ margin: 0 }}>🎯 Performance Hub</h1>
                         <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Analytics & Reports</p>
                     </div>
                 </div>

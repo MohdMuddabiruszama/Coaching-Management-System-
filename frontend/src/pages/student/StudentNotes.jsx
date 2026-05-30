@@ -21,6 +21,9 @@ function StudentNotes() {
             setLoading(true);
             setError(null);
 
+            // Clear unread notes count on the backend so the dashboard badge disappears
+            api.post('/students/clear-unread-notes').catch(() => {});
+
             // Step 1: Get my student record — includes Subjects[] via StudentSubject junction
             const meRes = await api.get("/students/me");
             if (!meRes.data.success) {

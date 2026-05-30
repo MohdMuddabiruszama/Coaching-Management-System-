@@ -8,6 +8,7 @@ import markService from "../../services/mark.service";
 import performanceService from "../../services/performance.service";
 import InstituteLogo from "../../components/common/InstituteLogo";
 import AnnouncementBell from "../../components/AnnouncementBell";
+import AdvancedStatCard from "../../components/common/AdvancedStatCard";
 import "./Dashboard.css";
 import "../student/Performance.css";
 
@@ -194,8 +195,8 @@ function ParentDashboard() {
                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                     <InstituteLogo size="md" />
                     <div>
-                        <h1>👨‍👩‍👧 Parent Dashboard</h1>
-                        <p>Welcome back, <strong>{user?.name}</strong>! Monitoring your child's progress.</p>
+                        <h1>Parent Dashboard</h1>
+                        <p>Welcome back, {user?.name || "Parent"}! Monitoring your child's progress.</p>
                     </div>
                 </div>
                 <div className="dashboard-header-right" style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
@@ -302,56 +303,56 @@ function ParentDashboard() {
                                             })}
                                         </div>
                                     )}
-                                    <div className="stats-grid">
+                                    <div className="stats-grid advanced-stats-grid">
                                         {/* Attendance */}
-                                        <div className="stat-card" style={{ borderLeft: `4px solid ${attPct >= 75 ? '#10b981' : '#ef4444'}` }}>
-                                            <div className="stat-icon" style={{ background: attPct >= 75 ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)' }}>📋</div>
-                                            <div className="info">
-                                                <h3 style={{ color: attPct >= 75 ? '#10b981' : '#ef4444' }}>{attPct}%</h3>
-                                                <p>Attendance</p>
-                                                <small>{attendance?.summary?.present_days || 0} / {attendance?.summary?.working_days || 0} working days</small>
-                                            </div>
-                                        </div>
+                                        <AdvancedStatCard
+                                            icon="📋"
+                                            colorClass={attPct >= 75 ? 'asc-green' : 'asc-red'}
+                                            label="Attendance"
+                                            value={`${attPct}%`}
+                                            subLabel={`${attendance?.summary?.present_days || 0} / ${attendance?.summary?.working_days || 0} working days`}
+                                            progress={attPct}
+                                        />
 
                                         {/* Classes Enrolled */}
-                                        <div className="stat-card" style={{ borderLeft: '4px solid #6366f1' }}>
-                                            <div className="stat-icon" style={{ background: 'rgba(99,102,241,0.1)' }}>📚</div>
-                                            <div className="info">
-                                                <h3>{selectedStudent?.Classes?.length || 0}</h3>
-                                                <p>Classes Enrolled</p>
-                                                <small>{selectedStudent?.is_full_course ? 'Full Course Student' : 'Individual Subjects'}</small>
-                                            </div>
-                                        </div>
+                                        <AdvancedStatCard
+                                            icon="📚"
+                                            colorClass="asc-indigo"
+                                            label="Classes Enrolled"
+                                            value={selectedStudent?.Classes?.length || 0}
+                                            subLabel={selectedStudent?.is_full_course ? 'Full Course Student' : 'Individual Subjects'}
+                                        />
 
-                                        {/* Phase 6: Pending Fees */}
-                                        <div className="stat-card" style={{ borderLeft: '4px solid #ef4444' }}>
-                                            <div className="stat-icon" style={{ background: 'rgba(239,68,68,0.1)' }}>⏳</div>
-                                            <div className="info">
-                                                <h3 style={{ color: '#ef4444' }}>₹{totalPendingAmount.toLocaleString()}</h3>
-                                                <p>Pending Fees</p>
-                                                <small>{pendingFees.length} fee{pendingFees.length !== 1 ? 's' : ''} pending</small>
-                                            </div>
-                                        </div>
+                                        {/* Pending Fees */}
+                                        <AdvancedStatCard
+                                            icon="⏳"
+                                            colorClass="asc-red"
+                                            label="Pending Fees"
+                                            value={`₹${totalPendingAmount.toLocaleString()}`}
+                                            subLabel={`${pendingFees.length} fee${pendingFees.length !== 1 ? 's' : ''} pending`}
+                                            badgeText="Due"
+                                            badgeType="danger"
+                                        />
 
-                                        {/* Phase 6: Paid Fees */}
-                                        <div className="stat-card" style={{ borderLeft: '4px solid #10b981' }}>
-                                            <div className="stat-icon" style={{ background: 'rgba(16,185,129,0.1)' }}>✅</div>
-                                            <div className="info">
-                                                <h3 style={{ color: '#10b981' }}>₹{totalPaidAmount.toLocaleString()}</h3>
-                                                <p>Paid Fees</p>
-                                                <small>of ₹{totalFees.toLocaleString()} total</small>
-                                            </div>
-                                        </div>
+                                        {/* Paid Fees */}
+                                        <AdvancedStatCard
+                                            icon="✅"
+                                            colorClass="asc-green"
+                                            label="Paid Fees"
+                                            value={`₹${totalPaidAmount.toLocaleString()}`}
+                                            subLabel={`of ₹${totalFees.toLocaleString()} total`}
+                                            badgeText="Paid"
+                                            badgeType="success"
+                                        />
 
                                         {/* Total Marks */}
-                                        <div className="stat-card" style={{ borderLeft: '4px solid #a855f7' }}>
-                                            <div className="stat-icon" style={{ background: 'rgba(168,85,247,0.1)' }}>🎯</div>
-                                            <div className="info">
-                                                <h3 style={{ color: '#a855f7' }}>{results.length}</h3>
-                                                <p>Exam Results</p>
-                                                <small>{results.filter(r => r.remarks === 'Pass').length} passed</small>
-                                            </div>
-                                        </div>
+                                        <AdvancedStatCard
+                                            icon="🎯"
+                                            colorClass="asc-purple"
+                                            label="Exam Results"
+                                            value={results.length}
+                                            subLabel={`${results.filter(r => r.remarks === 'Pass').length} passed`}
+                                        />
                                     </div>
 
                                     {/* Quick Actions */}

@@ -6,6 +6,8 @@ import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../../services/api';
 import { resolveFileUrl } from '../../utils/resolveUrl';
+import { downloadRemoteFile } from '../../utils/capacitorPermissions';
+import { toast } from 'react-hot-toast';
 import '../admin/Dashboard.css';
 import './Assignments.css';
 
@@ -82,6 +84,18 @@ export default function FacultyAssignments() {
     const [referenceFile, setReferenceFile] = useState(null);
 
     const flash = (text, type = 'success') => { setMsg({ text, type }); setTimeout(() => setMsg(null), 3500); };
+
+    const handleDownloadFile = async (url, originalName, fallbackName) => {
+        if (!url) return;
+        const fileUrl = resolveFileUrl(url);
+        const urlParts = url.split('/');
+        const rawFileName = originalName || urlParts[urlParts.length - 1] || fallbackName;
+        const safeFileName = rawFileName.replace(/[^a-zA-Z0-9._-]/g, '_');
+        
+        toast.loading("Downloading...", { id: "dl-fac" });
+        await downloadRemoteFile(fileUrl, safeFileName);
+        toast.dismiss("dl-fac");
+    };
 
     const fetchAll = useCallback(async () => {
         try {
@@ -305,9 +319,9 @@ export default function FacultyAssignments() {
                                             </p>
                                             {asg.reference_file_url && (
                                                 <div style={{ marginTop: 8 }}>
-                                                    <a href={resolveFileUrl(asg.reference_file_url)} target="_blank" rel="noreferrer" style={{ fontSize: 12, color: '#2563eb', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 4, background: '#eff6ff', border: '1px solid #bfdbfe', padding: '4px 8px', borderRadius: 6, fontWeight: 600 }}>
-                                                        📎 View Reference File
-                                                    </a>
+                                                    <button onClick={() => handleDownloadFile(asg.reference_file_url, null, `${asg.title}_Reference`)} style={{ fontSize: 12, color: '#2563eb', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 4, background: '#eff6ff', border: '1px solid #bfdbfe', padding: '4px 8px', borderRadius: 6, fontWeight: 600, cursor: 'pointer' }}>
+                                                        📎 Download Reference File
+                                                    </button>
                                                 </div>
                                             )}
                                         </div>
@@ -462,9 +476,9 @@ export default function FacultyAssignments() {
                             <p className="fa-asg-meta">📚 {selected.Class?.name} | 📖 {selected.Subject?.name} | 🎯 {selected.max_marks} marks</p>
                             <p className="fa-asg-meta">Due: {new Date(selected.due_date).toLocaleString()}</p>
                             {selected.reference_file_url && (
-                                <a href={resolveFileUrl(selected.reference_file_url)} target="_blank" rel="noreferrer" style={{ fontSize: 13, color: '#2563eb', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 4, background: '#eff6ff', border: '1px solid #bfdbfe', padding: '4px 10px', borderRadius: 6, fontWeight: 600, marginTop: 8 }}>
-                                    📎 View Reference File
-                                </a>
+                                <button onClick={() => handleDownloadFile(selected.reference_file_url, null, `${selected.title}_Reference`)} style={{ fontSize: 13, color: '#2563eb', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 4, background: '#eff6ff', border: '1px solid #bfdbfe', padding: '4px 10px', borderRadius: 6, fontWeight: 600, marginTop: 8, cursor: 'pointer' }}>
+                                    📎 Download Reference File
+                                </button>
                             )}
                         </div>
                         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
@@ -513,9 +527,9 @@ export default function FacultyAssignments() {
                                             <td>{sub.submitted_at ? new Date(sub.submitted_at).toLocaleString() : '—'}</td>
                                             <td>
                                                 {sub.submission_file_url ? (
-                                                    <a href={resolveFileUrl(sub.submission_file_url)} target="_blank" rel="noreferrer" className="fa-file-link">
+                                                    <button onClick={() => handleDownloadFile(sub.submission_file_url, sub.submission_file_name, `${sub.Student?.User?.name}_Submission`)} className="fa-file-link" style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', textAlign: 'left', font: 'inherit' }}>
                                                         📥 {sub.submission_file_name || 'Download'} {sub.submission_file_size_kb ? `(${sub.submission_file_size_kb} KB)` : ''}
-                                                    </a>
+                                                    </button>
                                                 ) : '—'}
                                             </td>
                                             <td>
@@ -570,9 +584,9 @@ export default function FacultyAssignments() {
                             <p><strong>Student:</strong> {gradingTarget.Student?.User?.name}</p>
                             <p><strong>Assignment:</strong> {selected.title} ({selected.max_marks} marks)</p>
                             {gradingTarget.submission_file_url && (
-                                <a href={resolveFileUrl(gradingTarget.submission_file_url)} target="_blank" rel="noreferrer" className="fa-file-link" style={{ display: 'inline-block', marginBottom: 16 }}>
-                                    📥 View Submission
-                                </a>
+                                <button onClick={() => handleDownloadFile(gradingTarget.submission_file_url, gradingTarget.submission_file_name, `${gradingTarget.Student?.User?.name}_Submission`)} className="fa-file-link" style={{ display: 'inline-block', marginBottom: 16, background: 'none', border: 'none', padding: 0, cursor: 'pointer', font: 'inherit' }}>
+                                    📥 Download Submission
+                                </button>
                             )}
                             <div className="form-group">
                                 <label className="form-label">Marks Obtained (out of {selected.max_marks}) *</label>

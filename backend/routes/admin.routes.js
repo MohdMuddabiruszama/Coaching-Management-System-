@@ -33,6 +33,30 @@ router.post(
     adminController.clearUnreadChats
 );
 
+router.post(
+    "/clear-unread-assignments",
+    verifyToken,
+    checkSubscription,
+    allowRoles("admin", "manager"),
+    adminController.clearUnreadAssignments
+);
+
+router.post(
+    "/clear-unread-notes",
+    verifyToken,
+    checkSubscription,
+    allowRoles("admin", "manager"),
+    adminController.clearUnreadNotes
+);
+
+router.post(
+    "/clear-unread-enquiries",
+    verifyToken,
+    checkSubscription,
+    allowRoles("admin", "manager"),
+    adminController.clearUnreadEnquiries
+);
+
 
 // Plan Usage Stats
 router.get(

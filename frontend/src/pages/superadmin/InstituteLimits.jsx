@@ -22,10 +22,10 @@ const fmtDate = (d) => (d ? new Date(d).toLocaleDateString("en-IN", { year: "num
 const BOOL_FEATURES = [
     { key: "current_feature_auto_attendance", label: "Smart Attendance",       icon: "📸", desc: "QR-based smart attendance system" },
     { key: "current_feature_fees",            label: "Fees Management",        icon: "💰", desc: "Student fee collection & tracking" },
-    { key: "current_feature_finance",         label: "Finance Dashboard",      icon: "📊", desc: "Institute-wide finance analytics" },
+    { key: "current_feature_finance",         label: "Finance Dashboard",      icon: "🏦", desc: "Institute-wide finance analytics" },
     { key: "current_feature_salary",          label: "Faculty Salary",         icon: "💼", desc: "Faculty payroll management" },
     { key: "current_feature_assignment",      label: "Assignments",            icon: "📝", desc: "Homework & assignment submissions" },
-    { key: "current_feature_performance_hub", label: "Performance Hub",        icon: "📊", desc: "Advanced performance analytics" },
+    { key: "current_feature_performance_hub", label: "Performance Hub",        icon: "🎯", desc: "Advanced performance analytics" },
     { key: "current_feature_transport",       label: "Finances & Transport",   icon: "🚌", desc: "Expense tracking & transport fees" },
     { key: "current_feature_announcements",   label: "Announcements",          icon: "📢", desc: "Broadcast notices to users" },
     { key: "current_feature_export",          label: "Export Data",            icon: "📥", desc: "CSV / PDF data exports" },

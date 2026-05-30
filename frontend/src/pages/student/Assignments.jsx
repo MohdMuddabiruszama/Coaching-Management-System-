@@ -7,6 +7,8 @@ import { useState, useEffect, useCallback } from 'react';
 import api from '../../services/api';
 import BackButton from '../../components/common/BackButton';
 import { resolveFileUrl } from '../../utils/resolveUrl';
+import { downloadRemoteFile } from '../../utils/capacitorPermissions';
+import { toast } from 'react-hot-toast';
 import '../faculty/Assignments.css';
 import '../admin/Dashboard.css';
 
@@ -72,6 +74,10 @@ export default function StudentAssignments() {
     const fetchAssignments = useCallback(async () => {
         try {
             setLoading(true);
+            
+            // Clear unread assignments count so dashboard badge disappears
+            api.post('/students/clear-unread-assignments').catch(() => {});
+            
             const res = await api.get('/assignments/student/all');
             setAssignments(res.data.assignments || []);
         } catch (e) {
@@ -207,9 +213,21 @@ export default function StudentAssignments() {
 
                     {detailAsg.reference_file_url && (
                         <div style={{ marginBottom: 20 }}>
-                            <a href={resolveFileUrl(detailAsg.reference_file_url)} target="_blank" rel="noreferrer" className="btn btn-secondary">
+                            <button
+                                onClick={async () => {
+                                    const fileUrl = resolveFileUrl(detailAsg.reference_file_url);
+                                    const urlParts = detailAsg.reference_file_url?.split('/') || [];
+                                    const rawFileName = urlParts[urlParts.length - 1] || `${detailAsg.title}.pdf`;
+                                    const safeFileName = rawFileName.replace(/[^a-zA-Z0-9._-]/g, '_');
+                                    
+                                    toast.loading("Downloading...", { id: "dl-ref" });
+                                    await downloadRemoteFile(fileUrl, safeFileName);
+                                    toast.dismiss("dl-ref");
+                                }}
+                                className="btn btn-secondary"
+                            >
                                 📥 Download Reference File
-                            </a>
+                            </button>
                         </div>
                     )}
 

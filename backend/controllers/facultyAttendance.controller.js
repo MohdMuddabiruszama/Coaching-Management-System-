@@ -178,6 +178,8 @@ exports.getGrid = async (req, res) => {
             return {
                 faculty_id: faculty.id,
                 name: faculty.User?.name,
+                department: faculty.department || 'Unassigned',
+                designation: faculty.designation || 'Unassigned',
                 total_days: total,
                 working_days: workingDays,
                 present_days: present,
@@ -354,6 +356,71 @@ exports.getFacultyAttendanceByDate = async (req, res) => {
         res.status(200).json({
             success: true,
             data: result
+        });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+/**
+ * Bulk Update Grid Attendance (Multiple Dates & Faculties)
+ * @route POST /api/faculty-attendance/grid-update
+ * @access Admin
+ */
+exports.updateGridBulk = async (req, res) => {
+    try {
+        const { updates } = req.body;
+        const institute_id = req.user.institute_id;
+        const marked_by = req.user.id;
+
+        if (!updates || !Array.isArray(updates) || updates.length === 0) {
+            return res.status(400).json({ success: false, message: "No updates provided" });
+        }
+
+        // Prevent setting future dates
+        const serverTomorrow = new Date();
+        serverTomorrow.setHours(serverTomorrow.getHours() + 24);
+
+        const results = [];
+        for (const item of updates) {
+            const clientDate = new Date(item.date);
+            if (clientDate > serverTomorrow) {
+                continue; // Skip future dates silently
+            }
+
+            // Using findOrCreate then update OR simple findOne
+            const existing = await FacultyAttendance.findOne({
+                where: { institute_id, faculty_id: item.faculty_id, date: item.date }
+            });
+
+            if (existing) {
+                if (item.status === 'clear') {
+                    await existing.destroy();
+                } else {
+                    await existing.update({
+                        status: item.status,
+                        remarks: item.remarks || existing.remarks,
+                        marked_by
+                    });
+                    results.push(existing);
+                }
+            } else if (item.status !== 'clear') {
+                const created = await FacultyAttendance.create({
+                    institute_id,
+                    faculty_id: item.faculty_id,
+                    date: item.date,
+                    status: item.status,
+                    remarks: item.remarks,
+                    marked_by
+                });
+                results.push(created);
+            }
+        }
+
+        res.status(200).json({
+            success: true,
+            message: `Successfully processed ${updates.length} cell updates.`,
+            data: results
         });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });

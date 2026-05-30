@@ -18,7 +18,7 @@ const REQUIRED_HEADERS = {
 
 const LABEL_MAP = { students: 'Students', parents: 'Parents', faculty: 'Faculty' };
 
-export default function BulkImportButton({ type, onSuccess }) {
+export default function BulkImportButton({ type, onSuccess, customButton, label, className, style }) {
   const fileRef  = useRef();
   const [showMenu, setShowMenu] = useState(false);
   const [modalData, setModalData] = useState(null);
@@ -119,30 +119,36 @@ export default function BulkImportButton({ type, onSuccess }) {
         style={{ display: 'none' }}
         onChange={handleFile}
       />
-      <button
-        onClick={() => setShowMenu(true)}
-        className="btn btn-sm"
-        style={{
-          background: 'linear-gradient(135deg, #2563eb, #1d4ed8)',
-          color: '#fff',
-          border: 'none',
-          borderRadius: '8px',
-          padding: '0.5rem 1rem',
-          fontWeight: 600,
-          cursor: 'pointer',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '0.4rem',
-          fontSize: '0.875rem',
-          boxShadow: '0 2px 6px rgba(37,99,235,0.35)',
-          transition: 'all 0.2s ease',
-        }}
-        onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-1px)'}
-        onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}
-        title={`Bulk import ${LABEL_MAP[type]}`}
-      >
-        ⬆ Bulk Import
-      </button>
+      {customButton ? (
+        <div onClick={() => setShowMenu(true)} style={{ display: 'inline-block' }}>
+          {customButton}
+        </div>
+      ) : (
+        <button
+          onClick={() => setShowMenu(true)}
+          className={className || "btn btn-sm"}
+          style={style || {
+            background: 'linear-gradient(135deg, #2563eb, #1d4ed8)',
+            color: '#fff',
+            border: 'none',
+            borderRadius: '8px',
+            padding: '0.5rem 1rem',
+            fontWeight: 600,
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.4rem',
+            fontSize: '0.875rem',
+            boxShadow: '0 2px 6px rgba(37,99,235,0.35)',
+            transition: 'all 0.2s ease',
+          }}
+          onMouseEnter={!style ? (e => e.currentTarget.style.transform = 'translateY(-1px)') : undefined}
+          onMouseLeave={!style ? (e => e.currentTarget.style.transform = 'translateY(0)') : undefined}
+          title={`Bulk import ${LABEL_MAP[type]}`}
+        >
+          {label || '⬆ Bulk Import'}
+        </button>
+      )}
 
       {/* ── Pre-Import Menu Modal ────────────────────────────────────────── */}
       {showMenu && (

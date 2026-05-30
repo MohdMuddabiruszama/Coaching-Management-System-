@@ -554,6 +554,16 @@ const syncDatabase = async () => {
       console.error('Error adding Student Password columns:', e.message);
     }
 
+    // ── Dashboard Unread Tracking ─────────────────────────────────────
+    try {
+      await sequelize.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS last_assignment_seen_at TIMESTAMPTZ;`);
+      await sequelize.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS last_note_seen_at TIMESTAMPTZ;`);
+      await sequelize.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS last_enquiry_seen_at TIMESTAMPTZ;`);
+      console.log('✅ Dashboard Unread Tracking columns ensured');
+    } catch (e) {
+      console.error('Error adding Dashboard Unread Tracking columns:', e.message);
+    }
+
     // ── Exam Result System (Approach B) ──────────────────────────────────────
     // Using VARCHAR(20) for exam_type — avoids PostgreSQL ENUM type creation issues
     // Same pattern as marked_by_type on attendances table

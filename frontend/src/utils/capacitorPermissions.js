@@ -136,8 +136,65 @@ export async function savePdfNative(doc, fileName) {
  */
 export async function downloadRemoteFile(remoteUrl, fileName) {
     if (!Capacitor.isNativePlatform()) {
-        window.open(remoteUrl, "_blank");
-        return;
+        // Web: Force download by fetching as a blob and creating an object URL.
+        // This avoids Cloudinary HTTP 400 errors when applying transformations to 'raw' files,
+        // and bypasses browser cross-origin download restrictions.
+        try {
+            // Show a brief loading indicator if we want, but we rely on the component's toast mostly.
+            const response = await fetch(remoteUrl);
+            if (!response.ok) throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            
+            const blob = await response.blob();
+            
+            let finalFileName = fileName;
+            
+            // If the filename has no extension, infer it from the blob's MIME type
+            if (!finalFileName.includes('.')) {
+                const extMap = {
+                    'application/pdf': '.pdf',
+                    'image/jpeg': '.jpg',
+                    'image/png': '.png',
+                    'image/webp': '.webp',
+                    'application/vnd.openxmlformats-officedocument.wordprocessingml.document': '.docx',
+                    'application/msword': '.doc',
+                    'application/zip': '.zip',
+                    'text/plain': '.txt',
+                    'application/vnd.ms-excel': '.xls',
+                    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': '.xlsx',
+                    'application/vnd.ms-powerpoint': '.ppt',
+                    'application/vnd.openxmlformats-officedocument.presentationml.presentation': '.pptx'
+                };
+                
+                // Cloudinary sometimes returns 'application/octet-stream' for raw PDFs if the original extension was lost.
+                // Fallback to .pdf since it's the most common document format on this platform.
+                const ext = extMap[blob.type] || '.pdf';
+                finalFileName += ext;
+            }
+
+            const objectUrl = URL.createObjectURL(blob);
+            
+            const link = document.createElement("a");
+            link.href = objectUrl;
+            link.download = finalFileName;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            // Clean up the object URL after a short delay
+            setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
+            return;
+        } catch (err) {
+            console.warn("Blob download failed, falling back to new tab:", err);
+            // Fallback: just open it if fetch fails (e.g., CORS issues)
+            const link = document.createElement("a");
+            link.href = remoteUrl;
+            link.download = fileName; // original name
+            link.target = "_blank";
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            return;
+        }
     }
 
     try {

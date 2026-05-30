@@ -1,13 +1,16 @@
-const { Student, Faculty, Class, User, StudentFee, Announcement, ChatMessage, ChatRoom, sequelize } = require("../models");
+const { Student, Faculty, Class, User, StudentFee, Announcement, ChatMessage, ChatRoom, Assignment, Note, PublicEnquiry, sequelize } = require("../models");
 const { Op } = require("sequelize");
 
 exports.getDashboardStats = async (req, res) => {
     try {
         const institute_id = req.user.institute_id;
 
-        const currentUser = await User.findByPk(req.user.id, { attributes: ['last_chat_seen_at', 'last_announcement_seen_at'] });
+        const currentUser = await User.findByPk(req.user.id, { attributes: ['last_chat_seen_at', 'last_announcement_seen_at', 'last_assignment_seen_at', 'last_note_seen_at', 'last_enquiry_seen_at'] });
         const lastChatSeenAt = currentUser?.last_chat_seen_at || new Date(0);
         const lastAnnouncementSeenAt = currentUser?.last_announcement_seen_at || new Date(0);
+        const lastAssignmentSeenAt = currentUser?.last_assignment_seen_at || new Date(0);
+        const lastNoteSeenAt = currentUser?.last_note_seen_at || new Date(0);
+        const lastEnquirySeenAt = currentUser?.last_enquiry_seen_at || new Date(0);
 
         // Run all counts in parallel for performance
         const [
@@ -18,7 +21,10 @@ exports.getDashboardStats = async (req, res) => {
             activeStudents,
             studentFees,
             unreadChatCount,
-            unreadAnnouncementCount
+            unreadAnnouncementCount,
+            unreadAssignmentCount,
+            unreadNoteCount,
+            unreadEnquiryCount
         ] = await Promise.all([
             Student.count({ where: { institute_id } }),
             Faculty.count({ where: { institute_id } }),
@@ -44,6 +50,26 @@ exports.getDashboardStats = async (req, res) => {
                     created_at: { [Op.gt]: lastAnnouncementSeenAt },
                     created_by: { [Op.ne]: req.user.id }
                 }
+            }),
+            Assignment.count({
+                where: {
+                    institute_id,
+                    created_at: { [Op.gt]: lastAssignmentSeenAt },
+                    faculty_id: { [Op.ne]: req.user.id }
+                }
+            }),
+            Note.count({
+                where: {
+                    institute_id,
+                    created_at: { [Op.gt]: lastNoteSeenAt },
+                    faculty_id: { [Op.ne]: req.user.id }
+                }
+            }),
+            PublicEnquiry.count({
+                where: {
+                    institute_id,
+                    created_at: { [Op.gt]: lastEnquirySeenAt }
+                }
             })
         ]);
 
@@ -61,7 +87,10 @@ exports.getDashboardStats = async (req, res) => {
                 totalDiscount,
                 totalDue,
                 unreadChatCount,
-                unreadAnnouncementCount
+                unreadAnnouncementCount,
+                unreadAssignmentCount,
+                unreadNotesCount: unreadNoteCount,
+                unreadEnquiryCount
             }
         });
 
@@ -94,6 +123,35 @@ exports.clearUnreadChats = async (req, res) => {
     }
 };
 
+exports.clearUnreadAssignments = async (req, res) => {
+    try {
+        await User.update({ last_assignment_seen_at: new Date() }, { where: { id: req.user.id } });
+        res.status(200).json({ success: true, message: "Cleared unread assignments count" });
+    } catch (error) {
+        console.error("Clear assignments error:", error);
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+exports.clearUnreadNotes = async (req, res) => {
+    try {
+        await User.update({ last_note_seen_at: new Date() }, { where: { id: req.user.id } });
+        res.status(200).json({ success: true, message: "Cleared unread notes count" });
+    } catch (error) {
+        console.error("Clear notes error:", error);
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+exports.clearUnreadEnquiries = async (req, res) => {
+    try {
+        await User.update({ last_enquiry_seen_at: new Date() }, { where: { id: req.user.id } });
+        res.status(200).json({ success: true, message: "Cleared unread enquiries count" });
+    } catch (error) {
+        console.error("Clear enquiries error:", error);
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
 
 // --- Admin Management ---
 

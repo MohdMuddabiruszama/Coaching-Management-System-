@@ -14,6 +14,7 @@ function StudentDashboard() {
     const navigate = useNavigate();
     const [unreadCount, setUnreadCount] = useState(0);
     const [chatUnreadCount, setChatUnreadCount] = useState(0);
+    const [unreadStats, setUnreadStats] = useState({ assignments: 0, notes: 0 });
 
     useEffect(() => {
         // Fetch chat unread count
@@ -25,7 +26,33 @@ function StudentDashboard() {
             }).catch(err => console.log(err));
         }
 
+        // Fetch dashboard stats (assignments, notes)
+        if (user?.features?.notes) {
+            api.get('/students/dashboard-stats').then(res => {
+                if (res.data.success) {
+                    setUnreadStats({
+                        assignments: res.data.unreadAssignmentCount || 0,
+                        notes: res.data.unreadNotesCount || 0
+                    });
+                }
+            }).catch(err => console.log(err));
+        }
+
     }, [user]);
+
+    const handleActionClick = (type, path) => {
+        if (type === 'chat' && chatUnreadCount > 0) {
+            setChatUnreadCount(0);
+            api.post('/students/clear-unread-chats').catch(console.error);
+        } else if (type === 'assignments' && unreadStats.assignments > 0) {
+            setUnreadStats(s => ({ ...s, assignments: 0 }));
+            api.post('/students/clear-unread-assignments').catch(console.error);
+        } else if (type === 'notes' && unreadStats.notes > 0) {
+            setUnreadStats(s => ({ ...s, notes: 0 }));
+            api.post('/students/clear-unread-notes').catch(console.error);
+        }
+        navigate(path);
+    };
 
     const ActionCard = ({ icon, title, path, badge, onClick }) => (
         <div onClick={onClick || (() => navigate(path))} className="action-card" style={{ cursor: 'pointer', position: 'relative' }}>
@@ -88,12 +115,12 @@ function StudentDashboard() {
 
                     {user?.features?.notes && (
                         <>
-                            <ActionCard path="/student/notes" icon="📚" title="My Notes" />
-                            <ActionCard path="/student/assignments" icon="📝" title="Assignments" />
+                            <ActionCard onClick={() => handleActionClick('notes', '/student/notes')} icon="📚" title="My Notes" badge={unreadStats.notes} />
+                            <ActionCard onClick={() => handleActionClick('assignments', '/student/assignments')} icon="📝" title="Assignments" badge={unreadStats.assignments} />
                         </>
                     )}
                     {user?.features?.chat && (
-                        <ActionCard path="/student/chat" icon="💬" title="Subject Chat" badge={chatUnreadCount} />
+                        <ActionCard onClick={() => handleActionClick('chat', '/student/chat')} icon="💬" title="Subject Chat" badge={chatUnreadCount} />
                     )}
 
                     <ActionCard path="/student/profile" icon="👤" title="My Profile" />

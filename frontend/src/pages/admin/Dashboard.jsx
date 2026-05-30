@@ -12,7 +12,82 @@ import ThemeSelector from "../../components/ThemeSelector";
 import BlockedScreen from "./BlockedScreen";
 import InstituteLogo from "../../components/common/InstituteLogo";
 import SetupGuideModal from "./SetupGuideModal";
+import AdvancedStatCard from "../../components/common/AdvancedStatCard";
+import managerAvatarImg from "../../assets/manager_avatar.png";
+import blueDiamondImg from "../../assets/blue_diamond.png";
 import "./Dashboard.css";
+
+/**
+ * ManagerStatsGrid - renders only the stat cards that match the manager's permissions.
+ * Separated into its own component to avoid JSX parse issues with IIFEs.
+ */
+function ManagerStatsGrid({ managerStats, userPerms }) {
+    const hasPerm = (...keys) => keys.some(k =>
+        userPerms.includes(k) || userPerms.some(p => p.startsWith(k + '.'))
+    );
+    const cards = [];
+
+    // Phase 1: Fees & Expenses
+    if (hasPerm('fees', 'collect_fees')) {
+        cards.push({ icon: '💰', value: `₹${parseFloat(managerStats.todayCollection || 0).toLocaleString()}`, label: "Today's Collection", colorClass: 'asc-green', badgeText: "Today", badgeType: "success" });
+        cards.push({ icon: '🎉', value: `₹${parseFloat(managerStats.totalDiscount || 0).toLocaleString()}`, label: "Total Discount Given", colorClass: 'asc-yellow' });
+    }
+    if (hasPerm('expenses')) {
+        cards.push({ icon: '🔥', value: `₹${parseFloat(managerStats.totalExpenses || 0).toLocaleString()}`, label: "Monthly Expenses", colorClass: 'asc-red', badgeText: "Monthly", badgeType: "danger" });
+    }
+
+    // Phase 2: Data / Records
+    if (hasPerm('students')) {
+        cards.push({ icon: '👨‍🎓', value: managerStats.totalStudents ?? 0, label: "Total Students", colorClass: 'asc-blue' });
+        cards.push({ icon: '✅', value: managerStats.activeStudents ?? 0, label: "Active Students", colorClass: 'asc-indigo', badgeText: "Active", badgeType: "success" });
+        cards.push({ icon: '🚫', value: managerStats.blockedStudents ?? 0, label: "Blocked Students", colorClass: 'asc-red' });
+    }
+    if (hasPerm('faculty')) {
+        cards.push({ icon: '👩‍🏫', value: managerStats.totalFaculty ?? 0, label: "Total Faculty", colorClass: 'asc-purple' });
+    }
+    if (hasPerm('classes')) {
+        cards.push({ icon: '📚', value: managerStats.totalClasses ?? 0, label: "Total Classes", colorClass: 'asc-orange' });
+    }
+    if (hasPerm('subjects')) {
+        cards.push({ icon: '📖', value: managerStats.totalSubjects ?? 0, label: "Total Subjects", colorClass: 'asc-cyan' });
+    }
+    if (hasPerm('parents')) {
+        cards.push({ icon: '👨‍👩‍👧', value: managerStats.totalParents ?? 0, label: "Total Parents", colorClass: 'asc-pink' });
+    }
+
+    // Phase 3: Academic
+    if (hasPerm('exams')) {
+        cards.push({ icon: '✍️', value: managerStats.totalExams ?? 0, label: "Total Exams", colorClass: 'asc-indigo' });
+    }
+    if (hasPerm('notes')) {
+        cards.push({ icon: '📓', value: managerStats.totalNotes ?? 0, label: "Total Notes", colorClass: 'asc-purple' });
+    }
+    if (hasPerm('attendance')) {
+        cards.push({ icon: '📋', value: `${managerStats.presentToday ?? 0} / ${managerStats.attendanceToday ?? 0}`, label: "Today's Attendance", colorClass: 'asc-green' });
+        cards.push({ icon: '📊', value: `${managerStats.attendanceRate ?? 0}%`, label: "Attendance Rate", colorClass: 'asc-blue' });
+    }
+    if (hasPerm('assignments')) {
+        cards.push({ icon: '📝', value: managerStats.totalAssignments ?? 0, label: "Total Assignments", colorClass: 'asc-orange' });
+    }
+
+    if (cards.length === 0) return null;
+
+    return (
+        <div className="stats-grid advanced-stats-grid">
+            {cards.map((c, i) => (
+                <AdvancedStatCard
+                    key={i}
+                    icon={c.icon}
+                    colorClass={c.colorClass}
+                    label={c.label}
+                    value={c.value}
+                    badgeText={c.badgeText}
+                    badgeType={c.badgeType}
+                />
+            ))}
+        </div>
+    );
+}
 
 function AdminDashboard() {
     const { user, logout } = useContext(AuthContext);
@@ -79,10 +154,10 @@ function AdminDashboard() {
         try {
             const response = await api.get("/manager/stats");
             if (response.data.success) setManagerStats(response.data.data);
-            const adminRes = await api.get("/admin/stats");
-            setStats(adminRes.data.data);
+            else setManagerStats({});
         } catch (error) {
             console.error("Error fetching manager stats:", error);
+            setManagerStats({});
         }
     };
 
@@ -95,6 +170,30 @@ function AdminDashboard() {
         } finally {
             setLoading(false);
         }
+    };
+
+    const handleClearUnread = async (featureKey, path) => {
+        try {
+            if (featureKey === 'announcements' && stats.unreadAnnouncementCount > 0) {
+                setStats(s => ({ ...s, unreadAnnouncementCount: 0 }));
+                await api.post("/admin/clear-unread-announcements");
+            } else if (featureKey === 'assignments' && stats.unreadAssignmentCount > 0) {
+                setStats(s => ({ ...s, unreadAssignmentCount: 0 }));
+                await api.post("/admin/clear-unread-assignments");
+            } else if (featureKey === 'notes' && stats.unreadNotesCount > 0) {
+                setStats(s => ({ ...s, unreadNotesCount: 0 }));
+                await api.post("/admin/clear-unread-notes");
+            } else if (featureKey === 'chat' && stats.unreadChatCount > 0) {
+                setStats(s => ({ ...s, unreadChatCount: 0 }));
+                await api.post("/admin/clear-unread-chats");
+            } else if (featureKey === 'enquiries' && stats.unreadEnquiryCount > 0) {
+                setStats(s => ({ ...s, unreadEnquiryCount: 0 }));
+                await api.post("/admin/clear-unread-enquiries");
+            }
+        } catch (e) {
+            console.error("Failed to clear unread counts", e);
+        }
+        handleNavigation(path, featureKey);
     };
 
     // Phase 2: Blocked managers see the blocked screen immediately
@@ -186,7 +285,7 @@ function AdminDashboard() {
         return false;
     };
 
-    const ActionCard = ({ icon, title, path, featureKey, highlight, badge, onClick }) => {
+    const DACard = ({ icon, bg, title, desc, path, featureKey, subText, badge, onClick }) => {
         const isTrialLocked = planDetails && planDetails.plan.is_free_trial && getTrialDaysLeft() <= 0;
         const isPlanExpiredLocally = user?.isPlanExpired || isTrialLocked;
         
@@ -203,24 +302,29 @@ function AdminDashboard() {
                     if (onClick) onClick(e);
                     else handleNavigation(path, featureKey);
                 }}
-                className={`action-card ${isLocked ? 'disabled-card' : ''}`}
-                style={{
-                    cursor: 'pointer',
-                    position: 'relative',
-                    ...(highlight ? { borderColor: '#6366f1', boxShadow: '0 0 0 2px rgba(99,102,241,0.3)' } : {}),
-                    opacity: isLocked ? 0.6 : 1
-                }}
+                className={`da-card ${isLocked ? 'disabled-card' : ''}`}
             >
-                <span className="action-icon">{icon}</span>
-                <span className="action-title">{title}</span>
-                {badge > 0 && !isLocked && (
-                    <span style={{ position: 'absolute', top: 10, right: 10, background: 'var(--danger, #ef4444)', color: 'white', padding: '2px 6px', borderRadius: '10px', fontSize: '0.75rem', fontWeight: 'bold', zIndex: 10 }}>
-                        {badge > 99 ? '99+' : badge}
-                    </span>
-                )}
-                {isLocked && (
-                    <div style={{ position: 'absolute', top: 5, right: 5, fontSize: '10px', background: '#e5e7eb', padding: '2px 5px', borderRadius: '4px', zIndex: 10, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        🔒
+                <div className="da-card-top">
+                    <div className="da-icon-box" style={{ background: bg || '#f3f4f6' }}>
+                        {icon}
+                    </div>
+                    <div className="da-text">
+                        <h4>{title}</h4>
+                        <p>{desc}</p>
+                    </div>
+                    <div className="da-arrow">›</div>
+                </div>
+                {(subText || badge > 0 || isLocked) && (
+                    <div className="da-card-bottom">
+                        <span className="da-subtext">{subText}</span>
+                        {badge > 0 && !isLocked && (
+                            <span className="da-badge">
+                                {badge > 99 ? '99+' : badge}
+                            </span>
+                        )}
+                        {isLocked && (
+                            <span className="da-locked-badge">🔒 Locked</span>
+                        )}
                     </div>
                 )}
             </div>
@@ -270,66 +374,16 @@ function AdminDashboard() {
         <div className="dashboard-container">
 
             {/* ── Header ── */}
-            <div className="dashboard-header">
-                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                    <InstituteLogo size="md" />
-                    <div>
-                        <h1>{user?.role === 'manager' ? '👨‍💼 Manager Dashboard' : '🏫 Admin Dashboard'}</h1>
-                        <p>Welcome back, <strong>{user?.name}</strong>! {planDetails ? `Plan: ${planDetails.plan.name}` : "Here's what's happening today."}</p>
-                    </div>
-                </div>
-                <div className="dashboard-header-right">
-                    <button 
-                        className="btn btn-primary" 
-                        onClick={() => setShowHelpModal(true)}
-                        style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', border: 'none', background: 'var(--primary-color)' }}
-                        title="Institute Setup Guide"
-                    >
-                        <span>❓</span> Guide
-                    </button>
-                    <ThemeSelector />
-                    <button onClick={logout} className="btn btn-danger">Logout</button>
+            <div className="dashboard-header" style={{ marginBottom: '1rem' }}>
+                <div>
+                    <h1 style={{ fontSize: '1.5rem', margin: '0 0 0.5rem 0' }}>Here's what's happening with your institute today.</h1>
                 </div>
             </div>
 
-            {/* ══════════════ LIFETIME MEMBER BANNER ══════════════ */}
-            {planDetails?.institute?.is_lifetime_member && (
-                <div style={{
-                    marginTop: '2rem',
-                    padding: '1.25rem 1.75rem',
-                    background: 'linear-gradient(135deg, #1a0533 0%, #3b0764 50%, #4c1d95 100%)',
-                    border: '1px solid rgba(167,139,250,0.4)',
-                    borderRadius: '14px',
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    flexWrap: 'wrap',
-                    gap: '1rem',
-                    boxShadow: '0 4px 20px rgba(124,58,237,0.3)'
-                }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                        <span style={{ fontSize: '2rem' }}>💎</span>
-                        <div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.25rem' }}>
-                                <h3 style={{ margin: 0, color: '#fff', fontSize: '1.1rem', fontWeight: 700 }}>Lifetime Member</h3>
-                                {planDetails.institute.founding_member && (
-                                    <span style={{ background: '#f59e0b', color: '#000', fontSize: '10px', fontWeight: 800, padding: '2px 10px', borderRadius: '20px' }}>🌟 FOUNDING</span>
-                                )}
-                            </div>
-                            <p style={{ margin: 0, color: '#c4b5fd', fontSize: '0.88rem' }}>
-                                No recurring billing — ever.
-                                {planDetails.institute.lifetime_purchased_at && ` Member since ${new Date(planDetails.institute.lifetime_purchased_at).toLocaleDateString('en-IN', { month: 'long', year: 'numeric' })}.`}
-                            </p>
-                        </div>
-                    </div>
-                    <span style={{ background: 'rgba(167,139,250,0.2)', color: '#e9d5ff', fontSize: '12px', fontWeight: 600, padding: '6px 16px', borderRadius: '20px', border: '1px solid rgba(167,139,250,0.35)' }}>
-                        ✓ All Features Unlocked
-                    </span>
-                </div>
-            )}
+            {/* Lifetime member banner moved below stats */}
 
             {/* ══════════════ TRIAL BANNERS ══════════════ */}
-            {planDetails && planDetails.plan.is_free_trial && !planDetails.institute?.is_lifetime_member && (
+            {isAdmin && planDetails && planDetails.plan.is_free_trial && !planDetails.institute?.is_lifetime_member && (
                 <div style={{ marginTop: '2rem' }}>
                     {getTrialDaysLeft() <= 0 ? (
                         <div style={{
@@ -358,300 +412,340 @@ function AdminDashboard() {
             )}
 
             {/* ══════════════ STATS ══════════════ */}
-            {user?.role === 'manager' && managerStats ? (
-                <div className="stats-grid">
-                    <div className="stat-card">
-                        <div className="stat-icon">💰</div>
-                        <div className="stat-content">
-                            <h3>₹{parseFloat(managerStats.todayCollection || 0).toLocaleString()}</h3>
-                            <p>Today's Collection</p>
-                        </div>
+            {user?.role === 'manager' ? (
+                managerStats === null ? (
+                    <div className="stats-grid advanced-stats-grid">
+                        {[1, 2, 3, 4].map(i => (
+                            <div key={i} className="advanced-stat-card" style={{ opacity: 0.4, minHeight: '120px', background: 'var(--card-bg)' }} />
+                        ))}
                     </div>
-                    <div className="stat-card">
-                        <div className="stat-icon">🔥</div>
-                        <div className="stat-content">
-                            <h3>₹{parseFloat(managerStats.totalExpenses || 0).toLocaleString()}</h3>
-                            <p>Monthly Expenses</p>
-                        </div>
-                    </div>
-                    <div className="stat-card">
-                        <div className="stat-icon">👨‍🎓</div>
-                        <div className="stat-content">
-                            <h3>{stats.totalStudents || 0}</h3>
-                            <p>Total Students</p>
-                        </div>
-                    </div>
-                    <div className="stat-card">
-                        <div className="stat-icon">✅</div>
-                        <div className="stat-content">
-                            <h3>{managerStats.attendanceRate || 0}%</h3>
-                            <p>Today's Attendance</p>
-                        </div>
-                    </div>
-                    <div className="stat-card">
-                        <div className="stat-icon">🏫</div>
-                        <div className="stat-content">
-                            <h3>{managerStats.presentToday || 0} / {managerStats.attendanceToday || 0}</h3>
-                            <p>Present / Marked</p>
-                        </div>
-                    </div>
-                </div>
+                ) : (
+                    <ManagerStatsGrid managerStats={managerStats} userPerms={user.permissions || []} />
+                )
             ) : (
-                <div className="stats-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))' }}>
-                    <div className="stat-card">
-                        <div className="stat-icon">👥</div>
-                        <div className="stat-content">
-                            <h3>{stats.totalAdmins || 0} / {planDetails?.plan?.max_admin_users || 1}</h3>
-                            <p>Total Admins</p>
+                <div className="stats-grid advanced-stats-grid">
+                    <AdvancedStatCard
+                        icon="👥"
+                        colorClass="asc-purple"
+                        label="Total Admins"
+                        value={`${stats.totalAdmins || 0} / ${planDetails?.plan?.max_admin_users || 1}`}
+                        subLabel="Active / Total"
+                        progress={(((stats.totalAdmins || 0) / (planDetails?.plan?.max_admin_users || 1)) * 100).toFixed(1)}
+                    />
+                    <AdvancedStatCard
+                        icon="👨‍🎓"
+                        colorClass="asc-blue"
+                        label="Total Students"
+                        value={`${stats.totalStudents || 0} / ${planDetails?.usage?.students?.limit || '∞'}`}
+                        subLabel="Active / Total"
+                        progress={planDetails?.usage?.students?.limit && planDetails.usage.students.limit !== '∞' ? (((stats.totalStudents || 0) / planDetails.usage.students.limit) * 100).toFixed(1) : undefined}
+                    />
+                    <AdvancedStatCard
+                        icon="👩‍🏫"
+                        colorClass="asc-green"
+                        label="Total Faculty"
+                        value={`${stats.totalFaculty || 0} / ${planDetails?.usage?.faculty?.limit || '∞'}`}
+                        subLabel="Active / Total"
+                        progress={planDetails?.usage?.faculty?.limit && planDetails.usage.faculty.limit !== '∞' ? (((stats.totalFaculty || 0) / planDetails.usage.faculty.limit) * 100).toFixed(1) : undefined}
+                    />
+                    <AdvancedStatCard
+                        icon="📚"
+                        colorClass="asc-orange"
+                        label="Total Classes"
+                        value={`${stats.totalClasses || 0} / ${planDetails?.usage?.classes?.limit || '∞'}`}
+                        subLabel="Active / Total"
+                        progress={planDetails?.usage?.classes?.limit && planDetails.usage.classes.limit !== '∞' ? (((stats.totalClasses || 0) / planDetails.usage.classes.limit) * 100).toFixed(1) : undefined}
+                    />
+                    <AdvancedStatCard
+                        icon="✅"
+                        colorClass="asc-indigo"
+                        label="Active Students"
+                        value={stats.activeStudents || 0}
+                        subLabel="Currently Active"
+                        badgeText="Live"
+                        badgeType="success"
+                    />
+                    <AdvancedStatCard
+                        icon="🔔"
+                        colorClass="asc-red"
+                        label="Total Due Fees"
+                        value={`₹${(stats.totalDue || 0).toLocaleString()}`}
+                        subLabel="Pending Collection"
+                        badgeText="Due"
+                        badgeType="danger"
+                    />
+                    <AdvancedStatCard
+                        icon="🎉"
+                        colorClass="asc-yellow"
+                        label="Total Discount Given"
+                        value={`₹${(stats.totalDiscount || 0).toLocaleString()}`}
+                        subLabel="This Lifetime"
+                        badgeText="Discount"
+                        badgeType="warning"
+                    />
+                </div>
+            )}
+
+
+            {/* ══════════════ LIFETIME MEMBER BANNER ══════════════ */}
+            {isAdmin && planDetails?.institute?.is_lifetime_member && (
+                <div className="premium-lifetime-banner">
+                    <div className="plb-content-left">
+                        <div className="plb-icon-box">
+                            <img src={blueDiamondImg} alt="Diamond" style={{ width: '40px', height: '40px', objectFit: 'contain' }} />
+                        </div>
+                        <div className="plb-text">
+                            <div className="plb-title-row">
+                                <h3 className="plb-title">Lifetime Member</h3>
+                                {planDetails.institute.founding_member && (
+                                    <span className="plb-badge">🌟 FOUNDING</span>
+                                )}
+                            </div>
+                            <p className="plb-desc">
+                                No recurring billing — ever.
+                                {planDetails.institute.lifetime_purchased_at && ` Member since ${new Date(planDetails.institute.lifetime_purchased_at).toLocaleDateString('en-IN', { month: 'long', year: 'numeric' })}.`}
+                            </p>
                         </div>
                     </div>
-                    <div className="stat-card">
-                        <div className="stat-icon">👨‍🎓</div>
-                        <div className="stat-content">
-                            <h3>{stats.totalStudents} / {planDetails?.usage?.students?.limit || '∞'}</h3>
-                            <p>Total Students</p>
-                        </div>
-                    </div>
-                    <div className="stat-card">
-                        <div className="stat-icon">👩‍🏫</div>
-                        <div className="stat-content">
-                            <h3>{stats.totalFaculty} / {planDetails?.usage?.faculty?.limit || '∞'}</h3>
-                            <p>Total Faculty</p>
-                        </div>
-                    </div>
-                    <div className="stat-card">
-                        <div className="stat-icon">📚</div>
-                        <div className="stat-content">
-                            <h3>{stats.totalClasses} / {planDetails?.usage?.classes?.limit || '∞'}</h3>
-                            <p>Total Classes</p>
-                        </div>
-                    </div>
-                    <div className="stat-card">
-                        <div className="stat-icon">✅</div>
-                        <div className="stat-content">
-                            <h3>{stats.activeStudents}</h3>
-                            <p>Active Students</p>
-                        </div>
-                    </div>
-                    <div className="stat-card">
-                        <div className="stat-icon">🔔</div>
-                        <div className="stat-content">
-                            <h3>₹{(stats.totalDue || 0).toLocaleString()}</h3>
-                            <p>Total Due Fees</p>
-                        </div>
-                    </div>
-                    <div className="stat-card">
-                        <div className="stat-icon">🎉</div>
-                        <div className="stat-content">
-                            <h3>₹{(stats.totalDiscount || 0).toLocaleString()}</h3>
-                            <p>Total Discount Given</p>
-                        </div>
+                    <div className="plb-content-right">
+                        <button className="plb-btn" onClick={() => window.open('/features', '_blank')}>
+                            <img src={blueDiamondImg} alt="" style={{ width: '16px', height: '16px' }} /> View All Features
+                        </button>
+                        <img src={blueDiamondImg} className="plb-diamond-bg" alt="" />
                     </div>
                 </div>
             )}
 
+
             {/* ══════════════ MANAGER SYSTEM BANNER (Admin only) ══════════════ */}
             {isAdmin && (
-                <div style={{
-                    marginTop: '2rem',
-                    borderRadius: '16px',
-                    background: 'linear-gradient(135deg, rgba(99,102,241,0.15) 0%, rgba(168,85,247,0.15) 100%)',
-                    border: '1px solid rgba(99,102,241,0.35)',
-                    padding: '1.5rem 2rem',
-                    position: 'relative',
-                    overflow: 'hidden'
-                }}>
-                    {/* Decorative glow */}
-                    <div style={{
-                        position: 'absolute', top: '-40px', right: '-40px',
-                        width: '140px', height: '140px', borderRadius: '50%',
-                        background: 'rgba(99,102,241,0.2)', filter: 'blur(40px)'
-                    }} />
-
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
-                        <div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem' }}>
-                                <span style={{ fontSize: '1.75rem' }}>👨‍💼</span>
-                                <h2 style={{ margin: 0, fontSize: '1.3rem', fontWeight: '700', color: 'var(--text-primary)' }}>
-                                    Manager System
-                                </h2>
-                                <span style={{
-                                    background: 'linear-gradient(90deg, #6366f1, #a855f7)',
-                                    color: '#fff', fontSize: '0.72rem', fontWeight: '700',
-                                    padding: '2px 10px', borderRadius: '20px', letterSpacing: '0.05em'
-                                }}>
-                                    PHASE 2 – 11
-                                </span>
+                <div className="premium-manager-banner">
+                    <div className="pmb-main">
+                        <div className="pmb-left">
+                            <div className="pmb-illustration">
+                                <img src={managerAvatarImg} alt="Manager" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%', mixBlendMode: 'multiply' }} />
                             </div>
-                            <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '0.9rem', maxWidth: '560px' }}>
-                                Create operational-level managers with granular permission control. Managers can collect fees, record expenses, manage transport, and view attendance — without accessing sensitive financial analytics.
-                            </p>
-                        </div>
-                        <button
-                            className="btn btn-primary"
-                            onClick={() => navigate('/admin/admins')}
-                            style={{
-                                background: 'linear-gradient(135deg, #6366f1, #a855f7)',
-                                border: 'none', padding: '0.65rem 1.4rem', borderRadius: '10px',
-                                fontWeight: '600', whiteSpace: 'nowrap', fontSize: '0.9rem'
-                            }}
-                        >
-                            👨‍💼 Manage Managers →
-                        </button>
-                    </div>
-
-                    {/* Manager count + existing manager chips */}
-                    <div style={{ marginTop: '1.25rem', display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap' }}>
-                        <div style={{
-                            background: 'rgba(99,102,241,0.15)', borderRadius: '10px',
-                            padding: '0.5rem 1rem', display: 'flex', alignItems: 'center', gap: '0.5rem'
-                        }}>
-                            <span style={{ fontSize: '1.2rem' }}>👨‍💼</span>
-                            <span style={{ fontWeight: '700', fontSize: '1.1rem' }}>{managers.length}</span>
-                            <span style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>Active Manager{managers.length !== 1 ? 's' : ''}</span>
-                        </div>
-
-                        {managers.length === 0 ? (
-                            <span style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', fontStyle: 'italic' }}>
-                                No managers created yet. Click "Manage Managers" to add one.
-                            </span>
-                        ) : (
-                            managers.map(mgr => (
-                                <div key={mgr.id} style={{
-                                    display: 'flex', alignItems: 'center', gap: '0.5rem',
-                                    background: 'rgba(255,255,255,0.08)', borderRadius: '8px',
-                                    padding: '0.4rem 0.85rem', border: '1px solid rgba(99,102,241,0.25)'
-                                }}>
-                                    <div style={{
-                                        width: '28px', height: '28px', borderRadius: '50%',
-                                        background: 'linear-gradient(135deg, #6366f1, #a855f7)',
-                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                        color: '#fff', fontWeight: '700', fontSize: '0.8rem'
-                                    }}>
-                                        {(mgr.name || 'M')[0].toUpperCase()}
-                                    </div>
-                                    <div>
-                                        <div style={{ fontSize: '0.85rem', fontWeight: '600' }}>{mgr.name}</div>
-                                        <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)' }}>
-                                            {Array.isArray(mgr.permissions) && mgr.permissions.length > 0
-                                                ? mgr.permissions.slice(0, 3).map(p => PERM_LABELS[p] || p).join(', ') + (mgr.permissions.length > 3 ? ` +${mgr.permissions.length - 3}` : '')
-                                                : 'No permissions assigned'}
-                                        </div>
-                                    </div>
-                                    <span style={{
-                                        marginLeft: '4px', fontSize: '0.7rem', padding: '1px 7px',
-                                        borderRadius: '20px', fontWeight: '600',
-                                        background: mgr.status === 'active' ? 'rgba(16,185,129,0.2)' : 'rgba(239,68,68,0.2)',
-                                        color: mgr.status === 'active' ? '#10b981' : '#ef4444'
-                                    }}>
-                                        {mgr.status}
-                                    </span>
+                            <div className="pmb-text">
+                                <div className="pmb-title-row">
+                                    <h2 className="pmb-title">Manager System</h2>
+                                    <span className="pmb-badge">PHASE 2 – 11</span>
                                 </div>
-                            ))
-                        )}
+                                <p className="pmb-desc">
+                                    Create operational-level managers with granular permission control. Managers can collect fees, record expenses, manage transport, and view attendance — without full admin access.
+                                </p>
+                            </div>
+                        </div>
+
+                        <div className="pmb-center-grid">
+                            <div className="pmb-feature-card">
+                                <div className="pmb-fc-icon" style={{color: '#ec4899', background: '#fce7f3'}}>🎯</div>
+                                <div className="pmb-fc-text">
+                                    <h4>Permission Control</h4>
+                                    <p>Granular access management</p>
+                                </div>
+                            </div>
+                            <div className="pmb-feature-card">
+                                <div className="pmb-fc-icon" style={{color: '#f59e0b', background: '#fef3c7'}}>🏢</div>
+                                <div className="pmb-fc-text">
+                                    <h4>Financial Oversight</h4>
+                                    <p>Fees, Expenses & Reports</p>
+                                </div>
+                            </div>
+                            <div className="pmb-feature-card">
+                                <div className="pmb-fc-icon" style={{color: '#10b981', background: '#dcfce7'}}>🚌</div>
+                                <div className="pmb-fc-text">
+                                    <h4>Transport Management</h4>
+                                    <p>Manage vehicles & routes</p>
+                                </div>
+                            </div>
+                            <div className="pmb-feature-card">
+                                <div className="pmb-fc-icon" style={{color: '#3b82f6', background: '#dbeafe'}}>📅</div>
+                                <div className="pmb-fc-text">
+                                    <h4>Attendance Access</h4>
+                                    <p>View & manage attendance</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="pmb-right">
+                            <button className="pmb-btn" onClick={() => navigate('/admin/admins')}>
+                                Manage Managers →
+                            </button>
+                        </div>
                     </div>
 
-                    {/* Permission key legend */}
-                    <div style={{ marginTop: '1rem', borderTop: '1px solid rgba(99,102,241,0.2)', paddingTop: '1rem' }}>
-                        <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginBottom: '0.5rem', fontWeight: '600', letterSpacing: '0.05em' }}>
-                            AVAILABLE MANAGER PERMISSIONS:
-                        </div>
-                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
-                            {Object.entries(PERM_LABELS).map(([key, label]) => (
-                                <span key={key} style={{
-                                    fontSize: '0.75rem', padding: '2px 10px', borderRadius: '20px',
-                                    background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(99,102,241,0.2)',
-                                    color: 'var(--text-primary)'
-                                }}>
-                                    {label}
-                                </span>
-                            ))}
-                        </div>
-                    </div>
                 </div>
             )}
 
             {/* ══════════════ QUICK ACTIONS ══════════════ */}
-            <div className="quick-actions" style={{ marginTop: '2rem' }}>
-                <h2>Quick Actions</h2>
-                <div className="action-grid">
-                    {/* Admin-only: Manage Admins/Managers */}
-                    {isAdmin && (
-                        <ActionCard path={`${basePath}/admins`} icon="👨‍💼" title="Manage Managers" featureKey="admins" highlight />
-                    )}
+            <div className="dashboard-actions-wrapper">
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div>
+                        <h2 style={{ margin: '0 0 0.5rem 0', fontSize: '1.5rem', color: 'var(--text-primary)' }}>Quick Actions</h2>
+                        <p style={{ margin: 0, color: 'var(--text-secondary)' }}>Frequently used actions and shortcuts</p>
+                    </div>
+                </div>
 
-                    {hasPermission('students') && <ActionCard path={`${basePath}/students`} icon="👨‍🎓" title="Manage Students" featureKey="students" />}
-                    {hasPermission('attendance') && <ActionCard path={`${basePath}/attendance`} icon="📋" title="Student Attendance" featureKey="attendance" />}
-                    {hasPermission('attendance') && <ActionCard path={`${basePath}/view-attendance`} icon="📊" title="View Attendance" featureKey="attendance" />}
-                    {hasPermission('attendance') && <ActionCard path={`${basePath}/smart-attendance`} icon="📸" title="Scan Student QR" featureKey="auto_attendance" />}
+                {/* STUDENT MANAGEMENT */}
+                <div className="da-section">
+                    <div className="da-section-header">
+                        <h3>Student Management</h3>
+                        <p>Manage students, parents and their academic journey</p>
+                    </div>
+                    <div className="da-grid">
+                        {hasPermission('students') && (
+                            <DACard icon="👥" bg="#f3e8ff" title="Manage Students" desc="Add, edit and manage student records" path={`${basePath}/students`} featureKey="students" subText={`${stats.totalStudents || 0} Students`} />
+                        )}
+                        {hasPermission('attendance') && (
+                            <DACard icon="📋" bg="#e0f2fe" title="Student Attendance" desc="Mark and view student attendance" path={`${basePath}/attendance`} featureKey="attendance" />
+                        )}
+                        {hasPermission('attendance') && (
+                            <DACard icon="📊" bg="#ecfdf5" title="View Attendance" desc="View attendance summary and reports" path={`${basePath}/view-attendance`} featureKey="attendance" />
+                        )}
+                        {hasPermission('attendance') && (
+                            <DACard icon="📸" bg="#fef3c7" title="Scan Student QR" desc="Scan QR and mark student attendance" path={`${basePath}/smart-attendance`} featureKey="auto_attendance" subText="Quick Attendance" />
+                        )}
+                        {hasPermission('students') && (
+                            <DACard icon="👨‍👩‍👧" bg="#fce7f3" title="Manage Parents" desc="View and manage parent information" path={`${basePath}/parents`} featureKey="students" />
+                        )}
+                    </div>
+                </div>
 
-                    {hasPermission('classes') && <ActionCard path={`${basePath}/classes`} icon="📚" title="Manage Classes" featureKey="classes" />}
+                {/* FACULTY MANAGEMENT */}
+                <div className="da-section">
+                    <div className="da-section-header">
+                        <h3>Faculty Management</h3>
+                        <p>Manage faculty, attendance and payroll</p>
+                    </div>
+                    <div className="da-grid">
+                        {hasPermission('faculty') && (
+                            <DACard icon="👩‍🏫" bg="#dcfce7" title="Manage Faculty" desc="Add, edit and manage faculty records" path={`${basePath}/faculty`} featureKey="faculty" subText={`${stats.totalFaculty || 0} Faculty`} />
+                        )}
+                        {hasPermission('attendance') && (
+                            <DACard icon="📋" bg="#ffedd5" title="Faculty Attendance" desc="Mark and view faculty attendance" path={`${basePath}/faculty-attendance`} featureKey="attendance" />
+                        )}
+                        {hasPermission('attendance') && (
+                            <DACard icon="📊" bg="#e0e7ff" title="Faculty Tracker" desc="View faculty performance and summary" path={`${basePath}/view-faculty-attendance`} featureKey="attendance" subText="Performance Hub" />
+                        )}
+                        {hasPermission('attendance') && (
+                            <DACard icon="📸" bg="#fef3c7" title="Scan Faculty QR" desc="Scan QR and mark faculty attendance" path={`${basePath}/scan-faculty-qr`} featureKey="auto_attendance" subText="Quick Attendance" />
+                        )}
+                        {(isAdmin || hasPermission('salary')) && (
+                            <DACard icon="💼" bg="#fae8ff" title="Faculty Salary" desc="Manage faculty salaries and payments" path={`${basePath}/salary`} featureKey="salary" />
+                        )}
+                    </div>
+                </div>
 
-                    {hasPermission('students') && <ActionCard path={`${basePath}/parents`} icon="👨‍👩‍👧" title="Manage Parents" featureKey="students" />}
+                {/* ACADEMIC MANAGEMENT */}
+                <div className="da-section">
+                    <div className="da-section-header">
+                        <h3>Academic Management</h3>
+                        <p>Classes, subjects, exams and academic setup</p>
+                    </div>
+                    <div className="da-grid">
+                        {hasPermission('classes') && (
+                            <DACard icon="📚" bg="#e0f2fe" title="Manage Classes" desc="View and manage all classes" path={`${basePath}/classes`} featureKey="classes" subText={`${stats.totalClasses || 0} Classes`} />
+                        )}
+                        {hasPermission('subjects') && (
+                            <DACard icon="📖" bg="#f3e8ff" title="Manage Subjects" desc="Subjects & topics" path={`${basePath}/subjects`} featureKey="subjects" />
+                        )}
+                        {hasPermission('classes') && (
+                            <DACard icon="📅" bg="#ffedd5" title="Master Timetable" desc="Create and manage timetable" path={`${basePath}/timetable`} featureKey="timetable" />
+                        )}
+                        {hasPermission('exams') && (
+                            <DACard icon="✍️" bg="#fef3c7" title="Manage Exams" desc="Create and manage examinations" path={`${basePath}/exams`} featureKey="exams" />
+                        )}
+                        {(isAdmin || hasPermission('assignments')) && (
+                            <DACard icon="📝" bg="#e0e7ff" title="Assignments" desc="Create and manage assignments" path={`${basePath}/assignments`} featureKey="assignments" badge={stats.unreadAssignmentCount || 0} onClick={() => handleClearUnread('assignments', `${basePath}/assignments`)} />
+                        )}
+                        {(isAdmin || hasPermission('notes')) && (
+                            <DACard icon="📓" bg="#fce7f3" title="All Notes" desc="Store and manage notes" path={`${basePath}/notes`} featureKey="notes" badge={stats.unreadNotesCount || 0} onClick={() => handleClearUnread('notes', `${basePath}/notes`)} />
+                        )}
+                    </div>
+                </div>
 
-                    {hasPermission('faculty') && <ActionCard path={`${basePath}/faculty`} icon="👩‍🏫" title="Manage Faculty" featureKey="faculty" />}
-                    {hasPermission('attendance') && <ActionCard path={`${basePath}/faculty-attendance`} icon="📋" title="Faculty Attendance" featureKey="attendance" />}
-                    {hasPermission('attendance') && <ActionCard path={`${basePath}/view-faculty-attendance`} icon="📊" title="Faculty Tracker" featureKey="attendance" />}
-                    {hasPermission('attendance') && <ActionCard path={`${basePath}/scan-faculty-qr`} icon="📸" title="Scan Faculty QR" featureKey="auto_attendance" />}
+                {/* FINANCE & ACCOUNTS */}
+                <div className="da-section">
+                    <div className="da-section-header">
+                        <h3>Finance & Accounts</h3>
+                        <p>Handle fees, expenses, salary and financial reports</p>
+                    </div>
+                    <div className="da-grid">
+                        {(hasPermission('fees') || hasPermission('collect_fees')) && (
+                            <DACard icon="💰" bg="#dcfce7" title="Collect Fees" desc="Collect and manage student fees" path={`${basePath}/fees`} featureKey="fees" />
+                        )}
+                        {hasPermission('expenses') && (
+                            <DACard icon="💸" bg="#e0f2fe" title="Finances & Transport" desc="Manage transport and finances" path={`${basePath}/expenses`} featureKey="expenses" />
+                        )}
+                        {(isAdmin || hasPermission('finance')) && (
+                            <DACard icon="🏦" bg="#e0e7ff" title="Finance Dashboard" desc="Overview of financial summary" path={`${basePath}/finance`} featureKey="finance" />
+                        )}
+                        {hasPermission('reports') && (
+                            <DACard icon="📉" bg="#fae8ff" title="Reports & Analytics" desc="Detailed reports and insights" path={`${basePath}/reports`} featureKey="reports" />
+                        )}
+                        {hasPermission('performance_hub') && (
+                            <DACard icon="🎯" bg="#fce7f3" title="Performance Hub" desc="Track performance and KPIs" path={`${basePath}/performance`} featureKey="performance_hub" />
+                        )}
+                    </div>
+                </div>
 
-                    {hasPermission('subjects') && <ActionCard path={`${basePath}/subjects`} icon="📖" title="Manage Subjects" featureKey="subjects" />}
-
-                    {hasPermission('fees') && <ActionCard path={`${basePath}/fees`} icon="💰" title="Collect Fees" featureKey="fees" />}
-                    {hasPermission('expenses') && <ActionCard path={`${basePath}/expenses`} icon="💸" title="Finances & Transport" featureKey="expenses" />}
-                    {(isAdmin || hasPermission('finance')) && <ActionCard path={`${basePath}/finance`} icon="📊" title="Finance Dashboard" featureKey="finance" highlight />}
-                    {(isAdmin || hasPermission('salary')) && <ActionCard path={`${basePath}/salary`} icon="💼" title="Faculty Salary" featureKey="salary" />}
-
-                    {hasPermission('reports') && <ActionCard path={`${basePath}/reports`} icon="📉" title="Reports & Analytics" featureKey="reports" />}
-                    {hasPermission('performance_hub') && <ActionCard path={`${basePath}/performance`} icon="📊" title="Performance Hub" featureKey="performance_hub" highlight />}
-                    {hasPermission('exams') && <ActionCard path={`${basePath}/exams`} icon="📝" title="Manage Exams" featureKey="exams" />}
-                    {hasPermission('classes') && <ActionCard path={`${basePath}/timetable`} icon="📅" title="Master Timetable" featureKey="timetable" />}
-                    {hasPermission('announcements') && <ActionCard path={`${basePath}/announcements`} icon="📢" title="Announcements" featureKey="announcements" badge={stats.unreadAnnouncementCount || 0} />}
-
-
-                    {/* New Notes & Chat Features - Permission gated for managers */}
-                    {(isAdmin || hasPermission('assignments')) && <ActionCard path={`${basePath}/assignments`} icon="📝" title="Assignments" featureKey="assignments" />}
-                    {(isAdmin || hasPermission('biometric')) && <ActionCard path={`${basePath}/biometric`} icon="🔐" title="Biometric Attendance" featureKey="biometric" />}
-                    {(isAdmin || hasPermission('notes')) && <ActionCard path={`${basePath}/notes`} icon="📓" title="All Notes" featureKey="notes" />}
-                    {(isAdmin || hasPermission('chat')) && <ActionCard path={`${basePath}/chat-monitor`} icon="💬" title="Chat Monitor" featureKey="chat" badge={stats.unreadChatCount || 0} />}
-
-                    {/* Public Web Page — always visible for admin */}
-                    {isAdmin && (
-                        <div
-                            onClick={() => navigate(`${basePath}/public-page`)}
-                            className="action-card"
-                            style={{ cursor: 'pointer', position: 'relative', borderColor: '#10b981', boxShadow: '0 0 0 2px rgba(16,185,129,0.2)' }}
-                        >
-                            <span className="action-icon">🌐</span>
-                            <span className="action-title">Public Web Page</span>
-                            <span style={{ position: 'absolute', top: 5, right: 5, fontSize: '10px', background: 'rgba(16,185,129,.2)', color: '#10b981', padding: '2px 6px', borderRadius: '6px', fontWeight: 700 }}>NEW</span>
-                        </div>
-                    )}
-
-                    {isAdmin && (
-                        <div onClick={() => navigate(`${basePath}/settings`)} className="action-card" style={{ cursor: 'pointer' }}>
-                            <span className="action-icon">⚙️</span>
-                            <span className="action-title">Settings</span>
-                        </div>
-                    )}
-
-                    {/* Lifetime Access — only for non-lifetime admins */}
-                    {isAdmin && !planDetails?.institute?.is_lifetime_member && (
-                        <div
-                            onClick={() => navigate(`${basePath}/lifetime`)}
-                            className="action-card"
-                            style={{ cursor: 'pointer', background: 'linear-gradient(135deg, #1a0533, #4c1d95)', color: '#fff', border: '1px solid rgba(167,139,250,0.4)', position: 'relative' }}
-                        >
-                            <span className="action-icon">💎</span>
-                            <span className="action-title" style={{ color: '#fff' }}>Lifetime Access</span>
-                            <span style={{ position: 'absolute', top: 5, right: 5, fontSize: '10px', background: '#f59e0b', color: '#000', padding: '2px 6px', borderRadius: '6px', fontWeight: 700 }}>HOT</span>
-                        </div>
-                    )}
-                    {isAdmin && planDetails?.institute?.is_lifetime_member && (
-                        <div className="action-card" style={{ background: 'linear-gradient(135deg, #1a0533, #4c1d95)', color: '#fff', border: '1px solid rgba(167,139,250,0.4)', cursor: 'default' }}>
-                            <span className="action-icon">💎</span>
-                            <span className="action-title" style={{ color: '#e9d5ff', fontSize: '12px' }}>Lifetime Member ✓</span>
-                        </div>
-                    )}
+                {/* SYSTEM & COMMUNICATION */}
+                <div className="da-section">
+                    <div className="da-section-header">
+                        <h3>System & Communication</h3>
+                        <p>Communication, system settings and public access</p>
+                    </div>
+                    <div className="da-grid">
+                        {isAdmin && (
+                            <DACard icon="👨‍💼" bg="#f3f4f6" title="Manage Managers" desc="Create and manage admins/managers" path={`${basePath}/admins`} featureKey="admins" />
+                        )}
+                        {hasPermission('announcements') && (
+                            <DACard icon="📢" bg="#fee2e2" title="Announcements" desc="Send important announcements" path={`${basePath}/announcements`} featureKey="announcements" badge={stats.unreadAnnouncementCount || 0} onClick={() => handleClearUnread('announcements', `${basePath}/announcements`)} />
+                        )}
+                        {(isAdmin || hasPermission('chat')) && (
+                            <DACard icon="💬" bg="#e0e7ff" title="Chat Monitor" desc="Monitor all chat activities" path={`${basePath}/chat-monitor`} featureKey="chat" badge={stats.unreadChatCount || 0} onClick={() => handleClearUnread('chat', `${basePath}/chat-monitor`)} />
+                        )}
+                        {(isAdmin || hasPermission('biometric')) && (
+                            <DACard icon="🔐" bg="#dcfce7" title="Biometric Attendance" desc="Biometric based attendance" path={`${basePath}/biometric`} featureKey="biometric" />
+                        )}
+                        {isAdmin && (
+                            <DACard icon="🌐" bg="#ecfeff" title="Public Web Page" desc="Manage public website" path={`${basePath}/public-page`} featureKey="public_page" badge={stats.unreadEnquiryCount || 0} subText="NEW" />
+                        )}
+                        {isAdmin && (
+                            <DACard icon="⚙️" bg="#f3f4f6" title="Settings" desc="System settings and preferences" path={`${basePath}/settings`} featureKey="settings" />
+                        )}
+                        
+                        {isAdmin && !planDetails?.institute?.is_lifetime_member && (
+                            <div
+                                onClick={() => handleNavigation(`${basePath}/lifetime`)}
+                                className="da-card"
+                                style={{ background: 'linear-gradient(135deg, #1a0533, #4c1d95)', color: '#fff', border: '1px solid rgba(167,139,250,0.4)' }}
+                            >
+                                <div className="da-card-top">
+                                    <div className="da-icon-box" style={{ background: 'rgba(255,255,255,0.1)' }}>💎</div>
+                                    <div className="da-text">
+                                        <h4 style={{ color: '#fff' }}>Lifetime Access</h4>
+                                        <p style={{ color: 'rgba(255,255,255,0.7)' }}>Upgrade to lifetime</p>
+                                    </div>
+                                    <div className="da-arrow" style={{ color: 'rgba(255,255,255,0.5)' }}>›</div>
+                                </div>
+                                <div className="da-card-bottom">
+                                    <span className="da-badge" style={{ background: '#f59e0b', color: '#000' }}>HOT</span>
+                                </div>
+                            </div>
+                        )}
+                        {isAdmin && planDetails?.institute?.is_lifetime_member && (
+                            <div className="da-card disabled-card" style={{ background: 'linear-gradient(135deg, #1a0533, #4c1d95)', color: '#fff', border: '1px solid rgba(167,139,250,0.4)', opacity: 1, filter: 'none' }}>
+                                <div className="da-card-top">
+                                    <div className="da-icon-box" style={{ background: 'rgba(255,255,255,0.1)' }}>💎</div>
+                                    <div className="da-text">
+                                        <h4 style={{ color: '#fff' }}>Lifetime Member</h4>
+                                        <p style={{ color: '#e9d5ff' }}>You are a lifetime member<br/>Enjoy all premium features</p>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </div>
                 </div>
             </div>
 

@@ -178,6 +178,7 @@ exports.getAllFaculty = async (req, res) => {
             limit: parseInt(limit),
             offset: parseInt(offset),
             order: [["created_at", "DESC"]],
+            distinct: true, // Fix for correct count with includes
             include: [
                 {
                     model: User,

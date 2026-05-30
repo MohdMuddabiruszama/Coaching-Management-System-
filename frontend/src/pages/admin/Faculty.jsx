@@ -11,6 +11,7 @@ import { AuthContext } from "../../context/AuthContext";
 import { QRCodeSVG, QRCodeCanvas } from "qrcode.react";
 import QRCode from "qrcode";
 import "./Dashboard.css";
+import "./Students.css"; // Reuse student styles for consistency
 import { savePdfNative } from "../../utils/capacitorPermissions";
 import BulkImportButton from "../../components/BulkImportButton";
 import CredentialRow from "../../components/common/CredentialRow";
@@ -25,6 +26,18 @@ function Faculty() {
     const [showModal, setShowModal] = useState(false);
     const [editMode, setEditMode] = useState(false);
     const [search, setSearch] = useState("");
+    
+    // Filters and Pagination
+    const [departmentFilter, setDepartmentFilter] = useState("all");
+    const [designationFilter, setDesignationFilter] = useState("all");
+    const [statusFilter, setStatusFilter] = useState("all");
+    const [currentPage, setCurrentPage] = useState(1);
+    const [itemsPerPage, setItemsPerPage] = useState(10);
+    const [actionMenuOpen, setActionMenuOpen] = useState(null);
+    
+    // Sort and View Mode
+    const [sortBy, setSortBy] = useState("name");
+    const [viewMode, setViewMode] = useState("list"); // "list" | "grid"
 
     // Bulk selection and QR State
     const [selectedFaculty, setSelectedFaculty] = useState([]);
@@ -290,7 +303,7 @@ function Faculty() {
 
     const fetchFaculty = async () => {
         try {
-            const response = await api.get("/faculty");
+            const response = await api.get("/faculty?limit=100");
             setFaculty(response.data.data || []);
             setTotalCount(response.data.count || 0);
         } catch (error) {
@@ -391,6 +404,13 @@ function Faculty() {
         setEditMode(false);
     };
 
+    // Close action menu when clicking outside
+    useEffect(() => {
+        const closeMenu = () => setActionMenuOpen(null);
+        window.addEventListener('click', closeMenu);
+        return () => window.removeEventListener('click', closeMenu);
+    }, []);
+
     const handleChange = (e) => {
         setFormData({
             ...formData,
@@ -403,224 +423,398 @@ function Faculty() {
         alert(`✅ ${result.inserted} faculty member(s) imported successfully!${result.failed > 0 ? ` (${result.failed} rows had errors)` : ''}`);
     };
 
-    const filteredFaculty = faculty.filter(
-        (f) =>
-            f.User?.name.toLowerCase().includes(search.toLowerCase()) ||
-            f.User?.email.toLowerCase().includes(search.toLowerCase()) ||
-            f.designation?.toLowerCase().includes(search.toLowerCase())
+    const uniqueDepartments = Array.from(new Set(subjects.map(s => s.name)));
+    const uniqueDesignations = Array.from(new Set(faculty.map(f => f.designation).filter(Boolean)));
+
+    let filteredFaculty = faculty.filter(
+        (f) => {
+            const safeName = f.User?.name || "";
+            const safeEmail = f.User?.email || "";
+            const safeDesignation = f.designation || "";
+            const searchTerm = search.toLowerCase();
+
+            const matchesSearch = 
+                safeName.toLowerCase().includes(searchTerm) ||
+                safeEmail.toLowerCase().includes(searchTerm) ||
+                safeDesignation.toLowerCase().includes(searchTerm);
+
+            const matchesDepartment = departmentFilter === "all" || (f.Subjects && f.Subjects.some(s => s.name === departmentFilter));
+            const matchesDesignation = designationFilter === "all" || f.designation === designationFilter;
+            const matchesStatus = statusFilter === "all" || f.User?.status === statusFilter;
+
+            return matchesSearch && matchesDepartment && matchesDesignation && matchesStatus;
+        }
     );
 
+    // Apply Sorting
+    filteredFaculty.sort((a, b) => {
+        if (sortBy === "name") {
+            const nameA = a.User?.name || "";
+            const nameB = b.User?.name || "";
+            return nameA.localeCompare(nameB);
+        } else if (sortBy === "join_date") {
+            const dateA = new Date(a.join_date || 0);
+            const dateB = new Date(b.join_date || 0);
+            return dateB - dateA; // Newest first
+        } else if (sortBy === "salary") {
+            const salA = parseFloat(a.salary) || 0;
+            const salB = parseFloat(b.salary) || 0;
+            return salB - salA; // Highest first
+        }
+        return 0;
+    });
+
+    const totalPages = Math.ceil(filteredFaculty.length / itemsPerPage);
+    const paginatedFaculty = filteredFaculty.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
     if (loading) {
-        return <div className="dashboard-container">Loading...</div>;
+        return <div className="students-container">Loading...</div>;
     }
 
+    const activeFacultyCount = faculty.filter((f) => f.User?.status === "active").length;
+
     return (
-        <div className="dashboard-container">
-            <div className="dashboard-header">
-                <div>
-                    <h1 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                        <span style={{ fontSize: '2rem', lineHeight: 1 }}>👩‍🏫</span>
-                        Faculty Management
-                    </h1>
-                    <p>Manage faculty members</p>
+        <div className="students-container">
+            {/* ── Header ── */}
+            <div className="st-header">
+                <div className="st-header-top-row">
+                    <div className="st-header-left">
+                        <h1>Faculty Management</h1>
+                        <p>Manage faculty members and their information</p>
+                    </div>
                 </div>
-                <div className="dashboard-header-right">
-                    <ThemeSelector />
-                    <Link to="/admin/dashboard" className="btn btn-secondary">
-                        ← Back
-                    </Link>
-                    {canCreate && (
-                        <>
-                            <BulkImportButton type="faculty" onSuccess={handleBulkSuccess} />
-                            <button onClick={() => { resetForm(); setShowModal(true); }} className="btn btn-primary btn-animated">
-                                + Add Faculty
-                            </button>
-                        </>
-                    )}
+                <div className="st-header-bottom-row">
+                    <div className="st-breadcrumbs">
+                        <span>Dashboard</span>
+                        <span>›</span>
+                        <span className="active">Faculty Management</span>
+                    </div>
+                    <div className="st-header-actions">
+                        {canCreate && (
+                            <>
+                                <BulkImportButton 
+                                    type="faculty" 
+                                    onSuccess={handleBulkSuccess} 
+                                    customButton={
+                                        <button className="st-btn st-btn-outline">
+                                            📥 Bulk Import
+                                        </button>
+                                    }
+                                />
+                                <button onClick={() => { resetForm(); setShowModal(true); }} className="st-btn st-btn-primary">
+                                    + Add Faculty
+                                </button>
+                            </>
+                        )}
+                    </div>
                 </div>
             </div>
 
-            {/* Search */}
-            <div className="card" style={{ marginBottom: "2rem" }}>
-                <div style={{ padding: "1.5rem" }}>
+            {/* ── Filters Bar ── */}
+            <div className="st-filters-bar">
+                <div className="st-search" style={{ flex: '1 1 100%' }}>
+                    <span className="st-search-icon">🔍</span>
                     <input
                         type="text"
-                        className="form-input"
                         placeholder="Search by name, email, or designation..."
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
                     />
                 </div>
+                <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', width: '100%' }}>
+                    <div style={{ flex: 1, minWidth: '200px' }}>
+                        <label style={{ fontSize: '0.75rem', fontWeight: 600, color: '#64748b', marginBottom: '4px', display: 'block' }}>Department</label>
+                        <select
+                            className="st-select"
+                            style={{ width: '100%' }}
+                            value={departmentFilter}
+                            onChange={(e) => {
+                                setDepartmentFilter(e.target.value);
+                                setCurrentPage(1);
+                            }}
+                        >
+                            <option value="all">All Departments</option>
+                            {uniqueDepartments.map(dep => (
+                                <option key={dep} value={dep}>{dep}</option>
+                            ))}
+                        </select>
+                    </div>
+                    <div style={{ flex: 1, minWidth: '200px' }}>
+                        <label style={{ fontSize: '0.75rem', fontWeight: 600, color: '#64748b', marginBottom: '4px', display: 'block' }}>Designation</label>
+                        <select
+                            className="st-select"
+                            style={{ width: '100%' }}
+                            value={designationFilter}
+                            onChange={(e) => {
+                                setDesignationFilter(e.target.value);
+                                setCurrentPage(1);
+                            }}
+                        >
+                            <option value="all">All Designations</option>
+                            {uniqueDesignations.map(des => (
+                                <option key={des} value={des}>{des}</option>
+                            ))}
+                        </select>
+                    </div>
+                    <div style={{ flex: 1, minWidth: '200px' }}>
+                        <label style={{ fontSize: '0.75rem', fontWeight: 600, color: '#64748b', marginBottom: '4px', display: 'block' }}>Status</label>
+                        <select 
+                            className="st-select" 
+                            style={{ width: '100%' }}
+                            value={statusFilter}
+                            onChange={(e) => {
+                                setStatusFilter(e.target.value);
+                                setCurrentPage(1);
+                            }}
+                        >
+                            <option value="all">All Status</option>
+                            <option value="active">Active</option>
+                            <option value="inactive">Inactive</option>
+                        </select>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'flex-end' }}>
+                        <button 
+                            className="st-filter-btn"
+                            style={{ height: '42px', color: (search || departmentFilter !== "all" || designationFilter !== "all" || statusFilter !== "all") ? '#ef4444' : '' }}
+                            onClick={() => {
+                                setSearch("");
+                                setDepartmentFilter("all");
+                                setDesignationFilter("all");
+                                setStatusFilter("all");
+                                setCurrentPage(1);
+                            }}
+                        >
+                            <span style={{ fontSize: '1.1rem' }}>⚲</span> 
+                            Clear Filters
+                        </button>
+                    </div>
+                </div>
             </div>
 
-            {/* Statistics */}
-            <div className="stats-grid" style={{ marginBottom: "2rem" }}>
-                <div className="stat-card">
-                    <div className="stat-icon">👩‍🏫</div>
-                    <div className="stat-content">
-                        <h3>{totalCount}</h3>
-                        <p>Total Faculty</p>
+            {/* ── Stat Cards ── */}
+            <div className="st-stats-grid">
+                <div className="st-stat-card">
+                    <div className="st-stat-top">
+                        <div className="st-stat-icon st-icon-purple">👥</div>
+                        <div className="st-stat-info">
+                            <h3>{totalCount}</h3>
+                            <p>Total Faculty</p>
+                        </div>
                     </div>
+                    <div className="st-stat-bottom">All faculty members</div>
                 </div>
-                <div className="stat-card">
-                    <div className="stat-icon">✅</div>
-                    <div className="stat-content">
-                        <h3>{faculty.filter((f) => f.User?.status === "active").length}</h3>
-                        <p>Active</p>
+                <div className="st-stat-card">
+                    <div className="st-stat-top">
+                        <div className="st-stat-icon st-icon-green">✅</div>
+                        <div className="st-stat-info">
+                            <h3>{activeFacultyCount}</h3>
+                            <p>Active</p>
+                        </div>
                     </div>
+                    <div className="st-stat-bottom">Currently active faculty</div>
                 </div>
-                <div className="stat-card">
-                    <div className="stat-icon">📚</div>
-                    <div className="stat-content">
-                        <h3>{subjects.length}</h3>
-                        <p>Total Subjects</p>
+                <div className="st-stat-card">
+                    <div className="st-stat-top">
+                        <div className="st-stat-icon st-icon-blue">📚</div>
+                        <div className="st-stat-info">
+                            <h3>{subjects.length}</h3>
+                            <p>Total Subjects</p>
+                        </div>
                     </div>
+                    <div className="st-stat-bottom">Across all departments</div>
                 </div>
-                <div className="stat-card">
-                    <div className="stat-icon">🏫</div>
-                    <div className="stat-content">
-                        <h3>{classes.length}</h3>
-                        <p>Total Classes</p>
+                <div className="st-stat-card">
+                    <div className="st-stat-top">
+                        <div className="st-stat-icon st-icon-orange">🏫</div>
+                        <div className="st-stat-info">
+                            <h3>{classes.length}</h3>
+                            <p>Total Classes</p>
+                        </div>
                     </div>
+                    <div className="st-stat-bottom">Academic classes</div>
                 </div>
             </div>
 
-            {/* Faculty Table */}
-            <div className="card">
-                <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
-                    <h3 className="card-title" style={{ margin: 0 }}>All Faculty ({filteredFaculty.length})</h3>
-                    {selectedFaculty.length > 0 && (
-                        <div style={{ display: 'flex', gap: '0.5rem' }}>
-                            <button 
-                                className="btn btn-sm" 
-                                style={{ background: 'linear-gradient(135deg, #6366f1, #4f46e5)', color: 'white', fontWeight: 600, border: 'none', borderRadius: '6px', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
-                                onClick={handleViewCredentials}
-                                disabled={loadingCredentials}
+            {/* ── Faculty Table / Grid ── */}
+            <div className="st-table-container">
+                <div className="st-table-header">
+                    <h2>All Faculty ({filteredFaculty.length})</h2>
+                    <div className="st-table-actions">
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            <span style={{ fontSize: '0.85rem', color: '#64748b' }}>Sort by:</span>
+                            <select 
+                                className="st-select" 
+                                style={{ minWidth: '150px' }}
+                                value={sortBy}
+                                onChange={(e) => setSortBy(e.target.value)}
                             >
-                                {loadingCredentials ? '⏳ Loading...' : `🔑 View ${selectedFaculty.length} Credentials`}
+                                <option value="name">Name (A-Z)</option>
+                                <option value="join_date">Join Date</option>
+                                <option value="salary">Salary</option>
+                            </select>
+                        </div>
+                        <div style={{ display: 'flex', gap: '0.2rem', background: '#f1f5f9', padding: '0.2rem', borderRadius: '8px' }}>
+                            <button 
+                                className="st-btn" 
+                                style={{ 
+                                    background: viewMode === 'list' ? '#fff' : 'transparent', 
+                                    color: viewMode === 'list' ? '#8b5cf6' : '#64748b', 
+                                    padding: '0.4rem 0.6rem', 
+                                    boxShadow: viewMode === 'list' ? '0 1px 2px rgba(0,0,0,0.05)' : 'none',
+                                    border: 'none',
+                                    cursor: 'pointer'
+                                }}
+                                onClick={() => setViewMode('list')}
+                            >
+                                ≡
                             </button>
                             <button 
-                                className="btn btn-sm" 
-                                style={{ background: 'linear-gradient(135deg, #10b981, #059669)', color: 'white', fontWeight: 600, border: 'none', borderRadius: '6px' }}
-                                onClick={handleBulkDownloadCards}
-                                disabled={bulkDownloading}
+                                className="st-btn" 
+                                style={{ 
+                                    background: viewMode === 'grid' ? '#fff' : 'transparent', 
+                                    color: viewMode === 'grid' ? '#8b5cf6' : '#64748b', 
+                                    padding: '0.4rem 0.6rem', 
+                                    boxShadow: viewMode === 'grid' ? '0 1px 2px rgba(0,0,0,0.05)' : 'none',
+                                    border: 'none',
+                                    cursor: 'pointer'
+                                }}
+                                onClick={() => setViewMode('grid')}
                             >
-                                {bulkDownloading ? '⏳ Generating PDF...' : `⬇ Download ${selectedFaculty.length} Selected Cards`}
+                                ⊞
                             </button>
                         </div>
-                    )}
+                    </div>
                 </div>
-                <div className="table-container">
-                    <table className="table">
+                
+                {selectedFaculty.length > 0 && (
+                    <div style={{ padding: '1rem', background: '#f8fafc', borderRadius: '8px', marginBottom: '1rem', display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                        <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#334155' }}>{selectedFaculty.length} selected</span>
+                        <button className="st-btn st-btn-outline" onClick={handleViewCredentials} disabled={loadingCredentials}>
+                            {loadingCredentials ? '⏳ Loading...' : '🔑 View Credentials'}
+                        </button>
+                        <button className="st-btn st-btn-primary" onClick={handleBulkDownloadCards} disabled={bulkDownloading}>
+                            {bulkDownloading ? '⏳ Generating...' : '⬇ Download Cards'}
+                        </button>
+                    </div>
+                )}
+
+                {viewMode === 'list' ? (
+                    <div style={{ overflowX: 'auto' }}>
+                        <table className="st-table">
                         <thead>
                             <tr>
-                                <th style={{ width: '40px' }}>
+                                <th>
                                     <input 
                                         type="checkbox" 
+                                        className="st-checkbox"
                                         checked={selectedFaculty.length === filteredFaculty.length && filteredFaculty.length > 0} 
                                         onChange={handleSelectAll} 
-                                        style={{ cursor: 'pointer', width: '16px', height: '16px' }}
                                     />
                                 </th>
                                 <th>ID</th>
-                                <th>Name</th>
-                                <th>Email</th>
-                                <th>Phone</th>
-                                <th>Designation</th>
-                                <th>Salary</th>
-                                <th>Join Date</th>
-                                <th>Teaching Details</th>
-                                <th>Status</th>
-                                <th>Actions</th>
+                                <th>EMAIL</th>
+                                <th>PHONE</th>
+                                <th>DEPARTMENT</th>
+                                <th>DESIGNATION</th>
+                                <th>SALARY</th>
+                                <th>JOIN DATE</th>
+                                <th>STATUS</th>
+                                <th>ACTIONS</th>
                             </tr>
                         </thead>
                         <tbody>
-                            {filteredFaculty.length === 0 ? (
+                            {paginatedFaculty.length === 0 ? (
                                 <tr>
-                                    <td colSpan="11" style={{ textAlign: "center", padding: "2rem" }}>
-                                        No faculty found
+                                    <td colSpan="10" style={{ textAlign: "center", padding: "3rem 1rem", color: '#64748b' }}>
+                                        No faculty found matching your criteria
                                     </td>
                                 </tr>
                             ) : (
-                                filteredFaculty.map((facultyMember) => (
+                                paginatedFaculty.map((facultyMember) => (
                                     <tr key={facultyMember.id}>
                                         <td>
                                             <input 
                                                 type="checkbox" 
+                                                className="st-checkbox"
                                                 checked={selectedFaculty.includes(facultyMember.id)} 
                                                 onChange={() => handleSelectRow(facultyMember.id)}
-                                                style={{ cursor: 'pointer', width: '16px', height: '16px' }}
                                             />
                                         </td>
-                                        <td>{facultyMember.id}</td>
-                                        <td>{facultyMember.User?.name}</td>
-                                        <td>{facultyMember.User?.email}</td>
-                                        <td>{facultyMember.User?.phone || "N/A"}</td>
-                                        <td>{facultyMember.designation || "N/A"}</td>
-                                        <td>₹{facultyMember.salary || "N/A"}</td>
+                                        <td><span className="st-text-sub">F{facultyMember.id.toString().padStart(3, '0')}</span></td>
                                         <td>
-                                            {facultyMember.join_date
-                                                ? new Date(facultyMember.join_date).toLocaleDateString()
-                                                : "N/A"}
-                                        </td>
-                                        <td>
-                                            {facultyMember.Subjects && facultyMember.Subjects.length > 0 ? (
-                                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px', maxWidth: '260px' }}>
-                                                    {facultyMember.Subjects.map((sub) => (
-                                                        <span key={sub.id} className="teaching-detail-pill">
-                                                            <span className="teaching-detail-class">
-                                                                {sub.Class?.name}{sub.Class?.section ? ` (${sub.Class.section})` : ''}
-                                                            </span>
-                                                            <span className="teaching-detail-sep">·</span>
-                                                            <span className="teaching-detail-subject">{sub.name}</span>
-                                                        </span>
-                                                    ))}
+                                            <div className="st-profile-col">
+                                                <div className="st-avatar" style={{ background: '#f3e8ff', color: '#7e22ce' }}>
+                                                    {facultyMember.User?.name?.charAt(0)?.toUpperCase() || 'F'}
                                                 </div>
-                                            ) : (
-                                                <span className="teaching-detail-empty">
-                                                    No subjects assigned
-                                                </span>
-                                            )}
+                                                <div className="st-profile-info">
+                                                    <strong>{facultyMember.User?.name}</strong>
+                                                    <span>{facultyMember.User?.email || 'No email provided'}</span>
+                                                </div>
+                                            </div>
                                         </td>
                                         <td>
-                                            <span
-                                                className={`badge badge-${facultyMember.User?.status === "active" ? "success" : "danger"
-                                                    }`}
-                                            >
-                                                {facultyMember.User?.status}
+                                            <span className="st-text-main">{facultyMember.User?.phone || "N/A"}</span>
+                                        </td>
+                                        <td>
+                                            <span className="st-text-main">
+                                                {facultyMember.Subjects && facultyMember.Subjects.length > 0 
+                                                    ? facultyMember.Subjects.map(s => s.name).join(", ")
+                                                    : "Unassigned"}
                                             </span>
                                         </td>
                                         <td>
-                                            <div style={{ display: "flex", gap: "0.5rem" }}>
-                                                <button
-                                                    className="btn btn-sm"
-                                                    style={{ background: 'linear-gradient(135deg, #667eea, #764ba2)', color: '#fff', border: 'none', borderRadius: '6px', fontWeight: 600 }}
-                                                    onClick={() => handleViewQr(facultyMember)}
-                                                >
-                                                    🔲 View QR
+                                            <span className="st-text-main">{facultyMember.designation || "N/A"}</span>
+                                        </td>
+                                        <td>
+                                            <span className="st-text-main">₹{facultyMember.salary ? parseFloat(facultyMember.salary).toLocaleString('en-IN', { minimumFractionDigits: 2 }) : "N/A"}</span>
+                                        </td>
+                                        <td>
+                                            <span className="st-text-main">
+                                                {facultyMember.join_date 
+                                                    ? new Date(facultyMember.join_date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
+                                                    : "N/A"}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <span className={`st-status ${facultyMember.User?.status === "active" ? "" : "inactive"}`}>
+                                                {facultyMember.User?.status === "active" ? "Active" : "Inactive"}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <div className="st-actions-col">
+                                                <button className="st-action-chip" style={{ color: '#8b5cf6', background: '#f5f3ff', border: 'none' }} onClick={() => handleViewQr(facultyMember)}>
+                                                    👁 View
                                                 </button>
-                                                <button
-                                                    className="btn btn-sm"
-                                                    style={{ background: '#f3f4f6', color: '#4b5563', border: '1px solid #d1d5db', borderRadius: '6px', fontWeight: 600 }}
-                                                    onClick={() => handleViewSingleCredentials(facultyMember.id)}
-                                                >
-                                                    🔑 Keys
-                                                </button>
-                                                {canUpdate && (
-                                                    <button
-                                                        className="btn btn-sm btn-primary"
-                                                        onClick={() => handleEdit(facultyMember)}
-                                                    >
-                                                        Edit
-                                                    </button>
-                                                )}
-                                                {canDelete && (
-                                                    <button
-                                                        className="btn btn-sm btn-danger"
-                                                        onClick={() => handleDelete(facultyMember.id)}
-                                                    >
-                                                        Delete
-                                                    </button>
+                                                {(canUpdate || canDelete) && (
+                                                    <div className="st-menu-container">
+                                                        {canUpdate && (
+                                                            <button className="st-action-chip" style={{ padding: '0.4rem 0.6rem', border: '1px solid #e2e8f0', background: '#fff' }} onClick={() => handleEdit(facultyMember)}>
+                                                                ✏️
+                                                            </button>
+                                                        )}
+                                                        <button 
+                                                            className="st-action-chip"
+                                                            style={{ padding: '0.4rem 0.6rem', border: '1px solid #e2e8f0', background: '#fff' }}
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                setActionMenuOpen(actionMenuOpen === facultyMember.id ? null : facultyMember.id);
+                                                            }}
+                                                        >
+                                                            ⋮
+                                                        </button>
+                                                        {actionMenuOpen === facultyMember.id && (
+                                                            <div className="st-dropdown-menu">
+                                                                <button className="st-dropdown-item" onClick={() => { setActionMenuOpen(null); handleViewSingleCredentials(facultyMember.id); }}>
+                                                                    🔑 Credentials
+                                                                </button>
+                                                                {canDelete && (
+                                                                    <button className="st-dropdown-item danger" onClick={() => { setActionMenuOpen(null); handleDelete(facultyMember.id); }}>
+                                                                        🗑️ Delete
+                                                                    </button>
+                                                                )}
+                                                            </div>
+                                                        )}
+                                                    </div>
                                                 )}
                                             </div>
                                         </td>
@@ -630,47 +824,108 @@ function Faculty() {
                         </tbody>
                     </table>
                 </div>
-
-                {/* ── MOBILE CARD LIST (shown on mobile via responsive.css) ── */}
-                <div className="admin-mobile-cards card-stagger">
-                    {filteredFaculty.length === 0 ? (
-                        <div className="empty-state-mobile">
-                            <div className="empty-icon">👩‍🏫</div>
-                            <div className="empty-title">No Faculty Found</div>
-                            <div className="empty-desc">No faculty members match your search.</div>
-                        </div>
-                    ) : (
-                        filteredFaculty.map((fm) => (
-                            <div key={fm.id} className="admin-item-card" style={{ borderLeftColor: '#10b981' }}>
-                                <div className="aic-info">
-                                    <div className="aic-name">
-                                        {fm.User?.name}
-                                        <span className="aic-badge">
-                                            <span className={`badge badge-${fm.User?.status === 'active' ? 'success' : 'danger'}`}>
-                                                {fm.User?.status}
-                                            </span>
-                                        </span>
-                                    </div>
-                                    <div className="aic-sub">{fm.User?.email} · {fm.designation || 'Faculty'}</div>
-                                    <div className="aic-sub">
-                                        {fm.Subjects?.length > 0
-                                            ? fm.Subjects.map(s => `${s.Class?.name ? s.Class.name + ': ' : ''}${s.name}`).join(' · ')
-                                            : 'No subjects assigned'}
-                                    </div>
-                                </div>
-                                <div className="aic-actions">
-                                    <button className="btn btn-sm" style={{ background: '#f3f4f6', color: '#4b5563' }} onClick={() => handleViewSingleCredentials(fm.id)}>🔑</button>
-                                    {canUpdate && (
-                                        <button className="btn btn-sm btn-primary" onClick={() => handleEdit(fm)}>Edit</button>
-                                    )}
-                                    {canDelete && (
-                                        <button className="btn btn-sm btn-danger" onClick={() => handleDelete(fm.id)}>Del</button>
-                                    )}
-                                </div>
+                ) : (
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.5rem', padding: '1rem 0' }}>
+                        {paginatedFaculty.length === 0 ? (
+                            <div style={{ gridColumn: '1 / -1', textAlign: "center", padding: "3rem 1rem", color: '#64748b' }}>
+                                No faculty found matching your criteria
                             </div>
-                        ))
-                    )}
-                </div>
+                        ) : (
+                            paginatedFaculty.map((facultyMember) => (
+                                <div key={facultyMember.id} style={{ border: '1px solid #e2e8f0', borderRadius: '12px', padding: '1.5rem', background: '#fff', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)', position: 'relative' }}>
+                                    <div style={{ position: 'absolute', top: '1rem', right: '1rem' }}>
+                                        <input 
+                                            type="checkbox" 
+                                            className="st-checkbox"
+                                            checked={selectedFaculty.includes(facultyMember.id)} 
+                                            onChange={() => handleSelectRow(facultyMember.id)}
+                                        />
+                                    </div>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1rem' }}>
+                                        <div className="st-avatar" style={{ background: '#f3e8ff', color: '#7e22ce', width: '50px', height: '50px', fontSize: '1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '50%' }}>
+                                            {facultyMember.User?.name?.charAt(0)?.toUpperCase() || 'F'}
+                                        </div>
+                                        <div>
+                                            <strong style={{ display: 'block', fontSize: '1.1rem', color: '#1e293b' }}>{facultyMember.User?.name}</strong>
+                                            <span style={{ fontSize: '0.85rem', color: '#64748b' }}>{facultyMember.designation || 'Faculty'}</span>
+                                        </div>
+                                    </div>
+                                    <div style={{ fontSize: '0.9rem', color: '#475569', display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '1.5rem' }}>
+                                        <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                            <span style={{ width: '20px' }}>✉</span> <span style={{ wordBreak: 'break-all' }}>{facultyMember.User?.email || 'N/A'}</span>
+                                        </div>
+                                        <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                            <span style={{ width: '20px' }}>📞</span> <span>{facultyMember.User?.phone || 'N/A'}</span>
+                                        </div>
+                                        <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                            <span style={{ width: '20px' }}>📚</span> 
+                                            <span>
+                                                {facultyMember.Subjects && facultyMember.Subjects.length > 0 
+                                                    ? facultyMember.Subjects.map(s => s.name).join(", ")
+                                                    : "Unassigned"}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #f1f5f9', paddingTop: '1rem' }}>
+                                        <span className={`st-status ${facultyMember.User?.status === "active" ? "" : "inactive"}`}>
+                                            {facultyMember.User?.status === "active" ? "Active" : "Inactive"}
+                                        </span>
+                                        <div className="st-actions-col">
+                                            <button className="st-action-chip" style={{ color: '#8b5cf6', background: '#f5f3ff', border: 'none' }} onClick={() => handleViewQr(facultyMember)}>👁</button>
+                                            {canUpdate && (
+                                                <button className="st-action-chip" style={{ border: '1px solid #e2e8f0', background: '#fff' }} onClick={() => handleEdit(facultyMember)}>✏️</button>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            ))
+                        )}
+                    </div>
+                )}
+
+                {/* ── Pagination UI ── */}
+                {filteredFaculty.length > 0 && (
+                    <div className="st-pagination-row">
+                        <div className="st-pagination-info">
+                            Showing {(currentPage - 1) * itemsPerPage + 1} to {Math.min(currentPage * itemsPerPage, filteredFaculty.length)} of {filteredFaculty.length} entries
+                        </div>
+                        <div className="st-pagination-controls">
+                            <button 
+                                className="st-page-btn" 
+                                disabled={currentPage === 1}
+                                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                            >
+                                ‹
+                            </button>
+                            
+                            {[...Array(totalPages)].map((_, i) => {
+                                const page = i + 1;
+                                if (page === 1 || page === totalPages || (page >= currentPage - 1 && page <= currentPage + 1)) {
+                                    return (
+                                        <button 
+                                            key={page}
+                                            className={`st-page-btn ${currentPage === page ? 'active' : ''}`}
+                                            onClick={() => setCurrentPage(page)}
+                                        >
+                                            {page}
+                                        </button>
+                                    );
+                                } else if (page === currentPage - 2 || page === currentPage + 2) {
+                                    return <span key={page} className="st-page-ellipsis">...</span>;
+                                }
+                                return null;
+                            })}
+
+                            <button 
+                                className="st-page-btn" 
+                                disabled={currentPage === totalPages}
+                                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                            >
+                                ›
+                            </button>
+                        </div>
+                    </div>
+                )}
             </div>
 
             {/* Add/Edit Faculty Modal */}
@@ -790,46 +1045,147 @@ function Faculty() {
                 </div>
             )}
 
-            {/* QR Code Single Modal */}
-            {showQrModal && qrFaculty && (
-                <div className="modal-overlay" onClick={() => setShowQrModal(false)}>
-                    <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: '400px', textAlign: 'center' }}>
-                        <div className="modal-header">
-                            <h3>Faculty Identity Card</h3>
-                            <button onClick={() => setShowQrModal(false)} className="btn btn-sm">×</button>
-                        </div>
-                        <div className="modal-body">
-                            {qrLoading ? (
-                                <p>Loading deep profile metrics...</p>
-                            ) : (
-                                <>
+            {/* ── ID Card View Modal ── */}
+            {(showQrModal || qrLoading) && (
+                <div
+                    className="modal-overlay"
+                    onClick={() => setShowQrModal(false)}
+                    style={{ zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                >
+                    <div
+                        onClick={(e) => e.stopPropagation()}
+                        style={{
+                            background: 'var(--card-bg, #fff)',
+                            borderRadius: '20px',
+                            padding: '2.5rem 2rem',
+                            maxWidth: '480px',
+                            width: '95%',
+                            boxShadow: '0 25px 60px rgba(0,0,0,0.25)',
+                            textAlign: 'center',
+                            position: 'relative',
+                        }}
+                    >
+                        {qrLoading && (
+                            <div style={{ padding: '2rem', textAlign: 'center' }}>
+                                <div className="loading-spinner" style={{ margin: '0 auto 1rem' }} />
+                                <p style={{ color: 'var(--text-secondary, #6b7280)' }}>Loading profile data...</p>
+                            </div>
+                        )}
+
+                        {!qrLoading && qrFaculty && (
+                            <>
+                                <div style={{
+                                    width: '100%',
+                                    maxWidth: '350px',
+                                    margin: '0 auto 1.5rem auto',
+                                    background: '#fff',
+                                    border: '1px solid #e5e7eb',
+                                    boxShadow: '0 10px 25px rgba(0,0,0,0.1)',
+                                    fontFamily: 'Helvetica, Arial, sans-serif'
+                                }}>
+                                    {/* Header */}
                                     <div style={{
-                                        background: 'white', padding: '1rem',
-                                        borderRadius: '12px', border: '2px solid #e5e7eb',
-                                        display: 'inline-block', marginBottom: '1.5rem'
+                                        background: '#064e3b',
+                                        padding: '12px',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '12px',
+                                        color: '#fff'
                                     }}>
-                                        <QRCodeSVG
-                                            value={`FACULTY_QR_${qrFaculty.id}`}
-                                            size={200}
-                                            level={"H"}
-                                            includeMargin={true}
-                                        />
+                                        {user?.institute_logo ? (
+                                            <img src={user.institute_logo} alt="Logo" style={{ width: '60px', height: '60px', objectFit: 'contain', background: '#fff', borderRadius: '50%', padding: '4px' }} />
+                                        ) : (
+                                            <div style={{ width: '60px', height: '60px', borderRadius: '50%', background: '#fff', color: '#064e3b', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' }}>LOGO</div>
+                                        )}
+                                        <div style={{ textAlign: 'left', flex: 1 }}>
+                                            <div style={{ fontWeight: 'bold', fontSize: '1.1rem', lineHeight: '1.2' }}>
+                                                {user?.institute_name?.toUpperCase() || 'INSTITUTE NAME'}
+                                            </div>
+                                            {user?.institute_phone && (
+                                                <div style={{ fontSize: '0.8rem', color: '#d1fae5', marginTop: '4px' }}>
+                                                    Ph: {user.institute_phone}
+                                                </div>
+                                            )}
+                                        </div>
                                     </div>
-                                    <h3 style={{ margin: 0, color: 'var(--text-primary)' }}>{qrFaculty.User?.name}</h3>
-                                    <p style={{ margin: '0.25rem 0 1.5rem 0', color: 'var(--text-secondary)' }}>
-                                        {qrFaculty.designation || 'Faculty'} · {qrFaculty.User?.email}
-                                    </p>
+                                    <div style={{ height: '3px', background: '#064e3b', borderTop: '2px solid #fff' }}></div>
+                                    
+                                    {/* QR & Photo area */}
+                                    <div style={{ padding: '15px 15px 5px 15px', display: 'flex', justifyContent: 'space-between', gap: '15px' }}>
+                                        <div style={{ flex: 1, textAlign: 'center' }}>
+                                            <div style={{ fontSize: '0.7rem', fontWeight: 'bold', color: '#64748b', marginBottom: '4px' }}>QR CODE</div>
+                                            <QRCodeSVG
+                                                value={`FACULTY_QR_${qrFaculty.id}`}
+                                                size={110}
+                                                level="H"
+                                                includeMargin={false}
+                                                style={{ display: 'block', margin: '0 auto' }}
+                                            />
+                                        </div>
+                                        <div style={{ flex: 1, textAlign: 'center' }}>
+                                            <div style={{ fontSize: '0.7rem', fontWeight: 'bold', color: '#64748b', marginBottom: '4px' }}>PHOTO</div>
+                                            <div style={{
+                                                width: '110px', height: '110px', background: '#d1fae5', margin: '0 auto',
+                                                border: '1px solid #a7f3d0', position: 'relative', overflow: 'hidden'
+                                            }}>
+                                                <div style={{ width: '30px', height: '30px', borderRadius: '50%', border: '2px solid #34d399', margin: '15px auto 0' }}></div>
+                                                <div style={{ width: '70px', height: '40px', border: '2px solid #34d399', margin: '10px auto 0', borderBottom: 'none' }}></div>
+                                                <div style={{ position: 'absolute', bottom: '4px', width: '100%', textAlign: 'center', fontSize: '0.6rem', color: '#10b981' }}>PHOTO</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div style={{ borderTop: '2px solid #a7f3d0', margin: '10px 15px' }}></div>
+                                    
+                                    {/* Faculty Details */}
+                                    <div style={{ padding: '0 15px 15px 15px' }}>
+                                        <div style={{ background: '#059669', color: '#fff', padding: '8px', textAlign: 'center', fontWeight: 'bold', fontSize: '1rem', marginBottom: '10px' }}>
+                                            {qrFaculty.User?.name?.toUpperCase() || 'FACULTY NAME'}
+                                        </div>
+                                        
+                                        <table style={{ width: '100%', fontSize: '0.75rem', borderCollapse: 'collapse', textAlign: 'left' }}>
+                                            <tbody>
+                                                {[
+                                                    { label: 'Role', value: qrFaculty.designation || 'Faculty' },
+                                                    { label: 'Emp ID', value: `EMP-${qrFaculty.id}` },
+                                                    { label: 'Email', value: qrFaculty.User?.email || 'N/A' },
+                                                    { label: 'Phone', value: qrFaculty.User?.phone || 'N/A' },
+                                                    { label: 'Teaching', value: (qrFaculty.Subjects && qrFaculty.Subjects.length > 0) ? qrFaculty.Subjects.map(s => s.name).join(', ') : 'N/A' },
+                                                    { label: 'Join Date', value: qrFaculty.join_date ? new Date(qrFaculty.join_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : 'N/A' }
+                                                ].map((row, i) => (
+                                                    <tr key={i} style={{ background: i % 2 === 0 ? '#f0fdf4' : '#d1fae5' }}>
+                                                        <td style={{ padding: '6px 8px', fontWeight: 'bold', color: '#059669', width: '70px' }}>{row.label}:</td>
+                                                        <td style={{ padding: '6px 8px', color: '#022c22', wordBreak: 'break-word' }}>{row.value}</td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+
+                                <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center', flexWrap: 'wrap' }}>
                                     <button
-                                        className="btn btn-primary btn-animated"
-                                        style={{ width: '100%', display: 'flex', justifyContent: 'center', gap: '0.5rem' }}
+                                        className="btn btn-secondary"
+                                        onClick={() => setShowQrModal(false)}
+                                        style={{ flex: '1', minWidth: 120, borderRadius: '10px', fontWeight: 600 }}
+                                    >
+                                        ← Back
+                                    </button>
+                                    <button
+                                        className="btn btn-primary"
+                                        style={{
+                                            flex: '1', minWidth: 120, borderRadius: '10px', fontWeight: 600,
+                                            background: 'linear-gradient(135deg, #059669, #047857)',
+                                            border: 'none', opacity: qrDownloading ? 0.7 : 1
+                                        }}
                                         onClick={handleDownloadSingleCard}
                                         disabled={qrDownloading}
                                     >
-                                        {qrDownloading ? '⏳ Generating Native Format...' : '⬇ Download Single Card'}
+                                        {qrDownloading ? '⏳ Generating...' : '⬇ Download Card'}
                                     </button>
-                                </>
-                            )}
-                        </div>
+                                </div>
+                            </>
+                        )}
                     </div>
                 </div>
             )}

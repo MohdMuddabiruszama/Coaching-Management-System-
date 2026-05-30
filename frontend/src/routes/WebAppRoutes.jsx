@@ -60,6 +60,7 @@ const AdminPublicPage = lazy(() => import("../pages/admin/PublicPage"));
 const LifetimeAccess = lazy(() => import("../pages/admin/LifetimeAccess"));
 const AdminPerformance = lazy(() => import("../pages/admin/Performance"));
 const FacultyViewAttendance = lazy(() => import("../pages/faculty/ViewAttendance"));
+const AdminLayout = lazy(() => import("../components/layout/AdminLayout"));
 
 const FacultyDashboard = lazy(() => import("../pages/faculty/Dashboard"));
 const MarkAttendance = lazy(() => import("../pages/faculty/MarkAttendance"));
@@ -185,42 +186,42 @@ export default function WebAppRoutes() {
           path="/admin/*"
           element={
             <ProtectedRoute allowedRoles={["admin", "manager"]}>
-              <Routes>
-                <Route path="dashboard" element={<AdminDashboard />} />
-                <Route path="admins" element={<ManageAdmins />} />
-                <Route path="parents" element={<Parents />} />
-                <Route path="students" element={<Students />} />
-                <Route path="faculty" element={<Faculty />} />
-                <Route path="classes" element={<Classes />} />
-                <Route path="subjects" element={<Subjects />} />
-                <Route path="attendance" element={<Attendance />} />
-                <Route path="faculty-attendance" element={<AdminManageFacultyAttendance />} />
-                <Route path="scan-faculty-qr" element={<AdminFacultyAttendance />} />
-                <Route path="view-faculty-attendance" element={<AdminFacultyViewAttendance />} />
-                <Route path="view-attendance" element={<FacultyViewAttendance />} />
-                <Route path="smart-attendance" element={<AdminSmartAttendance />} />
-                <Route path="reports" element={<Reports />} />
-                <Route path="fees" element={<Fees />} />
-                <Route path="announcements" element={<Announcements />} />
-                <Route path="exams" element={<Exams />} />
-                <Route path="timetable" element={<AdminTimetable />} />
-                <Route path="expenses" element={<AdminExpenses />} />
-                <Route path="finance" element={<FinanceDashboard />} />
-                <Route path="salary" element={<FacultySalary />} />
-                <Route path="settings" element={<Settings />} />
-                <Route path="notes" element={<AdminNotes />} />
-                <Route path="assignments" element={<AdminAssignments />} />
-                <Route path="biometric" element={<AdminBiometric />} />
-                <Route path="public-page" element={<AdminPublicPage />} />
-                <Route path="chat-monitor" element={<ChatApp />} />
-                <Route path="profile" element={<Profile />} />
-                <Route path="lifetime" element={<LifetimeAccess />} />
-                <Route path="performance" element={<AdminPerformance />} />
-                <Route path="*" element={<Navigate to="/admin/dashboard" />} />
-              </Routes>
+              <AdminLayout />
             </ProtectedRoute>
           }
-        />
+        >
+          <Route path="dashboard" element={<AdminDashboard />} />
+          <Route path="admins" element={<ManageAdmins />} />
+          <Route path="parents" element={<Parents />} />
+          <Route path="students" element={<Students />} />
+          <Route path="faculty" element={<Faculty />} />
+          <Route path="classes" element={<Classes />} />
+          <Route path="subjects" element={<Subjects />} />
+          <Route path="attendance" element={<Attendance />} />
+          <Route path="faculty-attendance" element={<AdminManageFacultyAttendance />} />
+          <Route path="scan-faculty-qr" element={<AdminFacultyAttendance />} />
+          <Route path="view-faculty-attendance" element={<AdminFacultyViewAttendance />} />
+          <Route path="view-attendance" element={<FacultyViewAttendance />} />
+          <Route path="smart-attendance" element={<AdminSmartAttendance />} />
+          <Route path="reports" element={<Reports />} />
+          <Route path="fees" element={<Fees />} />
+          <Route path="announcements" element={<Announcements />} />
+          <Route path="exams" element={<Exams />} />
+          <Route path="timetable" element={<AdminTimetable />} />
+          <Route path="expenses" element={<AdminExpenses />} />
+          <Route path="finance" element={<FinanceDashboard />} />
+          <Route path="salary" element={<FacultySalary />} />
+          <Route path="settings" element={<Settings />} />
+          <Route path="notes" element={<AdminNotes />} />
+          <Route path="assignments" element={<AdminAssignments />} />
+          <Route path="biometric" element={<AdminBiometric />} />
+          <Route path="public-page" element={<AdminPublicPage />} />
+          <Route path="chat-monitor" element={<ChatApp />} />
+          <Route path="profile" element={<Profile />} />
+          <Route path="lifetime" element={<LifetimeAccess />} />
+          <Route path="performance" element={<AdminPerformance />} />
+          <Route path="*" element={<Navigate to="/admin/dashboard" />} />
+        </Route>
 
         <Route
           path="/faculty/*"

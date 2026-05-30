@@ -233,25 +233,34 @@ exports.getFeesReport = async (req, res) => {
 
         // Calculate totals
         const totalCollected = payments.reduce((sum, p) => sum + parseFloat(p.amount_paid), 0);
+        const studentsWithPayments = payments.map(p => p.student_id);
 
-        // Get all students for pending calculation
-        const allStudentsInclude = [{ model: User, attributes: ['name'] }];
+        // Fetch actual pending fees from StudentFee table
+        const { StudentFee, FeesStructure } = require('../models');
+        
+        const pendingWhere = { institute_id, status: { [Op.ne]: 'paid' }, due_amount: { [Op.gt]: 0 } };
         if (class_id) {
-            allStudentsInclude.push({
-                model: Class,
-                attributes: [],
-                where: { id: class_id }
-            });
+            pendingWhere.class_id = class_id;
         }
 
-        const allStudents = await Student.findAll({
-            where: { institute_id },
-            include: allStudentsInclude
+        const pendingFees = await StudentFee.findAll({
+            where: pendingWhere,
+            include: [
+                {
+                    model: Student,
+                    attributes: ['id', 'roll_number'],
+                    include: [{ model: User, attributes: ['name'] }],
+                    required: true
+                },
+                {
+                    model: FeesStructure,
+                    attributes: ['fee_type', 'due_date']
+                }
+            ],
+            order: [[{ model: FeesStructure }, 'due_date', 'ASC']]
         });
 
-        // Calculate pending fees (simplified - assumes fixed fee structure)
-        const studentsWithPayments = payments.map(p => p.student_id);
-        const studentsWithoutPayment = allStudents.filter(s => !studentsWithPayments.includes(s.id));
+        const uniquePendingStudentsCount = new Set(pendingFees.map(pf => pf.student_id)).size;
 
         res.status(200).json({
             success: true,
@@ -260,13 +269,17 @@ exports.getFeesReport = async (req, res) => {
                     total_collected: totalCollected.toFixed(2),
                     total_payments: payments.length,
                     students_paid: new Set(studentsWithPayments).size,
-                    students_pending: studentsWithoutPayment.length
+                    students_pending: uniquePendingStudentsCount
                 },
                 payments,
-                pending_students: studentsWithoutPayment.map(s => ({
-                    student_id: s.id,
-                    roll_number: s.roll_number,
-                    name: s.User?.name
+                pending_students: pendingFees.map(pf => ({
+                    student_id: pf.Student.id,
+                    roll_number: pf.Student.roll_number,
+                    name: pf.Student.User?.name,
+                    pending_amount: pf.due_amount,
+                    due_date: pf.FeesStructure?.due_date,
+                    fee_type: pf.FeesStructure?.fee_type || 'General Fee',
+                    reminder_date: pf.reminder_date
                 })),
                 filters: { start_date, end_date, class_id }
             }

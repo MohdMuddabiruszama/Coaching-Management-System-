@@ -1,0 +1,213 @@
+/* Advanced Stat Cards */
+.advanced-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr) !important;
+    gap: var(--spacing-lg) !important;
+    margin-bottom: var(--spacing-2xl);
+}
+
+@media (max-width: 1200px) {
+    .advanced-stats-grid {
+        grid-template-columns: repeat(3, 1fr) !important;
+    }
+}
+@media (max-width: 900px) {
+    .advanced-stats-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+    }
+}
+@media (max-width: 480px) {
+    .advanced-stats-grid {
+        grid-template-columns: 1fr !important;
+    }
+}
+
+.advanced-stat-card {
+    background: white;
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-lg);
+    box-shadow: var(--shadow-sm);
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    border: 1px solid var(--border-color, #e5e7eb);
+    position: relative;
+    overflow: hidden;
+}
+
+.advanced-stat-card:hover {
+    box-shadow: 0 12px 24px -8px rgba(0, 0, 0, 0.08);
+    transform: translateY(-3px);
+    border-color: rgba(99, 102, 241, 0.3);
+}
+
+.asc-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+}
+
+.asc-icon-wrapper {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+}
+
+.asc-info {
+    text-align: right;
+    display: flex;
+    flex-direction: column;
+}
+
+.asc-label {
+    font-size: 0.85rem;
+    color: var(--gray-500);
+    margin: 0 0 4px 0 !important;
+    font-weight: 600;
+}
+
+.asc-value {
+    font-size: 1.5rem !important;
+    color: var(--gray-900);
+    margin: 0 !important;
+    font-weight: 700;
+    line-height: 1.1;
+}
+
+.asc-bottom {
+    margin-top: 4px;
+}
+
+.asc-progress-text {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.75rem;
+    color: var(--gray-500);
+    margin-bottom: 6px;
+    font-weight: 500;
+}
+
+.asc-progress-value {
+    font-weight: 700;
+}
+
+.asc-progress-bar {
+    height: 4px;
+    background: var(--gray-100);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.asc-progress-fill {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 1s ease-out;
+}
+
+.asc-bottom-flex {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.asc-sublabel {
+    font-size: 0.75rem;
+    color: var(--gray-500);
+    font-weight: 500;
+}
+
+.asc-badge {
+    padding: 3px 8px;
+    border-radius: 20px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.asc-badge-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+}
+
+/* Colors Theme */
+.asc-purple .asc-icon-wrapper { background: #f3e8ff; color: #7e22ce; }
+.asc-purple .asc-progress-fill { background: #9333ea; }
+.asc-purple .asc-progress-value { color: #9333ea; }
+
+.asc-blue .asc-icon-wrapper { background: #e0f2fe; color: #0369a1; }
+.asc-blue .asc-progress-fill { background: #0284c7; }
+.asc-blue .asc-progress-value { color: #0284c7; }
+
+.asc-green .asc-icon-wrapper { background: #dcfce7; color: #15803d; }
+.asc-green .asc-progress-fill { background: #16a34a; }
+.asc-green .asc-progress-value { color: #16a34a; }
+
+.asc-orange .asc-icon-wrapper { background: #ffedd5; color: #c2410c; }
+.asc-orange .asc-progress-fill { background: #ea580c; }
+.asc-orange .asc-progress-value { color: #ea580c; }
+
+.asc-indigo .asc-icon-wrapper { background: #e0e7ff; color: #4338ca; }
+.asc-indigo .asc-progress-fill { background: #4f46e5; }
+.asc-indigo .asc-progress-value { color: #4f46e5; }
+
+.asc-red .asc-icon-wrapper { background: #fee2e2; color: #b91c1c; }
+.asc-red .asc-progress-fill { background: #dc2626; }
+.asc-red .asc-progress-value { color: #dc2626; }
+
+.asc-yellow .asc-icon-wrapper { background: #fef9c3; color: #a16207; }
+.asc-yellow .asc-progress-fill { background: #ca8a04; }
+.asc-yellow .asc-progress-value { color: #ca8a04; }
+
+.asc-cyan .asc-icon-wrapper { background: #cffafe; color: #0891b2; }
+.asc-cyan .asc-progress-fill { background: #06b6d4; }
+.asc-cyan .asc-progress-value { color: #06b6d4; }
+
+.asc-pink .asc-icon-wrapper { background: #fce7f3; color: #db2777; }
+.asc-pink .asc-progress-fill { background: #ec4899; }
+.asc-pink .asc-progress-value { color: #ec4899; }
+
+/* Badge Types */
+.asc-badge-success { background: #dcfce7; color: #16a34a; }
+.asc-badge-danger { background: #fee2e2; color: #dc2626; }
+.asc-badge-warning { background: #fef9c3; color: #ca8a04; }
+.asc-badge-info { background: #e0f2fe; color: #0284c7; }
+
+/* Dark Mode Overrides */
+html.dark-mode .advanced-stat-card {
+    background: #1e293b;
+    border-color: #334155;
+}
+html.dark-mode .advanced-stat-card:hover {
+    border-color: #6366f1;
+}
+html.dark-mode .asc-value { color: #f1f5f9; }
+html.dark-mode .asc-label { color: #94a3b8; }
+html.dark-mode .asc-sublabel,
+html.dark-mode .asc-progress-text span:first-child { color: #94a3b8; }
+html.dark-mode .asc-progress-bar { background: #334155; }
+
+/* Dark Mode Icon Backgrounds */
+html.dark-mode .asc-purple .asc-icon-wrapper { background: rgba(147, 51, 234, 0.2); color: #c084fc; }
+html.dark-mode .asc-blue .asc-icon-wrapper { background: rgba(2, 132, 199, 0.2); color: #38bdf8; }
+html.dark-mode .asc-green .asc-icon-wrapper { background: rgba(22, 163, 74, 0.2); color: #4ade80; }
+html.dark-mode .asc-orange .asc-icon-wrapper { background: rgba(234, 88, 12, 0.2); color: #fb923c; }
+html.dark-mode .asc-indigo .asc-icon-wrapper { background: rgba(79, 70, 229, 0.2); color: #818cf8; }
+html.dark-mode .asc-red .asc-icon-wrapper { background: rgba(220, 38, 38, 0.2); color: #f87171; }
+html.dark-mode .asc-yellow .asc-icon-wrapper { background: rgba(202, 138, 4, 0.2); color: #facc15; }
+html.dark-mode .asc-cyan .asc-icon-wrapper { background: rgba(6, 182, 212, 0.2); color: #22d3ee; }
+html.dark-mode .asc-pink .asc-icon-wrapper { background: rgba(236, 72, 153, 0.2); color: #f472b6; }
+
+/* Dark Mode Badges */
+html.dark-mode .asc-badge-success { background: rgba(22, 163, 74, 0.15); color: #4ade80; }
+html.dark-mode .asc-badge-danger { background: rgba(220, 38, 38, 0.15); color: #f87171; }
+html.dark-mode .asc-badge-warning { background: rgba(202, 138, 4, 0.15); color: #facc15; }
+html.dark-mode .asc-badge-info { background: rgba(2, 132, 199, 0.15); color: #38bdf8; }

@@ -98,6 +98,16 @@ export default function PublicPage() {
     } catch (e) { alert("Update failed"); }
   };
 
+  const handleOpenEnquiries = async () => {
+    setTab("enquiries");
+    if (profile && profile.new_enquiry_count > 0) {
+      setProfile({ ...profile, new_enquiry_count: 0 });
+      try {
+        await api.post("/admin/clear-unread-enquiries");
+      } catch (e) { console.error("Failed to clear enquiry count", e); }
+    }
+  };
+
   // ── Loading ──
   if (loading) return (
     <div className="pub-page-container">
@@ -206,7 +216,7 @@ export default function PublicPage() {
         <div className="pub-tab-row">
           <button className={`pub-tab-btn ${tab === "overview" ? "active" : ""}`} onClick={() => setTab("overview")}>📊 Overview</button>
           <button className={`pub-tab-btn ${tab === "wizard" ? "active" : ""}`} onClick={() => setTab("wizard")}>✏️ Edit Page</button>
-          <button className={`pub-tab-btn ${tab === "enquiries" ? "active" : ""}`} onClick={() => setTab("enquiries")}>
+          <button className={`pub-tab-btn ${tab === "enquiries" ? "active" : ""}`} onClick={handleOpenEnquiries}>
             📥 Enquiries
             {profile.new_enquiry_count > 0 && <span className="badge">{profile.new_enquiry_count}</span>}
           </button>
@@ -220,7 +230,7 @@ export default function PublicPage() {
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: "1rem", marginBottom: "1.5rem" }}>
             {[
               { icon: "👁", label: "Page Views", value: profile.page_views || 0 },
-              { icon: "📥", label: "New Enquiries", value: profile.new_enquiry_count || 0 },
+              { icon: "📥", label: "Total Enquiries", value: profile.total_enquiries || 0 },
               { icon: "🖼", label: "Gallery Photos", value: profile.gallery?.length || 0 },
               { icon: "⭐", label: "Reviews", value: profile.reviews?.length || 0 },
             ].map(s => (
@@ -249,7 +259,7 @@ export default function PublicPage() {
             </div>
             <div style={{ marginTop: "1rem", display: "flex", gap: ".75rem" }}>
               <button className="btn btn-primary btn-sm" onClick={() => setTab("wizard")}>✏️ Edit Page</button>
-              <button className="btn btn-secondary btn-sm" onClick={() => setTab("enquiries")}>📥 View Enquiries</button>
+              <button className="btn btn-secondary btn-sm" onClick={handleOpenEnquiries}>📥 View Enquiries</button>
             </div>
           </div>
         </div>

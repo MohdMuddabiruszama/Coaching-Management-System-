@@ -309,9 +309,9 @@ function Fees() {
     if (loading) return <div className="dashboard-container"><div className="dashboard-loading">Loading fees...</div></div>;
 
     const tabs = [
-        ...(isAdmin || user.permissions?.includes('collect_fees') ? [{ id: 'collect', label: '💰 Collect Fees', icon: '💰' }] : []),
+        ...(isAdmin || user.permissions?.includes('collect_fees') || hasPerm('fees', 'create') || hasPerm('fees', 'read') ? [{ id: 'collect', label: '💰 Collect Fees', icon: '💰' }] : []),
         ...(isAdmin || user.permissions?.includes('payment_history') || user.permissions?.includes('recent_payments') ? [{ id: 'history', label: '📋 Payment History', icon: '📋' }] : []),
-        ...(isAdmin || hasPerm('fees', 'read') ? [{ id: 'structure', label: '📐 Fee Structures', icon: '📐' }] : []),
+        ...((isAdmin || hasPerm('fees', 'read') || user.permissions?.includes('collect_fees')) && (isAdmin || !user.permissions?.includes('fees.hide')) ? [{ id: 'structure', label: '📐 Fee Structures', icon: '📐' }] : []),
     ];
     // Default to first available tab
     const validTab = tabs.find(t => t.id === tab) ? tab : (tabs[0]?.id || 'collect');
@@ -474,7 +474,7 @@ function Fees() {
                         <p>Fully Paid</p>
                     </div>
                 </div>
-                {(isAdmin || user.permissions?.includes('payment_history') || user.permissions?.includes('recent_payments')) && (
+                {isAdmin && (
                     <>
                         <div className="stat-card">
                             <div className="stat-icon">💵</div>
@@ -612,7 +612,7 @@ function Fees() {
                                                     {sf.FeesStructure?.fee_type || 'Fee'}
                                                     {sf.FeesStructure?.Subject ? ` • ${sf.FeesStructure.Subject.name}` : ''}
                                                 </span>
-                                                {sf.FeesStructure?.due_date && (
+                                                {sf.FeesStructure?.due_date && sf.status !== 'paid' && (
                                                     <span style={{ color: isOverdue(sf) ? '#ef4444' : 'var(--text-muted)', fontWeight: isOverdue(sf) ? 700 : 400 }}>
                                                         Due: {new Date(sf.FeesStructure.due_date).toLocaleDateString()}
                                                     </span>
@@ -641,17 +641,19 @@ function Fees() {
                                         </div>
 
                                         {/* Financials details breakdown */}
-                                        <div style={{ minWidth: '220px', display: 'flex', gap: '15px', color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
-                                            <div>
-                                                <div>Original: ₹{parseFloat(sf.original_amount).toLocaleString()}</div>
-                                                <div style={{ color: '#a855f7' }}>Disc: ₹{parseFloat(sf.discount_amount).toLocaleString()}</div>
-                                                <div style={{ fontWeight: '700', color: 'var(--text-primary)' }}>Final: ₹{parseFloat(sf.final_amount).toLocaleString()}</div>
+                                        {(sf.status !== 'paid' || isAdmin) && (
+                                            <div style={{ minWidth: '220px', display: 'flex', gap: '15px', color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
+                                                <div>
+                                                    <div>Original: ₹{parseFloat(sf.original_amount).toLocaleString()}</div>
+                                                    <div style={{ color: '#a855f7' }}>Disc: ₹{parseFloat(sf.discount_amount).toLocaleString()}</div>
+                                                    <div style={{ fontWeight: '700', color: 'var(--text-primary)' }}>Final: ₹{parseFloat(sf.final_amount).toLocaleString()}</div>
+                                                </div>
+                                                <div>
+                                                    <div style={{ color: '#10b981' }}>Paid: ₹{parseFloat(sf.paid_amount).toLocaleString()}</div>
+                                                    <div style={{ color: '#ef4444', fontWeight: '700' }}>Due: ₹{parseFloat(sf.due_amount).toLocaleString()}</div>
+                                                </div>
                                             </div>
-                                            <div>
-                                                <div style={{ color: '#10b981' }}>Paid: ₹{parseFloat(sf.paid_amount).toLocaleString()}</div>
-                                                <div style={{ color: '#ef4444', fontWeight: '700' }}>Due: ₹{parseFloat(sf.due_amount).toLocaleString()}</div>
-                                            </div>
-                                        </div>
+                                        )}
 
                                         {/* Action buttons */}
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexShrink: 0 }}>
@@ -663,17 +665,19 @@ function Fees() {
                                                 {sf.status.toUpperCase()}
                                             </span>
 
-                                            {sf.status !== 'paid' && hasPerm('fees', 'create') && (
+                                            {sf.status !== 'paid' && (hasPerm('fees', 'create') || user.permissions?.includes('collect_fees')) && (
                                                 <>
-                                                    <button
-                                                        onClick={() => openDiscount(sf)}
-                                                        style={{
-                                                            padding: '6px 14px', borderRadius: '8px', border: '1px solid rgba(168, 85, 247, 0.4)',
-                                                            background: 'rgba(168, 85, 247, 0.05)', color: '#a855f7', fontWeight: '600', fontSize: '0.8rem', cursor: 'pointer'
-                                                        }}
-                                                    >
-                                                        🎉 Discount
-                                                    </button>
+                                                    {hasPerm('fees', 'create') && (
+                                                        <button
+                                                            onClick={() => openDiscount(sf)}
+                                                            style={{
+                                                                padding: '6px 14px', borderRadius: '8px', border: '1px solid rgba(168, 85, 247, 0.4)',
+                                                                background: 'rgba(168, 85, 247, 0.05)', color: '#a855f7', fontWeight: '600', fontSize: '0.8rem', cursor: 'pointer'
+                                                            }}
+                                                        >
+                                                            🎉 Discount
+                                                        </button>
+                                                    )}
                                                     <button
                                                         onClick={() => openCollect(sf)}
                                                         style={{
@@ -774,7 +778,7 @@ function Fees() {
             )}
 
             {/* ═══ FEE STRUCTURES TAB ═══ */}
-            {validTab === 'structure' && hasPerm('fees', 'read') && (
+            {validTab === 'structure' && (hasPerm('fees', 'read') || user.permissions?.includes('collect_fees')) && (isAdmin || !user.permissions?.includes('fees.hide')) && (
                 <div className="card">
                     <div className="table-container">
                         <table className="table mobile-keep">

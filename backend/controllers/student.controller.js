@@ -914,5 +914,124 @@ exports.getStudentCredentials = async (req, res) => {
     }
 };
 
+/**
+ * Get student dashboard statistics (unread assignments, notes)
+ * @route GET /api/students/dashboard-stats
+ * @access Student
+ */
+exports.getDashboardStats = async (req, res) => {
+    try {
+        const institute_id = req.user.institute_id;
+        const user_id = req.user.id;
+
+        const { Student, Class, Subject } = require("../models");
+        const student = await Student.findOne({
+            where: { user_id, institute_id },
+            include: [
+                { model: Class, through: { attributes: [] } },
+                { model: Subject, through: { attributes: [] } }
+            ]
+        });
+
+        if (!student) {
+            return res.status(404).json({ success: false, message: "Student record not found" });
+        }
+
+        const classIds = student.Classes ? student.Classes.map(c => c.id) : [];
+        const subjectIds = student.Subjects ? student.Subjects.map(s => s.id) : [];
+
+        const { Assignment, Note, User } = require("../models");
+        const { Op } = require("sequelize");
+
+        const dbUser = await User.findByPk(user_id, {
+            attributes: ['last_assignment_seen_at', 'last_note_seen_at']
+        });
+
+        // Calculate unread assignments
+        let assignmentWhere = { institute_id, status: { [Op.in]: ['published', 'closed'] } };
+        if (dbUser && dbUser.last_assignment_seen_at) {
+            assignmentWhere.created_at = { [Op.gt]: dbUser.last_assignment_seen_at };
+        }
+        
+        let assignmentOr = [];
+        if (classIds.length > 0) assignmentOr.push({ class_id: { [Op.in]: classIds } });
+        if (!student.is_full_course && subjectIds.length > 0) assignmentOr.push({ subject_id: { [Op.in]: subjectIds } });
+        
+        if (assignmentOr.length > 0) {
+            assignmentWhere[Op.or] = assignmentOr;
+        } else {
+            // No classes or subjects assigned
+            assignmentWhere.id = null; // force 0
+        }
+
+        const unreadAssignmentCount = await Assignment.count({ where: assignmentWhere });
+
+        // Calculate unread notes
+        let noteWhere = { institute_id };
+        if (dbUser && dbUser.last_note_seen_at) {
+            noteWhere.created_at = { [Op.gt]: dbUser.last_note_seen_at };
+        }
+
+        let noteOr = [];
+        if (classIds.length > 0) noteOr.push({ class_id: { [Op.in]: classIds } });
+        if (subjectIds.length > 0) noteOr.push({ subject_id: { [Op.in]: subjectIds } });
+
+        if (noteOr.length > 0) {
+            noteWhere[Op.or] = noteOr;
+        } else {
+            noteWhere.id = null; // force 0
+        }
+
+        const unreadNotesCount = await Note.count({ where: noteWhere });
+
+        res.status(200).json({
+            success: true,
+            unreadAssignmentCount,
+            unreadNotesCount
+        });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+/**
+ * Clear unread assignments
+ */
+exports.clearUnreadAssignments = async (req, res) => {
+    try {
+        const { User } = require("../models");
+        await User.update({ last_assignment_seen_at: new Date() }, { where: { id: req.user.id } });
+        res.status(200).json({ success: true, message: "Cleared unread assignments count" });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+/**
+ * Clear unread notes
+ */
+exports.clearUnreadNotes = async (req, res) => {
+    try {
+        const { User } = require("../models");
+        await User.update({ last_note_seen_at: new Date() }, { where: { id: req.user.id } });
+        res.status(200).json({ success: true, message: "Cleared unread notes count" });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+/**
+ * Clear unread chats for student (marks all chat rooms as read)
+ */
+exports.clearUnreadChats = async (req, res) => {
+    try {
+        const { ChatParticipant } = require("../models");
+        await ChatParticipant.update({ last_read_at: new Date() }, { where: { user_id: req.user.id } });
+        res.status(200).json({ success: true, message: "Cleared unread chats count" });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
 module.exports = exports;
 

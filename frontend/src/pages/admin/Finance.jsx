@@ -224,7 +224,7 @@ function FinanceDashboard() {
       {/* ── Header ── */}
       <div className="dashboard-header">
         <div>
-          <h1>📊 Finance Dashboard</h1>
+          <h1>🏦 Finance Dashboard</h1>
           <p>Revenue, Profit &amp; Loss, Salaries, and Expense Analytics</p>
         </div>
         <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>

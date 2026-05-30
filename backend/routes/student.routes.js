@@ -16,6 +16,11 @@ router.use(verifyToken, checkSubscription);
 
 // Stats Route (must be before :id)
 router.get("/stats", allowRoles("super_admin", "admin", "faculty"), studentController.getStudentStats);
+router.get("/dashboard-stats", allowRoles("student"), studentController.getDashboardStats);
+
+router.post("/clear-unread-assignments", allowRoles("student"), studentController.clearUnreadAssignments);
+router.post("/clear-unread-notes", allowRoles("student"), studentController.clearUnreadNotes);
+router.post("/clear-unread-chats", allowRoles("student"), studentController.clearUnreadChats);
 
 // CRUD Routes
 router.get("/me", allowRoles("student"), studentController.getMe);

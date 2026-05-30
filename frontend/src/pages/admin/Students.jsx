@@ -10,7 +10,7 @@ import api from "../../services/api";
 import { AuthContext } from "../../context/AuthContext";
 import { QRCodeSVG, QRCodeCanvas } from "qrcode.react";
 import QRCode from "qrcode";
-import "./Dashboard.css";
+import "./Students.css";
 import { savePdfNative } from "../../utils/capacitorPermissions";
 import BulkImportButton from "../../components/BulkImportButton";
 
@@ -27,6 +27,8 @@ function Students() {
     const [editMode, setEditMode] = useState(false);
     const [search, setSearch] = useState("");
     const [classFilter, setClassFilter] = useState("all");
+    const [sectionFilter, setSectionFilter] = useState("all");
+    const [statusFilter, setStatusFilter] = useState("all");
     const [availableSubjects, setAvailableSubjects] = useState([]); // Add specific subjects based on class
 
     // QR Modal state
@@ -42,6 +44,22 @@ function Students() {
     const [showCredentialsModal, setShowCredentialsModal] = useState(false);
     const [credentialsData, setCredentialsData] = useState([]);
     const [loadingCredentials, setLoadingCredentials] = useState(false);
+    const [actionMenuOpen, setActionMenuOpen] = useState(null); // Track which row's menu is open
+
+    // Pagination state
+    const [currentPage, setCurrentPage] = useState(1);
+    const [itemsPerPage, setItemsPerPage] = useState(10);
+
+    // Click outside to close action menu
+    useEffect(() => {
+        const handleClickOutside = (e) => {
+            if (!e.target.closest('.st-menu-container')) {
+                setActionMenuOpen(null);
+            }
+        };
+        document.addEventListener('click', handleClickOutside);
+        return () => document.removeEventListener('click', handleClickOutside);
+    }, []);
 
     const handleSelectAll = (e) => {
         if (e.target.checked) {
@@ -240,6 +258,29 @@ function Students() {
         }
     };
 
+    const handleExport = async () => {
+        try {
+            const XLSX = await import('xlsx');
+            const dataToExport = filteredStudents.map(s => ({
+                Name: s.User?.name || 'N/A',
+                Email: s.User?.email || 'N/A',
+                Phone: s.User?.phone || 'N/A',
+                Roll_Number: s.roll_number || 'N/A',
+                Class: s.Classes?.map(c => `${c.name} - ${c.section}`).join(', ') || 'N/A',
+                Gender: s.gender || 'N/A',
+                Status: s.User?.status || 'N/A',
+                Admission_Date: s.admission_date ? new Date(s.admission_date).toLocaleDateString() : 'N/A'
+            }));
+            const ws = XLSX.utils.json_to_sheet(dataToExport);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Students");
+            XLSX.writeFile(wb, "Students_Export.xlsx");
+        } catch (err) {
+            console.error("Export error:", err);
+            alert("Failed to export data");
+        }
+    };
+
     const handleViewCredentials = async () => {
         if (selectedStudents.length === 0) return;
         setLoadingCredentials(true);
@@ -311,6 +352,11 @@ function Students() {
     useEffect(() => {
         const id = setTimeout(fetchStudents, 250);
         return () => clearTimeout(id);
+    }, [search, classFilter]);
+
+    // Reset to page 1 when filters change
+    useEffect(() => {
+        setCurrentPage(1);
     }, [search, classFilter]);
 
     const hasPerm = (op) => {
@@ -539,247 +585,361 @@ function Students() {
         const matchesClass =
             classFilter === "all" || (s.Classes && s.Classes.some(c => c.id === parseInt(classFilter)));
 
-        return matchesSearch && matchesClass;
+        const matchesSection = 
+            sectionFilter === "all" || (s.Classes && s.Classes.some(c => c.section === sectionFilter));
+
+        const matchesStatus = 
+            statusFilter === "all" || s.User?.status === statusFilter;
+
+        return matchesSearch && matchesClass && matchesSection && matchesStatus;
     });
 
+    // Pagination Logic
+    const totalPages = Math.ceil(filteredStudents.length / itemsPerPage);
+    const paginatedStudents = filteredStudents.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
     if (loading) {
-        return <div className="dashboard-container">Loading...</div>;
+        return <div className="students-container">Loading...</div>;
     }
 
+    const activeStudentsCount = students.filter((s) => s.User?.status === "active").length;
+    const enrollmentRate = students.length > 0
+        ? Math.round((students.filter((s) => s.Classes && s.Classes.length > 0).length / students.length) * 100)
+        : 0;
+
     return (
-        <div className="dashboard-container">
-            <div className="dashboard-header">
-                <div>
-                    <h1 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                        <span style={{ fontSize: '2rem', lineHeight: 1 }}>🎓</span>
-                        Student Management
-                    </h1>
-                    <p>Manage students and enrollments</p>
+        <div className="students-container">
+            {/* ── Header ── */}
+            <div className="st-header">
+                <div className="st-header-top-row">
+                    <div className="st-header-left">
+                        <h1>Student Management</h1>
+                        <p>Manage students and enrollments</p>
+                    </div>
                 </div>
-                <div className="dashboard-header-right">
-                    <ThemeSelector />
-                    <Link to="/admin/dashboard" className="btn btn-secondary">
-                        ← Back
-                    </Link>
-                    {canCreate && (
-                        <>
-                            <BulkImportButton type="students" onSuccess={handleBulkSuccess} />
-                            <button onClick={() => { resetForm(); setShowModal(true); }} className="btn btn-primary">
-                                + Add Student
-                            </button>
-                        </>
-                    )}
+                <div className="st-header-bottom-row">
+                    <div className="st-breadcrumbs">
+                        <span>Dashboard</span>
+                        <span>›</span>
+                        <span className="active">Students</span>
+                    </div>
+                    <div className="st-header-actions">
+                        {canCreate && (
+                            <>
+                                <BulkImportButton 
+                                    type="students" 
+                                    onSuccess={handleBulkSuccess} 
+                                    customButton={
+                                        <button className="st-btn st-btn-outline">
+                                            📥 Import Students
+                                        </button>
+                                    }
+                                />
+                                <button onClick={() => { resetForm(); setShowModal(true); }} className="st-btn st-btn-primary">
+                                    + Add Student
+                                </button>
+                            </>
+                        )}
+                    </div>
                 </div>
             </div>
 
-            {/* Filters */}
-            <div className="card" style={{ marginBottom: "2rem" }}>
-                <div style={{ padding: "1.5rem", display: "flex", gap: "1rem", flexWrap: "wrap" }}>
+            {/* ── Filters Bar ── */}
+            <div className="st-filters-bar">
+                <div className="st-search">
+                    <span className="st-search-icon">🔍</span>
                     <input
                         type="text"
-                        className="form-input"
-                        placeholder="Search by name, email, or roll number..."
+                        placeholder="Search by name, email, roll number or phone..."
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
-                        style={{ flex: "1", minWidth: "250px" }}
                     />
-                    <select
-                        className="form-select"
-                        value={classFilter}
-                        onChange={(e) => setClassFilter(e.target.value)}
-                        style={{ minWidth: "200px" }}
-                    >
-                        <option value="all">All Classes</option>
-                        {classes.map((c) => (
-                            <option key={c.id} value={c.id}>
-                                {c.name} {c.section && `- ${c.section}`}
-                            </option>
-                        ))}
-                    </select>
                 </div>
+                <select
+                    className="st-select"
+                    value={classFilter}
+                    onChange={(e) => {
+                        setClassFilter(e.target.value);
+                        setSectionFilter("all"); // Reset section when class changes
+                    }}
+                >
+                    <option value="all">All Classes</option>
+                    {classes.map((c) => (
+                        <option key={c.id} value={c.id}>
+                            {c.name}
+                        </option>
+                    ))}
+                </select>
+                <select 
+                    className="st-select" 
+                    value={sectionFilter}
+                    onChange={(e) => setSectionFilter(e.target.value)}
+                >
+                    <option value="all">All Sections</option>
+                    {/* Extract unique sections from the selected class or all classes */}
+                    {Array.from(new Set(
+                        classes
+                            .filter(c => classFilter === "all" || c.id === parseInt(classFilter))
+                            .map(c => c.section)
+                            .filter(Boolean)
+                    )).map(section => (
+                        <option key={section} value={section}>Section {section}</option>
+                    ))}
+                </select>
+                <select 
+                    className="st-select" 
+                    value={statusFilter}
+                    onChange={(e) => setStatusFilter(e.target.value)}
+                >
+                    <option value="all">🟢 All Status</option>
+                    <option value="active">Active</option>
+                    <option value="inactive">Inactive</option>
+                </select>
+                <button 
+                    className="st-filter-btn"
+                    onClick={() => {
+                        setSearch("");
+                        setClassFilter("all");
+                        setSectionFilter("all");
+                        setStatusFilter("all");
+                    }}
+                    style={{ color: (search || classFilter !== "all" || sectionFilter !== "all" || statusFilter !== "all") ? '#ef4444' : '' }}
+                >
+                    <span style={{ fontSize: '1.1rem' }}>⚲</span> 
+                    {(search || classFilter !== "all" || sectionFilter !== "all" || statusFilter !== "all") ? 'Clear Filters' : 'Filters'}
+                </button>
             </div>
 
-            {/* Statistics */}
-            <div className="stats-grid" style={{ marginBottom: "2rem" }}>
-                <div className="stat-card">
-                    <div className="stat-icon">🎓</div>
-                    <div className="stat-content">
-                        <h3>{totalCount}</h3>
-                        <p>Total Students</p>
-                    </div>
-                </div>
-                <div className="stat-card">
-                    <div className="stat-icon">✅</div>
-                    <div className="stat-content">
-                        <h3>{students.filter((s) => s.User?.status === "active").length}</h3>
-                        <p>Active</p>
-                    </div>
-                </div>
-                <div className="stat-card">
-                    <div className="stat-icon">🏫</div>
-                    <div className="stat-content">
-                        <h3>{classes.length}</h3>
-                        <p>Active Classes</p>
-                    </div>
-                </div>
-                <div className="stat-card">
-                    <div className="stat-icon">📝</div>
-                    <div className="stat-content">
-                        <h3>
-                            {students.length > 0
-                                ? Math.round(
-                                    (students.filter((s) => s.Classes && s.Classes.length > 0).length / students.length) * 100
-                                )
-                                : 0}
-                            %
-                        </h3>
-                        <p>Enrolled</p>
-                    </div>
-                </div>
-            </div>
-
-            {/* Students Table */}
-            <div className="card">
-                <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
-                    <h3 className="card-title" style={{ margin: 0 }}>All Students ({filteredStudents.length})</h3>
-                    {selectedStudents.length > 0 && (
-                        <div style={{ display: 'flex', gap: '0.5rem' }}>
-                            <button 
-                                className="btn btn-sm" 
-                                style={{ background: 'linear-gradient(135deg, #6366f1, #4f46e5)', color: 'white', fontWeight: 600, border: 'none', borderRadius: '6px', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
-                                onClick={handleViewCredentials}
-                                disabled={loadingCredentials}
-                            >
-                                {loadingCredentials ? '⏳ Loading...' : `🔑 View ${selectedStudents.length} Credentials`}
-                            </button>
-                            <button 
-                                className="btn btn-sm" 
-                                style={{ background: 'linear-gradient(135deg, #10b981, #059669)', color: 'white', fontWeight: 600, border: 'none', borderRadius: '6px' }}
-                                onClick={handleBulkDownloadCards}
-                                disabled={bulkDownloading}
-                            >
-                                {bulkDownloading ? '⏳ Generating PDF...' : `⬇ Download ${selectedStudents.length} Cards`}
-                            </button>
+            {/* ── Stat Cards ── */}
+            <div className="st-stats-grid">
+                <div className="st-stat-card">
+                    <div className="st-stat-top">
+                        <div className="st-stat-icon st-icon-purple">👥</div>
+                        <div className="st-stat-info">
+                            <h3>{totalCount}</h3>
+                            <p>Total Students</p>
                         </div>
-                    )}
+                    </div>
+                    <div className="st-stat-bottom">All registered students</div>
+                    <svg className="st-sparkline" viewBox="0 0 100 30" preserveAspectRatio="none">
+                        <defs><linearGradient id="purpleGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#8b5cf6" stopOpacity="0.25"/><stop offset="100%" stopColor="#8b5cf6" stopOpacity="0"/></linearGradient></defs>
+                        <path d="M5 30 L 5 26 L 25 26 L 45 14 L 65 18 L 95 5 L 95 30 Z" fill="url(#purpleGrad)" />
+                        <path d="M5 26 L 25 26 L 45 14 L 65 18 L 95 5" fill="none" stroke="#8b5cf6" strokeWidth="1.5" />
+                        <circle cx="5" cy="26" r="1.5" fill="#fff" stroke="#8b5cf6" strokeWidth="1" />
+                        <circle cx="25" cy="26" r="1.5" fill="#fff" stroke="#8b5cf6" strokeWidth="1" />
+                        <circle cx="45" cy="14" r="1.5" fill="#fff" stroke="#8b5cf6" strokeWidth="1" />
+                        <circle cx="65" cy="18" r="1.5" fill="#fff" stroke="#8b5cf6" strokeWidth="1" />
+                        <circle cx="95" cy="5" r="1.5" fill="#fff" stroke="#8b5cf6" strokeWidth="1" />
+                    </svg>
                 </div>
-                <div className="table-container">
-                    <table className="table">
+                <div className="st-stat-card">
+                    <div className="st-stat-top">
+                        <div className="st-stat-icon st-icon-green">✅</div>
+                        <div className="st-stat-info">
+                            <h3>{activeStudentsCount}</h3>
+                            <p>Active Students</p>
+                        </div>
+                    </div>
+                    <div className="st-stat-bottom">Currently active students</div>
+                    <svg className="st-sparkline" viewBox="0 0 100 30" preserveAspectRatio="none">
+                        <defs><linearGradient id="greenGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#10b981" stopOpacity="0.25"/><stop offset="100%" stopColor="#10b981" stopOpacity="0"/></linearGradient></defs>
+                        <path d="M5 30 L 5 24 L 25 18 L 45 20 L 65 8 L 95 12 L 95 30 Z" fill="url(#greenGrad)" />
+                        <path d="M5 24 L 25 18 L 45 20 L 65 8 L 95 12" fill="none" stroke="#10b981" strokeWidth="1.5" />
+                        <circle cx="5" cy="24" r="1.5" fill="#fff" stroke="#10b981" strokeWidth="1" />
+                        <circle cx="25" cy="18" r="1.5" fill="#fff" stroke="#10b981" strokeWidth="1" />
+                        <circle cx="45" cy="20" r="1.5" fill="#fff" stroke="#10b981" strokeWidth="1" />
+                        <circle cx="65" cy="8" r="1.5" fill="#fff" stroke="#10b981" strokeWidth="1" />
+                        <circle cx="95" cy="12" r="1.5" fill="#fff" stroke="#10b981" strokeWidth="1" />
+                    </svg>
+                </div>
+                <div className="st-stat-card">
+                    <div className="st-stat-top">
+                        <div className="st-stat-icon st-icon-blue">🏫</div>
+                        <div className="st-stat-info">
+                            <h3>{classes.length}</h3>
+                            <p>Active Classes</p>
+                        </div>
+                    </div>
+                    <div className="st-stat-bottom">Classes have students</div>
+                    <svg className="st-sparkline" viewBox="0 0 100 30" preserveAspectRatio="none">
+                        <defs><linearGradient id="blueGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#3b82f6" stopOpacity="0.25"/><stop offset="100%" stopColor="#3b82f6" stopOpacity="0"/></linearGradient></defs>
+                        <path d="M5 30 L 5 26 L 25 26 L 45 16 L 65 12 L 95 4 L 95 30 Z" fill="url(#blueGrad)" />
+                        <path d="M5 26 L 25 26 L 45 16 L 65 12 L 95 4" fill="none" stroke="#3b82f6" strokeWidth="1.5" />
+                        <circle cx="5" cy="26" r="1.5" fill="#fff" stroke="#3b82f6" strokeWidth="1" />
+                        <circle cx="25" cy="26" r="1.5" fill="#fff" stroke="#3b82f6" strokeWidth="1" />
+                        <circle cx="45" cy="16" r="1.5" fill="#fff" stroke="#3b82f6" strokeWidth="1" />
+                        <circle cx="65" cy="12" r="1.5" fill="#fff" stroke="#3b82f6" strokeWidth="1" />
+                        <circle cx="95" cy="4" r="1.5" fill="#fff" stroke="#3b82f6" strokeWidth="1" />
+                    </svg>
+                </div>
+                <div className="st-stat-card">
+                    <div className="st-stat-top">
+                        <div className="st-stat-icon st-icon-orange">📄</div>
+                        <div className="st-stat-info">
+                            <h3>{enrollmentRate}%</h3>
+                            <p>Enrollment Rate</p>
+                        </div>
+                    </div>
+                    <div className="st-stat-bottom">Based on active classes</div>
+                    <svg className="st-sparkline" viewBox="0 0 100 30" preserveAspectRatio="none">
+                        <defs><linearGradient id="orangeGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#f97316" stopOpacity="0.25"/><stop offset="100%" stopColor="#f97316" stopOpacity="0"/></linearGradient></defs>
+                        <path d="M5 30 L 5 26 L 25 26 L 45 20 L 65 22 L 85 12 L 95 2 L 95 30 Z" fill="url(#orangeGrad)" />
+                        <path d="M5 26 L 25 26 L 45 20 L 65 22 L 85 12 L 95 2" fill="none" stroke="#f97316" strokeWidth="1.5" />
+                        <circle cx="5" cy="26" r="1.5" fill="#fff" stroke="#f97316" strokeWidth="1" />
+                        <circle cx="25" cy="26" r="1.5" fill="#fff" stroke="#f97316" strokeWidth="1" />
+                        <circle cx="45" cy="20" r="1.5" fill="#fff" stroke="#f97316" strokeWidth="1" />
+                        <circle cx="65" cy="22" r="1.5" fill="#fff" stroke="#f97316" strokeWidth="1" />
+                        <circle cx="85" cy="12" r="1.5" fill="#fff" stroke="#f97316" strokeWidth="1" />
+                        <circle cx="95" cy="2" r="1.5" fill="#fff" stroke="#f97316" strokeWidth="1" />
+                    </svg>
+                </div>
+            </div>
+
+            {/* ── Students Table ── */}
+            <div className="st-table-container">
+                <div className="st-table-header">
+                    <h2>All Students ({filteredStudents.length})</h2>
+                    <div className="st-table-actions">
+                        <button className="st-btn st-btn-outline" onClick={handleExport}>
+                            <span style={{ fontSize: '1.1rem' }}>📥</span> Export
+                        </button>
+                        <button className="st-btn st-btn-outline" style={{ padding: '0.5rem' }} onClick={() => alert("Table settings coming soon!")}>
+                            <span style={{ fontSize: '1.2rem' }}>⚙</span>
+                        </button>
+                    </div>
+                </div>
+                
+                {selectedStudents.length > 0 && (
+                    <div style={{ padding: '1rem', background: '#f8fafc', borderRadius: '8px', marginBottom: '1rem', display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                        <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#334155' }}>{selectedStudents.length} selected</span>
+                        <button className="st-btn st-btn-outline" onClick={handleViewCredentials} disabled={loadingCredentials}>
+                            {loadingCredentials ? '⏳ Loading...' : '🔑 View Credentials'}
+                        </button>
+                        <button className="st-btn st-btn-primary" onClick={handleBulkDownloadCards} disabled={bulkDownloading}>
+                            {bulkDownloading ? '⏳ Generating...' : '⬇ Download Cards'}
+                        </button>
+                    </div>
+                )}
+
+                <div style={{ overflowX: 'auto' }}>
+                    <table className="st-table">
                         <thead>
                             <tr>
-                                <th style={{ width: '40px' }}>
+                                <th>
                                     <input 
                                         type="checkbox" 
+                                        className="st-checkbox"
                                         checked={selectedStudents.length === filteredStudents.length && filteredStudents.length > 0} 
                                         onChange={handleSelectAll} 
-                                        style={{ cursor: 'pointer', width: '16px', height: '16px' }}
                                     />
                                 </th>
-                                <th>Roll No</th>
-                                <th>Name</th>
-                                <th>Email</th>
-                                <th>Class</th>
-                                <th>Gender</th>
-                                <th>Admission Date</th>
-                                <th>Status</th>
-                                <th>Actions</th>
+                                <th>STUDENT</th>
+                                <th>ROLL NO.</th>
+                                <th>CLASS</th>
+                                <th>CONTACT</th>
+                                <th>ADMISSION DATE</th>
+                                <th>STATUS</th>
+                                <th>ACTIONS</th>
                             </tr>
                         </thead>
                         <tbody>
-                            {filteredStudents.length === 0 ? (
+                            {paginatedStudents.length === 0 ? (
                                 <tr>
-                                    <td colSpan="9" style={{ textAlign: "center", padding: "2rem" }}>
-                                        No students found
+                                    <td colSpan="8" style={{ textAlign: "center", padding: "3rem 1rem", color: '#64748b' }}>
+                                        No students found matching your criteria
                                     </td>
                                 </tr>
                             ) : (
-                                filteredStudents.map((student) => (
+                                paginatedStudents.map((student) => (
                                     <tr key={student.id}>
                                         <td>
                                             <input 
                                                 type="checkbox" 
+                                                className="st-checkbox"
                                                 checked={selectedStudents.includes(student.id)} 
                                                 onChange={() => handleSelectRow(student.id)}
-                                                style={{ cursor: 'pointer', width: '16px', height: '16px' }}
                                             />
                                         </td>
                                         <td>
-                                            <span className="badge badge-secondary">{student.roll_number}</span>
-                                        </td>
-                                        <td>
-                                            <strong>{student.User?.name}</strong>
-                                            <br />
-                                            <small style={{ color: "#6b7280" }}>{student.User?.phone}</small>
-                                        </td>
-                                        <td>{student.User?.email}</td>
-                                        <td>
-                                            {student.Classes && student.Classes.length > 0 ? (
-                                                <>
-                                                    {student.Classes.map(c => `${c.name}${c.section ? ` - ${c.section}` : ""}`).join(", ")}
-                                                </>
-                                            ) : (
-                                                <span style={{ color: "#9ca3af" }}>Unassigned</span>
-                                            )}
-                                            {student.is_full_course && (
-                                                <div style={{ fontSize: "0.80rem", color: "#6b7280", marginTop: "4px" }}>
-                                                    All Subjects (Full Course)
+                                            <div className="st-profile-col">
+                                                <div className="st-avatar">
+                                                    {student.User?.name?.charAt(0)?.toUpperCase() || 'S'}
                                                 </div>
-                                            )}
-                                            {student.Subjects && student.Subjects.length > 0 && (
-                                                <div style={{ fontSize: "0.80rem", color: "#6b7280", marginTop: "4px" }}>
-                                                    {student.Subjects.map(sub => sub.name).join(", ")}
+                                                <div className="st-profile-info">
+                                                    <strong>{student.User?.name}</strong>
+                                                    <span>{student.User?.email || 'No email provided'}</span>
                                                 </div>
-                                            )}
-                                        </td>
-                                        <td style={{ textTransform: "capitalize" }}>{student.gender}</td>
-                                        <td>
-                                            {student.admission_date ? (
-                                                <span style={{ color: '#374151', fontWeight: 500 }}>
-                                                    {new Date(student.admission_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
-                                                </span>
-                                            ) : (
-                                                <span style={{ color: '#9ca3af' }}>N/A</span>
-                                            )}
+                                            </div>
                                         </td>
                                         <td>
-                                            <span
-                                                className={`badge badge-${student.User?.status === "active" ? "success" : "danger"
-                                                    }`}
-                                            >
-                                                {student.User?.status}
+                                            <span className="st-text-main">{student.roll_number}</span>
+                                        </td>
+                                        <td>
+                                            <span className="st-text-main">
+                                                {student.Classes && student.Classes.length > 0 
+                                                    ? student.Classes.map(c => `${c.name}${c.section ? ` - Section ${c.section}` : ""}`).join(", ")
+                                                    : "Unassigned"}
+                                            </span>
+                                            <span className="st-text-sub" style={{ display: 'block', marginTop: '0.25rem' }}>
+                                                {student.is_full_course ? "All Subjects (Full Course)" : student.Subjects?.map(s => s.name).join(", ")}
                                             </span>
                                         </td>
                                         <td>
-                                            <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
-                                                <button
-                                                    className="btn btn-sm"
-                                                    style={{ background: 'linear-gradient(135deg, #4f46e5, #4338ca)', color: '#fff', border: 'none', borderRadius: '6px', fontWeight: 600 }}
-                                                    onClick={() => handleViewSingleCredentials(student.id)}
-                                                >
+                                            <div className="st-contact-col">
+                                                <div className="st-contact-item">
+                                                    📞 {student.User?.phone || 'N/A'}
+                                                </div>
+                                                <div className="st-contact-item">
+                                                    ✉ {student.User?.email || 'N/A'}
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <span className="st-text-main">
+                                                {student.admission_date 
+                                                    ? new Date(student.admission_date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
+                                                    : "N/A"}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <span className={`st-status ${student.User?.status === "active" ? "" : "inactive"}`}>
+                                                {student.User?.status === "active" ? "Active" : "Inactive"}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <div className="st-actions-col">
+                                                <button className="st-action-chip" onClick={() => handleViewQr(student)}>
+                                                    🪪 View Card
+                                                </button>
+                                                <button className="st-action-chip" onClick={() => handleViewSingleCredentials(student.id)}>
                                                     🔑 Credentials
                                                 </button>
-                                                <button
-                                                    className="btn btn-sm"
-                                                    style={{ background: 'linear-gradient(135deg, #667eea, #764ba2)', color: '#fff', border: 'none', borderRadius: '6px', fontWeight: 600 }}
-                                                    onClick={() => handleViewQr(student)}
-                                                >
-                                                    🔲 View QR
-                                                </button>
-                                                {canUpdate && (
-                                                    <button
-                                                        className="btn btn-sm btn-primary"
-                                                        onClick={() => handleEdit(student)}
-                                                    >
-                                                        Edit
-                                                    </button>
-                                                )}
-                                                {canDelete && (
-                                                    <button
-                                                        className="btn btn-sm btn-danger"
-                                                        onClick={() => handleDelete(student.id)}
-                                                    >
-                                                        Delete
-                                                    </button>
+                                                {(canUpdate || canDelete) && (
+                                                    <div className="st-menu-container">
+                                                        <button 
+                                                            className="st-menu-btn"
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                setActionMenuOpen(actionMenuOpen === student.id ? null : student.id);
+                                                            }}
+                                                        >
+                                                            ⋮
+                                                        </button>
+                                                        {actionMenuOpen === student.id && (
+                                                            <div className="st-dropdown-menu">
+                                                                {canUpdate && (
+                                                                    <button className="st-dropdown-item" onClick={() => { setActionMenuOpen(null); handleEdit(student); }}>
+                                                                        ✏️ Edit Student
+                                                                    </button>
+                                                                )}
+                                                                {canDelete && (
+                                                                    <button className="st-dropdown-item danger" onClick={() => { setActionMenuOpen(null); handleDelete(student.id); }}>
+                                                                        🗑️ Delete
+                                                                    </button>
+                                                                )}
+                                                            </div>
+                                                        )}
+                                                    </div>
                                                 )}
                                             </div>
                                         </td>
@@ -789,8 +949,67 @@ function Students() {
                         </tbody>
                     </table>
                 </div>
+                
+                {/* ── Pagination UI ── */}
+                {filteredStudents.length > 0 && (
+                    <div className="st-pagination-row">
+                        <div className="st-pagination-info">
+                            Showing {(currentPage - 1) * itemsPerPage + 1} to {Math.min(currentPage * itemsPerPage, filteredStudents.length)} of {filteredStudents.length} students
+                        </div>
+                        <div className="st-pagination-controls">
+                            <button 
+                                className="st-page-btn" 
+                                disabled={currentPage === 1}
+                                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                            >
+                                ‹
+                            </button>
+                            
+                            {[...Array(totalPages)].map((_, i) => {
+                                const page = i + 1;
+                                // Show first, last, and pages around current page
+                                if (page === 1 || page === totalPages || (page >= currentPage - 1 && page <= currentPage + 1)) {
+                                    return (
+                                        <button 
+                                            key={page}
+                                            className={`st-page-btn ${currentPage === page ? 'active' : ''}`}
+                                            onClick={() => setCurrentPage(page)}
+                                        >
+                                            {page}
+                                        </button>
+                                    );
+                                } else if (page === currentPage - 2 || page === currentPage + 2) {
+                                    return <span key={page} className="st-page-ellipsis">...</span>;
+                                }
+                                return null;
+                            })}
 
-                {/* ── MOBILE CARD LIST (shown on mobile via responsive.css) ── */}
+                            <button 
+                                className="st-page-btn" 
+                                disabled={currentPage === totalPages}
+                                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                            >
+                                ›
+                            </button>
+                            
+                            <select 
+                                className="st-page-select" 
+                                value={itemsPerPage} 
+                                onChange={(e) => {
+                                    setItemsPerPage(Number(e.target.value));
+                                    setCurrentPage(1);
+                                }}
+                            >
+                                <option value="10">10 / page</option>
+                                <option value="25">25 / page</option>
+                                <option value="50">50 / page</option>
+                            </select>
+                        </div>
+                    </div>
+                )}
+            </div>
+
+            {/* ── MOBILE CARD LIST (shown on mobile via responsive.css) ── */}
                 <div className="admin-mobile-cards card-stagger">
                     {filteredStudents.length === 0 ? (
                         <div className="empty-state-mobile">
@@ -823,7 +1042,7 @@ function Students() {
                                         className="btn btn-sm"
                                         style={{ background: 'linear-gradient(135deg, #667eea, #764ba2)', color: '#fff', border: 'none', borderRadius: '6px', fontSize: '0.75rem' }}
                                         onClick={() => handleViewQr(student)}
-                                    >QR</button>
+                                    >View Card</button>
                                     {canUpdate && (
                                         <button className="btn btn-sm btn-primary" onClick={() => handleEdit(student)}>Edit</button>
                                     )}
@@ -835,7 +1054,6 @@ function Students() {
                         ))
                     )}
                 </div>
-            </div>
 
             {/* ── QR Code View Modal ── */}
             {(showQrModal || qrLoading) && (
@@ -867,53 +1085,95 @@ function Students() {
 
                         {/* QR Content */}
                         {!qrLoading && qrStudent && (<>
-                        {/* Header */}
-                        <div style={{ marginBottom: '1.5rem' }}>
-                            <div style={{
-                                width: 56, height: 56,
-                                background: 'linear-gradient(135deg, #667eea, #764ba2)',
-                                borderRadius: '50%',
-                                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                margin: '0 auto 1rem',
-                                fontSize: '1.6rem'
-                            }}>🔲</div>
-                            <h2 style={{ margin: 0, fontSize: '1.4rem', fontWeight: 700, color: 'var(--text-primary, #1f2937)' }}>
-                                Student QR Code
-                            </h2>
-                            <p style={{ margin: '0.4rem 0 0', color: 'var(--text-secondary, #6b7280)', fontSize: '0.9rem' }}>
-                                {qrStudent.User?.name}
-                            </p>
-                        </div>
-
-                        {/* QR Code Box */}
+                        {/* ID Card Preview Content */}
                         <div style={{
-                            background: '#f8f9ff',
-                            border: '2px dashed #c7d2fe',
-                            borderRadius: '16px',
-                            padding: '1.5rem',
-                            display: 'inline-block',
-                            marginBottom: '1.5rem',
+                            width: '100%',
+                            maxWidth: '350px',
+                            margin: '0 auto 1.5rem auto',
+                            background: '#fff',
+                            border: '1px solid #e5e7eb',
+                            boxShadow: '0 10px 25px rgba(0,0,0,0.1)',
+                            fontFamily: 'Helvetica, Arial, sans-serif'
                         }}>
-                            <QRCodeCanvas
-                                ref={qrCanvasRef}
-                                value={`STUDENT_QR_${qrStudent.id}`}
-                                size={220}
-                                level="H"
-                                includeMargin={true}
-                                style={{ display: 'block' }}
-                            />
-                        </div>
-
-                        {/* Info Badges */}
-                        <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center', flexWrap: 'wrap', marginBottom: '1.5rem' }}>
-                            <span style={{ background: '#ede9fe', color: '#7c3aed', padding: '4px 12px', borderRadius: '99px', fontSize: '0.8rem', fontWeight: 600 }}>
-                                Roll: {qrStudent.roll_number}
-                            </span>
-                            {qrStudent.Classes?.[0] && (
-                                <span style={{ background: '#dbeafe', color: '#1d4ed8', padding: '4px 12px', borderRadius: '99px', fontSize: '0.8rem', fontWeight: 600 }}>
-                                    {qrStudent.Classes[0].name}{qrStudent.Classes[0].section ? ` - ${qrStudent.Classes[0].section}` : ''}
-                                </span>
-                            )}
+                            {/* Header */}
+                            <div style={{
+                                background: '#1e3a8a',
+                                padding: '12px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '12px',
+                                color: '#fff'
+                            }}>
+                                {user?.institute_logo ? (
+                                    <img src={user.institute_logo} alt="Logo" style={{ width: '60px', height: '60px', objectFit: 'contain', background: '#fff', borderRadius: '50%', padding: '4px' }} />
+                                ) : (
+                                    <div style={{ width: '60px', height: '60px', borderRadius: '50%', background: '#fff', color: '#1e3a8a', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' }}>LOGO</div>
+                                )}
+                                <div style={{ textAlign: 'left', flex: 1 }}>
+                                    <div style={{ fontWeight: 'bold', fontSize: '1.1rem', lineHeight: '1.2' }}>
+                                        {user?.institute_name?.toUpperCase() || 'INSTITUTE NAME'}
+                                    </div>
+                                    {user?.institute_phone && (
+                                        <div style={{ fontSize: '0.8rem', color: '#dbeafe', marginTop: '4px' }}>
+                                            Ph: {user.institute_phone}
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                            <div style={{ height: '3px', background: '#1e3a8a', borderTop: '2px solid #fff' }}></div>
+                            
+                            {/* QR & Photo area */}
+                            <div style={{ padding: '15px 15px 5px 15px', display: 'flex', justifyContent: 'space-between', gap: '15px' }}>
+                                <div style={{ flex: 1, textAlign: 'center' }}>
+                                    <div style={{ fontSize: '0.7rem', fontWeight: 'bold', color: '#64748b', marginBottom: '4px' }}>QR CODE</div>
+                                    <QRCodeCanvas
+                                        value={`STUDENT_QR_${qrStudent.id}`}
+                                        size={110}
+                                        level="H"
+                                        includeMargin={false}
+                                        style={{ display: 'block', margin: '0 auto' }}
+                                    />
+                                </div>
+                                <div style={{ flex: 1, textAlign: 'center' }}>
+                                    <div style={{ fontSize: '0.7rem', fontWeight: 'bold', color: '#64748b', marginBottom: '4px' }}>PHOTO</div>
+                                    <div style={{
+                                        width: '110px', height: '110px', background: '#e2e8f0', margin: '0 auto',
+                                        border: '1px solid #cbd5e1', position: 'relative', overflow: 'hidden'
+                                    }}>
+                                        <div style={{ width: '30px', height: '30px', borderRadius: '50%', border: '2px solid #94a3b8', margin: '15px auto 0' }}></div>
+                                        <div style={{ width: '70px', height: '40px', border: '2px solid #94a3b8', margin: '10px auto 0', borderBottom: 'none' }}></div>
+                                        <div style={{ position: 'absolute', bottom: '4px', width: '100%', textAlign: 'center', fontSize: '0.6rem', color: '#94a3b8' }}>PHOTO</div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div style={{ borderTop: '2px solid #e2e8f0', margin: '10px 15px' }}></div>
+                            
+                            {/* Student Details */}
+                            <div style={{ padding: '0 15px 15px 15px' }}>
+                                <div style={{ background: '#6366f1', color: '#fff', padding: '8px', textAlign: 'center', fontWeight: 'bold', fontSize: '1rem', marginBottom: '10px' }}>
+                                    {qrStudent.User?.name?.toUpperCase() || 'STUDENT NAME'}
+                                </div>
+                                
+                                <table style={{ width: '100%', fontSize: '0.75rem', borderCollapse: 'collapse', textAlign: 'left' }}>
+                                    <tbody>
+                                        {[
+                                            { label: 'Roll No', value: qrStudent.roll_number || 'N/A' },
+                                            { label: 'Parent', value: qrStudent.Parents?.[0]?.name || qrStudent.parent_name || 'N/A' },
+                                            { label: 'Email', value: qrStudent.User?.email || 'N/A' },
+                                            { label: 'Parent Ph', value: qrStudent.Parents?.[0]?.phone || qrStudent.Parents?.[0]?.User?.phone || 'N/A' },
+                                            { label: 'Class', value: qrStudent.Classes?.map(c => `${c.name}${c.section ? ` - ${c.section}` : ''}`).join(', ') || 'N/A' },
+                                            { label: 'Gender', value: qrStudent.gender || 'N/A' },
+                                            { label: 'Address', value: qrStudent.address || 'N/A' }
+                                        ].map((row, i) => (
+                                            <tr key={i} style={{ background: i % 2 === 0 ? '#f8fafc' : '#f1f5f9' }}>
+                                                <td style={{ padding: '6px 8px', fontWeight: 'bold', color: '#6366f1', width: '70px' }}>{row.label}:</td>
+                                                <td style={{ padding: '6px 8px', color: '#334155', wordBreak: 'break-word' }}>{row.value}</td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
 
                         {/* Action Buttons */}
@@ -936,17 +1196,7 @@ function Students() {
                                 onClick={async () => {
                                     setQrDownloading(true);
                                     try {
-                                        // Get QR canvas data
-                                        const canvas = document.querySelector('#qr-admin-canvas canvas') || document.querySelector('[data-qr-canvas]');
-                                        // Use the hidden canvas rendered in the DOM
-                                        const allCanvas = document.querySelectorAll('canvas');
-                                        let qrDataUrl = null;
-                                        for (let c of allCanvas) {
-                                            if (c.width === 220 || c.width === 264) {
-                                                qrDataUrl = c.toDataURL('image/png');
-                                                break;
-                                            }
-                                        }
+                                        const qrDataUrl = await QRCode.toDataURL(`STUDENT_QR_${qrStudent.id}`, { width: 300, margin: 1 });
 
                                         const { jsPDF } = await import('jspdf');
                                         const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: [85, 148] });

@@ -93,7 +93,10 @@ exports.getPublicPage = async (req, res) => {
             return res.json({ success: true, data: null, message: "No public page created yet" });
         }
 
-        const [gallery, reviews, enquiryCount] = await Promise.all([
+        const currentUser = await User.findByPk(req.user.id, { attributes: ['last_enquiry_seen_at'] });
+        const lastEnquirySeenAt = currentUser?.last_enquiry_seen_at || new Date(0);
+
+        const [gallery, reviews, newEnquiryCount, totalEnquiryCount] = await Promise.all([
             InstituteGalleryPhoto.findAll({
                 where: { institute_id: instituteId },
                 order: [['sort_order', 'ASC'], ['created_at', 'ASC']]
@@ -103,7 +106,10 @@ exports.getPublicPage = async (req, res) => {
                 order: [['sort_order', 'ASC'], ['created_at', 'DESC']]
             }),
             PublicEnquiry.count({
-                where: { institute_id: instituteId, status: 'new' }
+                where: { institute_id: instituteId, created_at: { [Op.gt]: lastEnquirySeenAt } }
+            }),
+            PublicEnquiry.count({
+                where: { institute_id: instituteId }
             })
         ]);
 
@@ -127,7 +133,8 @@ exports.getPublicPage = async (req, res) => {
                 ...profileJson,
                 gallery,
                 reviews,
-                new_enquiry_count: enquiryCount
+                new_enquiry_count: newEnquiryCount,
+                total_enquiries: totalEnquiryCount
             }
         });
     } catch (error) {

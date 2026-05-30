@@ -59,6 +59,7 @@ function Reports() {
         class_id: "",
         student_id: ""
     });
+    const [recordFilter, setRecordFilter] = useState('all'); // 'all', 'paid', 'pending'
 
     // Export Modal State
     const [showExportModal, setShowExportModal] = useState(false);
@@ -203,35 +204,53 @@ function Reports() {
 
     const exportFees = (type, filterStr) => {
         const title = `Fees Report (${filters.start_date} to ${filters.end_date}) - ${filterStr.toUpperCase()}`;
-        const columns = ["Roll Number", "Student Name", "Status", "Date", "Amount (INR)", "Method"];
-
+        
+        let columns;
         let targetRows = [];
 
-        // Build Rows depending on Paid/Pending/All
-        const getPaidRows = () => feesReport.payments.map(r => [
-            r.Student?.roll_number || "-",
-            r.Student?.User?.name || "Unknown",
-            "PAID",
-            new Date(r.payment_date).toLocaleDateString(),
-            r.amount_paid,
-            r.payment_method.toUpperCase()
-        ]);
-
-        const getPendingRows = () => feesReport.pending_students.map(r => [
-            r.roll_number || "-",
-            r.name || "Unknown",
-            "PENDING",
-            "-",
-            "-",
-            "-"
-        ]);
-
         if (filterStr === "paid") {
-            targetRows = getPaidRows();
+            columns = ["Roll Number", "Student Name", "Method", "Payment Date", "Paid Amount (INR)", "Status"];
+            targetRows = feesReport.payments.map(r => [
+                r.Student?.roll_number || "-",
+                r.Student?.User?.name || "Unknown",
+                r.payment_method?.toUpperCase() || "-",
+                new Date(r.payment_date).toLocaleDateString(),
+                r.amount_paid,
+                "PAID"
+            ]);
         } else if (filterStr === "pending") {
-            targetRows = getPendingRows();
+            columns = ["Roll Number", "Student Name", "Fee Type", "Due Date", "Reminder Date", "Pending Amount (INR)", "Status"];
+            targetRows = feesReport.pending_students.map(r => [
+                r.roll_number || "-",
+                r.name || "Unknown",
+                r.fee_type || "General Fee",
+                r.due_date ? new Date(r.due_date).toLocaleDateString() : "-",
+                r.reminder_date ? new Date(r.reminder_date).toLocaleDateString() : "-",
+                r.pending_amount || 0,
+                "PENDING"
+            ]);
         } else {
-            targetRows = [...getPaidRows(), ...getPendingRows()];
+            // "all"
+            columns = ["Roll Number", "Student Name", "Type/Method", "Due/Payment Date", "Reminder Date", "Amount (INR)", "Status"];
+            const paidRows = feesReport.payments.map(r => [
+                r.Student?.roll_number || "-",
+                r.Student?.User?.name || "Unknown",
+                r.payment_method?.toUpperCase() || "PAYMENT",
+                new Date(r.payment_date).toLocaleDateString(),
+                "-",
+                r.amount_paid,
+                "PAID"
+            ]);
+            const pendingRows = feesReport.pending_students.map(r => [
+                r.roll_number || "-",
+                r.name || "Unknown",
+                r.fee_type || "Pending Fee",
+                r.due_date ? new Date(r.due_date).toLocaleDateString() : "-",
+                r.reminder_date ? new Date(r.reminder_date).toLocaleDateString() : "-",
+                r.pending_amount || 0,
+                "PENDING"
+            ]);
+            targetRows = [...paidRows, ...pendingRows];
         }
 
         if (targetRows.length === 0) {
@@ -247,7 +266,7 @@ function Reports() {
         <div className="dashboard-container">
             <div className="dashboard-header">
                 <div>
-                    <h1>📊 Reports & Analytics</h1>
+                    <h1>📉 Reports & Analytics</h1>
                     <p>Comprehensive insights and performance metrics {isPro ? <span className="badge badge-success">PRO</span> : <span className="badge badge-secondary">BASIC</span>}</p>
                 </div>
                 <div style={{ display: "flex", gap: "10px" }}>
@@ -271,7 +290,7 @@ function Reports() {
                     className={`tab ${activeTab === "finances" ? "active" : ""}`}
                     onClick={() => setActiveTab("finances")}
                 >
-                    📑 Finances & Transport Reports
+                    💸 Finances & Transport Reports
                 </button>
                 <button
                     className={`tab ${activeTab === "fees" ? "active" : ""}`}
@@ -393,6 +412,18 @@ function Reports() {
                                         ))}
                                     </select>
                                 </div>
+                                <div className="form-group">
+                                    <label className="form-label">Record Type</label>
+                                    <select
+                                        className="form-select"
+                                        value={recordFilter}
+                                        onChange={(e) => setRecordFilter(e.target.value)}
+                                    >
+                                        <option value="all">All Records</option>
+                                        <option value="paid">Paid Student Only</option>
+                                        <option value="pending">Pending Student Only</option>
+                                    </select>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -432,10 +463,11 @@ function Reports() {
                             </div>
 
                             {/* Payments Table */}
-                            <div className="card">
-                                <div className="card-header">
-                                    <h3 className="card-title">Payment Records</h3>
-                                </div>
+                            {(recordFilter === 'all' || recordFilter === 'paid') && (
+                                <div className="card" style={{ marginBottom: "2rem" }}>
+                                    <div className="card-header">
+                                        <h3 className="card-title">Payment Records</h3>
+                                    </div>
                                 <div className="table-container">
                                     <table className="table">
                                         <thead>
@@ -475,10 +507,11 @@ function Reports() {
                                     </table>
                                 </div>
                             </div>
+                            )}
 
                             {/* Pending Students Table */}
-                            {feesReport.pending_students && feesReport.pending_students.length > 0 && (
-                                <div className="card" style={{ marginTop: "2rem" }}>
+                            {(recordFilter === 'all' || recordFilter === 'pending') && feesReport.pending_students && feesReport.pending_students.length > 0 && (
+                                <div className="card">
                                     <div className="card-header">
                                         <h3 className="card-title">Pending Students ({feesReport.pending_students.length})</h3>
                                     </div>
@@ -488,6 +521,10 @@ function Reports() {
                                                 <tr>
                                                     <th>Roll Number</th>
                                                     <th>Student Name</th>
+                                                    <th>Fee Type</th>
+                                                    <th>Pending Amount</th>
+                                                    <th>Due Date</th>
+                                                    <th>Reminder Date</th>
                                                     <th>Status</th>
                                                 </tr>
                                             </thead>
@@ -496,6 +533,10 @@ function Reports() {
                                                     <tr key={index}>
                                                         <td>{student.roll_number}</td>
                                                         <td><strong>{student.name}</strong></td>
+                                                        <td>{student.fee_type || 'Tuition Fee'}</td>
+                                                        <td>₹{parseFloat(student.pending_amount || 0).toLocaleString()}</td>
+                                                        <td>{student.due_date ? new Date(student.due_date).toLocaleDateString() : '—'}</td>
+                                                        <td>{student.reminder_date ? new Date(student.reminder_date).toLocaleDateString() : '—'}</td>
                                                         <td>
                                                             <span className="badge badge-danger">Pending</span>
                                                         </td>

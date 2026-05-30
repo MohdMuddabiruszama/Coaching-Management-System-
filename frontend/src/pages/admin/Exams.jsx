@@ -216,7 +216,7 @@ function Exams() {
         <div className="dashboard-container">
             <div className="dashboard-header">
                 <div>
-                    <h1>📝 Manage Exams</h1>
+                    <h1>✍️ Manage Exams</h1>
                     <p>Schedule, manage, and publish exam results for your institute</p>
                 </div>
                 <div className="dashboard-header-right">

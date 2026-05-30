@@ -70,7 +70,7 @@ function StudentPerformance() {
         if (status === 'present') return '#10b981';
         if (status === 'absent') return '#ef4444';
         if (status === 'late') return '#f59e0b';
-        if (status === 'holiday') return '#94a3b8';
+        if (status === 'holiday') return '#3b82f6';
         return 'var(--border-color, #e5e7eb)';
     };
 
@@ -327,7 +327,7 @@ function StudentPerformance() {
                         { color: '#10b981', label: 'Present' },
                         { color: '#ef4444', label: 'Absent' },
                         { color: '#f59e0b', label: 'Late' },
-                        { color: '#94a3b8', label: 'Holiday' },
+                        { color: '#3b82f6', label: 'Holiday' },
                         { color: 'var(--border-color, #e5e7eb)', label: 'No class' },
                     ].map(({ color, label }) => (
                         <span key={label} style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.8rem' }}>

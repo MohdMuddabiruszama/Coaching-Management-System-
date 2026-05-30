@@ -1,9 +1,10 @@
-import { useState, useEffect, useContext } from "react";
+import React, { useState, useEffect, useContext, Fragment } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import api from "../../services/api";
 import { AuthContext } from "../../context/AuthContext";
 import ThemeSelector from "../../components/ThemeSelector";
 import { MANAGER_TYPES, buildPermissionsFromPreset } from "../../config/managerPresets";
+import managerAvatarImg from "../../assets/manager_avatar.png";
 import "./Dashboard.css";
 import "./ManageAdmins.css";
 
@@ -27,20 +28,20 @@ const CRUD_OPS = [
 
 // ─── Toggle-style (simple on/off) modules ───
 const TOGGLE_MODULES = [
-    { val: 'notes', label: 'My Notes', icon: '📚', desc: 'Manage class notes' },
-    { val: 'chat', label: 'Academic Chats', icon: '💬', desc: 'Participate in subject chats' },
+    { val: 'notes', label: 'All Notes', icon: '📓', desc: 'Manage class notes' },
+    { val: 'chat', label: 'Chat Monitor', icon: '💬', desc: 'Participate in subject chats' },
     { val: 'attendance', label: 'Attendance', icon: '📋', desc: 'Mark & view attendance' },
-    { val: 'reports', label: 'Reports & Analytics', icon: '📊', desc: 'Attendance & academic reports' },
+    { val: 'reports', label: 'Reports & Analytics', icon: '📉', desc: 'Attendance & academic reports' },
     { val: 'announcements', label: 'Announcements', icon: '📢', desc: 'Post & manage announcements' },
-    { val: 'exams', label: 'Exams', icon: '📝', desc: 'Exam schedules & results' },
+    { val: 'exams', label: 'Manage Exams', icon: '✍️', desc: 'Exam schedules & results' },
     { val: 'collect_fees', label: 'Collect Fees', icon: '💰', desc: 'Collect & view student fees' },
     { val: 'recent_payments', label: 'Recent Payments', icon: '🧾', desc: 'View recent payments section' },
     { val: 'transport', label: 'Transport Fees', icon: '🚌', desc: 'Bus routes & transport fees' },
     { val: 'parents', label: 'Manage Parents', icon: '👨‍👩‍👧', desc: 'View & manage parent records' },
     { val: 'biometric', label: 'Bio-Metric', icon: '🔐', desc: 'Biometric device management' },
-    { val: 'finance', label: 'Finance Dashboard', icon: '📊', desc: 'Financial reports and analytics' },
-    { val: 'assignments', label: 'Assignments', icon: '📄', desc: 'View & manage assignments' },
-    { val: 'performance_hub', label: 'Performance Hub', icon: '📈', desc: 'View advanced performance analytics' },
+    { val: 'finance', label: 'Finance Dashboard', icon: '🏦', desc: 'Financial reports and analytics' },
+    { val: 'assignments', label: 'Assignments', icon: '📝', desc: 'View & manage assignments' },
+    { val: 'performance_hub', label: 'Performance Hub', icon: '🎯', desc: 'View advanced performance analytics' },
 ];
 
 // ── TypeBadge component ──────────────────────────────────
@@ -126,8 +127,10 @@ const moduleEnabled = (perms, mod) =>
     perms.some(p => p === mod || p.startsWith(mod + '.'));
 
 // Get which CRUD ops are active for a module
-const activeCrudOps = (perms, mod) =>
-    CRUD_OPS.filter(({ op }) => perms.includes(`${mod}.${op}`) || perms.includes(mod)).map(o => o.op);
+const activeCrudOps = (perms, mod) => {
+    const ops = mod === 'fees' ? [...CRUD_OPS, { op: 'hide' }] : CRUD_OPS;
+    return ops.filter(({ op }) => perms.includes(`${mod}.${op}`) || perms.includes(mod)).map(o => o.op);
+};
 
 // Build a display label for a permission array (compact)
 const buildPermLabel = (perms) => {
@@ -147,6 +150,9 @@ const buildPermLabel = (perms) => {
 function CrudSelector({ mod, perms, onChange }) {
     const enabled = moduleEnabled(perms, mod.val);
     const active = activeCrudOps(perms, mod.val);
+    const opsList = mod.val === 'fees' 
+        ? [...CRUD_OPS, { op: 'hide', label: 'Hide', icon: '🙈', color: '#6b7280' }] 
+        : CRUD_OPS;
 
     const toggleModule = () => {
         let updated;
@@ -166,10 +172,19 @@ function CrudSelector({ mod, perms, onChange }) {
         let updated = perms.filter(p => p !== mod.val);
         if (updated.includes(key)) {
             updated = updated.filter(p => p !== key);
+            // If "read" is removed, also remove "hide"
+            if (key === 'fees.read') {
+                updated = updated.filter(p => p !== 'fees.hide');
+            }
         } else {
             updated = [...updated, key];
+            // If "hide" is selected, automatically select "read"
+            if (key === 'fees.hide') {
+                if (!updated.includes('fees.read') && !updated.includes('fees')) {
+                    updated = [...updated, 'fees.read'];
+                }
+            }
         }
-        // If all 4 ops are now active, collapse to base key (optional — keep granular)
         onChange(updated);
     };
 
@@ -200,7 +215,7 @@ function CrudSelector({ mod, perms, onChange }) {
                 </div>
                 {enabled && (
                     <span style={{ fontSize: '0.72rem', color: '#6366f1', fontWeight: '600' }}>
-                        {active.length} / 4 ops
+                        {active.length} / {opsList.length} ops
                     </span>
                 )}
             </label>
@@ -211,7 +226,7 @@ function CrudSelector({ mod, perms, onChange }) {
                     display: 'flex', gap: '0.4rem', padding: '0.6rem 0.85rem',
                     flexWrap: 'wrap'
                 }}>
-                    {CRUD_OPS.map(({ op, label, icon, color }) => {
+                    {opsList.map(({ op, label, icon, color }) => {
                         const isActive = active.includes(op);
                         return (
                             <button
@@ -246,12 +261,18 @@ function ManageAdmins() {
     const [managers, setManagers] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [filterType, setFilterType] = useState('all');
+    const [filterStatus, setFilterStatus] = useState('all');
+    const [sortOption, setSortOption] = useState('newest');
 
-    // Create modal
+    // Create modal & wizard
     const [showModal, setShowModal] = useState(false);
+    const [wizardStep, setWizardStep] = useState(1);
     const [formData, setFormData] = useState({ name: '', email: '', phone: '', password: '', permissions: [] });
     const [formErrors, setFormErrors] = useState({});
     const [submitting, setSubmitting] = useState(false);
+    const [showPassword, setShowPassword] = useState(false);
 
     // Manager type preset state
     const [selectedType, setSelectedType] = useState('custom');
@@ -263,8 +284,9 @@ function ManageAdmins() {
     const [editStatus, setEditStatus] = useState('active');
     const [savingEdit, setSavingEdit] = useState(false);
 
-    // Delete confirm
+    // Delete confirm & action menu
     const [deletingId, setDeletingId] = useState(null);
+    const [actionMenuOpen, setActionMenuOpen] = useState(null);
 
     useEffect(() => { fetchManagers(); }, []);
 
@@ -290,6 +312,17 @@ function ManageAdmins() {
         else if (formData.password.length < 6) errors.password = 'Minimum 6 characters';
         setFormErrors(errors);
         return Object.keys(errors).length === 0;
+    };
+
+    const nextStep = () => {
+        if (wizardStep === 1) {
+            if (!validateForm()) return;
+        }
+        setWizardStep(prev => prev + 1);
+    };
+
+    const prevStep = () => {
+        setWizardStep(prev => prev - 1);
     };
 
     const handleTextChange = (e) => {
@@ -323,12 +356,23 @@ function ManageAdmins() {
     // ── End type selection ─────────────────────────────────
 
     const handleTogglePerm = (val) => {
-        setFormData(fd => ({
-            ...fd,
-            permissions: fd.permissions.includes(val)
-                ? fd.permissions.filter(p => p !== val)
-                : [...fd.permissions, val]
-        }));
+        setFormData(fd => {
+            let newPerms = [...fd.permissions];
+            if (newPerms.includes(val)) {
+                newPerms = newPerms.filter(p => p !== val);
+                // If Collect Fees is removed, remove all Fee Structure permissions
+                if (val === 'collect_fees') {
+                    newPerms = newPerms.filter(p => p !== 'fees' && !p.startsWith('fees.'));
+                }
+            } else {
+                newPerms.push(val);
+                // Auto-select Fee Structure (Read) if Collect Fees is selected
+                if (val === 'collect_fees' && !newPerms.includes('fees.read') && !newPerms.includes('fees')) {
+                    newPerms.push('fees.read');
+                }
+            }
+            return { ...fd, permissions: newPerms };
+        });
     };
 
     const handleCreateManager = async (e) => {
@@ -344,6 +388,7 @@ function ManageAdmins() {
                 setShowModal(false);
                 setFormData({ name: '', email: '', phone: '', password: '', permissions: [] });
                 setSelectedType('custom');
+                setWizardStep(1);
                 fetchManagers();
             }
         } catch (err) {
@@ -389,28 +434,69 @@ function ManageAdmins() {
         }
     };
 
+    const handleStatusChange = async (id, newStatus) => {
+        try {
+            const mgr = managers.find(m => m.id === id);
+            if (!mgr) return;
+            await api.put(`/admin/admins/${id}`, {
+                name: mgr.name,
+                email: mgr.email,
+                phone: mgr.phone,
+                status: newStatus,
+                permissions: mgr.permissions,
+            });
+            fetchManagers();
+        } catch (err) {
+            alert(err.response?.data?.message || 'Failed to update status.');
+        }
+    };
+
     const managers_only = managers.filter(m => m.role === 'manager');
     const admins_only = managers.filter(m => m.role === 'admin');
 
+    let filtered_managers = managers_only.filter(m => {
+        const lowerSearch = searchTerm.toLowerCase();
+        const matchesSearch = (m.name && m.name.toLowerCase().includes(lowerSearch)) ||
+                              (m.email && m.email.toLowerCase().includes(lowerSearch)) ||
+                              (m.phone && m.phone.toLowerCase().includes(lowerSearch));
+        
+        const typeMatch = (m.manager_type || 'custom');
+        const matchesType = filterType === 'all' || typeMatch === filterType;
+        const matchesStatus = filterStatus === 'all' || (filterStatus === 'active' ? m.status === 'active' : m.status !== 'active');
+        
+        return matchesSearch && matchesType && matchesStatus;
+    });
+
+    if (sortOption === 'newest') {
+        filtered_managers.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
+    } else if (sortOption === 'oldest') {
+        filtered_managers.sort((a, b) => new Date(a.created_at || 0) - new Date(b.created_at || 0));
+    } else if (sortOption === 'name') {
+        filtered_managers.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+    }
+
     // ── RENDER ──
     return (
-        <div className="dashboard-container">
+        <div className="dashboard-container manage-admins-container">
             {/* Header */}
-            <header className="dashboard-header">
-                <div>
-                    <h1 style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-                        <span style={{ fontSize: '2rem' }}>👨‍💼</span> Manager System
-                    </h1>
-                    <p>Create operational managers with fine-grained CRUD permission control.</p>
+            <header className="dashboard-header" style={{ marginBottom: '2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                    <img src={managerAvatarImg} alt="Manager" className="ma-header-avatar" />
+                    <div>
+                        <h1 style={{ fontSize: '1.8rem', fontWeight: '800', marginBottom: '4px' }}>Manager System</h1>
+                        <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', margin: 0 }}>Create operational managers with fine-grained CRUD permission control.</p>
+                    </div>
                 </div>
-                <div className="dashboard-header-right">
+                <div className="dashboard-header-right" style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                     <ThemeSelector />
-                    <button className="btn btn-secondary" onClick={() => navigate('/admin/dashboard')}>← Back</button>
+                    <button className="ma-btn-outline" onClick={() => navigate('/admin/dashboard')}>
+                        ← Back
+                    </button>
                     {user?.role === 'admin' && (
                         <button
                             className="btn btn-primary"
-                            onClick={() => { setShowModal(true); setSelectedType('custom'); setTypeConfirmPending(null); }}
-                            style={{ background: 'linear-gradient(135deg,#6366f1,#a855f7)', border: 'none' }}
+                            onClick={() => { setShowModal(true); setWizardStep(1); setSelectedType('custom'); setTypeConfirmPending(null); setFormErrors({}); }}
+                            style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', border: 'none', padding: '0.6rem 1.2rem', borderRadius: '8px', fontWeight: '600' }}
                         >
                             + Create Manager
                         </button>
@@ -420,59 +506,102 @@ function ManageAdmins() {
 
             {error && <div className="error-message">{error}</div>}
 
-            {/* How it works */}
-            <div style={{
-                background: 'linear-gradient(135deg,rgba(99,102,241,0.1),rgba(168,85,247,0.1))',
-                border: '1px solid rgba(99,102,241,0.3)', borderRadius: '12px',
-                padding: '1rem 1.5rem', marginBottom: '2rem',
-                display: 'flex', gap: '2rem', flexWrap: 'wrap'
-            }}>
+            {/* How it works (Steps Grid) */}
+            <div className="ma-steps-grid">
                 {[
-                    { icon: '1️⃣', title: 'Pick Manager Type', desc: 'Fees, Data, Academic, Ops, HR or Custom' },
-                    { icon: '2️⃣', title: 'Auto-Fill Permissions', desc: 'Preset fills all checkboxes instantly' },
-                    { icon: '3️⃣', title: 'Fine-Tune & Create', desc: 'Override any toggle before creating' },
-                    { icon: '4️⃣', title: 'Admin Controls', desc: 'Edit/block anytime' },
+                    { num: '1', title: 'Pick Manager Type', desc: 'Fees, Data, Academic, Ops, HR or Custom' },
+                    { num: '2', title: 'Auto-Fill Permissions', desc: 'Preset fills all checkboxes instantly' },
+                    { num: '3', title: 'Fine-Tune & Create', desc: 'Override any toggle before creating' },
+                    { num: '4', title: 'Admin Controls', desc: 'Edit / block / delete anytime' },
                 ].map(s => (
-                    <div key={s.icon} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                        <span style={{ fontSize: '1.5rem' }}>{s.icon}</span>
-                        <div>
-                            <div style={{ fontWeight: '700', fontSize: '0.9rem' }}>{s.title}</div>
-                            <div style={{ color: 'var(--text-secondary)', fontSize: '0.8rem' }}>{s.desc}</div>
+                    <div key={s.num} className="ma-step-card">
+                        <div className="ma-step-icon">{s.num}</div>
+                        <div className="ma-step-content">
+                            <div className="ma-step-title">{s.title}</div>
+                            <div className="ma-step-desc">{s.desc}</div>
                         </div>
                     </div>
                 ))}
             </div>
 
-            {/* Stats */}
-            <div className="stats-grid" style={{ gridTemplateColumns: 'repeat(3,1fr)', marginBottom: '2rem' }}>
-                <div className="stat-card">
-                    <div className="stat-icon">👨‍💼</div>
-                    <div className="stat-content"><h3>{managers_only.length}</h3><p>Total Managers</p></div>
+            {/* Stats Grid */}
+            <div className="ma-stats-grid">
+                <div className="ma-stat-card">
+                    <div className="ma-stat-icon-wrapper" style={{ background: 'rgba(99, 102, 241, 0.1)', color: '#6366f1' }}>
+                        👥
+                    </div>
+                    <div className="ma-stat-info">
+                        <h3>{managers_only.length}</h3>
+                        <p>Total Managers</p>
+                        <div className="ma-stat-subtitle">All registered managers</div>
+                    </div>
+                    <div className="ma-stat-dots" />
                 </div>
-                <div className="stat-card">
-                    <div className="stat-icon">✅</div>
-                    <div className="stat-content"><h3>{managers_only.filter(m => m.status === 'active').length}</h3><p>Active</p></div>
+                <div className="ma-stat-card">
+                    <div className="ma-stat-icon-wrapper" style={{ background: 'rgba(16, 185, 129, 0.1)', color: '#10b981' }}>
+                        ✅
+                    </div>
+                    <div className="ma-stat-info">
+                        <h3>{managers_only.filter(m => m.status === 'active').length}</h3>
+                        <p>Active</p>
+                        <div className="ma-stat-subtitle">Currently active managers</div>
+                    </div>
+                    <div className="ma-stat-dots" />
                 </div>
-                <div className="stat-card">
-                    <div className="stat-icon">🚫</div>
-                    <div className="stat-content"><h3>{managers_only.filter(m => m.status !== 'active').length}</h3><p>Blocked</p></div>
+                <div className="ma-stat-card">
+                    <div className="ma-stat-icon-wrapper" style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444' }}>
+                        🚫
+                    </div>
+                    <div className="ma-stat-info">
+                        <h3>{managers_only.filter(m => m.status !== 'active').length}</h3>
+                        <p>Blocked</p>
+                        <div className="ma-stat-subtitle">Temporarily blocked</div>
+                    </div>
+                    <div className="ma-stat-dots" />
                 </div>
+            </div>
+
+            {/* Search & Filter Bar */}
+            <div className="ma-filter-bar">
+                <input 
+                    type="text" 
+                    className="ma-search-input" 
+                    placeholder="Search managers by name, email or phone..." 
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                />
+                <select className="ma-select" value={filterType} onChange={(e) => setFilterType(e.target.value)}>
+                    <option value="all">All Types</option>
+                    {MANAGER_TYPES.map(t => (
+                        <option key={t.id} value={t.id}>{t.label}</option>
+                    ))}
+                </select>
+                <select className="ma-select" value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
+                    <option value="all">All Status</option>
+                    <option value="active">Active</option>
+                    <option value="blocked">Blocked</option>
+                </select>
+                <select className="ma-select" value={sortOption} onChange={(e) => setSortOption(e.target.value)}>
+                    <option value="newest">Sort: Newest</option>
+                    <option value="oldest">Sort: Oldest</option>
+                    <option value="name">Sort: Name (A-Z)</option>
+                </select>
             </div>
 
             {/* Manager cards */}
             {loading ? (
                 <div style={{ textAlign: 'center', padding: '3rem' }}>Loading managers...</div>
-            ) : managers_only.length === 0 ? (
+            ) : filtered_managers.length === 0 ? (
                 <div style={{
                     textAlign: 'center', padding: '4rem 2rem', borderRadius: '16px',
                     border: '2px dashed rgba(99,102,241,0.3)', background: 'rgba(99,102,241,0.04)'
                 }}>
                     <div style={{ fontSize: '3.5rem', marginBottom: '1rem' }}>👨‍💼</div>
-                    <h3 style={{ marginBottom: '0.5rem' }}>No Managers Yet</h3>
+                    <h3 style={{ marginBottom: '0.5rem' }}>No Managers Found</h3>
                     <p style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem' }}>
-                        Create your first manager to delegate operational tasks.
+                        {searchTerm ? "No managers match your search criteria." : "Create your first manager to delegate operational tasks."}
                     </p>
-                    {user?.role === 'admin' && (
+                    {user?.role === 'admin' && !searchTerm && (
                         <button className="btn btn-primary"
                             onClick={() => { setShowModal(true); setSelectedType('custom'); setTypeConfirmPending(null); }}
                             style={{ background: 'linear-gradient(135deg,#6366f1,#a855f7)', border: 'none' }}>
@@ -481,82 +610,117 @@ function ManageAdmins() {
                     )}
                 </div>
             ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                    {managers_only.map(mgr => {
+                <div className="ma-list-container">
+                    <div className="ma-list-header">
+                        <div>Manager Info</div>
+                        <div>Permissions</div>
+                        <div>Type</div>
+                        <div>Last Login</div>
+                        <div style={{ textAlign: 'right' }}>Actions</div>
+                    </div>
+                    {filtered_managers.map(mgr => {
                         const permLabels = buildPermLabel(Array.isArray(mgr.permissions) ? mgr.permissions : []);
                         const isBlocked = mgr.status !== 'active';
-                        return (
-                            <div key={mgr.id} style={{
-                                borderRadius: '14px', border: '1px solid var(--border-color)',
-                                background: 'var(--card-bg,rgba(255,255,255,0.03))',
-                                padding: '1.25rem 1.5rem', position: 'relative',
-                                opacity: isBlocked ? 0.85 : 1
-                            }}>
-                                <div style={{
-                                    position: 'absolute', left: 0, top: 0, bottom: 0, width: '4px',
-                                    borderRadius: '14px 0 0 14px',
-                                    background: isBlocked
-                                        ? 'linear-gradient(180deg,#ef4444,#9ca3af)'
-                                        : 'linear-gradient(180deg,#6366f1,#a855f7)'
-                                }} />
+                        
+                        // Extract a custom color based on manager type for the side border
+                        let borderColor = '#6366f1';
+                        let bgColorClass = 'linear-gradient(135deg,#6366f1,#8b5cf6)';
+                        if (mgr.manager_type === 'finance') { borderColor = '#8b5cf6'; bgColorClass = 'linear-gradient(135deg,#8b5cf6,#a855f7)'; }
+                        if (mgr.manager_type === 'data') { borderColor = '#3b82f6'; bgColorClass = 'linear-gradient(135deg,#3b82f6,#60a5fa)'; }
+                        if (mgr.manager_type === 'academic') { borderColor = '#10b981'; bgColorClass = 'linear-gradient(135deg,#10b981,#34d399)'; }
+                        if (isBlocked) { borderColor = '#ef4444'; bgColorClass = 'linear-gradient(135deg,#ef4444,#f87171)'; }
 
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
-                                    <div style={{ display: 'flex', alignItems: 'flex-start', gap: '1rem' }}>
-                                        <div style={{
-                                            width: '52px', height: '52px', borderRadius: '12px',
-                                            background: isBlocked
-                                                ? 'linear-gradient(135deg,#9ca3af,#6b7280)'
-                                                : 'linear-gradient(135deg,#6366f1,#a855f7)',
-                                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                            color: '#fff', fontWeight: '800', fontSize: '1.2rem', flexShrink: 0
-                                        }}>
-                                            {(mgr.name || 'M')[0].toUpperCase()}
+                        return (
+                            <div key={mgr.id} className="ma-row-card" style={{ opacity: isBlocked ? 0.75 : 1, zIndex: actionMenuOpen === mgr.id ? 10 : 1 }}>
+                                <div className="ma-row-card-indicator" style={{ background: borderColor }} />
+                                
+                                <div className="ma-col-profile">
+                                    <div className="ma-profile-avatar" style={{ background: bgColorClass }}>
+                                        {(mgr.name || 'M')[0].toUpperCase()}
+                                    </div>
+                                    <div className="ma-profile-details">
+                                        <div className="ma-profile-name">
+                                            {mgr.name} 
+                                            <span className="ma-profile-status" style={{ 
+                                                background: isBlocked ? 'rgba(239,68,68,0.1)' : 'rgba(16,185,129,0.1)', 
+                                                color: isBlocked ? '#ef4444' : '#10b981' 
+                                            }}>
+                                                {isBlocked ? 'Blocked' : 'Active'}
+                                            </span>
                                         </div>
-                                        <div>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '4px', flexWrap: 'wrap' }}>
-                                                <strong style={{ fontSize: '1.05rem' }}>{mgr.name}</strong>
-                                                <span style={{
-                                                    fontSize: '0.72rem', padding: '1px 8px', borderRadius: '20px', fontWeight: '600',
-                                                    background: isBlocked ? 'rgba(239,68,68,0.15)' : 'rgba(16,185,129,0.15)',
-                                                    color: isBlocked ? '#ef4444' : '#10b981'
-                                                }}>
-                                                    {isBlocked ? '🚫 Blocked' : '● Active'}
-                                                </span>
-                                                {/* ── Manager Type Badge ── */}
-                                                <TypeBadge managerType={mgr.manager_type || 'custom'} />
-                                            </div>
-                                            <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>📧 {mgr.email}</div>
-                                            {mgr.phone && <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>📞 {mgr.phone}</div>}
+                                        <div className="ma-profile-meta">
+                                            ✉️ {mgr.email}
+                                        </div>
+                                        <div className="ma-profile-meta">
+                                            📞 {mgr.phone || 'N/A'}
+                                        </div>
+                                        <div className="ma-profile-meta" style={{ marginTop: '2px' }}>
+                                            📅 Joined: {mgr.created_at ? new Date(mgr.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : 'Unknown'}
                                         </div>
                                     </div>
-
-                                    {user?.role === 'admin' && mgr.id !== user?.id && (
-                                        <div style={{ display: 'flex', gap: '0.5rem', flexShrink: 0 }}>
-                                            <button className="btn btn-secondary" style={{ fontSize: '0.85rem' }}
-                                                onClick={() => openEditModal(mgr)}>✏️ Edit</button>
-                                            <button className="btn btn-danger" style={{ fontSize: '0.85rem' }}
-                                                onClick={() => setDeletingId(mgr.id)}>🗑️</button>
-                                        </div>
-                                    )}
                                 </div>
 
-                                {/* permissions display */}
-                                <div style={{ marginTop: '1rem', paddingTop: '0.75rem', borderTop: '1px solid var(--border-color)' }}>
-                                    <div style={{ fontSize: '0.76rem', color: 'var(--text-secondary)', fontWeight: '600', marginBottom: '0.4rem', letterSpacing: '0.05em' }}>
-                                        PERMISSIONS ({permLabels.length > 0 ? permLabels.length : 0} modules)
+                                <div className="ma-col-perms">
+                                    <div className="ma-perms-header">Permissions ({permLabels.length} modules)</div>
+                                    <div className="ma-perms-chips">
+                                        {permLabels.length === 0 ? (
+                                            <span style={{ fontSize: '0.8rem', color: '#ef4444', fontStyle: 'italic' }}>No permissions assigned</span>
+                                        ) : (
+                                            <>
+                                                {permLabels.slice(0, 3).map((lbl, i) => (
+                                                    <span key={i} className="ma-perm-chip">{lbl}</span>
+                                                ))}
+                                                {permLabels.length > 3 && (
+                                                    <span className="ma-perm-chip" style={{ background: 'transparent', border: 'none', fontWeight: 600 }}>
+                                                        +{permLabels.length - 3} more
+                                                    </span>
+                                                )}
+                                            </>
+                                        )}
                                     </div>
-                                    {permLabels.length === 0 ? (
-                                        <span style={{ fontSize: '0.8rem', color: '#ef4444', fontStyle: 'italic' }}>No permissions assigned</span>
-                                    ) : (
-                                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem' }}>
-                                            {permLabels.map((lbl, i) => (
-                                                <span key={i} style={{
-                                                    fontSize: '0.76rem', padding: '2px 10px', borderRadius: '20px',
-                                                    background: 'rgba(99,102,241,0.12)', border: '1px solid rgba(99,102,241,0.3)',
-                                                    color: 'var(--text-primary)', fontWeight: '500'
-                                                }}>{lbl}</span>
-                                            ))}
-                                        </div>
+                                </div>
+
+                                <div className="ma-col-type">
+                                    <TypeBadge managerType={mgr.manager_type || 'custom'} />
+                                </div>
+
+                                <div className="ma-col-login">
+                                    <div className="ma-login-header">Last Login</div>
+                                    <div className="ma-login-val">
+                                        <div className="ma-login-dot" style={{ background: isBlocked ? '#ef4444' : '#10b981' }} />
+                                        {mgr.last_login ? new Date(mgr.last_login).toLocaleString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true, month: 'short', day: 'numeric' }) : 'Never'}
+                                    </div>
+                                </div>
+
+                                <div className="ma-col-actions" style={{ position: 'relative', zIndex: actionMenuOpen === mgr.id ? 20 : 1 }}>
+                                    {user?.role === 'admin' && mgr.id !== user?.id && (
+                                        <>
+                                            <button className="ma-btn-outline" onClick={() => openEditModal(mgr)}>
+                                                ✏️ Edit
+                                            </button>
+                                            <button className="ma-btn-icon" onClick={() => setActionMenuOpen(actionMenuOpen === mgr.id ? null : mgr.id)} title="Actions">
+                                                ⋮
+                                            </button>
+                                            
+                                            {actionMenuOpen === mgr.id && (
+                                                <>
+                                                    <div style={{ position: 'fixed', inset: 0, zIndex: 9 }} onClick={() => setActionMenuOpen(null)} />
+                                                    <div style={{
+                                                        position: 'absolute', right: '0', top: '100%', marginTop: '0.25rem',
+                                                        background: '#fff', border: '1px solid var(--border-color)', borderRadius: '8px',
+                                                        boxShadow: '0 4px 12px rgba(0,0,0,0.1)', zIndex: 10, minWidth: '140px',
+                                                        overflow: 'hidden'
+                                                    }}>
+                                                        {isBlocked ? (
+                                                            <button onClick={() => { handleStatusChange(mgr.id, 'active'); setActionMenuOpen(null); }} style={{ width: '100%', padding: '0.6rem 1rem', textAlign: 'left', background: 'transparent', border: 'none', borderBottom: '1px solid var(--border-color)', cursor: 'pointer', color: '#10b981', fontWeight: 600, fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '8px' }}><span>✓</span> Mark Active</button>
+                                                        ) : (
+                                                            <button onClick={() => { handleStatusChange(mgr.id, 'blocked'); setActionMenuOpen(null); }} style={{ width: '100%', padding: '0.6rem 1rem', textAlign: 'left', background: 'transparent', border: 'none', borderBottom: '1px solid var(--border-color)', cursor: 'pointer', color: '#f59e0b', fontWeight: 600, fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '8px' }}><span>🚫</span> Block Access</button>
+                                                        )}
+                                                        <button onClick={() => { setDeletingId(mgr.id); setActionMenuOpen(null); }} style={{ width: '100%', padding: '0.6rem 1rem', textAlign: 'left', background: 'transparent', border: 'none', cursor: 'pointer', color: '#ef4444', fontWeight: 600, fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '8px' }}><span>🗑️</span> Delete</button>
+                                                    </div>
+                                                </>
+                                            )}
+                                        </>
                                     )}
                                 </div>
                             </div>
@@ -600,112 +764,265 @@ function ManageAdmins() {
                 </div>
             )}
 
-            {/* ── CREATE MANAGER MODAL ── */}
+            {/* ── CREATE MANAGER MODAL (WIZARD) ── */}
             {showModal && (
-                <div className="modal-overlay">
-                    <div className="modal-content" style={{ maxWidth: '720px', width: '95%', maxHeight: '92vh', overflowY: 'auto' }}>
-                        <h2 style={{ marginBottom: '0.25rem' }}>👨‍💼 Create New Manager</h2>
-                        <p style={{ color: 'var(--text-secondary)', fontSize: '0.88rem', marginBottom: '1.25rem' }}>
-                            Choose a manager type to auto-fill permissions, or pick Custom to set manually.
-                        </p>
-
-                        {/* ── Type confirmation dialog (inline) ── */}
-                        {typeConfirmPending && (
-                            <div style={{
-                                background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.4)',
-                                borderRadius: '10px', padding: '0.85rem 1rem', marginBottom: '1rem',
-                                display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', flexWrap: 'wrap'
-                            }}>
-                                <div style={{ fontSize: '0.85rem', color: '#92400e' }}>
-                                    ⚠️ Switching type will reset all current permissions. Continue?
-                                </div>
-                                <div style={{ display: 'flex', gap: '0.5rem' }}>
-                                    <button type="button" className="btn btn-secondary" style={{ fontSize: '0.8rem', padding: '4px 14px' }}
-                                        onClick={cancelTypeSwitch}>Cancel</button>
-                                    <button type="button" className="btn btn-primary" style={{ fontSize: '0.8rem', padding: '4px 14px', background: '#f59e0b', border: 'none' }}
-                                        onClick={() => applyTypePreset(typeConfirmPending)}>Yes, Switch</button>
-                                </div>
+                <div className="modal-overlay" style={{ backdropFilter: 'blur(4px)' }}>
+                    <div className="ma-wizard-modal">
+                        {/* Header & Close Button */}
+                        <div className="ma-wizard-header-top">
+                            <div>
+                                <span className="ma-wizard-phase-badge">PHASE {wizardStep}</span>
+                                <h2 className="ma-wizard-title">Create New Manager</h2>
+                                <p className="ma-wizard-subtitle">Add a new operational manager and set permissions.</p>
                             </div>
-                        )}
+                            <button className="ma-wizard-close" onClick={() => { setShowModal(false); setFormErrors({}); setWizardStep(1); }}>✕</button>
+                        </div>
 
-                        {/* ── Manager Type Selector ── */}
-                        <ManagerTypeSelector selectedType={selectedType} onSelect={handleTypeSelect} />
-
-                        <form onSubmit={handleCreateManager}>
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginBottom: '1rem' }}>
-                                <div className="form-group">
-                                    <label className="form-label">Full Name *</label>
-                                    <input type="text" name="name" className="form-input" value={formData.name} onChange={handleTextChange} placeholder="e.g. Ravi Kumar" />
-                                    {formErrors.name && <span style={{ color: '#ef4444', fontSize: '0.8rem' }}>{formErrors.name}</span>}
-                                </div>
-                                <div className="form-group">
-                                    <label className="form-label">Email *</label>
-                                    <input type="email" name="email" className="form-input" value={formData.email} onChange={handleTextChange} placeholder="ravi@institute.com" />
-                                    {formErrors.email && <span style={{ color: '#ef4444', fontSize: '0.8rem' }}>{formErrors.email}</span>}
-                                </div>
-                                <div className="form-group">
-                                    <label className="form-label">Phone</label>
-                                    <input type="tel" name="phone" className="form-input" value={formData.phone} onChange={handleTextChange} placeholder="9876543210" />
-                                </div>
-                                <div className="form-group">
-                                    <label className="form-label">Password *</label>
-                                    <input type="password" name="password" className="form-input" value={formData.password} onChange={handleTextChange} placeholder="Min 6 characters" />
-                                    {formErrors.password && <span style={{ color: '#ef4444', fontSize: '0.8rem' }}>{formErrors.password}</span>}
-                                </div>
-                            </div>
-
-                            {/* CRUD modules */}
-                            <div style={{ marginBottom: '1rem' }}>
-                                <div style={{ fontWeight: '700', fontSize: '0.92rem', marginBottom: '0.25rem' }}>
-                                    🔑 Module Permissions <span style={{ fontSize: '0.76rem', color: 'var(--text-secondary)', fontWeight: '400' }}>(select module then choose allowed operations)</span>
-                                </div>
-                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', marginTop: '0.5rem' }}>
-                                    {CRUD_MODULES.map(mod => (
-                                        <CrudSelector key={mod.val} mod={mod} perms={formData.permissions}
-                                            onChange={perms => setFormData(fd => ({ ...fd, permissions: perms }))} />
-                                    ))}
-                                </div>
-                            </div>
-
-                            {/* Toggle modules */}
-                            <div style={{ marginBottom: '1rem' }}>
-                                <div style={{ fontWeight: '700', fontSize: '0.92rem', marginBottom: '0.5rem' }}>
-                                    ⚡ Feature Access
-                                </div>
-                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(200px,1fr))', gap: '0.4rem' }}>
-                                    {TOGGLE_MODULES.map(t => (
-                                        <label key={t.val} style={{
-                                            display: 'flex', alignItems: 'flex-start', gap: '0.6rem',
-                                            padding: '0.55rem 0.75rem', borderRadius: '8px', cursor: 'pointer',
-                                            border: `1px solid ${formData.permissions.includes(t.val) ? 'rgba(99,102,241,0.4)' : 'var(--border-color)'}`,
-                                            background: formData.permissions.includes(t.val) ? 'rgba(99,102,241,0.08)' : 'transparent'
-                                        }}>
-                                            <input type="checkbox" checked={formData.permissions.includes(t.val)}
-                                                onChange={() => handleTogglePerm(t.val)} style={{ accentColor: '#6366f1', marginTop: '2px' }} />
-                                            <div>
-                                                <div style={{ fontWeight: '600', fontSize: '0.85rem' }}>{t.icon} {t.label}</div>
-                                                <div style={{ fontSize: '0.74rem', color: 'var(--text-secondary)' }}>{t.desc}</div>
+                        {/* Progress Stepper */}
+                        <div className="ma-wizard-stepper">
+                            {[1, 2, 3, 4].map(step => (
+                                <Fragment key={step}>
+                                    <div className={`ma-wizard-step ${wizardStep >= step ? 'active' : ''} ${wizardStep > step ? 'completed' : ''}`}>
+                                        <div className="ma-step-circle">{wizardStep > step ? '✓' : step}</div>
+                                        <div className="ma-step-labels">
+                                            <div className="ma-step-title">
+                                                {step === 1 ? 'Basic Information' : step === 2 ? 'Manager Type' : step === 3 ? 'Permissions' : 'Review'}
                                             </div>
-                                        </label>
-                                    ))}
-                                </div>
-                            </div>
+                                            <div className="ma-step-desc">
+                                                {step === 1 ? 'Add manager details' : step === 2 ? 'Select manager type' : step === 3 ? 'Choose access rights' : 'Confirm and create'}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {step < 4 && <div className={`ma-wizard-connector ${wizardStep > step ? 'completed' : ''}`} />}
+                                </Fragment>
+                            ))}
+                        </div>
 
-                            {formErrors.general && (
-                                <div style={{ color: '#ef4444', padding: '0.75rem', borderRadius: '8px', background: 'rgba(239,68,68,0.1)', marginBottom: '1rem' }}>
-                                    ⚠️ {formErrors.general}
+                        {/* Content Area */}
+                        <div className="ma-wizard-content-area">
+                            {wizardStep === 1 && (
+                                <div className="ma-wizard-view">
+                                    <h3 className="ma-wizard-section-title"><span></span> Basic Information</h3>
+                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '1.5rem' }}>
+                                        <div className="form-group">
+                                            <label className="form-label">Full Name <span style={{color: '#ef4444'}}>*</span></label>
+                                            <div className="ma-input-with-icon">
+                                                <span className="ma-input-icon">👤</span>
+                                                <input type="text" name="name" className="form-input" style={{ paddingLeft: '2.5rem' }} value={formData.name} onChange={handleTextChange} placeholder="e.g. Ravi Kumar" />
+                                            </div>
+                                            {formErrors.name && <span style={{ color: '#ef4444', fontSize: '0.8rem' }}>{formErrors.name}</span>}
+                                        </div>
+                                        <div className="form-group">
+                                            <label className="form-label">Email Address <span style={{color: '#ef4444'}}>*</span></label>
+                                            <div className="ma-input-with-icon">
+                                                <span className="ma-input-icon">✉️</span>
+                                                <input type="email" name="email" className="form-input" style={{ paddingLeft: '2.5rem' }} value={formData.email} onChange={handleTextChange} placeholder="e.g. ravi@ithub.com" />
+                                            </div>
+                                            {formErrors.email && <span style={{ color: '#ef4444', fontSize: '0.8rem' }}>{formErrors.email}</span>}
+                                        </div>
+                                        <div className="form-group">
+                                            <label className="form-label">Phone Number <span style={{color: '#ef4444'}}>*</span></label>
+                                            <div className="ma-input-with-icon">
+                                                <div className="ma-country-code">🇮🇳 +91 <span style={{fontSize: '0.6rem', color: '#9ca3af', marginLeft: '4px'}}>▼</span></div>
+                                                <input type="tel" name="phone" className="form-input" style={{ paddingLeft: '5.5rem' }} value={formData.phone} onChange={handleTextChange} placeholder="9876543210" />
+                                            </div>
+                                        </div>
+                                        <div className="form-group">
+                                            <label className="form-label">Password <span style={{color: '#ef4444'}}>*</span></label>
+                                            <div className="ma-input-with-icon">
+                                                <span className="ma-input-icon">🔒</span>
+                                                <input type={showPassword ? "text" : "password"} name="password" className="form-input" style={{ paddingLeft: '2.5rem', paddingRight: '2.5rem' }} value={formData.password} onChange={handleTextChange} placeholder="Min. 6 characters" />
+                                                <span className="ma-input-action-icon" onClick={() => setShowPassword(!showPassword)} style={{ position: 'absolute', right: '1rem', cursor: 'pointer' }}>
+                                                    {showPassword ? '👁️‍🗨️' : '👁️'}
+                                                </span>
+                                            </div>
+                                            {formErrors.password && <span style={{ color: '#ef4444', fontSize: '0.8rem' }}>{formErrors.password}</span>}
+                                        </div>
+                                    </div>
+                                    <div className="ma-wizard-info-banner">
+                                        ℹ️ Please enter valid details. These will be used for login and identification.
+                                    </div>
                                 </div>
                             )}
 
-                            <div className="modal-actions">
-                                <button type="button" className="btn btn-secondary"
-                                    onClick={() => { setShowModal(false); setFormErrors({}); }}>Cancel</button>
-                                <button type="submit" className="btn btn-primary" disabled={submitting}
-                                    style={{ background: 'linear-gradient(135deg,#6366f1,#a855f7)', border: 'none' }}>
-                                    {submitting ? 'Creating…' : '✅ Create Manager'}
-                                </button>
+                            {wizardStep === 2 && (
+                                <div className="ma-wizard-view">
+                                    <h3 className="ma-wizard-section-title"><span></span> Select Manager Type</h3>
+                                    <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '1.5rem', marginTop: '-0.5rem' }}>
+                                        Choose a predefined manager type or create a custom one.
+                                    </p>
+                                    
+                                    {typeConfirmPending && (
+                                        <div className="ma-type-confirm">
+                                            <div style={{ fontSize: '0.85rem', color: '#92400e' }}>⚠️ Switching type will reset all current permissions. Continue?</div>
+                                            <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                                <button type="button" className="btn btn-secondary" style={{ fontSize: '0.8rem', padding: '4px 14px' }} onClick={cancelTypeSwitch}>Cancel</button>
+                                                <button type="button" className="btn btn-primary" style={{ fontSize: '0.8rem', padding: '4px 14px', background: '#f59e0b', border: 'none' }} onClick={() => applyTypePreset(typeConfirmPending)}>Yes, Switch</button>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    <ManagerTypeSelector selectedType={selectedType} onSelect={handleTypeSelect} />
+                                </div>
+                            )}
+
+                            {wizardStep === 3 && (
+                                <div className="ma-wizard-view">
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                                        <div>
+                                            <h3 className="ma-wizard-section-title"><span></span> Module Permissions</h3>
+                                            <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '-0.5rem' }}>
+                                                Select modules and choose allowed operations.
+                                            </p>
+                                        </div>
+                                        <div className="ma-selected-modules-badge">
+                                            {formData.permissions.length} modules selected
+                                        </div>
+                                    </div>
+
+                                    <div className="ma-wizard-perms-grid">
+                                        {CRUD_MODULES.map(mod => (
+                                            <CrudSelector key={mod.val} mod={mod} perms={formData.permissions} onChange={perms => {
+                                                let newPerms = [...perms];
+                                                if (mod.val === 'fees') {
+                                                    const hasFees = newPerms.includes('fees') || newPerms.some(p => p.startsWith('fees.'));
+                                                    if (hasFees && !newPerms.includes('collect_fees')) { newPerms.push('collect_fees'); }
+                                                    else if (!hasFees && newPerms.includes('collect_fees')) { newPerms = newPerms.filter(p => p !== 'collect_fees'); }
+                                                }
+                                                setFormData(fd => ({ ...fd, permissions: newPerms }));
+                                            }} />
+                                        ))}
+                                    </div>
+                                    <h4 style={{ fontSize: '1rem', fontWeight: '700', marginTop: '2rem', marginBottom: '1.25rem' }}>Feature Access</h4>
+                                    <div className="ma-wizard-perms-grid">
+                                        {TOGGLE_MODULES.map(mod => (
+                                            <label key={mod.val} style={{
+                                                display: 'flex', alignItems: 'center', gap: '1rem',
+                                                padding: '1.25rem', borderRadius: '12px',
+                                                border: `1px solid ${formData.permissions.includes(mod.val) ? '#6366f1' : 'var(--border-color)'}`,
+                                                background: formData.permissions.includes(mod.val) ? 'rgba(99,102,241,0.02)' : '#fff',
+                                                cursor: 'pointer', transition: 'all 0.2s',
+                                                boxShadow: '0 2px 8px rgba(0,0,0,0.02)'
+                                            }}>
+                                                <input
+                                                    type="checkbox"
+                                                    checked={formData.permissions.includes(mod.val)}
+                                                    onChange={(e) => {
+                                                        const checked = e.target.checked;
+                                                        setFormData(fd => ({
+                                                            ...fd,
+                                                            permissions: checked ? [...fd.permissions, mod.val] : fd.permissions.filter(p => p !== mod.val)
+                                                        }));
+                                                    }}
+                                                    style={{ width: '20px', height: '20px', accentColor: '#6366f1' }}
+                                                />
+                                                <span style={{ fontSize: '1.5rem' }}>{mod.icon}</span>
+                                                <div>
+                                                    <div style={{ fontWeight: '700', fontSize: '0.95rem', color: formData.permissions.includes(mod.val) ? '#4f46e5' : 'var(--text-primary)' }}>{mod.label}</div>
+                                                    <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '2px' }}>{mod.desc}</div>
+                                                </div>
+                                            </label>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {wizardStep === 4 && (
+                                <div className="ma-wizard-view">
+                                    <h3 className="ma-wizard-section-title"><span></span> Review & Confirm</h3>
+                                    <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '1.5rem', marginTop: '-0.5rem' }}>
+                                        Review manager details, type and permissions before creating.
+                                    </p>
+
+                                    <div className="ma-wizard-review-grid">
+                                        <div className="ma-review-card">
+                                            <div className="ma-review-card-header"><span className="icon" style={{ background: 'rgba(99,102,241,0.1)', color: '#6366f1' }}>👤</span> Manager Information</div>
+                                            <div className="ma-review-row"><span>Full Name</span><strong>{formData.name}</strong></div>
+                                            <div className="ma-review-row"><span>Email</span><strong>{formData.email}</strong></div>
+                                            <div className="ma-review-row"><span>Phone</span><strong>{formData.phone || 'N/A'}</strong></div>
+                                            <div className="ma-review-row"><span>Password</span><strong>********</strong></div>
+                                        </div>
+                                        
+                                        <div className="ma-review-card">
+                                            <div className="ma-review-card-header"><span className="icon" style={{ background: 'rgba(99,102,241,0.1)', color: '#6366f1' }}>💼</span> Manager Type</div>
+                                            <div className="ma-review-type-display">
+                                                <div className="icon">
+                                                    {selectedType === 'fees' ? '💰' : selectedType === 'data' ? '🗄️' : selectedType === 'academic' ? '🎓' : selectedType === 'ops' ? '⚙️' : selectedType === 'hr' ? '👥' : '🎛️'}
+                                                </div>
+                                                <div>
+                                                    <div className="title">{MANAGER_TYPES.find(t => t.id === selectedType)?.label || 'Custom Manager'}</div>
+                                                    <div className="desc">{MANAGER_TYPES.find(t => t.id === selectedType)?.desc || 'Custom module access'}</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        {(() => {
+                                            const uniqueModules = Array.from(new Set(formData.permissions.map(p => p.split('.')[0])));
+                                            return (
+                                                <div className="ma-review-card">
+                                                    <div className="ma-review-card-header"><span className="icon" style={{ background: 'rgba(99,102,241,0.1)', color: '#6366f1' }}>⚙️</span> Permissions Summary</div>
+                                                    <div className="ma-review-row"><span>Modules Selected</span><strong>{uniqueModules.length}</strong></div>
+                                                    <div className="ma-review-row"><span>Total Operations</span><strong>{formData.permissions.length}</strong></div>
+                                                    <div className="ma-review-row"><span>Access Level</span><strong>{selectedType === 'custom' ? 'Custom' : 'Preset'}</strong></div>
+                                                </div>
+                                            );
+                                        })()}
+                                    </div>
+
+                                    {(() => {
+                                        const uniqueModules = Array.from(new Set(formData.permissions.map(p => p.split('.')[0])));
+                                        return (
+                                            <div className="ma-review-selected-modules">
+                                                <h4>Selected Modules ({uniqueModules.length})</h4>
+                                                <div className="chips-container">
+                                                    {uniqueModules.slice(0, 10).map(p => {
+                                                        const label = CRUD_MODULES.find(m => m.val === p)?.label || TOGGLE_MODULES.find(m => m.val === p)?.label || p;
+                                                        const icon = CRUD_MODULES.find(m => m.val === p)?.icon || TOGGLE_MODULES.find(m => m.val === p)?.icon || '🔹';
+                                                        return <span key={p} className="chip">{icon} {label}</span>;
+                                                    })}
+                                                    {uniqueModules.length > 10 && (
+                                                        <span className="chip more">+{uniqueModules.length - 10} more</span>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        );
+                                    })()}
+                                    
+                                    {formErrors.general && (
+                                        <div style={{ color: '#ef4444', padding: '0.75rem', borderRadius: '8px', background: 'rgba(239,68,68,0.1)', marginTop: '1rem' }}>
+                                            ⚠️ {formErrors.general}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Footer Navigation */}
+                        <div className="ma-wizard-footer">
+                            <div>
+                                {wizardStep > 1 && (
+                                    <button type="button" className="ma-btn-back" onClick={prevStep}>
+                                        ← Back
+                                    </button>
+                                )}
                             </div>
-                        </form>
+                            <div style={{ display: 'flex', gap: '1rem' }}>
+                                {wizardStep === 1 && (
+                                    <button type="button" className="btn btn-secondary" onClick={() => { setShowModal(false); setFormErrors({}); setWizardStep(1); }}>
+                                        Cancel
+                                    </button>
+                                )}
+                                {wizardStep < 4 ? (
+                                    <button type="button" className="ma-btn-next" onClick={nextStep}>
+                                        Next →
+                                    </button>
+                                ) : (
+                                    <button type="button" className="ma-btn-create" onClick={handleCreateManager} disabled={submitting}>
+                                        {submitting ? 'Creating...' : '✓ Create Manager'}
+                                    </button>
+                                )}
+                            </div>
+                        </div>
                     </div>
                 </div>
             )}
@@ -751,7 +1068,18 @@ function ManageAdmins() {
                             </div>
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', marginTop: '0.5rem' }}>
                                 {CRUD_MODULES.map(mod => (
-                                    <CrudSelector key={mod.val} mod={mod} perms={editPerms} onChange={setEditPerms} />
+                                    <CrudSelector key={mod.val} mod={mod} perms={editPerms} onChange={perms => {
+                                        let newPerms = [...perms];
+                                        if (mod.val === 'fees') {
+                                            const hasFees = newPerms.includes('fees') || newPerms.some(p => p.startsWith('fees.'));
+                                            if (hasFees && !newPerms.includes('collect_fees')) {
+                                                newPerms.push('collect_fees');
+                                            } else if (!hasFees && newPerms.includes('collect_fees')) {
+                                                newPerms = newPerms.filter(p => p !== 'collect_fees');
+                                            }
+                                        }
+                                        setEditPerms(newPerms);
+                                    }} />
                                 ))}
                             </div>
                         </div>
@@ -770,7 +1098,22 @@ function ManageAdmins() {
                                             background: has ? 'rgba(99,102,241,0.08)' : 'transparent'
                                         }}>
                                             <input type="checkbox" checked={has}
-                                                onChange={() => setEditPerms(p => p.includes(t.val) ? p.filter(x => x !== t.val) : [...p, t.val])}
+                                                onChange={() => setEditPerms(p => {
+                                                    let newPerms = [...p];
+                                                    if (newPerms.includes(t.val)) {
+                                                        newPerms = newPerms.filter(x => x !== t.val);
+                                                        // If Collect Fees is removed, remove all Fee Structure permissions
+                                                        if (t.val === 'collect_fees') {
+                                                            newPerms = newPerms.filter(x => x !== 'fees' && !x.startsWith('fees.'));
+                                                        }
+                                                    } else {
+                                                        newPerms.push(t.val);
+                                                        if (t.val === 'collect_fees' && !newPerms.includes('fees.read') && !newPerms.includes('fees')) {
+                                                            newPerms.push('fees.read');
+                                                        }
+                                                    }
+                                                    return newPerms;
+                                                })}
                                                 style={{ accentColor: '#6366f1', marginTop: '2px' }} />
                                             <div>
                                                 <div style={{ fontWeight: '600', fontSize: '0.85rem' }}>{t.icon} {t.label}</div>

@@ -275,7 +275,7 @@ function FacultySalaryPage() {
               + Add Salary Record
             </button>
           )}
-          <Link to="/admin/finance" className="btn btn-secondary">📊 Finance Dashboard</Link>
+          <Link to="/admin/finance" className="btn btn-secondary">🏦 Finance Dashboard</Link>
           <Link to="/admin/dashboard" className="btn btn-secondary">← Back</Link>
         </div>
       </div>

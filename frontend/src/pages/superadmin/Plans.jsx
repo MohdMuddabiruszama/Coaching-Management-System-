@@ -539,7 +539,7 @@ function Plans() {
                                         {[
                                             { key: 'feature_auto_attendance', label: 'Smart Attendance' },
                                             { key: 'feature_fees', label: 'Fees Management' },
-                                            { key: 'feature_finance', label: 'Finance Dashboard' },
+                                            { key: 'feature_finance', label: '🏦 Finance Dashboard' },
                                             { key: 'feature_salary', label: 'Faculty Salary Management' },
                                             { key: 'feature_announcements', label: 'Announcements' },
                                             { key: 'feature_exams', label: 'Examinations' },
@@ -557,7 +557,7 @@ function Plans() {
                                             { key: 'feature_mobile_app', label: 'Mobile App' },
                                             { key: 'feature_public_page', label: '🌐 Public Web Page' },
                                             { key: 'feature_assignment', label: '📝 Assignments' },
-                                            { key: 'feature_performance_hub', label: '📊 Performance Hub' },
+                                            { key: 'feature_performance_hub', label: '🎯 Performance Hub' },
                                             { key: 'feature_transport', label: '🚌 Finances & Transport' },
                                             { key: 'is_free_trial', label: 'Start Free Trial' },
                                             { key: 'is_popular', label: 'Mark as Popular' },
