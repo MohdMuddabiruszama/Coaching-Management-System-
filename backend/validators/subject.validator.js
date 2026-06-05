@@ -7,6 +7,7 @@ const { idParam, pagination } = require("./common.schemas");
 const createSubject = {
     body: Joi.object({
         name: Joi.string().trim().min(1).max(100).required(),
+        code: Joi.string().trim().max(50).optional().allow("", null),
         class_id: Joi.number().integer().positive().required(),
         faculty_id: Joi.number().integer().positive().optional().allow(null),
         description: Joi.string().max(500).optional().allow("", null),
@@ -17,6 +18,7 @@ const updateSubject = {
     params: idParam,
     body: Joi.object({
         name: Joi.string().trim().min(1).max(100).optional(),
+        code: Joi.string().trim().max(50).optional().allow("", null),
         class_id: Joi.number().integer().positive().optional(),
         faculty_id: Joi.number().integer().positive().optional().allow(null),
         description: Joi.string().max(500).optional().allow("", null),

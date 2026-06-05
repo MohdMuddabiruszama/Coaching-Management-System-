@@ -1,0 +1,528 @@
+/* ── Performance V2 (Student Image 1 Redesign) ──────────────────────────────── */
+.perf-v2-dashboard {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0;
+}
+
+/* Header */
+.perf-v2-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+}
+.perf-v2-header-left {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+.perf-v2-header-icon {
+    font-size: 1.8rem;
+    background: #f8fafc;
+    padding: 10px;
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+}
+.perf-v2-header-titles h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #0f172a;
+}
+.perf-v2-header-titles p {
+    margin: 4px 0 0;
+    font-size: 0.85rem;
+    color: #64748b;
+}
+.perf-v2-header-right {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+}
+.perf-v2-academic-year {
+    display: flex;
+    flex-direction: column;
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    padding: 6px 16px;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+.perf-v2-academic-year span:first-child {
+    color: #64748b;
+    font-weight: 500;
+}
+.perf-v2-academic-year span:last-child {
+    color: #0f172a;
+    font-weight: 700;
+}
+.perf-v2-bell {
+    font-size: 1.2rem;
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 12px;
+    position: relative;
+    cursor: pointer;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+.perf-v2-bell-badge {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    background: #ef4444;
+    color: #fff;
+    font-size: 0.65rem;
+    font-weight: 700;
+    padding: 2px 6px;
+    border-radius: 10px;
+}
+.perf-v2-user-profile {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    padding: 6px 16px 6px 6px;
+    border-radius: 30px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+.perf-v2-avatar {
+    width: 36px;
+    height: 36px;
+    background: #6366f1;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    font-weight: 700;
+    font-size: 1.1rem;
+}
+.perf-v2-user-info {
+    display: flex;
+    flex-direction: column;
+}
+.perf-v2-user-name {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #0f172a;
+}
+.perf-v2-user-role {
+    font-size: 0.75rem;
+    color: #64748b;
+    font-weight: 500;
+}
+
+/* Stats Row */
+.perf-v2-stats-row {
+    display: grid;
+    grid-template-columns: 280px repeat(4, 1fr);
+    gap: 1.25rem;
+    margin-bottom: 1.5rem;
+}
+@media (max-width: 1100px) {
+    .perf-v2-stats-row {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+@media (max-width: 768px) {
+    .perf-v2-stats-row {
+        grid-template-columns: 1fr;
+    }
+}
+
+.perf-v2-stat-card {
+    background: #fff;
+    border-radius: 16px;
+    border: 1px solid #e2e8f0;
+    padding: 1.5rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+    position: relative;
+    overflow: hidden;
+}
+
+.perf-v2-score-card {
+    background: linear-gradient(135deg, #f3f4f6 0%, #ffffff 100%);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+.perf-v2-score-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+}
+.perf-v2-score-title {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #64748b;
+    margin-bottom: 0.5rem;
+}
+.perf-v2-score-val {
+    font-size: 2.2rem;
+    font-weight: 900;
+    color: #0f172a;
+    line-height: 1;
+}
+.perf-v2-score-total {
+    font-size: 1rem;
+    color: #94a3b8;
+    font-weight: 600;
+}
+.perf-v2-grade-badge {
+    background: #a855f7;
+    color: white;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    font-size: 1.2rem;
+    box-shadow: 0 4px 10px rgba(168,85,247,0.3);
+}
+.perf-v2-score-bar-wrap {
+    margin-top: 1rem;
+    margin-bottom: 0.5rem;
+}
+.perf-v2-score-bar-track {
+    height: 6px;
+    background: #e2e8f0;
+    border-radius: 10px;
+    overflow: hidden;
+}
+.perf-v2-score-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #6366f1, #a855f7);
+    border-radius: 10px;
+}
+.perf-v2-score-status {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #10b981;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.perf-v2-standard-card {
+    display: flex;
+    flex-direction: column;
+}
+.perf-v2-card-title {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #64748b;
+    margin-bottom: 0.5rem;
+    display: flex;
+    justify-content: space-between;
+}
+.perf-v2-card-val {
+    font-size: 1.8rem;
+    font-weight: 900;
+    line-height: 1;
+    margin-bottom: 0.5rem;
+}
+.perf-v2-card-sub {
+    font-size: 0.75rem;
+    color: #64748b;
+    font-weight: 500;
+}
+.perf-v2-card-icon-wrapper {
+    position: absolute;
+    right: 1.5rem;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 42px;
+    height: 42px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.3rem;
+}
+.perf-v2-icon-blue { background: #eff6ff; color: #3b82f6; }
+.perf-v2-icon-green { background: #f0fdf4; color: #22c55e; }
+.perf-v2-icon-orange { background: #fff7ed; color: #f97316; }
+.perf-v2-icon-purple { background: #faf5ff; color: #a855f7; }
+.perf-v2-text-blue { color: #3b82f6; }
+.perf-v2-text-green { color: #22c55e; }
+.perf-v2-text-orange { color: #f97316; }
+.perf-v2-text-purple { color: #a855f7; }
+
+/* Alert Banner */
+.perf-v2-alert {
+    background: #fffafa;
+    border: 1px solid #fee2e2;
+    border-radius: 12px;
+    padding: 1rem 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.5rem;
+}
+.perf-v2-alert-left {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+.perf-v2-alert-icon {
+    color: #f59e0b;
+    font-size: 1.2rem;
+}
+.perf-v2-alert-title {
+    font-weight: 700;
+    color: #dc2626;
+    font-size: 0.95rem;
+}
+.perf-v2-alert-text {
+    font-size: 0.85rem;
+    color: #b91c1c;
+    font-weight: 500;
+}
+.perf-v2-alert-arrow {
+    color: #ef4444;
+}
+
+/* Grids */
+.perf-v2-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+@media (max-width: 900px) {
+    .perf-v2-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.perf-v2-panel {
+    background: #fff;
+    border-radius: 16px;
+    border: 1px solid #e2e8f0;
+    padding: 1.5rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+}
+
+.perf-v2-panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+}
+.perf-v2-panel-title {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: #0f172a;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.perf-v2-panel-title-icon {
+    color: #6366f1;
+    font-size: 1.2rem;
+}
+.perf-v2-panel-dropdown {
+    padding: 4px 8px;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+    background: #f8fafc;
+    font-size: 0.8rem;
+    color: #64748b;
+    font-weight: 500;
+}
+
+/* Subject Performance */
+.perf-v2-sub-row {
+    display: grid;
+    grid-template-columns: 120px 1fr 40px;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1.25rem;
+}
+.perf-v2-sub-name {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #1e293b;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.perf-v2-sub-icon-red { color: #ef4444; }
+.perf-v2-sub-icon-blue { color: #3b82f6; }
+.perf-v2-sub-track {
+    position: relative;
+    height: 14px;
+    background: #f1f5f9;
+    border-radius: 20px;
+}
+.perf-v2-sub-fill {
+    height: 100%;
+    border-radius: 20px;
+}
+.perf-v2-sub-fill.red {
+    background: linear-gradient(90deg, #ef4444, #dc2626);
+}
+.perf-v2-sub-fill.blue {
+    background: linear-gradient(90deg, #6366f1, #3b82f6);
+}
+.perf-v2-sub-val {
+    font-size: 0.85rem;
+    font-weight: 700;
+    text-align: right;
+}
+.perf-v2-sub-threshold {
+    position: absolute;
+    top: -25px;
+    bottom: -10px;
+    width: 1px;
+    border-left: 1px dashed #64748b;
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+.perf-v2-sub-threshold span {
+    position: absolute;
+    top: 0;
+    font-size: 0.65rem;
+    color: #64748b;
+    white-space: nowrap;
+    transform: translateX(-50%);
+}
+.perf-v2-sub-legend {
+    display: flex;
+    justify-content: center;
+    gap: 1.5rem;
+    margin-top: 1rem;
+    font-size: 0.75rem;
+    color: #64748b;
+    font-weight: 500;
+}
+.perf-v2-sub-legend span {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.perf-v2-legend-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+}
+
+/* Doughnut & Breakdowns */
+.perf-v2-doughnut-container {
+    height: 200px;
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    margin-top: 2rem;
+}
+.perf-v2-doughnut-inner {
+    position: absolute;
+    text-align: center;
+}
+.perf-v2-doughnut-val {
+    font-size: 1.8rem;
+    font-weight: 900;
+    color: #0f172a;
+    line-height: 1;
+}
+.perf-v2-doughnut-lbl {
+    font-size: 0.75rem;
+    color: #64748b;
+    font-weight: 600;
+}
+.perf-v2-breakdown-legends {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    position: absolute;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+}
+.perf-v2-breakdown-legend {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #334155;
+    gap: 20px;
+}
+.perf-v2-btn-outline {
+    width: 100%;
+    margin-top: 1.5rem;
+    padding: 10px;
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    color: #6366f1;
+    font-weight: 600;
+    font-size: 0.85rem;
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.2s;
+}
+.perf-v2-btn-outline:hover {
+    background: #f8fafc;
+    border-color: #cbd5e1;
+}
+
+/* Attendance Overview Mini Stats */
+.perf-v2-att-stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+.perf-v2-att-stat {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    background: #f8fafc;
+    padding: 12px;
+    border-radius: 12px;
+    border: 1px solid #f1f5f9;
+}
+.perf-v2-att-stat-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    color: white;
+}
+.perf-v2-att-stat-val {
+    font-weight: 800;
+    font-size: 1rem;
+    color: #0f172a;
+    line-height: 1;
+}
+.perf-v2-att-stat-lbl {
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: #64748b;
+    margin-top: 2px;
+}
+.perf-v2-att-stat-pct {
+    font-size: 0.7rem;
+    font-weight: 700;
+}

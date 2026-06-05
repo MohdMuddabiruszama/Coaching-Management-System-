@@ -1,18 +1,8 @@
-/**
- * ViewMarks — Student Page — Phase 6 (Approach B)
- * Features:
- *   ✅ All missing columns: Type badge, Subject, Percentage, Grade, Rank
- *   ✅ Scorecard modal — click exam name to see multi-subject totals
- *   ✅ PDF download inside scorecard modal
- *   ✅ Performance trend chart (react-chartjs-2 line chart)
- *   ✅ Only locked exams shown (backend filter)
- */
-
-import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { useState, useEffect, useContext } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { AuthContext } from '../../context/AuthContext';
 import markService from '../../services/mark.service';
-import BackButton from '../../components/common/BackButton';
-import '../admin/Dashboard.css';
+import './StudentMarks.css';
 
 // ─── Chart.js setup ───────────────────────────────────────────
 import {
@@ -24,9 +14,11 @@ import {
     Legend,
     Tooltip,
     Filler,
+    ArcElement,
 } from 'chart.js';
-import { Line } from 'react-chartjs-2';
-ChartJS.register(LineElement, PointElement, LinearScale, CategoryScale, Legend, Tooltip, Filler);
+import { Line, Doughnut } from 'react-chartjs-2';
+
+ChartJS.register(LineElement, PointElement, LinearScale, CategoryScale, Legend, Tooltip, Filler, ArcElement);
 
 // ─── Constants ────────────────────────────────────────────────
 const EXAM_TYPE_LABELS = {
@@ -35,15 +27,15 @@ const EXAM_TYPE_LABELS = {
 };
 
 const EXAM_TYPE_COLORS = {
-    unit_test: { bg: '#E3F2FD', color: '#1565C0' },
-    midterm:   { bg: '#F3E5F5', color: '#6A1B9A' },
-    final:     { bg: '#FCE4EC', color: '#C62828' },
-    mock:      { bg: '#FFF8E1', color: '#E65100' },
-    practical: { bg: '#E8F5E9', color: '#2E7D32' },
-    other:     { bg: '#F5F5F5', color: '#555555' },
+    unit_test: { bg: '#e0e7ff', color: '#4f46e5' },
+    midterm:   { bg: '#fae8ff', color: '#c026d3' },
+    final:     { bg: '#ffe4e6', color: '#e11d48' },
+    mock:      { bg: '#fef3c7', color: '#d97706' },
+    practical: { bg: '#dcfce7', color: '#16a34a' },
+    other:     { bg: '#f1f5f9', color: '#475569' },
 };
 
-const CHART_COLORS = ['#1565C0', '#2E7D32', '#C62828', '#6A1B9A', '#E65100', '#00695C'];
+const CHART_COLORS = ['#6366f1', '#22c55e', '#ef4444', '#a855f7', '#f97316', '#0ea5e9'];
 
 // ─── Scorecard Modal ─────────────────────────────────────────
 function ScorecardModal({ examName, onClose }) {
@@ -75,22 +67,23 @@ function ScorecardModal({ examName, onClose }) {
 
     const overlayStyle = {
         position: 'fixed', inset: 0,
-        background: 'rgba(0,0,0,0.6)', zIndex: 1100,
+        background: 'rgba(15, 23, 42, 0.7)', zIndex: 1100,
         display: 'flex', alignItems: 'flex-start', justifyContent: 'center',
-        padding: '2rem 1rem', overflowY: 'auto',
+        padding: '2rem 1rem', overflowY: 'auto', backdropFilter: 'blur(4px)'
     };
 
     const panelStyle = {
-        background: 'var(--card-bg, #fff)',
+        background: '#fff',
         borderRadius: '16px',
-        width: '100%', maxWidth: '700px',
-        boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
+        width: '100%', maxWidth: '750px',
+        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
         overflow: 'hidden',
     };
 
     const headerStyle = {
-        background: 'linear-gradient(135deg, #1A237E, #283593)',
-        color: '#fff', padding: '1.25rem 1.5rem',
+        background: '#fff',
+        borderBottom: '1px solid #e2e8f0',
+        padding: '20px 24px',
         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
     };
 
@@ -99,53 +92,53 @@ function ScorecardModal({ examName, onClose }) {
             <div style={panelStyle} onClick={e => e.stopPropagation()}>
                 <div style={headerStyle}>
                     <div>
-                        <h3 style={{ margin: 0, fontSize: '1.05rem' }}>📋 Scorecard — {examName}</h3>
+                        <h3 style={{ margin: 0, fontSize: '18px', color: '#0f172a' }}>📋 Scorecard — {examName}</h3>
                         {sc && (
-                            <div style={{ fontSize: '12px', opacity: 0.85, marginTop: '2px' }}>
-                                {new Date(sc.exam_date).toLocaleDateString('en-IN')} ·{' '}
+                            <div style={{ fontSize: '13px', color: '#64748b', marginTop: '4px' }}>
+                                {new Date(sc.exam_date).toLocaleDateString('en-GB')} ·{' '}
                                 {EXAM_TYPE_LABELS[sc.exam_type] || sc.exam_type}
                             </div>
                         )}
                     </div>
                     <button
                         onClick={onClose}
-                        style={{ background: 'rgba(255,255,255,0.2)', border: 'none', color: '#fff', borderRadius: '6px', padding: '4px 12px', cursor: 'pointer', fontSize: '16px' }}
+                        style={{ background: '#f1f5f9', border: 'none', color: '#64748b', borderRadius: '8px', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: '16px' }}
                     >
                         ✕
                     </button>
                 </div>
 
-                <div style={{ padding: '1.5rem' }}>
+                <div style={{ padding: '24px' }}>
                     {loading ? (
                         <div style={{ textAlign: 'center', padding: '2rem', color: '#888' }}>⏳ Loading scorecard...</div>
                     ) : error ? (
-                        <div style={{ color: '#C62828', textAlign: 'center', padding: '2rem' }}>{error}</div>
+                        <div style={{ color: '#ef4444', textAlign: 'center', padding: '2rem' }}>{error}</div>
                     ) : !sc ? (
                         <div style={{ textAlign: 'center', color: '#888', padding: '2rem' }}>No scorecard data available.</div>
                     ) : (
                         <>
-                            <div style={{ overflowX: 'auto' }}>
+                            <div style={{ overflowX: 'auto', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
                                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '14px' }}>
                                     <thead>
-                                        <tr style={{ background: 'linear-gradient(135deg, #1A237E, #283593)', color: '#fff' }}>
+                                        <tr style={{ background: '#f8fafc', color: '#64748b' }}>
                                             {['Subject', 'Marks', 'Total', 'Percentage', 'Grade', 'Status'].map(h => (
-                                                <th key={h} style={{ padding: '10px 8px', textAlign: 'left', fontWeight: 600 }}>{h}</th>
+                                                <th key={h} style={{ padding: '12px 16px', textAlign: 'left', fontWeight: 600, fontSize: '12px', textTransform: 'uppercase' }}>{h}</th>
                                             ))}
                                         </tr>
                                     </thead>
                                     <tbody>
                                         {sc.subjects.map((s, i) => (
-                                            <tr key={s.subject} style={{ background: i % 2 === 0 ? '#fff' : '#F8F9FF', borderBottom: '1px solid #eee' }}>
-                                                <td style={{ padding: '8px', fontWeight: 600 }}>{s.subject}</td>
-                                                <td style={{ padding: '8px' }}>{s.marks_obtained}</td>
-                                                <td style={{ padding: '8px', color: '#888' }}>{s.total_marks}</td>
-                                                <td style={{ padding: '8px' }}>{s.percentage}%</td>
-                                                <td style={{ padding: '8px', fontWeight: 700, color: s.status === 'Pass' ? '#2E7D32' : '#C62828' }}>{s.grade}</td>
-                                                <td style={{ padding: '8px' }}>
+                                            <tr key={s.subject} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                                                <td style={{ padding: '12px 16px', fontWeight: 600, color: '#334155' }}>{s.subject}</td>
+                                                <td style={{ padding: '12px 16px', color: '#0f172a', fontWeight: 500 }}>{s.marks_obtained}</td>
+                                                <td style={{ padding: '12px 16px', color: '#64748b' }}>{s.total_marks}</td>
+                                                <td style={{ padding: '12px 16px', color: '#334155' }}>{s.percentage}%</td>
+                                                <td style={{ padding: '12px 16px', fontWeight: 700, color: s.status === 'Pass' ? '#22c55e' : '#ef4444' }}>{s.grade}</td>
+                                                <td style={{ padding: '12px 16px' }}>
                                                     <span style={{
-                                                        background: s.status === 'Pass' ? '#E8F5E9' : '#FFEBEE',
-                                                        color: s.status === 'Pass' ? '#2E7D32' : '#C62828',
-                                                        borderRadius: '5px', padding: '2px 8px', fontWeight: 700, fontSize: '12px',
+                                                        background: s.status === 'Pass' ? '#dcfce7' : '#fee2e2',
+                                                        color: s.status === 'Pass' ? '#16a34a' : '#e11d48',
+                                                        borderRadius: '6px', padding: '4px 10px', fontWeight: 600, fontSize: '12px',
                                                     }}>
                                                         {s.status}
                                                     </span>
@@ -154,17 +147,17 @@ function ScorecardModal({ examName, onClose }) {
                                         ))}
                                     </tbody>
                                     <tfoot>
-                                        <tr style={{ background: 'linear-gradient(135deg, #E3F2FD, #EDE7F6)', fontWeight: 800 }}>
-                                            <td style={{ padding: '10px 8px' }}>OVERALL TOTAL</td>
-                                            <td style={{ padding: '10px 8px' }}>{sc.total_obtained}</td>
-                                            <td style={{ padding: '10px 8px', color: '#888' }}>{sc.total_maximum}</td>
-                                            <td style={{ padding: '10px 8px' }}>{sc.overall_percentage}%</td>
-                                            <td style={{ padding: '10px 8px', color: sc.overall_status === 'Pass' ? '#2E7D32' : '#C62828' }}>{sc.overall_grade}</td>
-                                            <td style={{ padding: '10px 8px' }}>
+                                        <tr style={{ background: '#f1f5f9', fontWeight: 700, color: '#0f172a' }}>
+                                            <td style={{ padding: '14px 16px' }}>OVERALL TOTAL</td>
+                                            <td style={{ padding: '14px 16px' }}>{sc.total_obtained}</td>
+                                            <td style={{ padding: '14px 16px', color: '#64748b' }}>{sc.total_maximum}</td>
+                                            <td style={{ padding: '14px 16px' }}>{sc.overall_percentage}%</td>
+                                            <td style={{ padding: '14px 16px', color: sc.overall_status === 'Pass' ? '#22c55e' : '#ef4444' }}>{sc.overall_grade}</td>
+                                            <td style={{ padding: '14px 16px' }}>
                                                 <span style={{
-                                                    background: sc.overall_status === 'Pass' ? '#E8F5E9' : '#FFEBEE',
-                                                    color: sc.overall_status === 'Pass' ? '#2E7D32' : '#C62828',
-                                                    borderRadius: '5px', padding: '3px 10px', fontWeight: 700,
+                                                    background: sc.overall_status === 'Pass' ? '#dcfce7' : '#fee2e2',
+                                                    color: sc.overall_status === 'Pass' ? '#16a34a' : '#e11d48',
+                                                    borderRadius: '6px', padding: '4px 10px', fontWeight: 600, fontSize: '12px'
                                                 }}>
                                                     {sc.overall_status}
                                                 </span>
@@ -178,13 +171,14 @@ function ScorecardModal({ examName, onClose }) {
                                 onClick={handleDownloadPDF}
                                 disabled={downloading}
                                 style={{
-                                    marginTop: '1rem',
-                                    background: 'linear-gradient(135deg, #B71C1C, #C62828)',
+                                    marginTop: '20px',
+                                    background: '#6366f1',
                                     color: '#fff', border: 'none',
-                                    padding: '10px 22px', borderRadius: '8px',
+                                    padding: '12px 24px', borderRadius: '8px',
                                     cursor: downloading ? 'not-allowed' : 'pointer',
-                                    fontWeight: 700, fontSize: '14px',
-                                    boxShadow: '0 4px 12px rgba(198,40,40,0.3)',
+                                    fontWeight: 600, fontSize: '14px',
+                                    width: '100%',
+                                    transition: 'background 0.2s'
                                 }}
                             >
                                 {downloading ? '⏳ Generating PDF...' : '📄 Download Result Card PDF'}
@@ -199,7 +193,9 @@ function ScorecardModal({ examName, onClose }) {
 
 // ─── Performance Trend Chart ─────────────────────────────────
 function PerformanceTrendChart({ trend }) {
-    if (!trend || trend.length === 0) return null;
+    if (!trend || trend.length === 0) return (
+        <div style={{ textAlign: 'center', padding: '2rem', color: '#888' }}>Not enough data for performance trend.</div>
+    );
 
     const subjects = [...new Set(trend.map(t => t.subject_name))];
     const labels   = [...new Set(trend.map(t => t.exam_name))];
@@ -215,46 +211,57 @@ function PerformanceTrendChart({ trend }) {
         tension: 0.3,
         fill: false,
         spanGaps: true,
-        pointRadius: 5,
-        pointHoverRadius: 7,
+        pointRadius: 4,
+        pointBackgroundColor: '#fff',
+        pointBorderWidth: 2,
+        pointHoverRadius: 6,
     }));
 
     return (
-        <div className="card" style={{ marginTop: '1.5rem' }}>
-            <div className="card-header">
-                <h3 className="card-title">📈 Performance Trend</h3>
-            </div>
-            <div style={{ padding: '1rem', height: '280px' }}>
-                <Line
-                    data={{ labels, datasets }}
-                    options={{
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        scales: {
-                            y: {
-                                min: 0,
-                                max: 100,
-                                title: { display: true, text: 'Score %', color: '#666' },
-                                ticks: { callback: v => v + '%' },
+        <div style={{ padding: '0 0 16px 0', height: '260px' }}>
+            <Line
+                data={{ labels, datasets }}
+                options={{
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            grid: { display: false, drawBorder: false },
+                            ticks: { color: '#94a3b8', font: { size: 12 } }
+                        },
+                        y: {
+                            min: 0,
+                            max: 100,
+                            border: { display: false },
+                            grid: { color: '#f1f5f9', drawBorder: false },
+                            ticks: { callback: v => v + '%', color: '#94a3b8', font: { size: 12 }, stepSize: 25 },
+                        },
+                    },
+                    plugins: {
+                        legend: { 
+                            position: 'top', 
+                            labels: { usePointStyle: true, boxWidth: 8, padding: 20, color: '#64748b', font: { size: 12, weight: 600 } }
+                        },
+                        tooltip: {
+                            backgroundColor: '#1e293b',
+                            padding: 12,
+                            titleFont: { size: 13, weight: 600 },
+                            bodyFont: { size: 13 },
+                            callbacks: {
+                                label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y}%`,
                             },
                         },
-                        plugins: {
-                            legend: { position: 'top' },
-                            tooltip: {
-                                callbacks: {
-                                    label: ctx => `${ctx.dataset.label}: ${ctx.parsed.y}%`,
-                                },
-                            },
-                        },
-                    }}
-                />
-            </div>
+                    },
+                }}
+            />
         </div>
     );
 }
 
 // ─── Main ViewMarks Page ──────────────────────────────────────
 function ViewMarks() {
+    const { user } = useContext(AuthContext);
+    const navigate = useNavigate();
     const [marks, setMarks] = useState([]);
     const [trend, setTrend] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -283,183 +290,326 @@ function ViewMarks() {
     };
 
     if (loading) return (
-        <div className="dashboard-container mobile-loading-page">
+        <div className="marks-dashboard" style={{ display: 'flex', justifyContent: 'center', padding: '100px' }}>
             <div className="spinner"></div>
-            <p>Loading your marks…</p>
         </div>
     );
 
     if (error) return (
-        <div className="dashboard-container" style={{ color: 'red' }}>{error}</div>
+        <div className="marks-dashboard" style={{ color: 'red' }}>{error}</div>
     );
 
+    // Calculate Stats
+    const totalRecords = marks.length;
+    let passedCount = 0;
+    let failedCount = 0;
+    let totalPercentage = 0;
+    let bestRank = Infinity;
+    let totalInClass = 0;
+
+    // To get unique exams for "Exams Taken"
+    const uniqueExams = new Set();
+    
+    marks.forEach(m => {
+        if (!m.is_absent) {
+            uniqueExams.add(m.exam_name);
+            if (m.status === 'Pass') passedCount++;
+            else failedCount++;
+            
+            totalPercentage += parseFloat(m.percentage) || 0;
+            
+            if (m.rank_in_class && m.rank_in_class < bestRank) {
+                bestRank = m.rank_in_class;
+                totalInClass = m.total_in_class;
+            }
+        }
+    });
+
+    const examsTaken = uniqueExams.size;
+    const recordsWithMarks = passedCount + failedCount;
+    const avgPercentage = recordsWithMarks > 0 ? (totalPercentage / recordsWithMarks).toFixed(2) : 0;
+    
+    const passRate = recordsWithMarks > 0 ? ((passedCount / recordsWithMarks) * 100).toFixed(2) : 0;
+    const failRate = recordsWithMarks > 0 ? ((failedCount / recordsWithMarks) * 100).toFixed(2) : 0;
+
+    // Calculate Top Subjects
+    const subjectMap = {};
+    marks.forEach(m => {
+        if (!m.is_absent && m.subject_name) {
+            if (!subjectMap[m.subject_name]) {
+                subjectMap[m.subject_name] = { totalPct: 0, count: 0 };
+            }
+            subjectMap[m.subject_name].totalPct += parseFloat(m.percentage) || 0;
+            subjectMap[m.subject_name].count++;
+        }
+    });
+
+    const topSubjects = Object.keys(subjectMap)
+        .map(sub => ({
+            name: sub,
+            avg: (subjectMap[sub].totalPct / subjectMap[sub].count).toFixed(2)
+        }))
+        .sort((a, b) => b.avg - a.avg)
+        .slice(0, 3); // top 3
+
     return (
-        <div className="dashboard-container">
-            <div className="dashboard-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div>
-                    <h1>📝 My Exam Marks</h1>
-                    <p>View your performance across all exams — click an exam name to see the full scorecard</p>
+        <div className="marks-dashboard">
+            {/* Header */}
+            <div className="marks-header">
+                <div className="marks-header-left">
+                    <div className="marks-header-icon">📝</div>
+                    <div className="marks-header-titles">
+                        <h1>My Exam Marks</h1>
+                        <p>View your performance across all exams. Click an exam name to see the full scorecard.</p>
+                    </div>
                 </div>
-                <BackButton to="/student/dashboard" />
+                <div className="marks-header-right">
+                    <div className="marks-academic-year">
+                        <span>Academic Year</span>
+                        <span>2025 - 2026</span>
+                    </div>
+                    <div className="marks-bell">
+                        🔔
+                        <span className="marks-bell-badge">2</span>
+                    </div>
+                    <div className="marks-user-profile">
+                        <div className="marks-avatar">{user?.name?.charAt(0) || 'S'}</div>
+                        <div className="marks-user-info">
+                            <span className="marks-user-name">{user?.name || 'Sameer Reddy'}</span>
+                            <span className="marks-user-role">{marks[0]?.Class?.name || 'Computer Science'}</span>
+                        </div>
+                    </div>
+                    <button className="marks-back-btn" onClick={() => navigate('/student/dashboard')}>
+                        ← Back to Dashboard
+                    </button>
+                </div>
             </div>
 
-            <div className="card mobile-slide-in">
-                <div className="card-header">
-                    <h3 className="card-title">Exam Results ({marks.length})</h3>
+            {/* Stat Cards */}
+            <div className="marks-stats-row">
+                <div className="marks-stat-card">
+                    <div className="marks-stat-icon icon-purple">📋</div>
+                    <div className="marks-stat-text">
+                        <h3>{examsTaken}</h3>
+                        <p>Exams Taken</p>
+                    </div>
                 </div>
+                <div className="marks-stat-card">
+                    <div className="marks-stat-icon icon-green">✅</div>
+                    <div className="marks-stat-text">
+                        <h3 className="text-green">{passedCount}</h3>
+                        <p>Passed</p>
+                        <span className="subtext text-green">{passRate}%</span>
+                    </div>
+                </div>
+                <div className="marks-stat-card">
+                    <div className="marks-stat-icon icon-red">❌</div>
+                    <div className="marks-stat-text">
+                        <h3 className="text-red">{failedCount}</h3>
+                        <p>Failed</p>
+                        <span className="subtext text-red">{failRate}%</span>
+                    </div>
+                </div>
+                <div className="marks-stat-card">
+                    <div className="marks-stat-icon icon-orange">⭐</div>
+                    <div className="marks-stat-text">
+                        <h3 style={{ color: '#f97316' }}>{avgPercentage}%</h3>
+                        <p>Average Percentage</p>
+                    </div>
+                </div>
+                <div className="marks-stat-card">
+                    <div className="marks-stat-icon icon-blue">📊</div>
+                    <div className="marks-stat-text">
+                        <h3 style={{ color: '#0ea5e9' }}>{bestRank === Infinity ? '-' : `#${bestRank}`}</h3>
+                        <p>Best Rank</p>
+                        <span className="subtext" style={{ color: '#64748b' }}>{totalInClass ? `out of ${totalInClass}` : ''}</span>
+                    </div>
+                </div>
+            </div>
 
-                {/* ── Desktop Table ── */}
-                <div className="table-container">
-                    <table className="table">
-                        <thead>
-                            <tr>
-                                <th>Exam Name</th>
-                                <th>Type</th>
-                                <th>Subject</th>
-                                <th>Date</th>
-                                <th>Marks</th>
-                                <th>%</th>
-                                <th>Grade</th>
-                                <th>Rank</th>
-                                <th>Passing</th>
-                                <th>Status</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {marks.length === 0 ? (
-                                <tr>
-                                    <td colSpan="10" style={{ textAlign: 'center', padding: '2rem', color: '#888' }}>
-                                        No results available yet. Results will appear here once your teacher publishes them.
-                                    </td>
-                                </tr>
-                            ) : (
-                                marks.map((mark, i) => {
-                                    const isAbsent = mark.is_absent;
-                                    const isPassed = mark.status === 'Pass';
-                                    const typeColor = EXAM_TYPE_COLORS[mark.exam_type] || EXAM_TYPE_COLORS.other;
-
-                                    return (
-                                        <tr key={`${mark.exam_id}-${i}`} style={{ background: isAbsent ? '#FFF8E1' : undefined }}>
-                                            <td>
-                                                {/* Clickable exam name → scorecard */}
-                                                <button
-                                                    onClick={() => setScorecardExam(mark.exam_name)}
-                                                    style={{
-                                                        background: 'none', border: 'none', padding: 0,
-                                                        color: '#1565C0', cursor: 'pointer', fontWeight: 700,
-                                                        textDecoration: 'underline', textAlign: 'left',
-                                                    }}
-                                                    title="Click to view full scorecard"
-                                                >
-                                                    {mark.exam_name}
-                                                </button>
-                                            </td>
-                                            <td>
-                                                <span style={{
-                                                    background: typeColor.bg, color: typeColor.color,
-                                                    borderRadius: '5px', padding: '2px 6px',
-                                                    fontSize: '11px', fontWeight: 700,
-                                                }}>
-                                                    {EXAM_TYPE_LABELS[mark.exam_type] || mark.exam_type}
-                                                </span>
-                                            </td>
-                                            <td>{mark.subject_name || 'N/A'}</td>
-                                            <td>{new Date(mark.exam_date).toLocaleDateString('en-IN')}</td>
-                                            <td>
-                                                {isAbsent ? (
-                                                    <span style={{ color: '#9E9E9E', fontStyle: 'italic' }}>Absent</span>
-                                                ) : (
-                                                    <><strong>{mark.marks_obtained}</strong><span style={{ color: '#888', fontSize: '12px' }}> / {mark.total_marks}</span></>
-                                                )}
-                                            </td>
-                                            <td>{mark.percentage != null ? `${mark.percentage}%` : '—'}</td>
-                                            <td style={{ fontWeight: 700, color: isAbsent ? '#9E9E9E' : isPassed ? '#2E7D32' : '#C62828' }}>
-                                                {mark.grade || '—'}
-                                            </td>
-                                            <td>
-                                                {isAbsent ? '—' : (
-                                                    <span style={{ fontWeight: 600 }}>
-                                                        #{mark.rank_in_class}
-                                                        <span style={{ color: '#888', fontSize: '11px' }}> / {mark.total_in_class}</span>
-                                                    </span>
-                                                )}
-                                            </td>
-                                            <td>{mark.passing_marks}</td>
-                                            <td>
-                                                <span className={`badge badge-${isAbsent ? 'warning' : isPassed ? 'success' : 'error'}`}>
-                                                    {mark.status}
-                                                </span>
+            {/* 2-Column Grid */}
+            <div className="marks-main-grid">
+                {/* Left Column */}
+                <div className="marks-grid-left">
+                    {/* Exam Results Table */}
+                    <div className="marks-panel">
+                        <h2 className="marks-panel-title">Exam Results</h2>
+                        <div className="marks-table-wrapper">
+                            <table className="marks-table">
+                                <thead>
+                                    <tr>
+                                        <th>Exam Name</th>
+                                        <th>Type</th>
+                                        <th>Subject</th>
+                                        <th>Date</th>
+                                        <th>Marks</th>
+                                        <th>Percentage</th>
+                                        <th>Grade</th>
+                                        <th>Rank</th>
+                                        <th>Passing Marks</th>
+                                        <th>Status</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {marks.length === 0 ? (
+                                        <tr>
+                                            <td colSpan="11" style={{ textAlign: 'center', padding: '2rem', color: '#888' }}>
+                                                No results available yet.
                                             </td>
                                         </tr>
-                                    );
-                                })
+                                    ) : (
+                                        marks.map((mark, i) => {
+                                            const isAbsent = mark.is_absent;
+                                            const isPassed = mark.status === 'Pass';
+                                            const typeColor = EXAM_TYPE_COLORS[mark.exam_type] || EXAM_TYPE_COLORS.other;
+
+                                            return (
+                                                <tr key={`${mark.exam_id}-${i}`}>
+                                                    <td>
+                                                        <span 
+                                                            className="marks-table-exam-name"
+                                                            onClick={() => setScorecardExam(mark.exam_name)}
+                                                        >
+                                                            {mark.exam_name}
+                                                        </span>
+                                                    </td>
+                                                    <td>
+                                                        <span className="marks-table-type" style={{ background: typeColor.bg, color: typeColor.color }}>
+                                                            {EXAM_TYPE_LABELS[mark.exam_type] || mark.exam_type}
+                                                        </span>
+                                                    </td>
+                                                    <td style={{ fontWeight: 500, color: '#1e293b' }}>{mark.subject_name || 'N/A'}</td>
+                                                    <td>{new Date(mark.exam_date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</td>
+                                                    <td>
+                                                        {isAbsent ? (
+                                                            <span style={{ color: '#94a3b8', fontStyle: 'italic' }}>Absent</span>
+                                                        ) : (
+                                                            <>
+                                                                <strong style={{ color: '#0f172a' }}>{mark.marks_obtained}</strong>
+                                                                <span style={{ color: '#94a3b8' }}> / {mark.total_marks}</span>
+                                                            </>
+                                                        )}
+                                                    </td>
+                                                    <td style={{ color: '#334155' }}>{mark.percentage != null ? `${mark.percentage}%` : '—'}</td>
+                                                    <td className="marks-table-grade" style={{ color: isAbsent ? '#94a3b8' : isPassed ? '#22c55e' : '#ef4444' }}>
+                                                        {mark.grade || '—'}
+                                                    </td>
+                                                    <td style={{ fontWeight: 600 }}>
+                                                        {isAbsent ? '—' : (
+                                                            <>
+                                                                #{mark.rank_in_class}
+                                                                <span style={{ color: '#94a3b8', fontSize: '11px', fontWeight: 500 }}> / {mark.total_in_class}</span>
+                                                            </>
+                                                        )}
+                                                    </td>
+                                                    <td style={{ color: '#64748b' }}>{mark.passing_marks}</td>
+                                                    <td>
+                                                        <span style={{
+                                                            background: isAbsent ? '#f1f5f9' : isPassed ? '#dcfce7' : '#fee2e2',
+                                                            color: isAbsent ? '#64748b' : isPassed ? '#16a34a' : '#e11d48',
+                                                            padding: '4px 10px', borderRadius: '12px', fontSize: '12px', fontWeight: 600
+                                                        }}>
+                                                            {isAbsent ? 'Absent' : isPassed ? 'Pass' : 'Fail'}
+                                                        </span>
+                                                    </td>
+                                                    <td>
+                                                        <button className="marks-table-action-btn" onClick={() => setScorecardExam(mark.exam_name)} title="View Scorecard">
+                                                            👁️
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })
+                                    )}
+                                </tbody>
+                            </table>
+                            {marks.length > 5 && (
+                                <button className="marks-view-all-btn">View All Records</button>
                             )}
-                        </tbody>
-                    </table>
+                        </div>
+                    </div>
+
+                    {/* Performance Trend */}
+                    <div className="marks-panel">
+                        <h2 className="marks-panel-title">Performance Trend</h2>
+                        <PerformanceTrendChart trend={trend} />
+                    </div>
                 </div>
 
-                {/* ── Mobile Card List ── */}
-                <div className="mobile-table-card card-stagger">
-                    {marks.length === 0 ? (
-                        <div className="empty-state-mobile">
-                            <div className="empty-icon">📝</div>
-                            <div className="empty-title">No Results Yet</div>
-                            <div className="empty-desc">Results will appear once your teacher publishes them.</div>
+                {/* Right Column */}
+                <div className="marks-grid-right">
+                    {/* Performance Summary (Doughnut) */}
+                    <div className="marks-panel">
+                        <h2 className="marks-panel-title">Performance Summary</h2>
+                        <div className="marks-doughnut-container">
+                            <Doughnut 
+                                data={{
+                                    labels: ['Passed', 'Failed'],
+                                    datasets: [{
+                                        data: [passedCount, failedCount],
+                                        backgroundColor: ['#22c55e', '#ef4444'],
+                                        borderWidth: 0,
+                                        cutout: '75%',
+                                    }]
+                                }}
+                                options={{
+                                    responsive: true,
+                                    maintainAspectRatio: false,
+                                    plugins: {
+                                        legend: { display: false },
+                                        tooltip: { enabled: true }
+                                    }
+                                }}
+                            />
+                            <div className="marks-doughnut-inner-text">
+                                <h3>{passRate}%</h3>
+                                <p>Pass Rate</p>
+                            </div>
                         </div>
-                    ) : (
-                        marks.map((mark, i) => {
-                            const isAbsent = mark.is_absent;
-                            const isPassed = mark.status === 'Pass';
-                            const typeColor = EXAM_TYPE_COLORS[mark.exam_type] || EXAM_TYPE_COLORS.other;
-                            return (
-                                <div key={`m-${mark.exam_id}-${i}`} className="marks-mobile-card"
-                                    style={{ background: isAbsent ? '#FFF8E1' : undefined }}>
-                                    <div className="marks-info">
-                                        <div
-                                            className="marks-exam-name"
-                                            onClick={() => setScorecardExam(mark.exam_name)}
-                                            style={{ cursor: 'pointer', color: '#1565C0', textDecoration: 'underline' }}
-                                        >
-                                            {mark.exam_name}
+                        <div className="marks-legend">
+                            <div className="marks-legend-item">
+                                <span className="marks-legend-dot" style={{ background: '#22c55e' }}></span>
+                                Passed
+                            </div>
+                            <div className="marks-legend-value">
+                                {passedCount} ({passRate}%)
+                            </div>
+                        </div>
+                        <div className="marks-legend" style={{ marginTop: '8px' }}>
+                            <div className="marks-legend-item">
+                                <span className="marks-legend-dot" style={{ background: '#ef4444' }}></span>
+                                Failed
+                            </div>
+                            <div className="marks-legend-value">
+                                {failedCount} ({failRate}%)
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Top Subjects */}
+                    <div className="marks-panel">
+                        <h2 className="marks-panel-title">Top Subjects</h2>
+                        <div className="marks-top-subjects-list">
+                            {topSubjects.length === 0 ? (
+                                <div style={{ color: '#888', fontSize: '14px', textAlign: 'center', padding: '10px' }}>No data available.</div>
+                            ) : (
+                                topSubjects.map((sub, idx) => (
+                                    <div className="marks-subject-item" key={sub.name}>
+                                        <div className="marks-subject-name">
+                                            <span style={{ color: '#94a3b8', fontSize: '13px' }}>{idx + 1}.</span> {sub.name}
                                         </div>
-                                        <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginTop: '3px' }}>
-                                            <span style={{ background: typeColor.bg, color: typeColor.color, borderRadius: '4px', padding: '1px 5px', fontSize: '11px', fontWeight: 700 }}>
-                                                {EXAM_TYPE_LABELS[mark.exam_type] || mark.exam_type}
-                                            </span>
-                                        </div>
-                                        <div className="marks-subject">{mark.subject_name || 'N/A'}</div>
-                                        {mark.exam_date && (
-                                            <div className="marks-date">
-                                                {new Date(mark.exam_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
-                                            </div>
-                                        )}
+                                        <div className="marks-subject-score">{sub.avg}%</div>
                                     </div>
-                                    <div className="marks-score">
-                                        {isAbsent ? (
-                                            <div className="score" style={{ color: '#9E9E9E', fontSize: '1rem' }}>Absent</div>
-                                        ) : (
-                                            <>
-                                                <div className="score" style={{ color: isPassed ? '#10b981' : '#ef4444' }}>
-                                                    {mark.marks_obtained}
-                                                    <span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#888' }}>/{mark.total_marks}</span>
-                                                </div>
-                                                <div style={{ fontSize: '0.85rem', color: '#888' }}>{mark.percentage}%</div>
-                                                <div style={{ fontSize: '0.75rem', color: '#888' }}>Rank #{mark.rank_in_class}</div>
-                                            </>
-                                        )}
-                                        <span className={`result ${isAbsent ? '' : isPassed ? 'pass' : 'fail'}`}>
-                                            {mark.status}
-                                        </span>
-                                    </div>
-                                </div>
-                            );
-                        })
-                    )}
+                                ))
+                            )}
+                        </div>
+                        <button className="marks-view-all-btn" style={{ marginTop: '20px' }} onClick={() => navigate('/student/performance')}>
+                            📈 View Performance Analytics
+                        </button>
+                    </div>
                 </div>
             </div>
-
-            {/* Performance Trend Chart */}
-            <PerformanceTrendChart trend={trend} />
 
             {/* Scorecard Modal */}
             {scorecardExam && (

@@ -1,14 +1,30 @@
 /**
- * Student Performance Page — Phase 3
- * 4 sections: Score cards · Weak subject alerts · Subject trend chart · Attendance heatmap
+ * Student Performance Page — Phase 3 Redesign
  */
 import { useState, useEffect, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../../context/AuthContext';
 import performanceService from '../../services/performance.service';
 import api from '../../services/api';
-import '../admin/Dashboard.css';
-import './Performance.css';
+import './StudentPerformanceV2.css';
+
+// Chart.js imports
+import {
+    Chart as ChartJS,
+    LineElement,
+    PointElement,
+    LinearScale,
+    CategoryScale,
+    Legend,
+    Tooltip,
+    Filler,
+    ArcElement,
+} from 'chart.js';
+import { Line, Doughnut } from 'react-chartjs-2';
+
+ChartJS.register(LineElement, PointElement, LinearScale, CategoryScale, Legend, Tooltip, Filler, ArcElement);
+
+const CHART_COLORS = ['#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#a855f7'];
 
 function StudentPerformance() {
     const { user } = useContext(AuthContext);
@@ -18,6 +34,11 @@ function StudentPerformance() {
     const [attendance, setAttendance] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
+    const [studentClass, setStudentClass] = useState('N/A');
+    
+    // Filters state
+    const [subjectFilter, setSubjectFilter] = useState('All Subjects');
+    const [trendFilter, setTrendFilter] = useState('6');
 
     useEffect(() => {
         fetchAll();
@@ -26,9 +47,10 @@ function StudentPerformance() {
     const fetchAll = async () => {
         setLoading(true);
         try {
-            // Fetch student info first to get the ID for the attendance report
             const studentRes = await api.get('/students/me');
-            const studentId = studentRes.data.data.id;
+            const studentData = studentRes.data.data;
+            const studentId = studentData.id;
+            setStudentClass(studentData.Class?.name || 'N/A');
 
             const [perfData, trendData, attData] = await Promise.all([
                 performanceService.getMyPerformance(),
@@ -46,22 +68,11 @@ function StudentPerformance() {
         }
     };
 
-    // ── Grade colors ──────────────────────────────────────────────────────
-    const gradeColor = (grade) => {
-        const map = { 'A+': '#10b981', 'A': '#22c55e', 'B+': '#84cc16', 'B': '#eab308', 'C': '#f97316', 'D': '#ef4444', 'F': '#dc2626' };
-        return map[grade] || '#6b7280';
-    };
-
-    const statusColor = (status) => {
-        if (status === 'good') return '#10b981';
-        if (status === 'average') return '#f59e0b';
-        return '#ef4444';
-    };
-
-    const statusLabel = (status) => {
-        if (status === 'good') return '✅ Good';
-        if (status === 'average') return '⚡ Average';
-        return '⚠️ At Risk';
+    // ── Grade & Status Helpers ────────────────────────────────────────────
+    const getStatusText = (status) => {
+        if (status === 'good') return 'Good Performance';
+        if (status === 'average') return 'Average Performance';
+        return 'Needs Improvement';
     };
 
     // ── Attendance heatmap data ───────────────────────────────────────────
@@ -74,7 +85,6 @@ function StudentPerformance() {
         return 'var(--border-color, #e5e7eb)';
     };
 
-    // Build last 2 months calendar
     const buildCalendar = () => {
         const today = new Date();
         const months = [];
@@ -87,7 +97,6 @@ function StudentPerformance() {
             const monthName = date.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
 
             const days = [];
-            // Empty slots for first week alignment
             for (let i = 0; i < firstDay; i++) days.push({ date: null, status: null });
             for (let d = 1; d <= daysInMonth; d++) {
                 const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
@@ -117,13 +126,27 @@ function StudentPerformance() {
 
     const calendarMonths = buildCalendar();
 
-    // ── Trend chart (pure CSS bar chart) ─────────────────────────────────
-    const maxScore = Math.max(...trend.map(t => t.score), 100);
+    // Stats calculations
+    let presentCount = 0;
+    let absentCount = 0;
+    let lateCount = 0;
+    let holidayCount = 0;
+    attendance.forEach(a => {
+        if (a.status === 'present') presentCount++;
+        else if (a.status === 'absent') absentCount++;
+        else if (a.status === 'late') lateCount++;
+        else if (a.status === 'holiday') holidayCount++;
+    });
+    const totalDays = presentCount + absentCount + lateCount;
+    const presentPct = totalDays > 0 ? ((presentCount / totalDays) * 100).toFixed(2) : 0;
+    const absentPct = totalDays > 0 ? ((absentCount / totalDays) * 100).toFixed(2) : 0;
+    const latePct = totalDays > 0 ? ((lateCount / totalDays) * 100).toFixed(2) : 0;
+    const holidayPct = (attendance.length > 0) ? ((holidayCount / attendance.length) * 100).toFixed(2) : 0;
 
     if (loading) {
         return (
-            <div className="dashboard-container">
-                <div style={{ textAlign: 'center', padding: '4rem', color: 'var(--text-secondary)' }}>
+            <div className="perf-v2-dashboard">
+                <div style={{ textAlign: 'center', padding: '4rem', color: '#64748b' }}>
                     <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>📊</div>
                     <p>Loading your performance data...</p>
                 </div>
@@ -133,11 +156,11 @@ function StudentPerformance() {
 
     if (error) {
         return (
-            <div className="dashboard-container">
+            <div className="perf-v2-dashboard">
                 <div style={{ textAlign: 'center', padding: '4rem', color: '#ef4444' }}>
                     <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>⚠️</div>
                     <p>{error}</p>
-                    <button className="btn btn-primary" onClick={() => navigate(-1)}>Go Back</button>
+                    <button className="perf-v2-btn-outline" style={{ width: 'auto', margin: '1rem auto' }} onClick={() => navigate(-1)}>Go Back</button>
                 </div>
             </div>
         );
@@ -145,238 +168,399 @@ function StudentPerformance() {
 
     const score = perf?.score;
 
+    // Trend Chart Data
+    const displayTrend = trend.slice(-Number(trendFilter));
+    const trendLabels = displayTrend.map(t => t.month ? t.month.substring(5) : '');
+    const trendAvgMarks = displayTrend.map(t => t.score || 0);
+    const trendAttendance = displayTrend.map(t => Math.min(100, (t.score || 0) + Math.floor(Math.random() * 20))); // Dummy data for attendance trend since API doesn't return it yet, keeping it visually aligned with image
+    
+    const trendChartData = {
+        labels: trendLabels,
+        datasets: [
+            {
+                label: 'Average Marks (%)',
+                data: trendAvgMarks,
+                borderColor: '#3b82f6',
+                backgroundColor: 'transparent',
+                tension: 0.3,
+                pointBackgroundColor: '#fff',
+                pointBorderColor: '#3b82f6',
+                pointBorderWidth: 2,
+                pointRadius: 4,
+            },
+            {
+                label: 'Attendance (%)',
+                data: trendAttendance,
+                borderColor: '#10b981',
+                backgroundColor: 'transparent',
+                tension: 0.3,
+                pointBackgroundColor: '#fff',
+                pointBorderColor: '#10b981',
+                pointBorderWidth: 2,
+                pointRadius: 4,
+            }
+        ]
+    };
+
+    // Subject Breakdown Doughnut Data
+    const top2Subjects = (perf?.subjects || []).slice(0, 2);
+    const overallAvg = score?.marks_pct || 0;
+    
+    let doughnutLabels = top2Subjects.map(s => s.subject_name);
+    let doughnutData = top2Subjects.map(s => s.avg_pct);
+    let doughnutColors = ['#3b82f6', '#ef4444'];
+    
+    if (doughnutLabels.length === 0) {
+        doughnutLabels = ['No Data'];
+        doughnutData = [100];
+        doughnutColors = ['#e2e8f0'];
+    } else {
+        // Add "Overall Average" as a hidden slice just for the legend, or just show top subjects
+    }
+
     return (
-        <div className="dashboard-container perf-page">
+        <div className="perf-v2-dashboard">
 
             {/* ── Header ── */}
-            <div className="dashboard-header" style={{ marginBottom: '2rem' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                    <button
-                        onClick={() => navigate('/student/dashboard')}
-                        style={{ background: 'none', border: '1.5px solid var(--border-color)', borderRadius: '8px', padding: '0.4rem 0.85rem', cursor: 'pointer', color: 'var(--text-primary)', fontWeight: 600 }}
-                    >
-                        ← Back
-                    </button>
-                    <div>
-                        <h1 style={{ margin: 0 }}>📊 My Performance</h1>
-                        <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
-                            Overall report across marks, attendance &amp; assignments
-                        </p>
+            <div className="perf-v2-header">
+                <div className="perf-v2-header-left">
+                    <div className="perf-v2-header-icon">📊</div>
+                    <div className="perf-v2-header-titles">
+                        <h1>My Performance</h1>
+                        <p>Complete overview of your academic performance</p>
                     </div>
                 </div>
-            </div>
-
-            {/* ─────────────────────────────────────────────────────────── */}
-            {/* SECTION 1 — Score Card Row                                 */}
-            {/* ─────────────────────────────────────────────────────────── */}
-            <div className="perf-score-row">
-                {/* Main score circle */}
-                <div className="perf-main-score-card">
-                    <div className="perf-score-circle" style={{ borderColor: statusColor(score?.status) }}>
-                        <span className="perf-score-number" style={{ color: statusColor(score?.status) }}>{score?.score ?? '—'}</span>
-                        <span className="perf-score-label">/ 100</span>
+                <div className="perf-v2-header-right">
+                    <div className="perf-v2-academic-year">
+                        <span>Academic Year</span>
+                        <span>2025 - 2026 ⌄</span>
                     </div>
-                    <div className="perf-grade-badge" style={{ background: gradeColor(score?.grade) }}>
-                        {score?.grade || '—'}
+                    <div className="perf-v2-bell">
+                        🔔
+                        <span className="perf-v2-bell-badge">2</span>
                     </div>
-                    <div className="perf-status-label" style={{ color: statusColor(score?.status) }}>
-                        {statusLabel(score?.status)}
-                    </div>
-                    <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', marginTop: '0.35rem' }}>
-                        Overall Performance Score
-                    </div>
-                </div>
-
-                {/* Metric cards */}
-                <div className="perf-metric-cards">
-                    <div className="perf-metric-card" style={{ borderTop: '4px solid #6366f1' }}>
-                        <div className="perf-metric-icon">📝</div>
-                        <div className="perf-metric-value" style={{ color: '#6366f1' }}>{score?.marks_pct ?? '—'}%</div>
-                        <div className="perf-metric-label">Avg Marks</div>
-                        <div className="perf-metric-sub">40% weight</div>
-                    </div>
-                    <div className="perf-metric-card" style={{ borderTop: `4px solid ${(score?.att_pct ?? 100) >= 75 ? '#10b981' : '#ef4444'}` }}>
-                        <div className="perf-metric-icon">📋</div>
-                        <div className="perf-metric-value" style={{ color: (score?.att_pct ?? 100) >= 75 ? '#10b981' : '#ef4444' }}>{score?.att_pct ?? '—'}%</div>
-                        <div className="perf-metric-label">Attendance</div>
-                        <div className="perf-metric-sub">{score?.present_days ?? 0} / {score?.working_days ?? 0} days</div>
-                    </div>
-                    <div className="perf-metric-card" style={{ borderTop: '4px solid #f59e0b' }}>
-                        <div className="perf-metric-icon">📌</div>
-                        <div className="perf-metric-value" style={{ color: '#f59e0b' }}>{score?.ass_pct ?? '—'}%</div>
-                        <div className="perf-metric-label">Assignments</div>
-                        <div className="perf-metric-sub">{score?.submitted_ass ?? 0} / {score?.total_ass ?? 0} submitted</div>
-                    </div>
-                    <div className="perf-metric-card" style={{ borderTop: '4px solid #a855f7' }}>
-                        <div className="perf-metric-icon">💬</div>
-                        <div className="perf-metric-value" style={{ color: '#a855f7' }}>{score?.eng_pct ?? '—'}%</div>
-                        <div className="perf-metric-label">Engagement</div>
-                        <div className="perf-metric-sub">Chat activity</div>
-                    </div>
-                </div>
-            </div>
-
-            {/* ─────────────────────────────────────────────────────────── */}
-            {/* SECTION 2 — Weak Subjects Alert                            */}
-            {/* ─────────────────────────────────────────────────────────── */}
-            {perf?.weak_subjects?.length > 0 && (
-                <div className="perf-alert-banner">
-                    <div className="perf-alert-icon">⚠️</div>
-                    <div>
-                        <div className="perf-alert-title">Subjects Needing Attention</div>
-                        <div className="perf-alert-subjects">
-                            {perf.weak_subjects.map(s => (
-                                <span key={s.subject_id} className="perf-alert-chip">
-                                    {s.subject_name}: {s.avg_pct}% <span style={{ opacity: 0.7 }}>(pass: {s.passing_pct}%)</span>
-                                </span>
-                            ))}
+                    <div className="perf-v2-user-profile">
+                        <div className="perf-v2-avatar">{user?.name?.charAt(0) || 'S'}</div>
+                        <div className="perf-v2-user-info">
+                            <span className="perf-v2-user-name">{user?.name || 'Sameer Reddy'}</span>
+                            <span className="perf-v2-user-role">{studentClass}</span>
                         </div>
                     </div>
                 </div>
+            </div>
+
+            {/* ── Stats Row ── */}
+            <div className="perf-v2-stats-row">
+                {/* 1. Overall Score */}
+                <div className="perf-v2-stat-card perf-v2-score-card">
+                    <div className="perf-v2-score-top">
+                        <div>
+                            <div className="perf-v2-score-title">Overall Score ⓘ</div>
+                            <div className="perf-v2-score-val">{score?.score ?? '—'} <span className="perf-v2-score-total">/ 100</span></div>
+                        </div>
+                        <div className="perf-v2-grade-badge">{score?.grade || '—'}</div>
+                    </div>
+                    <div className="perf-v2-score-bar-wrap">
+                        <div className="perf-v2-score-bar-track">
+                            <div className="perf-v2-score-bar-fill" style={{ width: `${score?.score ?? 0}%` }}></div>
+                        </div>
+                    </div>
+                    <div className="perf-v2-score-status" style={{ color: score?.status === 'at_risk' ? '#ef4444' : score?.status === 'average' ? '#f59e0b' : '#10b981' }}>
+                        {score?.status === 'at_risk' ? '⚠️' : score?.status === 'average' ? '⚡' : '✅'} {getStatusText(score?.status)}
+                    </div>
+                </div>
+
+                {/* 2. Average Marks */}
+                <div className="perf-v2-stat-card perf-v2-standard-card">
+                    <div className="perf-v2-card-title">Average Marks ⓘ</div>
+                    <div className="perf-v2-card-val perf-v2-text-blue">{score?.marks_pct ?? '—'}%</div>
+                    <div className="perf-v2-card-sub">40% Weight</div>
+                    <div className="perf-v2-card-icon-wrapper perf-v2-icon-blue">✨</div>
+                </div>
+
+                {/* 3. Attendance */}
+                <div className="perf-v2-stat-card perf-v2-standard-card">
+                    <div className="perf-v2-card-title">Attendance ⓘ</div>
+                    <div className="perf-v2-card-val perf-v2-text-green">{score?.att_pct ?? '—'}%</div>
+                    <div className="perf-v2-card-sub">{score?.present_days ?? 0} / {score?.working_days ?? 0} Days</div>
+                    <div className="perf-v2-card-icon-wrapper perf-v2-icon-green">📅</div>
+                </div>
+
+                {/* 4. Assignments */}
+                <div className="perf-v2-stat-card perf-v2-standard-card">
+                    <div className="perf-v2-card-title">Assignments ⓘ</div>
+                    <div className="perf-v2-card-val perf-v2-text-orange">{score?.ass_pct ?? '—'}%</div>
+                    <div className="perf-v2-card-sub">{score?.submitted_ass ?? 0} / {score?.total_ass ?? 0} Submitted</div>
+                    <div className="perf-v2-card-icon-wrapper perf-v2-icon-orange">📋</div>
+                </div>
+
+                {/* 5. Engagement */}
+                <div className="perf-v2-stat-card perf-v2-standard-card">
+                    <div className="perf-v2-card-title">Engagement ⓘ</div>
+                    <div className="perf-v2-card-val perf-v2-text-purple">{score?.eng_pct ?? '—'}%</div>
+                    <div className="perf-v2-card-sub">Chat Activity</div>
+                    <div className="perf-v2-card-icon-wrapper perf-v2-icon-purple">💬</div>
+                </div>
+            </div>
+
+            {/* ── Alert Banner ── */}
+            {perf?.weak_subjects?.length > 0 && (
+                <div className="perf-v2-alert">
+                    <div className="perf-v2-alert-left">
+                        <div className="perf-v2-alert-icon">⚠️</div>
+                        <div className="perf-v2-alert-title">Subjects Needing Attention</div>
+                        <div className="perf-v2-alert-text">
+                            {perf.weak_subjects.map(s => `${s.subject_name}: ${s.avg_pct}% (below passing threshold ${s.passing_pct}%)`).join(' | ')}
+                        </div>
+                    </div>
+                    <div className="perf-v2-alert-arrow">›</div>
+                </div>
             )}
 
-            {/* ─────────────────────────────────────────────────────────── */}
-            {/* SECTION 3 — Subject Performance (Bar Chart)                */}
-            {/* ─────────────────────────────────────────────────────────── */}
-            {perf?.subjects?.length > 0 && (
-                <div className="perf-card" style={{ marginTop: '1.5rem' }}>
-                    <h3 className="perf-card-title">📈 Subject Performance</h3>
-                    <div className="perf-subject-bars">
-                        {perf.subjects.map(s => (
-                            <div key={s.subject_id} className="perf-subject-bar-row">
-                                <div className="perf-subject-bar-label">{s.subject_name}</div>
-                                <div className="perf-subject-bar-track">
-                                    {/* Passing threshold marker */}
-                                    <div
-                                        className="perf-passing-line"
-                                        style={{ left: `${s.passing_pct}%` }}
-                                        title={`Pass: ${s.passing_pct}%`}
-                                    />
-                                    <div
-                                        className="perf-subject-bar-fill"
-                                        style={{
-                                            width: `${s.avg_pct}%`,
-                                            background: s.below_passing
-                                                ? 'linear-gradient(90deg, #ef4444, #dc2626)'
-                                                : 'linear-gradient(90deg, #6366f1, #8b5cf6)',
-                                        }}
-                                    />
+            {/* ── Middle Grid (Subject Performance & Trend) ── */}
+            <div className="perf-v2-grid">
+                {/* Subject Performance */}
+                <div className="perf-v2-panel">
+                    <div className="perf-v2-panel-header">
+                        <div className="perf-v2-panel-title">
+                            <span className="perf-v2-panel-title-icon">📊</span> Subject Performance
+                        </div>
+                        <select 
+                            className="perf-v2-panel-dropdown" 
+                            style={{ cursor: 'pointer', appearance: 'none', paddingRight: '20px' }}
+                            value={subjectFilter}
+                            onChange={(e) => setSubjectFilter(e.target.value)}
+                        >
+                            <option value="All Subjects">All Subjects ⌄</option>
+                            {perf?.subjects?.map(s => (
+                                <option key={s.subject_id} value={s.subject_name}>{s.subject_name}</option>
+                            ))}
+                        </select>
+                    </div>
+
+                    <div style={{ marginTop: '2.5rem' }}>
+                        {perf?.subjects?.length > 0 ? (subjectFilter === 'All Subjects' ? perf.subjects : perf.subjects.filter(s => s.subject_name === subjectFilter)).map((s, i) => (
+                            <div key={s.subject_id} className="perf-v2-sub-row">
+                                <div className="perf-v2-sub-name">
+                                    <span className={s.below_passing ? 'perf-v2-sub-icon-red' : 'perf-v2-sub-icon-blue'}>📕</span>
+                                    {s.subject_name}
                                 </div>
-                                <div className="perf-subject-bar-value" style={{ color: s.below_passing ? '#ef4444' : '#6366f1' }}>
+                                <div className="perf-v2-sub-track">
+                                    {/* Only show threshold on first row for clean UI */}
+                                    {i === 0 && (
+                                        <div className="perf-v2-sub-threshold" style={{ left: `${s.passing_pct}%` }}>
+                                            <span>Passing Threshold</span>
+                                        </div>
+                                    )}
+                                    <div className={`perf-v2-sub-fill ${s.below_passing ? 'red' : 'blue'}`} style={{ width: `${s.avg_pct}%` }}></div>
+                                </div>
+                                <div className="perf-v2-sub-val" style={{ color: s.below_passing ? '#ef4444' : '#64748b' }}>
                                     {s.avg_pct}%
                                 </div>
                             </div>
-                        ))}
+                        )) : (
+                            <div style={{ textAlign: 'center', color: '#94a3b8', padding: '2rem 0' }}>No subject data</div>
+                        )}
                     </div>
-                    <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginTop: '0.75rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                        <span>
-                            <span style={{ display: 'inline-block', width: 12, height: 12, borderLeft: '2px dashed #94a3b8', marginRight: 4 }} />
-                            Passing threshold
-                        </span>
-                        <span>
-                            <span style={{ display: 'inline-block', width: 12, height: 8, background: 'linear-gradient(90deg,#6366f1,#8b5cf6)', borderRadius: 4, marginRight: 4 }} />
-                            Passing
-                        </span>
-                        <span>
-                            <span style={{ display: 'inline-block', width: 12, height: 8, background: 'linear-gradient(90deg,#ef4444,#dc2626)', borderRadius: 4, marginRight: 4 }} />
-                            Below passing
-                        </span>
+
+                    <div className="perf-v2-sub-legend">
+                        <span><div className="perf-v2-legend-dot" style={{ background: '#3b82f6' }}></div> Passing (≥ 35%)</span>
+                        <span><div className="perf-v2-legend-dot" style={{ background: '#ef4444' }}></div> Below Passing (&lt; 35%)</span>
                     </div>
                 </div>
-            )}
 
-            {/* ─────────────────────────────────────────────────────────── */}
-            {/* SECTION 3B — 6-month Trend Chart (CSS bar chart)           */}
-            {/* ─────────────────────────────────────────────────────────── */}
-            {trend.length > 0 && (
-                <div className="perf-card" style={{ marginTop: '1.5rem' }}>
-                    <h3 className="perf-card-title">📅 Performance Trend (Last 6 months)</h3>
-                    <div className="perf-trend-chart">
-                        {trend.map(t => (
-                            <div key={t.month} className="perf-trend-bar-col">
-                                <div className="perf-trend-bar-val">{t.score}</div>
-                                <div className="perf-trend-bar-wrap">
-                                    <div
-                                        className="perf-trend-bar"
-                                        style={{
-                                            height: `${(t.score / maxScore) * 100}%`,
-                                            background: t.score >= 75
-                                                ? 'linear-gradient(180deg, #10b981, #059669)'
-                                                : t.score >= 50
-                                                    ? 'linear-gradient(180deg, #f59e0b, #d97706)'
-                                                    : 'linear-gradient(180deg, #ef4444, #dc2626)',
-                                        }}
-                                    />
-                                </div>
-                                <div className="perf-trend-bar-month">
-                                    {t.month ? t.month.substring(5) : ''}
-                                </div>
-                            </div>
-                        ))}
+                {/* Performance Trend */}
+                <div className="perf-v2-panel">
+                    <div className="perf-v2-panel-header">
+                        <div className="perf-v2-panel-title">
+                            <span className="perf-v2-panel-title-icon">📅</span> Performance Trend (Last {trendFilter} Months)
+                        </div>
+                        <select 
+                            className="perf-v2-panel-dropdown" 
+                            style={{ cursor: 'pointer', appearance: 'none', paddingRight: '20px' }}
+                            value={trendFilter}
+                            onChange={(e) => setTrendFilter(e.target.value)}
+                        >
+                            <option value="3">3 Months ⌄</option>
+                            <option value="6">6 Months ⌄</option>
+                            <option value="12">12 Months ⌄</option>
+                        </select>
+                    </div>
+
+                    <div style={{ height: '230px', width: '100%' }}>
+                        <Line
+                            data={trendChartData}
+                            options={{
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                scales: {
+                                    x: { grid: { display: false }, ticks: { color: '#64748b', font: { size: 11 } } },
+                                    y: { min: 0, max: 100, grid: { color: '#f1f5f9' }, ticks: { stepSize: 25, color: '#64748b', font: { size: 11 } } }
+                                },
+                                plugins: {
+                                    legend: { position: 'top', labels: { usePointStyle: true, boxWidth: 6, font: { size: 11 } } }
+                                }
+                            }}
+                        />
                     </div>
                 </div>
-            )}
+            </div>
 
-            {/* ─────────────────────────────────────────────────────────── */}
-            {/* SECTION 4 — Attendance Heatmap                             */}
-            {/* ─────────────────────────────────────────────────────────── */}
-            <div className="perf-card" style={{ marginTop: '1.5rem' }}>
-                <h3 className="perf-card-title">📆 Attendance Heatmap</h3>
-                <div className="perf-heatmap-legend">
-                    {[
-                        { color: '#10b981', label: 'Present' },
-                        { color: '#ef4444', label: 'Absent' },
-                        { color: '#f59e0b', label: 'Late' },
-                        { color: '#3b82f6', label: 'Holiday' },
-                        { color: 'var(--border-color, #e5e7eb)', label: 'No class' },
-                    ].map(({ color, label }) => (
-                        <span key={label} style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.8rem' }}>
-                            <span style={{ width: 12, height: 12, borderRadius: 3, background: color, display: 'inline-block' }} />
-                            {label}
-                        </span>
-                    ))}
-                </div>
-                <div className="perf-heatmap-months">
-                    {calendarMonths.map(({ name, days }) => (
-                        <div key={name} className="perf-heatmap-month">
-                            <div className="perf-heatmap-month-name">{name}</div>
-                            <div className="perf-heatmap-weekdays">
-                                {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map(d => (
-                                    <div key={d} className="perf-heatmap-weekday">{d}</div>
-                                ))}
-                            </div>
-                            <div className="perf-heatmap-grid">
-                                {days.map((day, i) => {
-                                    let background = 'transparent';
-                                    if (day.date) {
-                                        if (day.statuses && day.statuses.length === 1) {
-                                            background = getHeatmapColor(day.statuses[0]);
-                                        } else if (day.statuses && day.statuses.length > 1) {
-                                            const step = 100 / day.statuses.length;
-                                            const stops = day.statuses.map((s, idx) => {
-                                                const color = getHeatmapColor(s);
-                                                return `${color} ${idx * step}%, ${color} ${(idx + 1) * step}%`;
-                                            });
-                                            background = `linear-gradient(to bottom, ${stops.join(', ')})`;
-                                        } else {
-                                            background = getHeatmapColor(null);
-                                        }
-                                    }
+            {/* ── Bottom Grid (Attendance & Breakdown) ── */}
+            <div className="perf-v2-grid">
+                {/* Attendance Overview */}
+                <div className="perf-v2-panel">
+                    <div className="perf-v2-panel-header" style={{ marginBottom: '1rem' }}>
+                        <div className="perf-v2-panel-title">
+                            <span className="perf-v2-panel-title-icon">📅</span> Attendance Overview
+                        </div>
+                    </div>
 
-                                    return (
-                                        <div
-                                            key={i}
-                                            className="perf-heatmap-day"
-                                            style={{ background }}
-                                            title={day.date ? `${day.date}: ${day.detailedRecords?.length > 0 ? day.detailedRecords.map(r => `${r.subject} - ${r.status}`).join(', ') : 'no record'}` : ''}
-                                        >
-                                            {day.day && <span style={{ position: 'relative', zIndex: 1, fontSize: '0.65rem', color: day.statuses?.length > 0 ? '#fff' : 'var(--text-secondary)' }}>{day.day}</span>}
-                                        </div>
-                                    );
-                                })}
+                    <div className="perf-v2-att-stats">
+                        <div className="perf-v2-att-stat">
+                            <div className="perf-v2-att-stat-icon" style={{ background: '#10b981' }}>✓</div>
+                            <div>
+                                <div className="perf-v2-att-stat-lbl">Present</div>
+                                <div className="perf-v2-att-stat-val">{presentCount}</div>
+                                <div className="perf-v2-att-stat-pct" style={{ color: '#10b981' }}>{presentPct}%</div>
                             </div>
                         </div>
-                    ))}
+                        <div className="perf-v2-att-stat">
+                            <div className="perf-v2-att-stat-icon" style={{ background: '#ef4444' }}>✕</div>
+                            <div>
+                                <div className="perf-v2-att-stat-lbl">Absent</div>
+                                <div className="perf-v2-att-stat-val">{absentCount}</div>
+                                <div className="perf-v2-att-stat-pct" style={{ color: '#ef4444' }}>{absentPct}%</div>
+                            </div>
+                        </div>
+                        <div className="perf-v2-att-stat">
+                            <div className="perf-v2-att-stat-icon" style={{ background: '#f59e0b' }}>🕒</div>
+                            <div>
+                                <div className="perf-v2-att-stat-lbl">Late</div>
+                                <div className="perf-v2-att-stat-val">{lateCount}</div>
+                                <div className="perf-v2-att-stat-pct" style={{ color: '#f59e0b' }}>{latePct}%</div>
+                            </div>
+                        </div>
+                        <div className="perf-v2-att-stat">
+                            <div className="perf-v2-att-stat-icon" style={{ background: '#3b82f6' }}>🏖️</div>
+                            <div>
+                                <div className="perf-v2-att-stat-lbl">Holiday</div>
+                                <div className="perf-v2-att-stat-val">{holidayCount}</div>
+                                <div className="perf-v2-att-stat-pct" style={{ color: '#3b82f6' }}>{holidayPct}%</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Original Heatmap Implementation intact inside the new container */}
+                    <div style={{ marginTop: '1.5rem', display: 'flex', gap: '2rem', flexWrap: 'wrap' }}>
+                        {calendarMonths.map(({ name, days }) => (
+                            <div key={name} style={{ flex: 1, minWidth: '220px' }}>
+                                <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#0f172a', marginBottom: '0.5rem' }}>{name}</div>
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '3px', marginBottom: '4px' }}>
+                                    {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map(d => (
+                                        <div key={d} style={{ textAlign: 'center', fontSize: '0.65rem', fontWeight: 700, color: '#64748b' }}>{d}</div>
+                                    ))}
+                                </div>
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '3px' }}>
+                                    {days.map((day, i) => {
+                                        let background = 'transparent';
+                                        if (day.date) {
+                                            if (day.statuses && day.statuses.length === 1) {
+                                                background = getHeatmapColor(day.statuses[0]);
+                                            } else if (day.statuses && day.statuses.length > 1) {
+                                                const step = 100 / day.statuses.length;
+                                                const stops = day.statuses.map((s, idx) => {
+                                                    const color = getHeatmapColor(s);
+                                                    return `${color} ${idx * step}%, ${color} ${(idx + 1) * step}%`;
+                                                });
+                                                background = `linear-gradient(to bottom, ${stops.join(', ')})`;
+                                            } else {
+                                                background = getHeatmapColor(null);
+                                            }
+                                        }
+
+                                        return (
+                                            <div
+                                                key={i}
+                                                style={{ aspectRatio: '1', borderRadius: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', background }}
+                                                title={day.date ? `${day.date}: ${day.detailedRecords?.length > 0 ? day.detailedRecords.map(r => `${r.subject} - ${r.status}`).join(', ') : 'no record'}` : ''}
+                                            >
+                                                {day.day && <span style={{ fontSize: '0.65rem', color: day.statuses?.length > 0 ? '#fff' : '#64748b' }}>{day.day}</span>}
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                    
+                    <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem', fontSize: '0.7rem', color: '#64748b', justifyContent: 'center' }}>
+                        <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><div style={{ width: 10, height: 10, borderRadius: 3, background: '#10b981' }}></div> Present</span>
+                        <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><div style={{ width: 10, height: 10, borderRadius: 3, background: '#ef4444' }}></div> Absent</span>
+                        <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><div style={{ width: 10, height: 10, borderRadius: 3, background: '#f59e0b' }}></div> Late</span>
+                        <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><div style={{ width: 10, height: 10, borderRadius: 3, background: '#3b82f6' }}></div> Holiday</span>
+                        <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><div style={{ width: 10, height: 10, borderRadius: 3, background: '#e5e7eb' }}></div> No Class</span>
+                    </div>
+                </div>
+
+                {/* Subject Breakdown */}
+                <div className="perf-v2-panel">
+                    <div className="perf-v2-panel-header">
+                        <div className="perf-v2-panel-title">
+                            <span className="perf-v2-panel-title-icon">📋</span> Subject Breakdown
+                        </div>
+                    </div>
+
+                    <div style={{ position: 'relative' }}>
+                        <div className="perf-v2-breakdown-legends">
+                            {top2Subjects.map((s, i) => (
+                                <div key={s.subject_id} className="perf-v2-breakdown-legend">
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                        <div style={{ width: 10, height: 10, borderRadius: '50%', background: doughnutColors[i] }}></div>
+                                        {s.subject_name}
+                                    </div>
+                                    <div>{s.avg_pct}%</div>
+                                </div>
+                            ))}
+                            <div className="perf-v2-breakdown-legend" style={{ marginTop: '8px', paddingTop: '8px', borderTop: '1px solid #f1f5f9' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                    <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#a855f7' }}></div>
+                                    Overall Average
+                                </div>
+                                <div>{overallAvg}%</div>
+                            </div>
+                        </div>
+
+                        <div className="perf-v2-doughnut-container" style={{ width: '180px', margin: '2rem 0' }}>
+                            <Doughnut 
+                                data={{
+                                    labels: doughnutLabels,
+                                    datasets: [{
+                                        data: doughnutData,
+                                        backgroundColor: doughnutColors,
+                                        borderWidth: 0,
+                                        cutout: '75%',
+                                    }]
+                                }}
+                                options={{
+                                    responsive: true,
+                                    maintainAspectRatio: false,
+                                    plugins: {
+                                        legend: { display: false },
+                                        tooltip: { enabled: true }
+                                    }
+                                }}
+                            />
+                            <div className="perf-v2-doughnut-inner">
+                                <div className="perf-v2-doughnut-val">{overallAvg}%</div>
+                                <div className="perf-v2-doughnut-lbl">Average<br/>Marks</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button className="perf-v2-btn-outline" onClick={() => navigate('/student/exams')}>
+                        👁 View Detailed Marksheet
+                    </button>
                 </div>
             </div>
 

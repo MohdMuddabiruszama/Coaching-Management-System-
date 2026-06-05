@@ -2,7 +2,7 @@
  * Announcement Service — Smart Announcement System (Phase 2)
  * All business logic for announcements: filtering by role, read/unread tracking, bell icon data.
  */
-const { Announcement, AnnouncementRead } = require("../models");
+const { Announcement, AnnouncementRead, User } = require("../models");
 const { Op } = require("sequelize");
 
 // ─── FUNCTION 1: getAnnouncementsForUser ─────────────────────────────────────
@@ -46,6 +46,11 @@ async function getAnnouncementsForUser(userId, role, instituteId, classId = null
                 required: false, // LEFT JOIN — include even if not read
                 attributes: ["read_at"],
             },
+            {
+                model: User,
+                as: "creator",
+                attributes: ["id", "name", "role"],
+            }
         ],
     });
 

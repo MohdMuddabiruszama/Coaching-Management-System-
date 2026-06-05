@@ -32,23 +32,27 @@ const PageLoader = () => (
   </div>
 );
 
+const StudentLayout = lazy(() => import("../components/layout/StudentLayout"));
+
 function StudentArea() {
   return (
     <ProtectedRoute allowedRoles={["student"]}>
       <Routes>
-        <Route path="dashboard" element={<StudentDashboard />} />
-        <Route path="attendance" element={<ViewAttendance />} />
-        <Route path="scan-attendance" element={<ScanAttendance />} />
-        <Route path="exams" element={<ViewMarks />} />
-        <Route path="announcements" element={<ViewAnnouncements />} />
-        <Route path="fees" element={<PayFees />} />
-        <Route path="buy-plan" element={<Pricing />} />
-        <Route path="timetable" element={<StudentTimetable />} />
-        <Route path="notes" element={<StudentNotes />} />
-        <Route path="assignments" element={<StudentAssignments />} />
-        <Route path="chat" element={<ChatApp />} />
-        <Route path="profile" element={<Profile />} />
-        <Route path="*" element={<Navigate to="/student/dashboard" replace />} />
+        <Route path="/" element={<StudentLayout />}>
+          <Route path="dashboard" element={<StudentDashboard />} />
+          <Route path="attendance" element={<ViewAttendance />} />
+          <Route path="scan-attendance" element={<ScanAttendance />} />
+          <Route path="exams" element={<ViewMarks />} />
+          <Route path="announcements" element={<ViewAnnouncements />} />
+          <Route path="fees" element={<PayFees />} />
+          <Route path="buy-plan" element={<Pricing />} />
+          <Route path="timetable" element={<StudentTimetable />} />
+          <Route path="notes" element={<StudentNotes />} />
+          <Route path="assignments" element={<StudentAssignments />} />
+          <Route path="chat" element={<ChatApp />} />
+          <Route path="profile" element={<Profile />} />
+          <Route path="*" element={<Navigate to="dashboard" replace />} />
+        </Route>
       </Routes>
     </ProtectedRoute>
   );

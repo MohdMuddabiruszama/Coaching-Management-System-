@@ -1,23 +1,27 @@
 import { useState, useEffect, useContext } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { AuthContext } from "../../context/AuthContext";
 import api from "../../services/api";
-import BackButton from "../../components/common/BackButton";
-import "../admin/Dashboard.css";
+import "./StudentAttendance.css";
 
-/**
- * Renders attendance records as mobile-friendly cards (no table on mobile).
- * Table CSS is hidden via mobile-base.css; mobile-card-list is shown instead.
- */
 function ViewAttendance() {
     const { user } = useContext(AuthContext);
+    const navigate = useNavigate();
     const [report, setReport] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
     const [studentData, setStudentData] = useState(null);
-    const [selectedSubject, setSelectedSubject] = useState(""); // Phase 2: subject filter
+    const [selectedSubject, setSelectedSubject] = useState("");
     const [subjects, setSubjects] = useState([]);
     const [filterLoading, setFilterLoading] = useState(false);
+    
+    // Date filter state
+    const [startDate, setStartDate] = useState("");
+    const [endDate, setEndDate] = useState("");
+    
+    // Pagination state
+    const [currentPage, setCurrentPage] = useState(1);
+    const recordsPerPage = 7;
 
     useEffect(() => {
         fetchStudentIdAndAttendance();
@@ -29,7 +33,6 @@ function ViewAttendance() {
             const stu = studentRes.data.data;
             setStudentData(stu);
 
-            // Phase 2: Load subjects for full-course students
             if (stu.is_full_course && stu.Classes && stu.Classes.length > 0) {
                 const classId = stu.Classes[0]?.id;
                 if (classId) {
@@ -50,70 +53,109 @@ function ViewAttendance() {
         }
     };
 
-    // Phase 2: Filter attendance by selected subject
-    const handleSubjectFilter = async (subjectId) => {
-        setSelectedSubject(subjectId);
+    const fetchReport = async (subId = selectedSubject, start = startDate, end = endDate) => {
         if (!studentData) return;
         setFilterLoading(true);
         try {
             let url = `/attendance/student/${studentData.id}/report`;
-            if (subjectId) url += `?subject_id=${subjectId}`;
+            const params = [];
+            if (subId) params.push(`subject_id=${subId}`);
+            if (start) params.push(`start_date=${start}`);
+            if (end) params.push(`end_date=${end}`);
+            if (params.length > 0) url += `?${params.join("&")}`;
+            
             const attRes = await api.get(url);
             setReport(attRes.data.data);
+            setCurrentPage(1);
         } catch (err) {
-            console.error("Error filtering attendance:", err);
+            console.error("Error fetching report:", err);
         } finally {
             setFilterLoading(false);
         }
     };
 
-    // Status icon helper
-    const statusIcon = (s) => {
-        if (s === "present")  return "✅";
-        if (s === "absent")   return "❌";
-        if (s === "holiday")  return "🏖️";
-        if (s === "half_day") return "🌗";
-        return "📝";
+    const handleSubjectFilter = (subjectId) => {
+        setSelectedSubject(subjectId);
+        fetchReport(subjectId, startDate, endDate);
     };
 
+    const handleDateFilter = () => {
+        fetchReport(selectedSubject, startDate, endDate);
+    };
+
+    const clearDateFilter = () => {
+        setStartDate("");
+        setEndDate("");
+        fetchReport(selectedSubject, "", "");
+    };
+
+    const statusLabel = (s) => {
+        if (!s) return "";
+        return s.charAt(0).toUpperCase() + s.slice(1).replace("_", " ");
+    };
+    
     const markedByLabel = (t) => {
-        if (t === "biometric")  return "🔐 Bio";
-        if (t === "mobile_otp") return "📱 OTP";
-        if (t === "qr_code")    return "📸 QR";
-        return "📝 Manual";
+        if (t === "biometric")  return "Biometric";
+        if (t === "mobile_otp") return "Mobile OTP";
+        if (t === "qr_code")    return "Smart Attendance (QR)";
+        return "Manual Entry";
     };
 
     if (loading) return (
-        <div className="dashboard-container mobile-loading-page">
+        <div className="att-container" style={{ display: 'flex', justifyContent: 'center', padding: '100px' }}>
             <div className="spinner"></div>
-            <p>Loading your attendance…</p>
         </div>
     );
-    if (error) return <div className="dashboard-container" style={{ color: "red" }}>{error}</div>;
+    
+    if (error) return <div className="att-container" style={{ color: "red" }}>{error}</div>;
 
-    // Phase 1: Use working_days (excludes holidays) for the percentage display
-    const workingDays    = report?.summary?.working_days || 0;
-    const presentDays    = report?.summary?.present_days || 0;
-    const holidayDays    = report?.summary?.holiday_days || 0;
-    const absentDays     = report?.summary?.absent_days || 0;
-    const attendancePct  = report?.summary?.attendance_percentage || 0;
+    const workingDays = report?.summary?.working_days || 0;
+    const presentDays = report?.summary?.present_days || 0;
+    const holidayDays = report?.summary?.holiday_days || 0;
+    const absentDays  = report?.summary?.absent_days || 0;
+    const attendancePct = report?.summary?.attendance_percentage || 0;
+    
+    // Circle calculation
+    const circleDasharray = `${attendancePct}, 100`;
+    
+    // Pagination logic
+    const records = report?.records || [];
+    const totalRecords = records.length;
+    const totalPages = Math.max(1, Math.ceil(totalRecords / recordsPerPage));
+    const paginatedRecords = records.slice((currentPage - 1) * recordsPerPage, currentPage * recordsPerPage);
+    
+    const handlePrevPage = () => { if (currentPage > 1) setCurrentPage(c => c - 1); };
+    const handleNextPage = () => { if (currentPage < totalPages) setCurrentPage(c => c + 1); };
 
     return (
-        <div className="dashboard-container">
-            <div className="dashboard-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div>
-                    <h1>📋 My Attendance</h1>
-                    <p>Track your daily attendance — working days exclude holidays</p>
+        <div className="att-container">
+            {/* Header */}
+            <div className="att-header">
+                <div className="att-header-left">
+                    <h1>📅 My Attendance</h1>
+                    <p>Track your daily attendance. Working days exclude holidays.</p>
                 </div>
-                <BackButton to="/student/dashboard" />
+                <div className="att-header-right">
+                    <div className="att-bell">
+                        🔔
+                        <span className="att-bell-badge">2</span>
+                    </div>
+                    <div className="att-user-profile">
+                        <div className="att-avatar">{user?.name?.charAt(0) || "S"}</div>
+                        <div className="att-user-info">
+                            <span className="att-user-name">{user?.name || "Student"}</span>
+                            <span className="att-user-role">{studentData?.Classes?.[0]?.name || "Student"}</span>
+                        </div>
+                    </div>
+                </div>
             </div>
 
-            {/* Phase 2: Subject Filter Chips (mobile-friendly horizontal scroll) */}
-            {subjects.length > 0 && (
-                <div className="subject-filter filter-chips mobile-slide-in">
-                    <button
+            {/* Filters Row */}
+            <div className="att-filters-row">
+                <div className="att-filter-pills">
+                    <button 
                         onClick={() => handleSubjectFilter("")}
-                        className={`chip ${selectedSubject === "" ? "active" : ""}`}
+                        className={`att-pill ${selectedSubject === "" ? "active" : ""}`}
                     >
                         All Subjects
                     </button>
@@ -121,163 +163,179 @@ function ViewAttendance() {
                         <button
                             key={sub.id}
                             onClick={() => handleSubjectFilter(sub.id)}
-                            className={`chip ${selectedSubject === sub.id ? "active" : ""}`}
+                            className={`att-pill ${selectedSubject === sub.id ? "active" : ""}`}
                         >
                             {sub.name}
                         </button>
                     ))}
                 </div>
-            )}
+                <button className="att-back-btn" onClick={() => navigate('/student/dashboard')}>
+                    ← Back to Dashboard
+                </button>
+            </div>
 
-            {/* Stats Grid — 2 col on mobile */}
-            {report && (
-                <div className="stats-grid card-stagger" style={{ marginBottom: "1.5rem" }}>
-                    {/* Working Days */}
-                    <div className="stat-card">
-                        <div className="stat-icon">🏢</div>
-                        <div className="stat-content">
+            {/* Stats Grid */}
+            <div className="att-stats-grid">
+                <div className="att-stat-card">
+                    <div className="att-stat-content">
+                        <div className="att-stat-icon icon-blue">📅</div>
+                        <div className="att-stat-text">
                             <h3>{workingDays}</h3>
-                            <p>Working Days</p>
-                            <small>excl. {holidayDays} holiday{holidayDays !== 1 ? "s" : ""}</small>
+                            <p>Working Days<br/>(excluding {holidayDays} holiday{holidayDays !== 1 ? 's' : ''})</p>
                         </div>
                     </div>
-                    {/* Days Present */}
-                    <div className="stat-card">
-                        <div className="stat-icon">✅</div>
-                        <div className="stat-content">
-                            <h3 style={{ color: "#10b981" }}>{presentDays}</h3>
+                </div>
+                <div className="att-stat-card">
+                    <div className="att-stat-content">
+                        <div className="att-stat-icon icon-green">✔️</div>
+                        <div className="att-stat-text">
+                            <h3 className="green">{presentDays}</h3>
                             <p>Days Present</p>
                         </div>
                     </div>
-                    {/* Days Absent */}
-                    <div className="stat-card">
-                        <div className="stat-icon">❌</div>
-                        <div className="stat-content">
-                            <h3 style={{ color: "#ef4444" }}>{absentDays}</h3>
+                </div>
+                <div className="att-stat-card">
+                    <div className="att-stat-content">
+                        <div className="att-stat-icon icon-red">❌</div>
+                        <div className="att-stat-text">
+                            <h3 className="red">{absentDays}</h3>
                             <p>Days Absent</p>
                         </div>
                     </div>
-                    {/* Attendance % */}
-                    <div className="stat-card" style={{ borderLeft: `4px solid ${attendancePct >= 75 ? "#10b981" : "#ef4444"}` }}>
-                        <div className="stat-icon">📊</div>
-                        <div className="stat-content">
-                            <h3 style={{ color: attendancePct >= 75 ? "#10b981" : "#ef4444" }}>{attendancePct}%</h3>
-                            <p>Attendance %</p>
-                            <small style={{ color: attendancePct >= 75 ? "#10b981" : "#ef4444", fontWeight: 600 }}>
-                                {attendancePct >= 75 ? "✓ Good" : "⚠ Below 75%"}
-                            </small>
+                </div>
+                <div className="att-stat-card">
+                    <div className="att-stat-content">
+                        <div className="att-stat-icon icon-purple">📅</div>
+                        <div className="att-stat-text">
+                            <h3>{holidayDays}</h3>
+                            <p>Holidays</p>
                         </div>
                     </div>
                 </div>
-            )}
-
-            {/* Attendance Records Section */}
-            <div className="card mobile-slide-in">
-                <div className="card-header">
-                    <h3 className="card-title">
-                        Attendance Records
-                        {selectedSubject && subjects.find(s => s.id === selectedSubject) && (
-                            <span style={{ marginLeft: "0.5rem", fontSize: "0.82rem", fontWeight: 400, color: "#888" }}>
-                                — {subjects.find(s => s.id === selectedSubject)?.name}
-                            </span>
-                        )}
-                    </h3>
-                    {filterLoading && <span style={{ fontSize: "0.8rem", color: "#888" }}>Loading…</span>}
+                
+                {/* Circular Progress */}
+                <div className="att-progress-card">
+                    <svg viewBox="0 0 36 36" className="circular-chart">
+                        <path className="circle-bg"
+                            d="M18 2.0845
+                            a 15.9155 15.9155 0 0 1 0 31.831
+                            a 15.9155 15.9155 0 0 1 0 -31.831"
+                        />
+                        <path className={`circle ${attendancePct >= 75 ? 'good' : 'danger'}`}
+                            strokeDasharray={circleDasharray}
+                            d="M18 2.0845
+                            a 15.9155 15.9155 0 0 1 0 31.831
+                            a 15.9155 15.9155 0 0 1 0 -31.831"
+                        />
+                        <text x="18" y="20.35" className="percentage">{attendancePct}%</text>
+                    </svg>
+                    <div className="att-progress-text">
+                        <h4>Attendance Percentage</h4>
+                        <span className={`att-badge-sm ${attendancePct >= 75 ? 'good' : 'danger'}`}>
+                            {attendancePct >= 75 ? "✔️ Excellent" : "⚠️ Needs Improvement"}
+                        </span>
+                    </div>
                 </div>
+            </div>
 
-                {/* ── DESKTOP TABLE (hidden on mobile via mobile-base.css) ── */}
-                <div className="table-container">
-                    <table className="table">
-                        <thead>
+            {/* Table Section */}
+            <div className="att-table-panel">
+                <div className="att-table-header" style={{flexWrap: 'wrap', gap: '16px'}}>
+                    <h3>📅 Attendance Records {filterLoading && <span style={{fontSize:'12px', color:'#888'}}>(Loading...)</span>}</h3>
+                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+                        <input 
+                            type="date" 
+                            className="att-date-picker" 
+                            value={startDate} 
+                            onChange={e => setStartDate(e.target.value)} 
+                        />
+                        <span style={{color: '#888'}}>-</span>
+                        <input 
+                            type="date" 
+                            className="att-date-picker" 
+                            value={endDate} 
+                            onChange={e => setEndDate(e.target.value)} 
+                        />
+                        <button className="att-pill active" style={{padding: '6px 12px', margin: 0}} onClick={handleDateFilter}>
+                            Filter
+                        </button>
+                        {(startDate || endDate) && (
+                            <button className="att-pill" style={{padding: '6px 12px', margin: 0, border: 'none', background: '#f1f5f9'}} onClick={clearDateFilter}>
+                                Clear
+                            </button>
+                        )}
+                    </div>
+                </div>
+                <table className="att-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Day</th>
+                            <th>Subject / Class</th>
+                            <th>Status</th>
+                            <th>Time In</th>
+                            <th>Marked By</th>
+                            <th>Method</th>
+                            <th>Remarks</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {paginatedRecords.length === 0 ? (
                             <tr>
-                                <th>Date</th>
-                                <th>Subject / Class</th>
-                                <th>Status</th>
-                                <th>Time In</th>
-                                <th>Marked By</th>
-                                <th>Remarks</th>
+                                <td colSpan="8" style={{ textAlign: "center", padding: "40px 20px", background: "#f8fafc" }}>
+                                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
+                                        <span style={{ fontSize: '48px', opacity: 0.5 }}>📋</span>
+                                        <h4 style={{ color: '#475569', margin: 0, fontSize: '16px' }}>No Attendance Records Found</h4>
+                                        <p style={{ color: '#94a3b8', margin: 0, fontSize: '14px', maxWidth: '300px' }}>
+                                            We couldn't find any attendance records matching your selected date range or subject.
+                                        </p>
+                                    </div>
+                                </td>
                             </tr>
-                        </thead>
-                        <tbody>
-                            {!report || report.records.length === 0 ? (
-                                <tr>
-                                    <td colSpan="6" style={{ textAlign: "center", padding: "2rem", color: "#888" }}>
-                                        {selectedSubject ? "No attendance records for this subject." : "No attendance records available."}
-                                    </td>
-                                </tr>
-                            ) : (
-                                report.records.map((record) => (
+                        ) : (
+                            paginatedRecords.map((record) => {
+                                const dateObj = new Date(record.date);
+                                const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'long' });
+                                
+                                let timeFormatted = "—";
+                                if (record.time_in) {
+                                    // Parse HH:mm:ss and convert to AM/PM format
+                                    const parts = record.time_in.split(':');
+                                    let hours = parseInt(parts[0], 10);
+                                    let mins = parts[1];
+                                    const ampm = hours >= 12 ? 'PM' : 'AM';
+                                    hours = hours % 12;
+                                    hours = hours ? hours : 12; // the hour '0' should be '12'
+                                    timeFormatted = `${hours.toString().padStart(2, '0')}:${mins} ${ampm}`;
+                                }
+                                
+                                return (
                                     <tr key={record.id}>
-                                        <td>{new Date(record.date).toLocaleDateString()}</td>
+                                        <td>{dateObj.toLocaleDateString('en-GB')}</td>
+                                        <td>{dayName}</td>
                                         <td>{record.Subject?.name || record.Class?.name || "All Subjects"}</td>
                                         <td>
-                                            <span className={`badge badge-${record.status === "present" ? "success" : record.status === "absent" ? "error" : record.status === "holiday" ? "info" : "warning"}`}>
-                                                {record.status?.replace("_", " ")}
+                                            <span className={`att-status ${record.status}`}>
+                                                {statusLabel(record.status)}
                                             </span>
-                                            {record.is_late && (
-                                                <span style={{ marginLeft: "0.4rem", fontSize: "0.75rem", color: "#f59e0b", fontWeight: 600 }}>
-                                                    +{record.late_by_minutes}m late
-                                                </span>
-                                            )}
                                         </td>
-                                        <td style={{ fontSize: "0.85rem", color: "#888" }}>
-                                            {record.time_in ? record.time_in.substring(0, 5) : "—"}
-                                        </td>
-                                        <td style={{ fontSize: "0.8rem" }}>
-                                            {markedByLabel(record.marked_by_type)}
-                                        </td>
-                                        <td style={{ color: "#888", fontSize: "0.85rem" }}>{record.remarks || "—"}</td>
+                                        <td>{timeFormatted}</td>
+                                        <td>{record.marked_by_type === 'system' ? 'System' : 'Manual'}</td>
+                                        <td>{markedByLabel(record.marked_by_type)}</td>
+                                        <td>{record.remarks || markedByLabel(record.marked_by_type)}</td>
                                     </tr>
-                                ))
-                            )}
-                        </tbody>
-                    </table>
-                </div>
-
-                {/* ── MOBILE CARD LIST (shown on mobile, hidden on desktop) ── */}
-                <div className="mobile-table-card card-stagger">
-                    {!report || report.records.length === 0 ? (
-                        <div className="empty-state-mobile">
-                            <div className="empty-icon">📋</div>
-                            <div className="empty-title">No Records Found</div>
-                            <div className="empty-desc">
-                                {selectedSubject ? "No attendance records for this subject." : "No attendance records available yet."}
-                            </div>
-                        </div>
-                    ) : (
-                        report.records.map((record) => (
-                            <div
-                                key={record.id}
-                                className={`att-mobile-card ${record.status || ""}`}
-                            >
-                                <div className="att-card-left">
-                                    <div className="att-card-date">
-                                        {new Date(record.date).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}
-                                    </div>
-                                    <div className="att-card-subject">
-                                        {record.Subject?.name || record.Class?.name || "All Subjects"}
-                                    </div>
-                                    {record.remarks && (
-                                        <div style={{ fontSize: "12px", color: "#888", marginTop: "2px" }}>{record.remarks}</div>
-                                    )}
-                                </div>
-                                <div className="att-card-right">
-                                    <span className={`badge badge-${record.status === "present" ? "success" : record.status === "absent" ? "error" : record.status === "holiday" ? "info" : "warning"}`}>
-                                        {statusIcon(record.status)} {record.status?.replace("_", " ")}
-                                    </span>
-                                    {record.time_in && (
-                                        <div className="att-card-time">{record.time_in.substring(0, 5)}</div>
-                                    )}
-                                    {record.is_late && (
-                                        <div style={{ fontSize: "11px", color: "#f59e0b", fontWeight: 700 }}>
-                                            +{record.late_by_minutes}m late
-                                        </div>
-                                    )}
-                                    <div className="att-card-time">{markedByLabel(record.marked_by_type)}</div>
-                                </div>
-                            </div>
-                        ))
-                    )}
+                                );
+                            })
+                        )}
+                    </tbody>
+                </table>
+                <div className="att-pagination">
+                    <div>Showing {(currentPage - 1) * recordsPerPage + (totalRecords > 0 ? 1 : 0)} to {Math.min(currentPage * recordsPerPage, totalRecords)} of {totalRecords} records</div>
+                    <div className="att-page-controls">
+                        <button className="att-page-btn" onClick={handlePrevPage} disabled={currentPage === 1}>&lt;</button>
+                        <button className="att-page-btn active">{currentPage}</button>
+                        <button className="att-page-btn" onClick={handleNextPage} disabled={currentPage === totalPages}>&gt;</button>
+                    </div>
                 </div>
             </div>
         </div>

@@ -5,6 +5,7 @@ const Subject = sequelize.define("Subject", {
     institute_id: DataTypes.INTEGER,
     class_id: DataTypes.INTEGER,
     name: DataTypes.STRING,
+    code: DataTypes.STRING,
     faculty_id: DataTypes.INTEGER,
 }, {
     tableName: 'subjects',

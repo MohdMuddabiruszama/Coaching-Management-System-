@@ -1,42 +1,152 @@
-/**
- * Student Assignments — Phase 9 Professional Dashboard
- * 4-tab view: Pending / Submitted / Graded / All
- * With countdown, late detection, file upload, and resubmit
- */
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import api from '../../services/api';
 import BackButton from '../../components/common/BackButton';
 import { resolveFileUrl } from '../../utils/resolveUrl';
 import { downloadRemoteFile } from '../../utils/capacitorPermissions';
 import { toast } from 'react-hot-toast';
-import '../faculty/Assignments.css';
+import './StudentAssignmentsV2.css';
 import '../admin/Dashboard.css';
 
 const SUB_STATUS_CONFIG = {
-    pending: { label: 'Not Submitted', color: '#6b7280', bg: '#f3f4f6', icon: '⏳' },
-    submitted: { label: 'Submitted', color: '#2563eb', bg: '#eff6ff', icon: '📩' },
-    late: { label: 'Late Submitted', color: '#d97706', bg: '#fef3c7', icon: '⚠️' },
-    graded: { label: 'Graded', color: '#16a34a', bg: '#f0fdf4', icon: '✅' },
-    resubmit_requested: { label: 'Resubmit Required', color: '#7c3aed', bg: '#f5f3ff', icon: '🔄' },
+    pending: { label: 'Pending', icon: '⏳', badgeClass: 'badge-pending', cardClass: 'status-pending' },
+    submitted: { label: 'Submitted', icon: '📩', badgeClass: 'badge-submitted', cardClass: 'status-submitted' },
+    late: { label: 'Late Submitted', icon: '⚠️', badgeClass: 'badge-late', cardClass: 'status-late' },
+    graded: { label: 'Graded', icon: '✓', badgeClass: 'badge-graded', cardClass: 'status-graded' },
+    resubmit_requested: { label: 'Resubmit Required', icon: '🔄', badgeClass: 'badge-resubmit', cardClass: 'status-resubmit' },
 };
 
-function StatusBadge({ status }) {
-    const cfg = SUB_STATUS_CONFIG[status];
-    if (!cfg) return null;
-    return <span className="fa-badge" style={{ background: cfg.bg, color: cfg.color }}>{cfg.icon} {cfg.label}</span>;
+function StatusBadgeV2({ status }) {
+    const cfg = SUB_STATUS_CONFIG[status] || SUB_STATUS_CONFIG['pending'];
+    return (
+        <div className={`asg-v2-badge ${cfg.badgeClass}`}>
+            {cfg.label}
+        </div>
+    );
 }
 
-function CountdownBadge({ dueDate, overdue }) {
-    if (overdue) return <span className="fa-countdown overdue">⛔ Overdue</span>;
+function DaysLeftBadge({ dueDate, overdue }) {
+    if (overdue) return <span className="asg-v3-deadline-pill">Overdue</span>;
     const due = new Date(dueDate);
     const now = new Date();
     const diff = due - now;
-    if (diff <= 0) return <span className="fa-countdown overdue">⛔ Overdue</span>;
+    if (diff <= 0) return <span className="asg-v3-deadline-pill">Overdue</span>;
     const hours = Math.floor(diff / (1000 * 60 * 60));
     const days = Math.floor(hours / 24);
-    if (days > 0) return <span className="fa-countdown ok">🕒 {days}d left</span>;
-    if (hours > 0) return <span className="fa-countdown warning">⚠️ {hours}h left</span>;
-    return <span className="fa-countdown danger">🔴 &lt;1h left</span>;
+    if (days > 0) return <span className="asg-v3-deadline-pill">In {days}d {hours % 24}h</span>;
+    if (hours > 0) return <span className="asg-v3-deadline-pill">In {hours}h</span>;
+    return <span className="asg-v3-deadline-pill">{'<'}1h left</span>;
+}
+
+function MiniCalendar({ assignments }) {
+    const [currentDate, setCurrentDate] = useState(new Date());
+
+    const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+    const dayNames = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
+
+    const getDaysInMonth = (year, month) => new Date(year, month + 1, 0).getDate();
+    const getFirstDayOfMonth = (year, month) => new Date(year, month, 1).getDay();
+
+    const year = currentDate.getFullYear();
+    const month = currentDate.getMonth();
+    const daysInMonth = getDaysInMonth(year, month);
+    const firstDay = getFirstDayOfMonth(year, month);
+
+    const prevMonth = () => setCurrentDate(new Date(year, month - 1, 1));
+    const nextMonth = () => setCurrentDate(new Date(year, month + 1, 1));
+
+    // Determine due dates and their status colors for the current month
+    const dueDates = useMemo(() => {
+        const dates = new Map();
+        assignments.forEach(a => {
+            if (a.due_date) {
+                const d = new Date(a.due_date);
+                if (d.getFullYear() === year && d.getMonth() === month) {
+                    const day = d.getDate();
+                    const status = a.my_submission?.status || 'pending';
+                    
+                    let color = 'green';
+                    if (status === 'pending' || status === 'resubmit_requested') color = 'red';
+                    else if (status === 'submitted' || status === 'late') color = 'orange';
+
+                    const existing = dates.get(day);
+                    if (!existing || color === 'red' || (color === 'orange' && existing === 'green')) {
+                        dates.set(day, color);
+                    }
+                }
+            }
+        });
+        return dates;
+    }, [assignments, year, month]);
+
+    const today = new Date();
+    const isCurrentMonth = today.getFullYear() === year && today.getMonth() === month;
+
+    const blanks = Array.from({ length: firstDay }, (_, i) => <div key={`blank-${i}`} />);
+    const days = Array.from({ length: daysInMonth }, (_, i) => {
+        const dayNum = i + 1;
+        const isToday = isCurrentMonth && today.getDate() === dayNum;
+        const dueColor = dueDates.get(dayNum);
+        
+        let className = "asg-v3-cal-day";
+        if (isToday) className += " active";
+        if (dueColor && !isToday) className += ` has-due-${dueColor}`;
+
+        return (
+            <div key={dayNum} className={className}>
+                {dayNum}
+            </div>
+        );
+    });
+
+    return (
+        <div className="asg-v3-calendar">
+            <div className="asg-v3-cal-header">
+                📅 Calendar
+            </div>
+            <div className="asg-v3-cal-nav">
+                <button onClick={prevMonth}>{'<'}</button>
+                <span>{monthNames[month]} {year}</span>
+                <button onClick={nextMonth}>{'>'}</button>
+            </div>
+            <div className="asg-v3-cal-grid">
+                {dayNames.map(d => <div key={d} className="asg-v3-cal-day-name">{d}</div>)}
+                {blanks}
+                {days}
+            </div>
+        </div>
+    );
+}
+
+function UpcomingDeadlines({ pendingAssignments }) {
+    // Sort pending assignments by closest due date
+    const sorted = [...pendingAssignments]
+        .filter(a => a.due_date && new Date(a.due_date) > new Date())
+        .sort((a, b) => new Date(a.due_date) - new Date(b.due_date))
+        .slice(0, 3); // Take top 3
+
+    return (
+        <div className="asg-v3-deadlines">
+            <div className="asg-v3-deadlines-header">
+                ⏳ Upcoming Deadlines
+            </div>
+            {sorted.length === 0 ? (
+                <div style={{ fontSize: '0.85rem', color: '#64748b', textAlign: 'center', padding: '10px 0' }}>No upcoming deadlines!</div>
+            ) : (
+                sorted.map(a => (
+                    <div key={a.id} className="asg-v3-deadline-item">
+                        <div className="asg-v3-deadline-title">{a.title}</div>
+                        <div className="asg-v3-deadline-meta">{a.Subject?.name} • Class {a.Class?.name?.replace('Class ', '')}</div>
+                        <div className="asg-v3-deadline-time">
+                            📅 {new Date(a.due_date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                            <DaysLeftBadge dueDate={a.due_date} />
+                        </div>
+                    </div>
+                ))
+            )}
+            <a href="#" className="asg-v3-view-all">View All Assignments {'>'}</a>
+        </div>
+    );
 }
 
 function GradeCircle({ marks, maxMarks }) {
@@ -45,15 +155,15 @@ function GradeCircle({ marks, maxMarks }) {
     return (
         <div style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '12px 0' }}>
             <div style={{ textAlign: 'center' }}>
-                <div className="sa-grade-big" style={{ color }}>{marks}/{maxMarks}</div>
+                <div style={{ fontSize: '2rem', fontWeight: 800, color }}>{marks}/{maxMarks}</div>
                 <div style={{ fontSize: 12, color: '#9ca3af' }}>Score</div>
             </div>
             <div style={{ flex: 1 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, marginBottom: 4 }}>
                     <span style={{ fontWeight: 600 }}>{pct}%</span>
                 </div>
-                <div className="sa-grade-bar-wrap">
-                    <div className="sa-grade-bar" style={{ width: `${pct}%`, background: `linear-gradient(90deg, ${color}, ${color}88)` }} />
+                <div style={{ height: 8, background: '#f3f4f6', borderRadius: 4, overflow: 'hidden' }}>
+                    <div style={{ width: `${pct}%`, background: `linear-gradient(90deg, ${color}, ${color}88)`, height: '100%' }} />
                 </div>
             </div>
         </div>
@@ -61,9 +171,11 @@ function GradeCircle({ marks, maxMarks }) {
 }
 
 export default function StudentAssignments() {
+    const navigate = useNavigate();
     const [assignments, setAssignments] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [activeTab, setActiveTab] = useState('pending');
+    const [activeTab, setActiveTab] = useState('all');
+    const [sortFilter, setSortFilter] = useState('newest');
     const [detailAsg, setDetailAsg] = useState(null);
     const [uploading, setUploading] = useState(false);
     const [file, setFile] = useState(null);
@@ -74,10 +186,7 @@ export default function StudentAssignments() {
     const fetchAssignments = useCallback(async () => {
         try {
             setLoading(true);
-            
-            // Clear unread assignments count so dashboard badge disappears
             api.post('/students/clear-unread-assignments').catch(() => {});
-            
             const res = await api.get('/assignments/student/all');
             setAssignments(res.data.assignments || []);
         } catch (e) {
@@ -92,6 +201,7 @@ export default function StudentAssignments() {
             const res = await api.get(`/assignments/student/${asg.id}`);
             setDetailAsg(res.data.assignment);
             setFile(null);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         } catch (e) { flash('Failed to load details', 'error'); }
     };
 
@@ -124,270 +234,375 @@ export default function StudentAssignments() {
     const resubmit  = assignments.filter(a => a.my_submission?.status === 'resubmit_requested');
 
     const TAB_LIST = [
-        { key: 'pending',   label: 'Pending',    list: pending,   icon: '⏳', color: '#d97706' },
-        { key: 'submitted', label: 'Submitted',   list: submitted, icon: '📩', color: '#2563eb' },
-        { key: 'graded',    label: 'Graded',      list: graded,    icon: '✅', color: '#16a34a' },
-        { key: 'resubmit',  label: 'Resubmit',    list: resubmit,  icon: '🔄', color: '#7c3aed' },
-        { key: 'all',       label: 'All',          list: assignments, icon: '📚', color: '#6b7280' },
+        { key: 'all',       label: 'All',          list: assignments, icon: '▦' },
+        { key: 'pending',   label: 'Pending',    list: pending,   icon: '⏳' },
+        { key: 'submitted', label: 'Submitted',   list: submitted, icon: '📤' },
+        { key: 'graded',    label: 'Graded',      list: graded,    icon: '✓' },
+        { key: 'resubmit',  label: 'Resubmit',    list: resubmit,  icon: '🔄' },
     ];
 
-    const currentList = TAB_LIST.find(t => t.key === activeTab)?.list || [];
+    let currentList = TAB_LIST.find(t => t.key === activeTab)?.list || [];
 
-    // Border color by status
-    const cardClass = (a) => {
-        if (!a.my_submission || a.my_submission.status === 'pending') return a.is_overdue ? 'sa-overdue-header' : '';
-        if (a.my_submission.status === 'graded') return 'sa-graded-header';
-        if (a.my_submission.status === 'resubmit_requested') return 'sa-resubmit-header';
-        return 'sa-submitted-header';
+    // Apply sorting
+    currentList = [...currentList].sort((a, b) => {
+        if (sortFilter === 'newest') {
+            return new Date(b.created_at || b.due_date) - new Date(a.created_at || a.due_date);
+        } else if (sortFilter === 'oldest') {
+            return new Date(a.created_at || a.due_date) - new Date(b.created_at || b.due_date);
+        } else if (sortFilter === 'due_date') {
+            return new Date(a.due_date) - new Date(b.due_date);
+        }
+        return 0;
+    });
+
+    const formatDateTime = (dateString) => {
+        const d = new Date(dateString);
+        return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) + ', ' + d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+    };
+
+    // Helper for time left string format
+    const getTimeLeftStr = (dueDate) => {
+        const diff = new Date(dueDate) - new Date();
+        if (diff <= 0) return 'Overdue';
+        const hours = Math.floor(diff / (1000 * 60 * 60));
+        const days = Math.floor(hours / 24);
+        if (days > 0) return `${days}d ${hours % 24}h left`;
+        return `${hours}h left`;
     };
 
     if (loading) {
         return (
-            <div className="dashboard-container">
-                <div style={{ textAlign: 'center', padding: '4rem' }}>
-                    <div className="fa-spinner" /><p style={{ marginTop: 12, color: '#6b7280' }}>Loading assignments...</p>
-                </div>
+            <div className="asg-v2-container" style={{ padding: '4rem', textAlign: 'center' }}>
+                <p style={{ color: '#64748b' }}>Loading assignments...</p>
             </div>
         );
     }
 
     return (
-        <div className="dashboard-container">
-            {msg && <div className={`fa-flash ${msg.type}`}>{msg.type === 'success' ? '✅' : '❌'} {msg.text}</div>}
+        <div className="asg-v2-container">
+            {msg && <div style={{ background: msg.type === 'success' ? '#dcfce7' : '#fee2e2', color: msg.type === 'success' ? '#16a34a' : '#dc2626', padding: '12px 16px', borderRadius: 8, marginBottom: 16 }}>
+                {msg.type === 'success' ? '✅' : '❌'} {msg.text}
+            </div>}
 
-            <div className="dashboard-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div>
-                    <h1>📝 My Assignments</h1>
-                    <p>View, submit, and track your assignment submissions</p>
+            {/* ── HEADER ── */}
+            <div className="asg-v2-header">
+                <div className="asg-v2-header-left">
+                    <div className="asg-v2-header-icon">📋</div>
+                    <div className="asg-v2-header-titles">
+                        <h1>My Assignments</h1>
+                        <p>View, submit, and track your assignment submissions</p>
+                    </div>
                 </div>
-                <div style={{ display: 'flex', gap: '10px' }}>
-                    {detailAsg && (
-                        <button className="animated-btn secondary" onClick={() => setDetailAsg(null)}>
-                            <span className="icon">←</span> Back to List
+                {detailAsg && (
+                    <div style={{ display: 'flex', gap: '10px' }}>
+                        <button style={{ padding: '8px 16px', borderRadius: 20, background: '#fff', border: '1px solid #e2e8f0', cursor: 'pointer', fontWeight: 600, color: '#475569' }} onClick={() => setDetailAsg(null)}>
+                            ← Back to List
                         </button>
-                    )}
-                    <BackButton to="/student/dashboard" />
-                </div>
+                        <BackButton to="/student/dashboard" style={{ padding: '8px 16px', borderRadius: 20, background: '#6366f1', color: '#fff', border: 'none', cursor: 'pointer', fontWeight: 600, textDecoration: 'none' }} />
+                    </div>
+                )}
             </div>
-
-            {/* ── STATISTICS ROW ── */}
-            {!detailAsg && (
-                <div className="fa-stats-row">
-                    <div className="fa-stat-card" style={{ borderTopColor: '#d97706' }}>
-                        <div className="fa-stat-icon">⏳</div>
-                        <div><div className="fa-stat-value" style={{ color: '#d97706' }}>{pending.length}</div><div className="fa-stat-label">Pending</div></div>
-                    </div>
-                    <div className="fa-stat-card" style={{ borderTopColor: '#7c3aed' }}>
-                        <div className="fa-stat-icon">🔄</div>
-                        <div><div className="fa-stat-value" style={{ color: '#7c3aed' }}>{resubmit.length}</div><div className="fa-stat-label">Resubmit Required</div></div>
-                    </div>
-                    <div className="fa-stat-card" style={{ borderTopColor: '#2563eb' }}>
-                        <div className="fa-stat-icon">📩</div>
-                        <div><div className="fa-stat-value" style={{ color: '#2563eb' }}>{submitted.length}</div><div className="fa-stat-label">Awaiting Grade</div></div>
-                    </div>
-                    <div className="fa-stat-card" style={{ borderTopColor: '#16a34a' }}>
-                        <div className="fa-stat-icon">✅</div>
-                        <div><div className="fa-stat-value" style={{ color: '#16a34a' }}>{graded.length}</div><div className="fa-stat-label">Graded</div></div>
-                    </div>
-                </div>
-            )}
 
             {/* ── DETAIL VIEW ── */}
             {detailAsg && (
-                <div className="card">
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12, marginBottom: 16 }}>
+                <div className="asg-v2-detail-card" style={{ marginBottom: 24 }}>
+                    <div className="asg-v2-detail-header">
                         <div>
-                            <h2 style={{ margin: '0 0 6px' }}>{detailAsg.title}</h2>
-                            <p className="fa-asg-meta">📚 {detailAsg.Class?.name} | 📖 {detailAsg.Subject?.name} | 👨‍🏫 {detailAsg.faculty?.name}</p>
-                            <p className="fa-asg-meta">Due: {new Date(detailAsg.due_date).toLocaleString()} | 🎯 {detailAsg.max_marks} marks</p>
-                        </div>
-                        <StatusBadge status={detailAsg.my_submission?.status || 'pending'} />
-                    </div>
-
-                    {detailAsg.description && (
-                        <div style={{ background: 'var(--bg-secondary, #f9fafb)', borderRadius: 8, padding: '16px 18px', marginBottom: 20 }}>
-                            <strong style={{ display: 'block', marginBottom: 6, fontSize: 13 }}>📋 Instructions</strong>
-                            <p style={{ margin: 0, fontSize: 14, color: '#374151', lineHeight: 1.6 }}>{detailAsg.description}</p>
-                        </div>
-                    )}
-
-                    {detailAsg.reference_file_url && (
-                        <div style={{ marginBottom: 20 }}>
-                            <button
-                                onClick={async () => {
-                                    const fileUrl = resolveFileUrl(detailAsg.reference_file_url);
-                                    const urlParts = detailAsg.reference_file_url?.split('/') || [];
-                                    const rawFileName = urlParts[urlParts.length - 1] || `${detailAsg.title}.pdf`;
-                                    const safeFileName = rawFileName.replace(/[^a-zA-Z0-9._-]/g, '_');
-                                    
-                                    toast.loading("Downloading...", { id: "dl-ref" });
-                                    await downloadRemoteFile(fileUrl, safeFileName);
-                                    toast.dismiss("dl-ref");
-                                }}
-                                className="btn btn-secondary"
-                            >
-                                📥 Download Reference File
-                            </button>
-                        </div>
-                    )}
-
-                    {/* GRADED VIEW */}
-                    {detailAsg.my_submission?.status === 'graded' && (
-                        <div style={{ background: '#f0fdf4', border: '1px solid #86efac', borderRadius: 12, padding: '20px', marginBottom: 20 }}>
-                            <strong style={{ color: '#15803d', display: 'block', marginBottom: 8 }}>🏆 Your Result</strong>
-                            <GradeCircle marks={detailAsg.my_submission.marks_obtained} maxMarks={detailAsg.max_marks} />
-                            <div style={{ fontSize: 32, fontWeight: 800, color: '#15803d', marginBottom: 4 }}>
-                                Grade: {detailAsg.my_submission.grade}
+                            <div className="asg-v2-detail-title-row">
+                                <h2 className="asg-v2-detail-title">{detailAsg.title}</h2>
+                                <StatusBadgeV2 status={detailAsg.my_submission?.status || 'pending'} />
                             </div>
-                            {detailAsg.my_submission.feedback && (
-                                <div style={{ marginTop: 12 }}>
-                                    <strong style={{ fontSize: 13, color: '#374151' }}>Teacher Feedback:</strong>
-                                    <p style={{ margin: '6px 0 0', color: '#374151', fontSize: 14, fontStyle: 'italic' }}>{detailAsg.my_submission.feedback}</p>
+                            <div className="asg-v2-detail-meta">
+                                <span style={{ color: '#22c55e' }}>📚 Class {detailAsg.Class?.name?.replace('Class ', '') || 'N/A'}</span>
+                                <span className="asg-v2-divider">|</span>
+                                <span style={{ color: '#3b82f6' }}>📖 {detailAsg.Subject?.name}</span>
+                                <span className="asg-v2-divider">|</span>
+                                <span>👤 {detailAsg.faculty?.name}</span>
+                            </div>
+                            <div className="asg-v2-detail-submeta">
+                                <span>📅 Due: {formatDateTime(detailAsg.due_date)}</span>
+                                <span style={{ color: '#e11d48' }}>🎯 {Number(detailAsg.max_marks)} marks</span>
+                            </div>
+                        </div>
+                        <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
+                            {(!detailAsg.my_submission || ['pending', 'late'].includes(detailAsg.my_submission.status)) && (
+                                <div className="asg-v2-time-badge">
+                                    <div className="asg-v2-time-val">
+                                        ⏱ {getTimeLeftStr(detailAsg.due_date)}
+                                    </div>
+                                    <div className="asg-v2-time-label">Time Left</div>
                                 </div>
                             )}
                         </div>
-                    )}
+                    </div>
 
-                    {/* RESUBMIT REQUEST VIEW */}
-                    {detailAsg.my_submission?.status === 'resubmit_requested' && (
-                        <div style={{ background: '#f5f3ff', border: '1px solid #c4b5fd', borderRadius: 12, padding: '16px 20px', marginBottom: 20 }}>
-                            <strong style={{ color: '#7c3aed' }}>🔄 Resubmission Required</strong>
-                            {detailAsg.my_submission.resubmit_reason && (
-                                <p style={{ margin: '8px 0 0', fontSize: 14, color: '#374151' }}>
-                                    <strong>Reason:</strong> {detailAsg.my_submission.resubmit_reason}
-                                </p>
+                    <div className="asg-v2-two-col">
+                        <div>
+                            <div className="asg-v2-section-title">
+                                <span style={{ color: '#7c3aed' }}>📑</span> Instructions
+                            </div>
+                            <div className="asg-v2-section-content">
+                                {detailAsg.description ? detailAsg.description : "No instructions provided."}
+                            </div>
+                        </div>
+                        <div>
+                            <div className="asg-v2-section-title">
+                                <span style={{ color: '#3b82f6' }}>📄</span> Reference File
+                            </div>
+                            <div className="asg-v2-section-content" style={{ marginBottom: '12px' }}>
+                                Download the reference material before submitting.
+                            </div>
+                            {detailAsg.reference_file_url ? (
+                                <button
+                                    onClick={async () => {
+                                        const fileUrl = resolveFileUrl(detailAsg.reference_file_url);
+                                        const urlParts = detailAsg.reference_file_url?.split('/') || [];
+                                        const safeFileName = (urlParts[urlParts.length - 1] || `${detailAsg.title}.pdf`).replace(/[^a-zA-Z0-9._-]/g, '_');
+                                        toast.loading("Downloading...", { id: "dl-ref" });
+                                        await downloadRemoteFile(fileUrl, safeFileName);
+                                        toast.dismiss("dl-ref");
+                                    }}
+                                    className="asg-v2-btn-outline" style={{ padding: '8px 16px', borderRadius: '8px', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                                >
+                                    📥 Download File
+                                </button>
+                            ) : (
+                                <div style={{ color: '#94a3b8', fontStyle: 'italic', fontSize: '0.85rem' }}>No reference file attached.</div>
                             )}
                         </div>
-                    )}
+                    </div>
 
-                    {/* SUBMITTED VIEW */}
-                    {['submitted', 'late'].includes(detailAsg.my_submission?.status) && (
-                        <div style={{ background: '#eff6ff', border: '1px solid #93c5fd', borderRadius: 12, padding: '16px 20px', marginBottom: 20 }}>
-                            <strong style={{ color: '#2563eb' }}>📩 Submitted — Awaiting Grade</strong>
-                            {detailAsg.my_submission.is_late && (
-                                <p style={{ margin: '4px 0 0', color: '#d97706', fontSize: 13 }}>
-                                    ⚠️ Late by {Math.floor(detailAsg.my_submission.late_by_minutes / 60)}h {detailAsg.my_submission.late_by_minutes % 60}m
-                                </p>
-                            )}
-                            <p style={{ margin: '4px 0 0', fontSize: 13, color: '#374151' }}>
-                                Submitted on: {new Date(detailAsg.my_submission.submitted_at).toLocaleString()}
-                            </p>
-                        </div>
-                    )}
-
-                    {/* UPLOAD SECTION (pending or resubmit) */}
+                    {/* UPLOAD SECTION */}
                     {(!detailAsg.my_submission || detailAsg.my_submission.status === 'pending' || detailAsg.my_submission.status === 'resubmit_requested') && (
                         <div>
                             {detailAsg.is_overdue && !detailAsg.allow_late_submission ? (
-                                <div className="fa-badge" style={{ background: '#fee2e2', color: '#991b1b', fontSize: 14, padding: '10px 16px' }}>
+                                <div style={{ background: '#fee2e2', color: '#b91c1c', fontSize: '0.9rem', padding: '12px 16px', borderRadius: '8px', textAlign: 'center' }}>
                                     ⛔ This assignment is closed. No more submissions accepted.
                                 </div>
                             ) : (
-                                <div>
-                                    {detailAsg.is_overdue && (
-                                        <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 8, padding: '10px 14px', marginBottom: 16, fontSize: 13, color: '#92400e' }}>
-                                            ⚠️ This assignment is overdue. Late submission may be penalized.
+                                <div className="asg-v2-upload-area" onClick={() => document.getElementById('file-inp').click()}>
+                                    <div className="asg-v2-upload-left">
+                                        <div className="asg-v2-upload-icon">☁️</div>
+                                        <div className="asg-v2-upload-title">
+                                            {detailAsg.my_submission?.status === 'resubmit_requested' ? 'Upload Your Resubmission' : 'Upload Your Submission'}
                                         </div>
-                                    )}
-                                    <div className="sa-upload-area" onClick={() => document.getElementById('file-inp').click()}>
-                                        <div style={{ fontSize: 32, marginBottom: 8 }}>📁</div>
-                                        <div style={{ fontSize: 15, fontWeight: 600, color: '#374151' }}>
-                                            {file ? file.name : 'Click to select your submission file'}
+                                        <div className="asg-v2-upload-sub">
+                                            {file ? <span style={{ color: '#16a34a', fontWeight: 600 }}>{file.name}</span> : 'Drag & drop your file here or click to browse'}
                                         </div>
-                                        <div style={{ fontSize: 12, color: '#9ca3af', marginTop: 4 }}>
-                                            PDF, DOCX, ZIP, Image accepted · Max {detailAsg.max_file_size_mb || 10} MB
+                                        <div className="asg-v2-upload-formats">
+                                            PDF, DOCX, ZIP, Image accepted · Max {detailAsg.max_file_size_mb || 50} MB
                                         </div>
-                                        <input
-                                            id="file-inp" type="file" style={{ display: 'none' }}
-                                            accept=".pdf,.docx,.doc,.zip,.jpg,.png"
-                                            onChange={e => setFile(e.target.files[0])}
-                                        />
                                     </div>
-                                    {file && (
-                                        <div style={{ display: 'flex', gap: 10, marginTop: 14 }}>
-                                            <button className="btn btn-primary" onClick={handleSubmit} disabled={uploading}>
-                                                {uploading ? 'Uploading...' : detailAsg.my_submission?.status === 'resubmit_requested' ? '🔄 Resubmit' : '📤 Submit Assignment'}
-                                            </button>
-                                            <button className="btn btn-secondary" onClick={() => setFile(null)}>Cancel</button>
-                                        </div>
-                                    )}
+                                    <input
+                                        id="file-inp" type="file" style={{ display: 'none' }}
+                                        accept=".pdf,.docx,.doc,.zip,.jpg,.png"
+                                        onChange={e => setFile(e.target.files[0])}
+                                    />
+                                    <div style={{ marginLeft: 'auto', paddingLeft: '24px' }}>
+                                        <button className="asg-v2-btn-purple" onClick={(e) => { e.stopPropagation(); handleSubmit(); }} disabled={uploading}>
+                                            {uploading ? 'Uploading...' : 'Choose File'}
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+                            <div className="asg-v2-notice" style={{ marginTop: '16px', background: '#eff6ff', color: '#1d4ed8' }}>
+                                ℹ Make sure your file is correct before submitting. You can only submit once.
+                            </div>
+                        </div>
+                    )}
+
+                    {/* GRADED SECTION */}
+                    {detailAsg.my_submission?.status === 'graded' && (
+                        <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '12px', padding: '20px', marginTop: '24px' }}>
+                            <strong style={{ color: '#16a34a', display: 'block', marginBottom: '8px' }}>🏆 Your Result</strong>
+                            <GradeCircle marks={detailAsg.my_submission.marks_obtained} maxMarks={detailAsg.max_marks} />
+                            <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#16a34a', marginBottom: '4px' }}>
+                                Grade: {detailAsg.my_submission.grade}
+                            </div>
+                            {detailAsg.my_submission.feedback && (
+                                <div style={{ marginTop: '12px', background: '#fff', padding: '12px', borderRadius: '8px', border: '1px solid #dcfce7' }}>
+                                    <strong style={{ fontSize: '0.85rem', color: '#15803d' }}>Teacher Feedback:</strong>
+                                    <p style={{ margin: '6px 0 0', color: '#166534', fontSize: '0.9rem', fontStyle: 'italic' }}>{detailAsg.my_submission.feedback}</p>
                                 </div>
                             )}
                         </div>
                     )}
-
-                    {/* Submission History */}
-                    {detailAsg.my_submission?.history?.length > 0 && (
-                        <div style={{ marginTop: 20 }}>
-                            <strong style={{ fontSize: 14, color: '#374151', display: 'block', marginBottom: 8 }}>📁 Submission History (Attempt {detailAsg.my_submission.attempt_number - 1})</strong>
-                            {detailAsg.my_submission.history.map((h, i) => (
-                                <div key={i} style={{ fontSize: 13, color: '#6b7280', padding: '6px 0', borderBottom: '1px solid #f3f4f6' }}>
-                                    Attempt #{h.attempt_number} — {new Date(h.submitted_at).toLocaleString()}
-                                </div>
-                            ))}
-                        </div>
-                    )}
                 </div>
             )}
 
-            {/* ── LIST VIEW ── */}
-            {!detailAsg && (
-                <div className="card">
-                    <div className="fa-filter-tabs">
-                        {TAB_LIST.map(t => (
-                            <button
-                                key={t.key}
-                                className={`fa-tab ${activeTab === t.key ? 'active' : ''}`}
-                                onClick={() => setActiveTab(t.key)}
-                                style={activeTab === t.key ? { background: t.color, borderColor: t.color } : {}}
-                            >
-                                {t.icon} {t.label} ({t.list.length})
-                            </button>
-                        ))}
+            {/* ── TWO COLUMN MAIN LAYOUT ── */}
+            <div className="asg-v3-layout" style={{ display: detailAsg ? 'none' : 'grid' }}>
+                
+                {/* LEFT CONTENT */}
+                <div className="asg-v3-left-col">
+                    {/* ── STATISTICS ROW ── */}
+                    <div className="asg-v2-stats-grid">
+                        <div className="asg-v2-stat-card">
+                            <div className="asg-v2-stat-top">
+                                <div className="asg-v2-stat-icon asg-v2-bg-orange asg-v2-orange">⏳</div>
+                                <div className="asg-v2-stat-value asg-v2-orange">{pending.length}</div>
+                            </div>
+                            <div className="asg-v2-stat-label">Pending</div>
+                            <div className="asg-v2-stat-sub">Awaiting submission</div>
+                        </div>
+                        <div className="asg-v2-stat-card">
+                            <div className="asg-v2-stat-top">
+                                <div className="asg-v2-stat-icon asg-v2-bg-blue asg-v2-blue">🔄</div>
+                                <div className="asg-v2-stat-value asg-v2-blue">{resubmit.length}</div>
+                            </div>
+                            <div className="asg-v2-stat-label">Resubmit Required</div>
+                            <div className="asg-v2-stat-sub">Need resubmission</div>
+                        </div>
+                        <div className="asg-v2-stat-card">
+                            <div className="asg-v2-stat-top">
+                                <div className="asg-v2-stat-icon asg-v2-bg-purple asg-v2-purple">📥</div>
+                                <div className="asg-v2-stat-value asg-v2-purple">{submitted.length}</div>
+                            </div>
+                            <div className="asg-v2-stat-label">Awaiting Grade</div>
+                            <div className="asg-v2-stat-sub">Not yet graded</div>
+                        </div>
+                        <div className="asg-v2-stat-card">
+                            <div className="asg-v2-stat-top">
+                                <div className="asg-v2-stat-icon asg-v2-bg-green asg-v2-green">✓</div>
+                                <div className="asg-v2-stat-value asg-v2-green">{graded.length}</div>
+                            </div>
+                            <div className="asg-v2-stat-label">Graded</div>
+                            <div className="asg-v2-stat-sub">Completed</div>
+                        </div>
                     </div>
 
-                    <div className="fa-assignment-list">
+                    {/* FILTER BAR */}
+                    <div className="asg-v2-filter-bar">
+                        <div className="asg-v2-filter-tabs">
+                            {TAB_LIST.map(t => (
+                                <button
+                                    key={t.key}
+                                    className={`asg-v2-filter-btn ${activeTab === t.key ? 'active' : ''}`}
+                                    onClick={() => setActiveTab(t.key)}
+                                >
+                                    {t.label} ({t.list.length})
+                                </button>
+                            ))}
+                        </div>
+                        <div className="asg-v2-sort-container">
+                            Sort by: 
+                            <select className="asg-v2-sort-dropdown" value={sortFilter} onChange={(e) => setSortFilter(e.target.value)}>
+                                <option value="newest">Latest Due Date</option>
+                                <option value="oldest">Oldest First</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    {/* NEW LIST VIEW (Phase 3 Cards) */}
+                    <div className="asg-v3-list">
                         {currentList.length === 0 ? (
-                            <div className="fa-empty">
-                                <div style={{ fontSize: 48 }}>🎉</div>
-                                <p>{activeTab === 'pending' ? 'No pending assignments!' : 'Nothing here.'}</p>
+                            <div style={{ padding: '4rem', textAlign: 'center', background: '#fff', borderRadius: 16, border: '1px solid #e2e8f0' }}>
+                                <div style={{ fontSize: 48, marginBottom: 12 }}>🎉</div>
+                                <p style={{ color: '#64748b', fontWeight: 500 }}>Nothing here!</p>
                             </div>
                         ) : (
-                            currentList.map(asg => (
-                                <div key={asg.id} className={`sa-assignment-card ${cardClass(asg)}`}>
-                                    <div className="sa-header">
-                                        <div>
-                                            <StatusBadge status={asg.my_submission?.status || 'pending'} />
-                                            <h3 className="sa-title">{asg.title}</h3>
-                                            <p className="fa-asg-meta">📚 {asg.Class?.name} | 📖 {asg.Subject?.name} | 👨‍🏫 {asg.faculty?.name}</p>
+                            currentList.map(asg => {
+                                const status = asg.my_submission?.status || 'pending';
+                                const isGraded = status === 'graded';
+                                const isPending = status === 'pending';
+                                
+                                return (
+                                    <div key={asg.id} className="asg-v3-card">
+                                        <div className="asg-v3-menu-dots">⋮</div>
+                                        
+                                        {/* Left: Icon & Badge */}
+                                        <div className="asg-v3-card-left">
+                                            <div className="asg-v3-card-icon-box" style={{ background: isGraded ? '#dcfce7' : isPending ? '#ffedd5' : '#e0e7ff', color: isGraded ? '#16a34a' : isPending ? '#ea580c' : '#4f46e5' }}>
+                                                {isGraded ? '📄' : isPending ? '⏳' : '📥'}
+                                            </div>
+                                            <StatusBadgeV2 status={status} />
                                         </div>
-                                        <div style={{ textAlign: 'right' }}>
-                                            {!asg.my_submission && <CountdownBadge dueDate={asg.due_date} overdue={asg.is_overdue} />}
-                                            {asg.my_submission?.status === 'graded' && (
-                                                <div style={{ fontWeight: 700, color: '#16a34a' }}>
-                                                    {asg.my_submission.marks_obtained}/{asg.max_marks}
-                                                    <span className="fa-grade-badge">{asg.my_submission.grade}</span>
+
+                                        {/* Center: Content */}
+                                        <div className="asg-v3-card-center">
+                                            <h3 className="asg-v3-title">{asg.title}</h3>
+                                            <div className="asg-v3-meta-row">
+                                                <div className="asg-v3-meta-item">
+                                                    <span style={{ color: '#3b82f6' }}>📚</span> Mathematics
                                                 </div>
+                                                <span className="asg-v3-meta-divider">|</span>
+                                                <div className="asg-v3-meta-item">
+                                                    <span style={{ color: '#8b5cf6' }}>🎓</span> Class {asg.Class?.name?.replace('Class ', '') || '10'}
+                                                </div>
+                                                <span className="asg-v3-meta-divider">|</span>
+                                                <div className="asg-v3-meta-item">
+                                                    👤 {asg.faculty?.name || 'Rahul Sharma'}
+                                                </div>
+                                            </div>
+                                            <div className="asg-v3-meta-row" style={{ color: '#0f172a' }}>
+                                                <div className="asg-v3-meta-item">
+                                                    📅 Due: {formatDateTime(asg.due_date)}
+                                                </div>
+                                                <div className="asg-v3-meta-item" style={{ marginLeft: 16 }}>
+                                                    <span style={{ color: '#e11d48' }}>🎯</span> {Number(asg.max_marks)} marks
+                                                </div>
+                                            </div>
+                                            <div className="asg-v3-desc">
+                                                {asg.description || 'Submit before the deadline. Complete all questions and upload your file.'}
+                                            </div>
+                                        </div>
+
+                                        {/* Right: Action Box */}
+                                        <div className="asg-v3-card-right" style={{ background: isGraded ? '#f0fdf4' : isPending ? '#fff7ed' : '#f8fafc', border: `1px solid ${isGraded ? '#bbf7d0' : isPending ? '#ffedd5' : '#e2e8f0'}` }}>
+                                            {isGraded ? (
+                                                <>
+                                                    <div className="asg-v3-action-label">Your Score</div>
+                                                    <div className="asg-v3-action-value" style={{ color: '#16a34a' }}>
+                                                        {Number(asg.my_submission?.marks_obtained || 0)}/{Number(asg.max_marks)}
+                                                    </div>
+                                                    <div className="asg-v3-action-sub" style={{ color: '#15803d' }}>
+                                                        Grade: {asg.my_submission?.grade || 'A+'}
+                                                    </div>
+                                                    <button className="asg-v3-action-btn" style={{ color: '#16a34a', border: '1px solid #16a34a' }} onClick={() => openDetail(asg)}>
+                                                        📈 View Result
+                                                    </button>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <div className="asg-v3-action-label">Time Left</div>
+                                                    <div className="asg-v3-action-value" style={{ color: '#ea580c' }}>
+                                                        {getTimeLeftStr(asg.due_date)}
+                                                    </div>
+                                                    <div className="asg-v3-action-sub"></div>
+                                                    <button className="asg-v3-action-btn" style={{ color: '#4f46e5', border: '1px solid #e0e7ff', background: '#fff' }} onClick={() => openDetail(asg)}>
+                                                        📤 Submit Now
+                                                    </button>
+                                                </>
                                             )}
                                         </div>
                                     </div>
-                                    <div className="fa-due-info">
-                                        Due: {new Date(asg.due_date).toLocaleString()}
-                                        {asg.my_submission?.is_late && <span className="fa-late-badge">LATE</span>}
-                                    </div>
-                                    <div style={{ marginTop: 10 }}>
-                                        <button className="btn btn-sm btn-primary" onClick={() => openDetail(asg)}>
-                                            {asg.my_submission?.status === 'pending' && !asg.is_overdue ? '📤 Submit' :
-                                             asg.my_submission?.status === 'resubmit_requested' ? '🔄 Resubmit' :
-                                             asg.my_submission?.status === 'graded' ? '📊 View Grade' : '📋 View Details'}
-                                        </button>
-                                    </div>
-                                </div>
-                            ))
+                                );
+                            })
                         )}
                     </div>
+
+                    {/* Help Banner */}
+                    <div className="asg-v3-help-banner">
+                        <div className="asg-v3-help-left">
+                            <div className="asg-v3-help-icon">ℹ</div>
+                            <div>
+                                <div className="asg-v3-help-title">Need Help with Assignments?</div>
+                                <div className="asg-v3-help-sub">If you have any questions or face any issues, you can contact your teacher or use the subject chat.</div>
+                            </div>
+                        </div>
+                        <button className="asg-v3-help-btn" onClick={() => navigate('/student/chat')}>
+                            💬 Go to Subject Chat
+                        </button>
+                    </div>
+
                 </div>
-            )}
+
+                {/* RIGHT SIDEBAR */}
+                <div className="asg-v3-sidebar">
+                    <MiniCalendar assignments={assignments} />
+                    <UpcomingDeadlines pendingAssignments={pending} />
+                </div>
+            </div>
         </div>
     );
 }

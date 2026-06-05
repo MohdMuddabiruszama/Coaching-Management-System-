@@ -354,7 +354,7 @@ exports.getStudentAttendanceReport = async (req, res) => {
         const institute_id = req.user.institute_id;
 
         // Build date filter
-        let dateFilter = {};
+        let dateFilter = null;
         if (start_date && end_date) {
             dateFilter = { [Op.between]: [start_date, end_date] };
         } else if (month && year) {
@@ -364,7 +364,7 @@ exports.getStudentAttendanceReport = async (req, res) => {
         }
 
         const whereClause = { institute_id, student_id };
-        if (Object.keys(dateFilter).length > 0) {
+        if (dateFilter) {
             whereClause.date = dateFilter;
         }
         // Phase 2: Filter by subject_id if provided
@@ -387,7 +387,7 @@ exports.getStudentAttendanceReport = async (req, res) => {
             ]
         });
 
-        // Phase 1: Working days EXCLUDES holidays — calculate distinct dates
+        // Phase 1: Working days EXCLUDES holidays — calculate distinct dates for daily counts
         const uniqueDatesMap = {};
         records.forEach(r => {
             if (!uniqueDatesMap[r.date]) uniqueDatesMap[r.date] = [];
@@ -402,19 +402,27 @@ exports.getStudentAttendanceReport = async (req, res) => {
                 holidays++;
             } else {
                 workingDays++;
-                if (statuses.includes('present')) {
+                if (statuses.includes('present') || statuses.includes('half_day')) {
                     presentDays++;
                 } else if (statuses.includes('late')) {
                     lateDays++;
-                } else if (statuses.includes('half_day')) {
-                    presentDays++;
                 } else if (statuses.includes('absent')) {
                     absentDays++;
                 }
             }
         });
 
-        const percentage = workingDays > 0 ? (((presentDays + lateDays) / workingDays) * 100).toFixed(2) : 0;
+        // Phase 2: Calculate actual session attendance for the percentage / average
+        let sessionWorking = 0, sessionPresent = 0, sessionLate = 0;
+        records.forEach(r => {
+            if (r.status !== 'holiday') {
+                sessionWorking++;
+                if (r.status === 'present' || r.status === 'half_day') sessionPresent++;
+                else if (r.status === 'late') sessionLate++;
+            }
+        });
+
+        const percentage = sessionWorking > 0 ? (((sessionPresent + sessionLate) / sessionWorking) * 100).toFixed(2) : 0;
 
         res.status(200).json({
             success: true,
@@ -483,19 +491,26 @@ exports.getClassAttendanceSummary = async (req, res) => {
                     holidays++;
                 } else {
                     workingDays++;
-                    if (statuses.includes('present')) {
+                    if (statuses.includes('present') || statuses.includes('half_day')) {
                         present++;
                     } else if (statuses.includes('late')) {
                         late++;
-                    } else if (statuses.includes('half_day')) {
-                        present++;
                     } else if (statuses.includes('absent')) {
                         absent++;
                     }
                 }
             });
 
-            const percentage = workingDays > 0 ? (((present + late) / workingDays) * 100).toFixed(2) : 0;
+            let sessionWorking = 0, sessionPresent = 0, sessionLate = 0;
+            records.forEach(r => {
+                if (r.status !== 'holiday') {
+                    sessionWorking++;
+                    if (r.status === 'present' || r.status === 'half_day') sessionPresent++;
+                    else if (r.status === 'late') sessionLate++;
+                }
+            });
+
+            const percentage = sessionWorking > 0 ? (((sessionPresent + sessionLate) / sessionWorking) * 100).toFixed(2) : 0;
 
             return {
                 student_id: student.id,

@@ -434,6 +434,10 @@ const syncDatabase = async () => {
     console.log("Startup schema migrations enabled via RUN_STARTUP_MIGRATIONS=true");
 
     try {
+      await sequelize.query(`ALTER TABLE subjects ADD COLUMN IF NOT EXISTS code VARCHAR(50) DEFAULT NULL;`);
+    } catch (e) { }
+
+    try {
       await sequelize.query(`ALTER TABLE students ADD COLUMN is_full_course BOOLEAN DEFAULT false;`);
     } catch (e) { }
 

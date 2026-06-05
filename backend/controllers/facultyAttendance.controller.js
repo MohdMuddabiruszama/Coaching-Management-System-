@@ -347,9 +347,11 @@ exports.getFacultyAttendanceByDate = async (req, res) => {
             email: f.User?.email,
             phone: f.phone,
             department: f.department || '-',
+            designation: f.designation || '-',
             attendance: attendanceMap[f.id] ? {
                 status: attendanceMap[f.id].status,
-                remarks: attendanceMap[f.id].remarks
+                remarks: attendanceMap[f.id].remarks,
+                marked_at: attendanceMap[f.id].createdAt
             } : null
         }));
 

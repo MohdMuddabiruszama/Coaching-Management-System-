@@ -4,6 +4,47 @@ import LoadingSpinner from "../../components/common/LoadingSpinner";
 import { resolveFileUrl } from "../../utils/resolveUrl";
 import { toast } from "react-hot-toast";
 
+import './AdminNotes.css';
+
+const BookOpenIcon = () => (
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg>
+);
+const DownloadIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+);
+const UploadCloudIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="16 16 12 12 8 16"></polyline><line x1="12" y1="12" x2="12" y2="21"></line><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"></path><polyline points="16 16 12 12 8 16"></polyline></svg>
+);
+const DocumentTextIcon = () => (
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+);
+const FacultyIcon = () => (
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+);
+const SchoolIcon = () => (
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+);
+const BookIcon = () => (
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
+);
+const FilterIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg>
+);
+const SearchIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+);
+const EyeIcon = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+);
+const MoreVerticalIcon = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="19" r="1"></circle></svg>
+);
+
+// File Icons
+const FilePdfIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><path d="M16 13H8"></path><path d="M16 17H8"></path><path d="M10 9H8"></path></svg>
+);
+
 // Helper: human-readable file size
 function formatSize(bytes) {
     if (!bytes) return "—";
@@ -12,15 +53,14 @@ function formatSize(bytes) {
     return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
 }
 
-// Helper: file icon based on mime-type
-function fileIcon(mime) {
-    if (!mime) return "📄";
-    if (mime.includes("pdf")) return "📕";
-    if (mime.includes("word") || mime.includes("docx") || mime.includes("doc")) return "📘";
-    if (mime.includes("presentation") || mime.includes("ppt")) return "📙";
-    if (mime.includes("image")) return "🖼️";
-    if (mime.includes("zip") || mime.includes("compressed")) return "🗜️";
-    return "📄";
+// Helper: get icon config based on mime-type
+function getFileConfig(mime) {
+    if (!mime) return { icon: <DocumentTextIcon />, colorClass: "default", typeName: "DOC" };
+    if (mime.includes("pdf")) return { icon: <FilePdfIcon />, colorClass: "pdf", typeName: "PDF" };
+    if (mime.includes("presentation") || mime.includes("ppt")) return { icon: <DocumentTextIcon />, colorClass: "ppt", typeName: "PPT" };
+    if (mime.includes("image")) return { icon: <DocumentTextIcon />, colorClass: "img", typeName: "PNG" };
+    if (mime.includes("word") || mime.includes("doc")) return { icon: <DocumentTextIcon />, colorClass: "doc", typeName: "DOC" };
+    return { icon: <DocumentTextIcon />, colorClass: "default", typeName: "FILE" };
 }
 
 function AdminNotes() {
@@ -126,246 +166,208 @@ function AdminNotes() {
         subjects: subjects.length,
     }), [notes, faculties, classes, subjects]);
 
+    const handleExport = () => {
+        try {
+            const rows = [['#', 'Title', 'Class', 'Subject', 'Faculty', 'File Size', 'Uploaded On']];
+            filteredNotes.forEach((note, idx) => {
+                rows.push([
+                    idx + 1,
+                    note.title || '',
+                    note.Class?.name || '',
+                    note.Subject?.name || '',
+                    note.Faculty?.User?.name || '',
+                    formatSize(note.file_size),
+                    new Date(note.created_at).toLocaleString()
+                ]);
+            });
+            const csvContent = rows.map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', `Study_Materials.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(url);
+            toast.success("Study materials exported successfully!");
+        } catch (err) {
+            toast.error("Failed to export materials");
+        }
+    };
+
     if (loading) return <div style={{ display: 'flex', justifyContent: 'center', padding: '4rem' }}><LoadingSpinner /></div>;
 
     return (
-        <div className="dashboard-container">
+        <div className="dashboard-container an-wrapper">
             {/* ── Page Header ── */}
-            <div className="dashboard-header">
+            <div className="an-header-container">
                 <div>
-                    <h1>📚 Manage Study Materials</h1>
-                    <p>Monitor and manage all study materials uploaded by faculty members across your institute.</p>
+                    <div className="an-header-title">
+                        <BookOpenIcon />
+                        <h1>Manage Study Materials</h1>
+                    </div>
+                    <p className="an-header-subtitle">Monitor and manage all study materials uploaded by faculty members across your institute.</p>
                 </div>
-                <div style={{ display: 'flex', gap: '8px' }}>
-                    <button className="btn btn-secondary" onClick={() => window.history.back()}>
-                        ⬅ Back
+                <div className="an-header-actions">
+                    <button className="an-btn-outline" onClick={handleExport}>
+                        <DownloadIcon /> Export CSV
                     </button>
-                    <button className="btn btn-secondary" onClick={fetchNotes}>
-                        🔄 Refresh
+                    <button className="an-btn-primary" onClick={() => window.location.href='/admin/notes/create'}>
+                        <UploadCloudIcon /> Upload Material
                     </button>
                 </div>
             </div>
 
             {/* ── Stats Row ── */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
+            <div className="an-stats-grid">
                 {[
-                    { label: "Total Materials", value: stats.total, icon: "📄" },
-                    { label: "Faculty Members", value: stats.faculties, icon: "👨‍🏫" },
-                    { label: "Classes", value: stats.classes, icon: "🏫" },
-                    { label: "Subjects", value: stats.subjects, icon: "📖" },
+                    { label: "Total Materials", sub: "All study materials uploaded", value: stats.total, icon: <DocumentTextIcon />, colorClass: "purple" },
+                    { label: "Faculty Members", sub: "Active uploaders", value: stats.faculties, icon: <FacultyIcon />, colorClass: "green" },
+                    { label: "Classes", sub: "Materials available", value: stats.classes, icon: <SchoolIcon />, colorClass: "orange" },
+                    { label: "Subjects", sub: "Subjects covered", value: stats.subjects, icon: <BookIcon />, colorClass: "blue" },
                 ].map(stat => (
-                    <div key={stat.label} className="card" style={{ padding: '1rem 1.25rem', textAlign: 'center' }}>
-                        <div style={{ fontSize: '1.75rem', marginBottom: '0.25rem' }}>{stat.icon}</div>
-                        <div style={{ fontSize: '1.6rem', fontWeight: 700, color: 'var(--primary)' }}>{stat.value}</div>
-                        <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{stat.label}</div>
+                    <div key={stat.label} className="an-stat-card">
+                        <div className={`an-icon-wrapper ${stat.colorClass}`}>{stat.icon}</div>
+                        <div className="an-stat-info">
+                            <span className="an-stat-value">{stat.value}</span>
+                            <span className="an-stat-label">{stat.label}</span>
+                            <span className="an-stat-sub">{stat.sub}</span>
+                        </div>
                     </div>
                 ))}
             </div>
 
             {/* ── Filters ── */}
-            <div className="card" style={{ padding: '1rem 1.25rem', marginBottom: '1.25rem' }}>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', alignItems: 'center' }}>
-                    <div style={{ flex: '2 1 220px' }}>
-                        <input
-                            type="text"
-                            className="form-input"
-                            placeholder="🔍 Search by title, description, faculty, class, subject…"
-                            value={searchQuery}
-                            onChange={e => setSearchQuery(e.target.value)}
-                        />
-                    </div>
-                    <div style={{ flex: '1 1 150px' }}>
-                        <select
-                            className="form-input"
-                            value={filterClass}
-                            onChange={e => setFilterClass(e.target.value)}
-                        >
-                            <option value="all">All Classes</option>
-                            {classes.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                        </select>
-                    </div>
-                    <div style={{ flex: '1 1 150px' }}>
-                        <select
-                            className="form-input"
-                            value={filterSubject}
-                            onChange={e => setFilterSubject(e.target.value)}
-                        >
-                            <option value="all">All Subjects</option>
-                            {subjects.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-                        </select>
-                    </div>
-                    <div style={{ flex: '1 1 150px' }}>
-                        <select
-                            className="form-input"
-                            value={filterFaculty}
-                            onChange={e => setFilterFaculty(e.target.value)}
-                        >
-                            <option value="all">All Faculty</option>
-                            {faculties.map(f => <option key={f.id} value={f.id}>{f.name}</option>)}
-                        </select>
-                    </div>
-                    {(searchQuery || filterClass !== "all" || filterSubject !== "all" || filterFaculty !== "all") && (
-                        <button
-                            className="btn btn-secondary"
-                            onClick={() => { setSearchQuery(""); setFilterClass("all"); setFilterSubject("all"); setFilterFaculty("all"); }}
-                        >
-                            ✕ Clear
-                        </button>
-                    )}
+            <div className="an-filter-container">
+                <div className="an-search-input">
+                    <SearchIcon />
+                    <input
+                        type="text"
+                        placeholder="Search by title, description, faculty, class, subject..."
+                        value={searchQuery}
+                        onChange={e => setSearchQuery(e.target.value)}
+                    />
                 </div>
-                {filteredNotes.length !== notes.length && (
-                    <div style={{ marginTop: '0.5rem', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-                        Showing <strong>{filteredNotes.length}</strong> of <strong>{notes.length}</strong> materials
-                    </div>
+                <select className="an-select-input" value={filterClass} onChange={e => setFilterClass(e.target.value)}>
+                    <option value="all">All Classes</option>
+                    {classes.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                </select>
+                <select className="an-select-input" value={filterSubject} onChange={e => setFilterSubject(e.target.value)}>
+                    <option value="all">All Subjects</option>
+                    {subjects.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                </select>
+                <select className="an-select-input" value={filterFaculty} onChange={e => setFilterFaculty(e.target.value)}>
+                    <option value="all">All Faculty</option>
+                    {faculties.map(f => <option key={f.id} value={f.id}>{f.name}</option>)}
+                </select>
+                {(searchQuery || filterClass !== 'all' || filterSubject !== 'all' || filterFaculty !== 'all') && (
+                    <button className="an-btn-filters" style={{ color: '#E53E3E', background: '#FFF5F5' }} onClick={() => { setSearchQuery(""); setFilterClass("all"); setFilterSubject("all"); setFilterFaculty("all"); }}>
+                        ✕ Clear Filters
+                    </button>
                 )}
             </div>
 
             {/* ── Table ── */}
-            <div className="card">
-                {filteredNotes.length === 0 ? (
-                    <div style={{ textAlign: 'center', padding: '4rem 2rem', color: 'var(--text-secondary)' }}>
-                        <div style={{ fontSize: '3.5rem', marginBottom: '1rem' }}>{notes.length === 0 ? "📭" : "🔍"}</div>
-                        <h3 style={{ margin: '0 0 0.5rem', color: 'var(--text-primary)' }}>
-                            {notes.length === 0 ? "No Study Materials Yet" : "No Results Found"}
-                        </h3>
-                        <p style={{ margin: 0 }}>
-                            {notes.length === 0
-                                ? "Faculty members haven't uploaded any study materials yet."
-                                : "Try adjusting your search or filter criteria."}
-                        </p>
+            <div className="an-table-card">
+                <div className="an-table-header">
+                    <h3 className="an-table-title">All Study Materials ({filteredNotes.length})</h3>
+                    <div className="an-sort-select">
+                        Sort by:
+                        <select>
+                            <option>Date (Newest)</option>
+                            <option>Date (Oldest)</option>
+                        </select>
                     </div>
-                ) : (
-                    <div className="table-container">
-                        <table className="table mobile-keep">
-                            <thead>
-                                <tr>
-                                    <th>#</th>
-                                    <th>Material</th>
-                                    <th>Class / Subject</th>
-                                    <th>Uploaded By</th>
-                                    <th>File Info</th>
-                                    <th>Date</th>
-                                    <th>Actions</th>
+                </div>
+                <table className="an-table">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Material</th>
+                            <th>Class / Subject</th>
+                            <th>Uploaded By</th>
+                            <th>File Info</th>
+                            <th>Uploaded On</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {filteredNotes.length === 0 ? (
+                            <tr><td colSpan={7} style={{ textAlign: 'center', padding: '3rem', color: '#A0AEC0' }}>No materials found</td></tr>
+                        ) : (
+                            filteredNotes.map((note, idx) => {
+                                const facultyName = note.Faculty?.User?.name || note.Faculty?.User?.email || `Faculty #${note.faculty_id}`;
+                                const fileUrl = resolveFileUrl(note.file_url);
+                                const initials = facultyName.split(' ').map(n=>n[0]).join('').substring(0,2).toUpperCase();
+                                const config = getFileConfig(note.file_type);
+
+                                return (
+                                <tr key={note.id}>
+                                    <td style={{ fontWeight: 600, color: '#1A202C' }}>{idx + 1}</td>
+                                    <td>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                            <div className={`an-file-icon ${config.colorClass}`}>
+                                                {config.icon}
+                                            </div>
+                                            <div>
+                                                <div style={{ fontWeight: 600, color: '#1A202C', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                    {note.title}
+                                                    <span className="an-badge">{config.typeName}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div style={{ fontWeight: 600, color: '#1A202C' }}>{note.Class?.name}</div>
+                                        <div style={{ color: '#718096', fontSize: '0.85rem' }}>{note.Subject?.name}</div>
+                                    </td>
+                                    <td>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                            <div className="an-avatar">{initials}</div>
+                                            <div>
+                                                <div style={{ fontWeight: 600, color: '#1A202C' }}>{facultyName}</div>
+                                                {note.Faculty?.User?.email && <div style={{ color: '#718096', fontSize: '0.8rem' }}>{note.Faculty.User.email}</div>}
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td style={{ color: '#4A5568', fontWeight: 500 }}>
+                                        {formatSize(note.file_size)}
+                                    </td>
+                                    <td>
+                                        <div style={{ color: '#4A5568', fontWeight: 500 }}>
+                                            {new Date(note.created_at).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}
+                                        </div>
+                                        <div style={{ color: '#718096', fontSize: '0.8rem' }}>
+                                            {new Date(note.created_at).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div style={{ display: 'flex', gap: '8px' }}>
+                                            {fileUrl && (
+                                                <a href={fileUrl} target="_blank" rel="noopener noreferrer" className="an-action-btn" style={{ textDecoration: 'none' }}>
+                                                    <EyeIcon /> View
+                                                </a>
+                                            )}
+                                            <button className="an-action-btn" style={{ padding: '6px', border: '1px solid #E2E8F0', color: '#A0AEC0' }}>
+                                                <MoreVerticalIcon />
+                                            </button>
+                                        </div>
+                                    </td>
                                 </tr>
-                            </thead>
-                            <tbody>
-                                {filteredNotes.map((note, idx) => {
-                                    const facultyName = note.Faculty?.User?.name
-                                        || note.Faculty?.User?.email
-                                        || `Faculty #${note.faculty_id}`;
-
-                                    const fileUrl = resolveFileUrl(note.file_url);
-
-                                    return (
-                                        <tr key={note.id}>
-                                            <td style={{ color: 'var(--text-secondary)', minWidth: 36 }}>{idx + 1}</td>
-
-                                            {/* Material info */}
-                                            <td style={{ minWidth: 200 }}>
-                                                <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem' }}>
-                                                    <span style={{ fontSize: '1.4rem' }}>{fileIcon(note.file_type)}</span>
-                                                    <div>
-                                                        <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{note.title}</div>
-                                                        {note.description && (
-                                                            <small style={{ color: 'var(--text-secondary)', display: 'block', maxWidth: 260, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                                                {note.description}
-                                                            </small>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            </td>
-
-                                            {/* Class / Subject */}
-                                            <td style={{ minWidth: 160 }}>
-                                                <div style={{ fontWeight: 500 }}>
-                                                    {note.Class?.name || <span style={{ color: 'var(--text-secondary)' }}>Class #{note.class_id}</span>}
-                                                </div>
-                                                <small style={{ color: 'var(--text-secondary)' }}>
-                                                    {note.Subject?.name || `Subject #${note.subject_id}`}
-                                                </small>
-                                            </td>
-
-                                            {/* Faculty Name */}
-                                            <td style={{ minWidth: 150 }}>
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                                                    <span style={{
-                                                        display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                                                        width: 30, height: 30, borderRadius: '50%',
-                                                        background: 'var(--primary)', color: '#fff',
-                                                        fontSize: '0.75rem', fontWeight: 700, flexShrink: 0
-                                                    }}>
-                                                        {facultyName.charAt(0).toUpperCase()}
-                                                    </span>
-                                                    <div>
-                                                        <div style={{ fontWeight: 500, color: 'var(--text-primary)' }}>{facultyName}</div>
-                                                        {note.Faculty?.User?.email && note.Faculty?.User?.name && (
-                                                            <small style={{ color: 'var(--text-secondary)' }}>{note.Faculty.User.email}</small>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            </td>
-
-                                            {/* File info */}
-                                            <td style={{ minWidth: 100 }}>
-                                                <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-                                                    {note.file_type && (
-                                                        <span style={{
-                                                            display: 'inline-block', padding: '2px 8px',
-                                                            borderRadius: 4, background: 'var(--background)',
-                                                            border: '1px solid var(--border)', fontSize: '0.75rem',
-                                                            marginBottom: 3
-                                                        }}>
-                                                            {note.file_type.split('/').pop().toUpperCase()}
-                                                        </span>
-                                                    )}
-                                                    <div>{formatSize(note.file_size)}</div>
-                                                </div>
-                                            </td>
-
-                                            {/* Date */}
-                                            <td style={{ minWidth: 100, color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
-                                                {new Date(note.created_at).toLocaleDateString("en-IN", {
-                                                    day: "2-digit", month: "short", year: "numeric"
-                                                })}
-                                            </td>
-
-                                            {/* Actions */}
-                                            <td style={{ minWidth: 140 }}>
-                                                <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-                                                    {fileUrl ? (
-                                                        <a
-                                                            href={fileUrl}
-                                                            target="_blank"
-                                                            rel="noopener noreferrer"
-                                                            className="btn btn-secondary"
-                                                            style={{ padding: '4px 12px', fontSize: '0.8rem', textDecoration: 'none' }}
-                                                            title="Open file in new tab"
-                                                        >
-                                                            👁️ View
-                                                        </a>
-                                                    ) : (
-                                                        <button className="btn btn-secondary" disabled style={{ padding: '4px 12px', fontSize: '0.8rem' }}>
-                                                            No File
-                                                        </button>
-                                                    )}
-                                                    <button
-                                                        className="btn btn-danger"
-                                                        style={{ padding: '4px 12px', fontSize: '0.8rem' }}
-                                                        onClick={() => handleDelete(note.id)}
-                                                        disabled={deletingId === note.id}
-                                                        title="Permanently delete this material"
-                                                    >
-                                                        {deletingId === note.id ? "…" : "🗑️ Delete"}
-                                                    </button>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    );
-                                })}
-                            </tbody>
-                        </table>
+                                )
+                            })
+                        )}
+                    </tbody>
+                </table>
+                <div className="an-table-footer">
+                    <span>Showing 1 to {filteredNotes.length} of {filteredNotes.length} entries</span>
+                    <div className="an-pagination">
+                        <button className="an-page-btn">&lt;</button>
+                        <button className="an-page-btn active">1</button>
+                        <button className="an-page-btn">&gt;</button>
                     </div>
-                )}
+                </div>
             </div>
         </div>
     );

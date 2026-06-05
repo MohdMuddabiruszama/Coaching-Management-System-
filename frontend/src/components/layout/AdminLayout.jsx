@@ -31,12 +31,17 @@ const AdminLayout = () => {
     const [searchQuery, setSearchQuery] = useState("");
     const [showSearch, setShowSearch] = useState(false);
     const searchRef = useRef(null);
+    const [profileOpen, setProfileOpen] = useState(false);
+    const profileRef = useRef(null);
 
-    // Click outside to close search
+    // Click outside to close search and profile dropdown
     useEffect(() => {
         function handleClickOutside(event) {
             if (searchRef.current && !searchRef.current.contains(event.target)) {
                 setShowSearch(false);
+            }
+            if (profileRef.current && !profileRef.current.contains(event.target)) {
+                setProfileOpen(false);
             }
         }
         document.addEventListener("mousedown", handleClickOutside);
@@ -341,18 +346,75 @@ const AdminLayout = () => {
                             🔔
                             <span className="al-badge">5</span>
                         </button>
-                        <div className="al-profile" onClick={() => navigate('/admin/profile')}>
-                            <div className="al-avatar">
-                                {user?.name?.charAt(0)?.toUpperCase() || 'M'}
+                        <div className="al-profile-container" ref={profileRef} style={{ position: 'relative' }}>
+                            <div className="al-profile" onClick={() => setProfileOpen(!profileOpen)}>
+                                <div className="al-avatar">
+                                    {user?.name?.charAt(0)?.toUpperCase() || 'M'}
+                                </div>
+                                <div className="al-profile-info">
+                                    <strong>{user?.name || 'School'}</strong>
+                                    <span>{user?.role === 'manager' ? 'Manager' : 'Administrator'}</span>
+                                </div>
+                                <span className="al-profile-arrow" style={{ transform: profileOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}>▾</span>
                             </div>
-                            <div className="al-profile-info">
-                                <strong>{user?.name || 'School'}</strong>
-                                <span>{user?.role === 'manager' ? 'Manager' : 'Administrator'}</span>
-                            </div>
-                            <span className="al-profile-arrow">▾</span>
+
+                            {profileOpen && (
+                                <div className="al-profile-dropdown" style={{
+                                    position: 'absolute',
+                                    top: 'calc(100% + 0.5rem)',
+                                    right: 0,
+                                    background: '#ffffff',
+                                    borderRadius: '12px',
+                                    boxShadow: '0 10px 25px rgba(0, 0, 0, 0.1)',
+                                    border: '1px solid #e2e8f0',
+                                    overflow: 'hidden',
+                                    zIndex: 1000,
+                                    width: '220px'
+                                }}>
+                                    <div style={{ padding: '1rem', borderBottom: '1px solid #f1f5f9' }}>
+                                        <div style={{ fontWeight: 700, color: '#1e293b' }}>{user?.name || 'School'}</div>
+                                        <div style={{ fontSize: '0.8rem', color: '#64748b', marginTop: '0.2rem' }}>{user?.email || (user?.role === 'manager' ? 'Manager Account' : 'Administrator Account')}</div>
+                                    </div>
+                                    <div style={{ padding: '0.5rem' }}>
+                                        {isAdmin && (
+                                            <div 
+                                                onClick={() => { setProfileOpen(false); navigate('/admin/settings'); }}
+                                                style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.75rem 1rem', cursor: 'pointer', borderRadius: '8px', color: '#334155', fontSize: '0.9rem', transition: 'background 0.2s' }}
+                                                onMouseOver={(e) => e.currentTarget.style.background = '#f1f5f9'}
+                                                onMouseOut={(e) => e.currentTarget.style.background = 'transparent'}
+                                            >
+                                                <span style={{ fontSize: '1.1rem' }}>⚙️</span> Settings
+                                            </div>
+                                        )}
+                                        <div 
+                                            onClick={() => { setProfileOpen(false); logout(); }}
+                                            style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.75rem 1rem', cursor: 'pointer', borderRadius: '8px', color: '#ef4444', fontSize: '0.9rem', transition: 'background 0.2s', marginTop: '0.25rem' }}
+                                            onMouseOver={(e) => e.currentTarget.style.background = '#fee2e2'}
+                                            onMouseOut={(e) => e.currentTarget.style.background = 'transparent'}
+                                        >
+                                            <span style={{ fontSize: '1.1rem' }}>🚪</span> Logout
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </header>
+
+                {/* Edge Toggle Button between Sidebar and Main */}
+                <button 
+                    className="al-edge-toggle" 
+                    onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+                    title={sidebarCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
+                >
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        {sidebarCollapsed ? (
+                            <polyline points="9 18 15 12 9 6"></polyline>
+                        ) : (
+                            <polyline points="15 18 9 12 15 6"></polyline>
+                        )}
+                    </svg>
+                </button>
 
                 {/* Page Content */}
                 <main className="al-content">

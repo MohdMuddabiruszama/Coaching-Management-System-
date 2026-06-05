@@ -41,3 +41,8 @@ export const getClassNotes = async (classId) => {
     const response = await api.get(`/parents/notes/${classId}`);
     return response.data;
 };
+
+export const getLinkedStudentAssignments = async (id) => {
+    const response = await api.get(`/assignments/parent/child/${id}`);
+    return response.data;
+};

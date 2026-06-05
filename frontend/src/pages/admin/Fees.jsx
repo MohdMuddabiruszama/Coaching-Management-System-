@@ -41,7 +41,60 @@ function Fees() {
     const [search, setSearch] = useState('');
     const [filterClass, setFilterClass] = useState('');
     const [filterStatus, setFilterStatus] = useState('all'); // 'pending' | 'paid' | 'all'
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 10;
     const [success, setSuccess] = useState('');
+    const [showMoreFilters, setShowMoreFilters] = useState(false);
+    const [filterFeeType, setFilterFeeType] = useState('');
+    const [historySearch, setHistorySearch] = useState('');
+    const [historyClass, setHistoryClass] = useState('');
+    const [historyMethod, setHistoryMethod] = useState('');
+    const [historyStartDate, setHistoryStartDate] = useState('');
+    const [historyEndDate, setHistoryEndDate] = useState('');
+    const [historySort, setHistorySort] = useState('latest');
+    const [historyDense, setHistoryDense] = useState(false);
+    const [historyPage, setHistoryPage] = useState(1);
+    const [historyItemsPerPage, setHistoryItemsPerPage] = useState(10);
+    const [structureSearch, setStructureSearch] = useState('');
+    const [structureClass, setStructureClass] = useState('');
+    const [structureFeeType, setStructureFeeType] = useState('');
+    const [structureStatus, setStructureStatus] = useState('');
+    const [structurePage, setStructurePage] = useState(1);
+    const [structureItemsPerPage, setStructureItemsPerPage] = useState(10);
+
+    const exportToCSV = () => {
+        if (filteredFees.length === 0) {
+            alert('No data to export');
+            return;
+        }
+        
+        const headers = ['Student Name', 'Roll No', 'Class', 'Fee Type', 'Due Date', 'Final Amount', 'Paid Amount', 'Due Amount', 'Status'];
+        const csvRows = [headers.join(',')];
+        
+        filteredFees.forEach(sf => {
+            const row = [
+                `"${sf.Student?.User?.name || ''}"`,
+                `"${sf.Student?.roll_number || ''}"`,
+                `"${sf.Class?.name || ''} ${sf.Class?.section || ''}"`,
+                `"${sf.FeesStructure?.fee_type || 'Fee'}"`,
+                `"${sf.FeesStructure?.due_date ? new Date(sf.FeesStructure.due_date).toLocaleDateString() : ''}"`,
+                sf.final_amount,
+                sf.paid_amount,
+                sf.due_amount,
+                sf.status
+            ];
+            csvRows.push(row.join(','));
+        });
+        
+        const csvContent = "data:text/csv;charset=utf-8," + csvRows.join("\n");
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement("a");
+        link.setAttribute("href", encodedUri);
+        link.setAttribute("download", `Fee_Report_${TODAY}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
 
     // Collect fee modal
     const [collectingStudent, setCollectingStudent] = useState(null);
@@ -62,7 +115,7 @@ function Fees() {
     const [availableSubjects, setAvailableSubjects] = useState([]);
     const [structureForm, setStructureForm] = useState({
         class_id: '', subject_id: '', fee_type: 'Tuition Fee', custom_fee_type: '', amount: '', due_date: '', description: '',
-        student_target: 'all', individual_student_id: ''
+        student_target: 'all', individual_student_ids: []
     });
     const [allStudentsForClass, setAllStudentsForClass] = useState([]);
 
@@ -86,7 +139,7 @@ function Fees() {
             const [sfRes, cRes, pRes, dRes] = await Promise.all([
                 api.get('/fees/student-fees'),
                 api.get('/classes'),
-                api.get('/fees/payments'),
+                api.get('/fees/payments?limit=1000'),
                 api.get('/fees/discount-logs')
             ]);
             setStudentFees(sfRes.data.data || []);
@@ -107,7 +160,7 @@ function Fees() {
     const refreshPayments = async () => {
         const [sfRes, pRes] = await Promise.all([
             api.get('/fees/student-fees'),
-            api.get('/fees/payments'),
+            api.get('/fees/payments?limit=1000'),
         ]);
         setStudentFees(sfRes.data.data || []);
         setPayments(pRes.data.data || []);
@@ -121,6 +174,61 @@ function Fees() {
         const matchStatus = filterStatus === 'all' ? true : sf.status === filterStatus;
         return matchSearch && matchClass && matchStatus;
     });
+
+    const totalPages = Math.ceil(filteredFees.length / itemsPerPage) || 1;
+    const paginatedFees = filteredFees.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
+    const filteredPayments = payments.filter(p => {
+        const name = p.Student?.User?.name?.toLowerCase() || '';
+        const roll = p.Student?.roll_number?.toLowerCase() || '';
+        const matchSearch = !historySearch || name.includes(historySearch.toLowerCase()) || roll.includes(historySearch.toLowerCase());
+        const matchClass = !historyClass || String(p.Student?.class_id) === String(historyClass);
+        const matchMethod = !historyMethod || p.payment_method === historyMethod;
+        
+        let matchDate = true;
+        const pDate = new Date(p.payment_date);
+        pDate.setHours(0, 0, 0, 0); // Normalize to start of day for comparison
+        if (historyStartDate) {
+            const sDate = new Date(historyStartDate);
+            sDate.setHours(0, 0, 0, 0);
+            if (pDate < sDate) matchDate = false;
+        }
+        if (historyEndDate) {
+            const eDate = new Date(historyEndDate);
+            eDate.setHours(0, 0, 0, 0);
+            if (pDate > eDate) matchDate = false;
+        }
+        
+        return matchSearch && matchClass && matchMethod && matchDate;
+    }).sort((a, b) => {
+        if (historySort === 'latest') return new Date(b.payment_date) - new Date(a.payment_date);
+        if (historySort === 'oldest') return new Date(a.payment_date) - new Date(b.payment_date);
+        if (historySort === 'highest') return parseFloat(b.amount_paid) - parseFloat(a.amount_paid);
+        return 0;
+    });
+    
+    const historyTotalPages = Math.ceil(filteredPayments.length / historyItemsPerPage) || 1;
+    const paginatedPayments = filteredPayments.slice((historyPage - 1) * historyItemsPerPage, historyPage * historyItemsPerPage);
+
+    const filteredStructures = feeStructures.filter(fs => {
+        const name = (fs.Subject?.name || '').toLowerCase();
+        const className = (fs.Class?.name || '').toLowerCase();
+        const section = (fs.Class?.section || '').toLowerCase();
+        const searchTerms = `${className} ${section} ${name}`.trim();
+        const matchSearch = !structureSearch || searchTerms.includes(structureSearch.toLowerCase());
+        const matchClass = !structureClass || String(fs.class_id) === String(structureClass);
+        const matchFeeType = !structureFeeType || fs.fee_type === structureFeeType;
+        const matchStatus = !structureStatus || (structureStatus === 'active' ? true : false);
+        return matchSearch && matchClass && matchFeeType && matchStatus;
+    });
+
+    const structureTotalPages = Math.ceil(filteredStructures.length / structureItemsPerPage) || 1;
+    const paginatedStructures = filteredStructures.slice((structurePage - 1) * structureItemsPerPage, structurePage * structureItemsPerPage);
+    const uniqueFeeTypes = [...new Set(feeStructures.map(fs => fs.fee_type))];
+
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [search, filterClass, filterStatus]);
 
     // Open collect modal pre-filled
     const openCollect = (stuFee) => {
@@ -268,7 +376,7 @@ function Fees() {
             setShowStructureModal(false);
             const r = await api.get('/fees/structure');
             setFeeStructures(r.data.data || []);
-            setStructureForm({ class_id: '', subject_id: '', fee_type: 'Tuition Fee', custom_fee_type: '', amount: '', due_date: '', description: '', student_target: 'all', individual_student_id: '' });
+            setStructureForm({ class_id: '', subject_id: '', fee_type: 'Tuition Fee', custom_fee_type: '', amount: '', due_date: '', description: '', student_target: 'all', individual_student_ids: [] });
             setEditingStructureId(null);
         } catch (err) {
             alert(err.response?.data?.message || 'Error saving fee structure');
@@ -287,7 +395,7 @@ function Fees() {
             due_date: fs.due_date,
             description: fs.description || '',
             student_target: fs.individual_student_id ? 'individual' : 'all',
-            individual_student_id: fs.individual_student_id || ''
+            individual_student_ids: fs.individual_student_id ? [fs.individual_student_id] : []
         });
         fetchSubjectsForClass(fs.class_id);
         setShowStructureModal(true);
@@ -360,23 +468,23 @@ function Fees() {
     return (
         <div className="dashboard-container">
             {/* Header */}
-            <div className="dashboard-header">
-                <div>
-                    <h1>💰 Fee Management</h1>
-                    <p>Collect fees, view payment history{isAdmin ? ', and manage fee structures' : ''}.</p>
+            <div className="dashboard-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '15px', marginTop: '40px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                    <div style={{ fontSize: '1.8rem', background: 'rgba(245,158,11,0.1)', padding: '10px 14px', borderRadius: '12px' }}>👛</div>
+                    <div>
+                        <h1 style={{ margin: 0, fontSize: '1.5rem', color: 'var(--text-primary)' }}>Fee Management</h1>
+                        <p style={{ margin: '4px 0 0', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Collect fees, view payment history{isAdmin ? ', and manage fee structures' : ''}.</p>
+                    </div>
                 </div>
                 <div style={{ display: 'flex', gap: '10px' }}>
-                    <Link to="/admin/dashboard" className="btn btn-secondary">← Back</Link>
-                    {tab === 'structure' && hasPerm('fees', 'create') && (
-                        <button className="btn btn-primary" onClick={() => {
-                            setEditingStructureId(null);
-                            setStructureForm({ class_id: '', subject_id: '', fee_type: 'Tuition Fee', custom_fee_type: '', amount: '', due_date: '', description: '', student_target: 'all', individual_student_id: '' });
-                            setShowStructureModal(true);
-                        }}
-                            style={{ background: 'linear-gradient(135deg,#6366f1,#a855f7)', border: 'none' }}>
-                            + Add Fee Structure
+                    {(isAdmin || hasPerm('fees', 'read')) && (
+                        <button className="btn btn-secondary" onClick={() => setTab('structure')} style={{ background: '#fff', border: '1px solid #e5e7eb', color: '#374151', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            📐 Fee Structures
                         </button>
                     )}
+                    <button className="btn btn-primary" onClick={exportToCSV} style={{ background: '#4f46e5', border: 'none', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        📥 Export Report
+                    </button>
                 </div>
             </div>
 
@@ -452,49 +560,58 @@ function Fees() {
             })()}
 
             {/* Summary stats */}
-            <div className="stats-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(150px,1fr))', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
-                <div className="stat-card">
-                    <div className="stat-icon">⏳</div>
-                    <div className="stat-content">
-                        <h3 style={{ color: '#ef4444' }}>{pendingCount}</h3>
-                        <p>Pending</p>
+            <div className="stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.25rem', marginBottom: '1.5rem' }}>
+                <div className="stat-card" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '1.25rem', background: '#fff', borderRadius: '12px', border: '1px solid #e5e7eb', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                        <div style={{ background: '#f3e8ff', color: '#7e22ce', borderRadius: '12px', width: '48px', height: '48px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem' }}>⏳</div>
+                        <div>
+                            <h3 style={{ color: '#111827', margin: 0, fontSize: '1.5rem', fontWeight: '700' }}>{pendingCount}</h3>
+                            <p style={{ margin: 0, color: '#6b7280', fontSize: '0.9rem', fontWeight: '500' }}>Pending</p>
+                        </div>
                     </div>
+                    <div style={{ color: '#9ca3af', fontSize: '1.5rem' }}>›</div>
                 </div>
-                <div className="stat-card">
-                    <div className="stat-icon">⚠️</div>
-                    <div className="stat-content">
-                        <h3 style={{ color: '#f59e0b' }}>{partialCount}</h3>
-                        <p>Partial</p>
+                <div className="stat-card" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '1.25rem', background: '#fff', borderRadius: '12px', border: '1px solid #e5e7eb', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                        <div style={{ background: '#fef3c7', color: '#d97706', borderRadius: '12px', width: '48px', height: '48px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem' }}>⚠️</div>
+                        <div>
+                            <h3 style={{ color: '#111827', margin: 0, fontSize: '1.5rem', fontWeight: '700' }}>{partialCount}</h3>
+                            <p style={{ margin: 0, color: '#6b7280', fontSize: '0.9rem', fontWeight: '500' }}>Partial</p>
+                        </div>
                     </div>
+                    <div style={{ color: '#9ca3af', fontSize: '1.5rem' }}>›</div>
                 </div>
-                <div className="stat-card">
-                    <div className="stat-icon">✅</div>
-                    <div className="stat-content">
-                        <h3 style={{ color: '#10b981' }}>{paidCount}</h3>
-                        <p>Fully Paid</p>
+                <div className="stat-card" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '1.25rem', background: '#fff', borderRadius: '12px', border: '1px solid #e5e7eb', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                        <div style={{ background: '#d1fae5', color: '#059669', borderRadius: '12px', width: '48px', height: '48px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem' }}>✅</div>
+                        <div>
+                            <h3 style={{ color: '#111827', margin: 0, fontSize: '1.5rem', fontWeight: '700' }}>{paidCount}</h3>
+                            <p style={{ margin: 0, color: '#6b7280', fontSize: '0.9rem', fontWeight: '500' }}>Fully Paid</p>
+                        </div>
                     </div>
+                    <div style={{ color: '#9ca3af', fontSize: '1.5rem' }}>›</div>
                 </div>
                 {isAdmin && (
                     <>
-                        <div className="stat-card">
-                            <div className="stat-icon">💵</div>
-                            <div className="stat-content">
-                                <h3 style={{ color: '#6366f1' }}>₹{totalCollected.toLocaleString()}</h3>
-                                <p>Total Collected</p>
+                        <div className="stat-card" style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1.25rem', background: '#fff', borderRadius: '12px', border: '1px solid #e5e7eb', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+                            <div style={{ background: '#e0e7ff', color: '#3b82f6', borderRadius: '12px', width: '48px', height: '48px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem', fontWeight: 'bold' }}>₹</div>
+                            <div>
+                                <h3 style={{ color: '#3b82f6', margin: 0, fontSize: '1.5rem', fontWeight: '700' }}>₹{totalCollected.toLocaleString()}</h3>
+                                <p style={{ margin: 0, color: '#6b7280', fontSize: '0.9rem', fontWeight: '500' }}>Total Collected</p>
                             </div>
                         </div>
-                        <div className="stat-card">
-                            <div className="stat-icon">🔔</div>
-                            <div className="stat-content">
-                                <h3 style={{ color: '#ef4444' }}>₹{totalDue.toLocaleString()}</h3>
-                                <p>Total Dues</p>
+                        <div className="stat-card" style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1.25rem', background: '#fff', borderRadius: '12px', border: '1px solid #e5e7eb', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+                            <div style={{ background: '#fee2e2', color: '#ef4444', borderRadius: '12px', width: '48px', height: '48px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem' }}>📄</div>
+                            <div>
+                                <h3 style={{ color: '#ef4444', margin: 0, fontSize: '1.5rem', fontWeight: '700' }}>₹{totalDue.toLocaleString()}</h3>
+                                <p style={{ margin: 0, color: '#6b7280', fontSize: '0.9rem', fontWeight: '500' }}>Total Dues</p>
                             </div>
                         </div>
-                        <div className="stat-card">
-                            <div className="stat-icon">🎉</div>
-                            <div className="stat-content">
-                                <h3 style={{ color: '#a855f7' }}>₹{totalDiscount.toLocaleString()}</h3>
-                                <p>Total Discount Given</p>
+                        <div className="stat-card" style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1.25rem', background: '#fff', borderRadius: '12px', border: '1px solid #e5e7eb', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+                            <div style={{ background: '#f3e8ff', color: '#a855f7', borderRadius: '12px', width: '48px', height: '48px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem' }}>🎁</div>
+                            <div>
+                                <h3 style={{ color: '#a855f7', margin: 0, fontSize: '1.5rem', fontWeight: '700' }}>₹{totalDiscount.toLocaleString()}</h3>
+                                <p style={{ margin: 0, color: '#6b7280', fontSize: '0.9rem', fontWeight: '500' }}>Discount Given</p>
                             </div>
                         </div>
                     </>
@@ -507,7 +624,7 @@ function Fees() {
                     {tabs.map(t => (
                         <button key={t.id} onClick={() => setTab(t.id)} style={{
                             padding: '0.65rem 1.25rem', border: 'none', background: 'none', cursor: 'pointer',
-                            fontWeight: validTab === t.id ? '700' : '500', fontSize: '0.9rem',
+                            fontWeight: validTab === t.id ? '700' : '600', fontSize: '0.9rem',
                             color: validTab === t.id ? '#6366f1' : 'var(--text-secondary)',
                             borderBottom: validTab === t.id ? '3px solid #6366f1' : '3px solid transparent',
                             marginBottom: '-2px', transition: 'all 0.15s'
@@ -522,45 +639,70 @@ function Fees() {
             {validTab === 'collect' && (isAdmin || user.permissions?.includes('collect_fees')) && (
                 <>
                     {/* Filters */}
-                    <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
-                        <input
-                            type="text" className="form-input" placeholder="🔍 Search student name or roll no."
-                            value={search} onChange={e => setSearch(e.target.value)}
-                            style={{ flex: '1', minWidth: '200px', maxWidth: '360px' }}
-                        />
+                    <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1rem', flexWrap: 'wrap', alignItems: 'center' }}>
+                        <div style={{ position: 'relative', flex: '1', minWidth: '200px', maxWidth: '300px' }}>
+                            <span style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: '#9ca3af' }}>🔍</span>
+                            <input
+                                type="text" className="form-input" placeholder="Search student by name or roll no."
+                                value={search} onChange={e => setSearch(e.target.value)}
+                                style={{ width: '100%', paddingLeft: '32px', margin: 0, height: '40px' }}
+                            />
+                        </div>
                         <select className="form-select" value={filterClass} onChange={e => setFilterClass(e.target.value)}
-                            style={{ minWidth: '160px' }}>
-                            <option value="">All Classes</option>
+                            style={{ minWidth: '160px', flex: 1, maxWidth: '200px', margin: 0, height: '40px' }}>
+                            <option value="">🎓 All Classes</option>
                             {classes.map(c => <option key={c.id} value={c.id}>{c.name} {c.section}</option>)}
                         </select>
-                        <div style={{ display: 'flex', gap: '4px' }}>
-                            {[['pending', '⏳ Pending', '#ef4444'], ['partial', '⚠️ Partial', '#f59e0b'], ['paid', '✅ Paid', '#10b981'], ['all', '👥 All', '#6366f1']].map(([val, lbl, col]) => (
-                                <button
-                                    key={val}
-                                    onClick={() => setFilterStatus(val)}
-                                    style={{
-                                        padding: '8px 16px',
-                                        borderRadius: '8px',
-                                        cursor: 'pointer',
-                                        fontWeight: filterStatus === val ? '700' : '500',
-                                        fontSize: '0.85rem',
-                                        background: filterStatus === val ? `${col}22` : 'var(--card-bg)',
-                                        color: filterStatus === val ? col : 'var(--text-secondary)',
-                                        border: `1.5px solid ${filterStatus === val ? col : 'var(--border-color)'}`
-                                    }}
-                                >
-                                    {lbl}
-                                </button>
-                            ))}
-                        </div>
+                        <select className="form-select" value={filterStatus} onChange={e => setFilterStatus(e.target.value)}
+                            style={{ minWidth: '160px', flex: 1, maxWidth: '200px', margin: 0, height: '40px' }}>
+                            <option value="all">📊 All Status</option>
+                            <option value="pending">⏳ Pending</option>
+                            <option value="partial">⚠️ Partial</option>
+                            <option value="paid">✅ Paid</option>
+                        </select>
+                        <button className="btn" onClick={() => setShowMoreFilters(!showMoreFilters)} style={{ background: showMoreFilters ? '#e9d5ff' : '#f3e8ff', color: '#7e22ce', border: 'none', fontWeight: '600', padding: '0 1.2rem', height: '40px', display: 'flex', alignItems: 'center', gap: '6px', borderRadius: '8px', cursor: 'pointer', transition: '0.2s' }}>
+                            <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" /></svg>
+                            More Filters
+                        </button>
+                        {showMoreFilters && (
+                            <div style={{ width: '100%', display: 'flex', gap: '0.75rem', marginTop: '0.5rem', padding: '0.75rem', background: '#f9fafb', borderRadius: '8px', border: '1px dashed #e5e7eb' }}>
+                                <select className="form-select" value={filterFeeType} onChange={e => setFilterFeeType(e.target.value)} style={{ minWidth: '160px', height: '40px' }}>
+                                    <option value="">📁 All Fee Types</option>
+                                    <option value="Tuition Fee">Tuition Fee</option>
+                                    <option value="Exam Fee">Exam Fee</option>
+                                    <option value="Transport Fee">Transport Fee</option>
+                                    <option value="Library Fee">Library Fee</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                            </div>
+                        )}
                     </div>
 
-                    <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '0.75rem' }}>
-                        Showing <strong>{filteredFees.length}</strong> fee record{filteredFees.length !== 1 ? 's' : ''}
+                    <div style={{ display: 'flex', gap: '8px', marginBottom: '1.5rem' }}>
+                        {[['pending', '⏳ Pending', '#8b5cf6', '#f3e8ff'], ['partial', '⚠️ Partial', '#f59e0b', '#fef3c7'], ['paid', '✅ Paid', '#10b981', '#d1fae5'], ['all', '👥 All', '#6366f1', '#e0e7ff']].map(([val, lbl, col, bgCol]) => (
+                            <button
+                                key={val}
+                                onClick={() => setFilterStatus(val)}
+                                style={{
+                                    padding: '6px 16px',
+                                    borderRadius: '8px',
+                                    cursor: 'pointer',
+                                    fontWeight: '600',
+                                    fontSize: '0.85rem',
+                                    background: filterStatus === val ? bgCol : '#fff',
+                                    color: filterStatus === val ? col : '#6b7280',
+                                    border: `1px solid ${filterStatus === val ? bgCol : '#e5e7eb'}`,
+                                    transition: 'all 0.2s',
+                                    display: 'flex', alignItems: 'center', gap: '6px'
+                                }}
+                            >
+                                {lbl}
+                            </button>
+                        ))}
                     </div>
 
                     {/* Student fee rows */}
-                    {filteredFees.length === 0 ? (
+                    {paginatedFees.length === 0 ? (
                         <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-secondary)' }}>
                             <div style={{ fontSize: '2.5rem', marginBottom: '0.75rem' }}>
                                 {filterStatus === 'pending' ? '🎉' : '📭'}
@@ -570,131 +712,184 @@ function Fees() {
                             </div>
                         </div>
                     ) : (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                            {filteredFees.map(sf => {
-                                const stColor = sf.status === 'paid' ? '#10b981' : sf.status === 'partial' ? '#f59e0b' : '#ef4444';
-                                const stBg = sf.status === 'paid' ? 'rgba(16,185,129,0.08)' : sf.status === 'partial' ? 'rgba(245,158,11,0.06)' : 'rgba(239,68,68,0.06)';
+                        <div className="table-container" style={{ overflowX: 'auto', background: '#fff', borderRadius: '12px', border: '1px solid #e5e7eb' }}>
+                            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', minWidth: '900px' }}>
+                                <thead>
+                                    <tr style={{ borderBottom: '1px solid #e5e7eb', color: '#6b7280', fontSize: '0.75rem', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                                        <th style={{ padding: '1rem 1.25rem' }}>STUDENT</th>
+                                        <th style={{ padding: '1rem 1.25rem' }}>CLASS / FEE TYPE</th>
+                                        <th style={{ padding: '1rem 1.25rem' }}>DUE DATE</th>
+                                        <th style={{ padding: '1rem 1.25rem' }}>REMINDER DATE</th>
+                                        <th style={{ padding: '1rem 1.25rem' }}>AMOUNT</th>
+                                        <th style={{ padding: '1rem 1.25rem' }}>PAID</th>
+                                        <th style={{ padding: '1rem 1.25rem' }}>DUE</th>
+                                        <th style={{ padding: '1rem 1.25rem' }}>STATUS</th>
+                                        <th style={{ padding: '1rem 1.25rem' }}></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {paginatedFees.map(sf => {
+                                        const stColor = sf.status === 'paid' ? '#10b981' : sf.status === 'partial' ? '#f59e0b' : '#ef4444';
+                                        const stBg = sf.status === 'paid' ? 'rgba(16,185,129,0.1)' : sf.status === 'partial' ? 'rgba(245,158,11,0.1)' : 'rgba(239,68,68,0.1)';
 
-                                return (
-                                    <div key={sf.id} style={{
-                                        display: 'flex', alignItems: 'center', gap: '1rem',
-                                        padding: '0.85rem 1.1rem', borderRadius: '12px',
-                                        border: `1px solid ${sf.status === 'paid' ? 'rgba(16,185,129,0.3)' : sf.status === 'partial' ? 'rgba(245,158,11,0.3)' : 'rgba(239,68,68,0.3)'}`,
-                                        background: stBg, transition: 'box-shadow 0.2s',
-                                        flexWrap: 'wrap'
-                                    }}>
-                                        {/* Avatar */}
-                                        <div style={{
-                                            width: '44px', height: '44px', borderRadius: '50%', flexShrink: 0,
-                                            background: sf.status === 'paid' ? 'linear-gradient(135deg,#10b981,#059669)' : sf.status === 'partial' ? 'linear-gradient(135deg,#f59e0b,#d97706)' : 'linear-gradient(135deg,#ef4444,#b91c1c)',
-                                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                            color: '#fff', fontWeight: '700', fontSize: '1rem'
-                                        }}>
-                                            {(sf.Student?.User?.name || 'S')[0].toUpperCase()}
-                                        </div>
-
-                                        {/* Info */}
-                                        <div style={{ flex: 1, minWidth: '160px' }}>
-                                            <div style={{ fontWeight: '700', fontSize: '0.95rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                                {sf.Student?.User?.name} ({sf.Student?.roll_number})
-                                                {/* Phase 9: Overdue badge */}
-                                                {isOverdue(sf) && (
-                                                    <span style={{
-                                                        padding: '2px 8px', borderRadius: '20px',
-                                                        background: 'rgba(239,68,68,0.15)', color: '#ef4444',
-                                                        fontSize: '0.7rem', fontWeight: '800'
-                                                    }}>🔔 OVERDUE</span>
-                                                )}
-                                            </div>
-                                            <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', display: 'flex', gap: '6px', flexWrap: 'wrap', marginTop: '0.25rem' }}>
-                                                <span className="badge badge-secondary">{sf.Class?.name} {sf.Class?.section}</span>
-                                                <span className="badge badge-info">
-                                                    {sf.FeesStructure?.fee_type || 'Fee'}
-                                                    {sf.FeesStructure?.Subject ? ` • ${sf.FeesStructure.Subject.name}` : ''}
-                                                </span>
-                                                {sf.FeesStructure?.due_date && sf.status !== 'paid' && (
-                                                    <span style={{ color: isOverdue(sf) ? '#ef4444' : 'var(--text-muted)', fontWeight: isOverdue(sf) ? 700 : 400 }}>
-                                                        Due: {new Date(sf.FeesStructure.due_date).toLocaleDateString()}
+                                        return (
+                                            <tr key={sf.id} style={{ borderBottom: '1px solid #e5e7eb', transition: 'background 0.2s' }} onMouseOver={e => e.currentTarget.style.background = '#f9fafb'} onMouseOut={e => e.currentTarget.style.background = 'transparent'}>
+                                                <td style={{ padding: '1rem 1.25rem' }}>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                                        <div style={{
+                                                            width: '36px', height: '36px', borderRadius: '50%',
+                                                            background: sf.status === 'paid' ? 'rgba(16,185,129,0.15)' : sf.status === 'partial' ? 'rgba(245,158,11,0.15)' : 'rgba(239,68,68,0.15)',
+                                                            color: stColor, fontWeight: '700', fontSize: '0.9rem',
+                                                            display: 'flex', alignItems: 'center', justifyContent: 'center'
+                                                        }}>
+                                                            {(sf.Student?.User?.name || 'S')[0].toUpperCase()}{(sf.Student?.User?.name?.split(' ')[1]?.[0] || '').toUpperCase()}
+                                                        </div>
+                                                        <div>
+                                                            <div style={{ fontWeight: '600', color: '#111827', fontSize: '0.9rem' }}>{sf.Student?.User?.name}</div>
+                                                            <div style={{ fontSize: '0.75rem', color: '#6b7280' }}>{sf.Student?.roll_number}</div>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td style={{ padding: '1rem 1.25rem' }}>
+                                                    <div style={{ fontWeight: '500', color: '#374151', fontSize: '0.85rem' }}>{sf.Class?.name} {sf.Class?.section && `- ${sf.Class.section.replace('Section ', '')}`}</div>
+                                                    <div style={{ fontSize: '0.75rem', color: '#3b82f6', fontWeight: '500', display: 'inline-block', padding: '2px 6px', background: 'rgba(59,130,246,0.1)', borderRadius: '4px', marginTop: '4px' }}>
+                                                        {sf.FeesStructure?.fee_type || 'Fee'} {sf.FeesStructure?.Subject ? `• ${sf.FeesStructure.Subject.name}` : ''}
+                                                    </div>
+                                                </td>
+                                                <td style={{ padding: '1rem 1.25rem' }}>
+                                                    <div style={{ fontSize: '0.85rem', color: '#4b5563', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                                        📅 {sf.FeesStructure?.due_date ? new Date(sf.FeesStructure.due_date).toLocaleDateString('en-GB') : '—'}
+                                                    </div>
+                                                    {sf.FeesStructure?.due_date && sf.status !== 'paid' && (
+                                                        <div style={{ fontSize: '0.75rem', color: isOverdue(sf) ? '#ef4444' : '#f59e0b', fontWeight: '600', marginTop: '2px' }}>
+                                                            {isOverdue(sf) ? 'Overdue' : `${Math.max(0, Math.ceil((new Date(sf.FeesStructure.due_date) - new Date()) / (1000 * 60 * 60 * 24)))} days left`}
+                                                        </div>
+                                                    )}
+                                                    {sf.status === 'paid' && <div style={{ fontSize: '0.75rem', color: '#10b981', fontWeight: '600', marginTop: '2px' }}>Paid</div>}
+                                                </td>
+                                                <td style={{ padding: '1rem 1.25rem' }}>
+                                                    <div style={{ fontSize: '0.85rem', color: '#4b5563', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                                        ⏰ {sf.reminder_date ? new Date(sf.reminder_date).toLocaleDateString('en-GB') : '—'}
+                                                        {sf.status !== 'paid' && hasPerm('fees', 'create') && (
+                                                            <button 
+                                                                onClick={() => { 
+                                                                    setEditingReminderFee(sf); 
+                                                                    setReminderDateInput(sf.reminder_date ? sf.reminder_date.substring(0, 10) : ''); 
+                                                                }} 
+                                                                style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '12px', padding: '2px 4px', borderRadius: '4px', marginLeft: '4px' }}
+                                                                title="Set Reminder"
+                                                                onMouseOver={e => e.currentTarget.style.background = '#e5e7eb'}
+                                                                onMouseOut={e => e.currentTarget.style.background = 'none'}
+                                                            >
+                                                                ✏️
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                </td>
+                                                <td style={{ padding: '1rem 1.25rem', fontWeight: '600', color: '#111827', fontSize: '0.9rem' }}>
+                                                    ₹{parseFloat(sf.final_amount).toLocaleString()}
+                                                </td>
+                                                <td style={{ padding: '1rem 1.25rem', fontWeight: '600', color: '#10b981', fontSize: '0.9rem' }}>
+                                                    ₹{parseFloat(sf.paid_amount).toLocaleString()}
+                                                </td>
+                                                <td style={{ padding: '1rem 1.25rem' }}>
+                                                    <span style={{ fontWeight: '600', color: sf.due_amount > 0 ? '#ef4444' : '#111827', fontSize: '0.9rem' }}>
+                                                        ₹{parseFloat(sf.due_amount).toLocaleString()}
                                                     </span>
-                                                )}
-                                                {sf.reminder_date && sf.status !== 'paid' && (
+                                                </td>
+                                                <td style={{ padding: '1rem 1.25rem' }}>
+                                                    <span style={{
+                                                        padding: '4px 10px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: '700',
+                                                        background: stBg, color: stColor
+                                                    }}>
+                                                        {sf.status.toUpperCase()}
+                                                    </span>
+                                                </td>
+                                                <td style={{ padding: '1rem 1.25rem' }}>
                                                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                                        <span style={{ color: isReminderActive(sf) && sf.reminder_date <= todayDate ? '#ef4444' : '#f59e0b', fontWeight: 700 }}>
-                                                            🔔 Reminder: {new Date(sf.reminder_date).toLocaleDateString()}
-                                                        </span>
-                                                        <button
-                                                            onClick={() => {
-                                                                setEditingReminderFee(sf);
-                                                                setReminderDateInput(sf.reminder_date || '');
-                                                            }}
-                                                            style={{
-                                                                padding: '2px 8px', borderRadius: '4px', border: '1px solid #f59e0b',
-                                                                background: 'rgba(245,158,11,0.1)', color: '#f59e0b', fontSize: '0.7rem',
-                                                                cursor: 'pointer', fontWeight: 'bold'
-                                                            }}
-                                                        >
-                                                            📝 Edit
+                                                        {sf.status !== 'paid' && hasPerm('fees', 'create') && (
+                                                            <button onClick={() => openDiscount(sf)} style={{ padding: '6px 12px', borderRadius: '6px', border: 'none', background: '#f3e8ff', color: '#7e22ce', fontWeight: '600', fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                                                🎁 Discount
+                                                            </button>
+                                                        )}
+                                                        {sf.status !== 'paid' && (hasPerm('fees', 'create') || user.permissions?.includes('collect_fees')) && (
+                                                            <button onClick={() => openCollect(sf)} style={{ padding: '6px 16px', borderRadius: '6px', border: 'none', background: '#10b981', color: '#fff', fontWeight: '600', fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', boxShadow: '0 2px 4px rgba(16,185,129,0.2)' }}>
+                                                                💵 Collect
+                                                            </button>
+                                                        )}
+                                                        <button style={{ background: 'none', border: 'none', color: '#9ca3af', cursor: 'pointer', fontSize: '1.2rem', display: 'flex', alignItems: 'center', justifyContent: 'center', height: '32px', width: '32px' }}>
+                                                            ⋮
                                                         </button>
                                                     </div>
-                                                )}
-                                            </div>
-                                        </div>
-
-                                        {/* Financials details breakdown */}
-                                        {(sf.status !== 'paid' || isAdmin) && (
-                                            <div style={{ minWidth: '220px', display: 'flex', gap: '15px', color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
-                                                <div>
-                                                    <div>Original: ₹{parseFloat(sf.original_amount).toLocaleString()}</div>
-                                                    <div style={{ color: '#a855f7' }}>Disc: ₹{parseFloat(sf.discount_amount).toLocaleString()}</div>
-                                                    <div style={{ fontWeight: '700', color: 'var(--text-primary)' }}>Final: ₹{parseFloat(sf.final_amount).toLocaleString()}</div>
-                                                </div>
-                                                <div>
-                                                    <div style={{ color: '#10b981' }}>Paid: ₹{parseFloat(sf.paid_amount).toLocaleString()}</div>
-                                                    <div style={{ color: '#ef4444', fontWeight: '700' }}>Due: ₹{parseFloat(sf.due_amount).toLocaleString()}</div>
-                                                </div>
-                                            </div>
-                                        )}
-
-                                        {/* Action buttons */}
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexShrink: 0 }}>
-                                            <span style={{
-                                                fontSize: '0.74rem', padding: '3px 10px', borderRadius: '20px', fontWeight: '700',
-                                                background: sf.status === 'paid' ? 'rgba(16,185,129,0.15)' : sf.status === 'partial' ? 'rgba(245,158,11,0.15)' : 'rgba(239,68,68,0.15)',
-                                                color: stColor
-                                            }}>
-                                                {sf.status.toUpperCase()}
-                                            </span>
-
-                                            {sf.status !== 'paid' && (hasPerm('fees', 'create') || user.permissions?.includes('collect_fees')) && (
-                                                <>
-                                                    {hasPerm('fees', 'create') && (
-                                                        <button
-                                                            onClick={() => openDiscount(sf)}
-                                                            style={{
-                                                                padding: '6px 14px', borderRadius: '8px', border: '1px solid rgba(168, 85, 247, 0.4)',
-                                                                background: 'rgba(168, 85, 247, 0.05)', color: '#a855f7', fontWeight: '600', fontSize: '0.8rem', cursor: 'pointer'
-                                                            }}
-                                                        >
-                                                            🎉 Discount
-                                                        </button>
-                                                    )}
-                                                    <button
-                                                        onClick={() => openCollect(sf)}
-                                                        style={{
-                                                            padding: '6px 16px', borderRadius: '8px', border: 'none', cursor: 'pointer',
-                                                            background: 'linear-gradient(135deg,#10b981,#059669)',
-                                                            color: '#fff', fontWeight: '700', fontSize: '0.82rem',
-                                                            boxShadow: '0 2px 8px rgba(16,185,129,0.3)',
-                                                        }}
-                                                    >
-                                                        💵 Collect
-                                                    </button>
-                                                </>
-                                            )}
-                                        </div>
-                                    </div>
-                                );
-                            })}
+                                                </td>
+                                            </tr>
+                                        );
+                                    })}
+                                </tbody>
+                            </table>
+                        </div>
+                    )}
+                    
+                    {/* Pagination */}
+                    {totalPages > 0 && (
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '1.5rem', borderTop: '1px solid #e5e7eb', paddingTop: '1rem' }}>
+                            <div style={{ fontSize: '0.85rem', color: '#6b7280' }}>
+                                Showing <strong>{Math.min((currentPage - 1) * itemsPerPage + 1, filteredFees.length)}</strong> to <strong>{Math.min(currentPage * itemsPerPage, filteredFees.length)}</strong> of <strong>{filteredFees.length}</strong> records
+                            </div>
+                            <div style={{ display: 'flex', gap: '4px' }}>
+                                <button
+                                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                                    disabled={currentPage === 1}
+                                    style={{ padding: '6px 12px', borderRadius: '6px', border: '1px solid #e5e7eb', background: '#fff', color: '#374151', cursor: currentPage === 1 ? 'not-allowed' : 'pointer' }}
+                                >
+                                    &lt;
+                                </button>
+                                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                                    let pageNum;
+                                    if (totalPages <= 5) {
+                                        pageNum = i + 1;
+                                    } else if (currentPage <= 3) {
+                                        pageNum = i + 1;
+                                    } else if (currentPage >= totalPages - 2) {
+                                        pageNum = totalPages - 4 + i;
+                                    } else {
+                                        pageNum = currentPage - 2 + i;
+                                    }
+                                    
+                                    return (
+                                        <button
+                                            key={pageNum}
+                                            onClick={() => setCurrentPage(pageNum)}
+                                            style={{
+                                                padding: '6px 12px', borderRadius: '6px', border: '1px solid #e5e7eb', cursor: 'pointer',
+                                                background: currentPage === pageNum ? '#4f46e5' : '#fff',
+                                                color: currentPage === pageNum ? '#fff' : '#374151',
+                                                fontWeight: currentPage === pageNum ? '600' : '400'
+                                            }}
+                                        >
+                                            {pageNum}
+                                        </button>
+                                    );
+                                })}
+                                {totalPages > 5 && currentPage < totalPages - 2 && (
+                                    <>
+                                        <span style={{ padding: '6px 8px', color: '#6b7280' }}>...</span>
+                                        <button
+                                            onClick={() => setCurrentPage(totalPages)}
+                                            style={{ padding: '6px 12px', borderRadius: '6px', border: '1px solid #e5e7eb', background: '#fff', color: '#374151', cursor: 'pointer' }}
+                                        >
+                                            {totalPages}
+                                        </button>
+                                    </>
+                                )}
+                                <button
+                                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                                    disabled={currentPage === totalPages}
+                                    style={{ padding: '6px 12px', borderRadius: '6px', border: '1px solid #e5e7eb', background: '#fff', color: '#374151', cursor: currentPage === totalPages ? 'not-allowed' : 'pointer' }}
+                                >
+                                    &gt;
+                                </button>
+                            </div>
                         </div>
                     )}
                 </>
@@ -702,76 +897,209 @@ function Fees() {
 
             {/* ═══ PAYMENT HISTORY TAB ═══ */}
             {validTab === 'history' && (isAdmin || user.permissions?.includes('payment_history') || user.permissions?.includes('recent_payments')) && (
-                <div style={{ display: 'grid', gap: '1.5rem', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))' }}>
-                    <div className="card">
-                        <h3 style={{ marginBottom: '1rem' }}>💵 Payment Logs</h3>
-                        <div className="table-container" style={{ maxHeight: '500px', overflowY: 'auto' }}>
-                            <table className="table mobile-keep">
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                    {/* Filters Section */}
+                    <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'center' }}>
+                        <div style={{ position: 'relative', flex: '1', minWidth: '200px' }}>
+                            <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#9ca3af' }}>🔍</span>
+                            <input
+                                type="text" className="form-input" placeholder="Search by student name or roll no."
+                                value={historySearch} onChange={e => { setHistorySearch(e.target.value); setHistoryPage(1); }}
+                                style={{ width: '100%', paddingLeft: '36px', margin: 0, height: '42px', borderRadius: '8px' }}
+                            />
+                        </div>
+                        <select className="form-select" value={historyClass} onChange={e => { setHistoryClass(e.target.value); setHistoryPage(1); }}
+                            style={{ minWidth: '160px', flex: '1', margin: 0, height: '42px', borderRadius: '8px' }}>
+                            <option value="">🎓 All Classes</option>
+                            {classes.map(c => <option key={c.id} value={c.id}>{c.name} {c.section && `- ${c.section.replace('Section ', '')}`}</option>)}
+                        </select>
+                        <select className="form-select" value={historyMethod} onChange={e => { setHistoryMethod(e.target.value); setHistoryPage(1); }}
+                            style={{ minWidth: '180px', flex: '1', margin: 0, height: '42px', borderRadius: '8px' }}>
+                            <option value="">💳 All Payment Methods</option>
+                            <option value="cash">Cash</option>
+                            <option value="online">Online (UPI)</option>
+                            <option value="cheque">Cheque</option>
+                        </select>
+                        <div style={{ display: 'flex', flex: '1', minWidth: '280px', gap: '8px', alignItems: 'center' }}>
+                            <div style={{ position: 'relative', flex: 1 }}>
+                                <input type="date" className="form-input" value={historyStartDate} onChange={e => { setHistoryStartDate(e.target.value); setHistoryPage(1); }} style={{ width: '100%', margin: 0, height: '42px', borderRadius: '8px', fontSize: '0.85rem' }} />
+                            </div>
+                            <span style={{ color: '#9ca3af' }}>-</span>
+                            <div style={{ position: 'relative', flex: 1 }}>
+                                <input type="date" className="form-input" value={historyEndDate} onChange={e => { setHistoryEndDate(e.target.value); setHistoryPage(1); }} style={{ width: '100%', margin: 0, height: '42px', borderRadius: '8px', fontSize: '0.85rem' }} />
+                            </div>
+                        </div>
+                        <button className="btn" onClick={() => { setHistoryPage(1); alert("Filters applied successfully!"); }} style={{ background: '#f3e8ff', color: '#7e22ce', border: 'none', fontWeight: '600', padding: '0 1.25rem', height: '42px', display: 'flex', alignItems: 'center', gap: '8px', borderRadius: '8px', cursor: 'pointer' }}>
+                            <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" /></svg>
+                            Filters
+                        </button>
+                    </div>
+
+                    {/* Table Section */}
+                    <div style={{ background: '#fff', borderRadius: '12px', border: '1px solid #e5e7eb', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1.25rem', borderBottom: '1px solid #e5e7eb' }}>
+                            <div>
+                                <h3 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '8px', color: '#111827', fontSize: '1.1rem' }}>
+                                    <span style={{ color: '#6b7280' }}>📋</span> Payment History
+                                </h3>
+                                <p style={{ margin: '4px 0 0', color: '#6b7280', fontSize: '0.85rem' }}>
+                                    Showing {Math.min((historyPage - 1) * historyItemsPerPage + 1, filteredPayments.length)} to {Math.min(historyPage * historyItemsPerPage, filteredPayments.length)} of {filteredPayments.length} records
+                                </p>
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', color: '#374151' }}>
+                                    Sort by:
+                                    <select value={historySort} onChange={e => { setHistorySort(e.target.value); setHistoryPage(1); }} style={{ border: '1px solid #e5e7eb', borderRadius: '6px', padding: '4px 8px', outline: 'none', background: '#fff', cursor: 'pointer' }}>
+                                        <option value="latest">Latest First</option>
+                                        <option value="oldest">Oldest First</option>
+                                        <option value="highest">Highest Amount</option>
+                                    </select>
+                                </div>
+                                <button onClick={() => setHistoryDense(!historyDense)} title="Toggle Dense Mode" style={{ background: historyDense ? '#7e22ce' : '#f3e8ff', color: historyDense ? '#fff' : '#7e22ce', border: 'none', width: '36px', height: '36px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'all 0.2s' }}>
+                                    ⚙️
+                                </button>
+                            </div>
+                        </div>
+
+                        <div className="table-container" style={{ overflowX: 'auto' }}>
+                            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', minWidth: '1000px' }}>
                                 <thead>
-                                    <tr>
-                                        <th>Date</th>
-                                        <th>Student</th>
-                                        <th>Amount</th>
-                                        <th>Method</th>
-                                        <th>Status</th>
-                                        <th>Action</th>
+                                    <tr style={{ borderBottom: '1px solid #e5e7eb', color: '#6b7280', fontSize: '0.75rem', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                                        <th style={{ padding: historyDense ? '0.5rem 1.25rem' : '1rem 1.25rem' }}>DATE</th>
+                                        <th style={{ padding: historyDense ? '0.5rem 1.25rem' : '1rem 1.25rem' }}>STUDENT</th>
+                                        <th style={{ padding: historyDense ? '0.5rem 1.25rem' : '1rem 1.25rem' }}>CLASS / SECTION</th>
+                                        <th style={{ padding: historyDense ? '0.5rem 1.25rem' : '1rem 1.25rem' }}>FEE TYPE</th>
+                                        <th style={{ padding: historyDense ? '0.5rem 1.25rem' : '1rem 1.25rem' }}>AMOUNT</th>
+                                        <th style={{ padding: historyDense ? '0.5rem 1.25rem' : '1rem 1.25rem' }}>METHOD</th>
+                                        <th style={{ padding: historyDense ? '0.5rem 1.25rem' : '1rem 1.25rem' }}>STATUS</th>
+                                        <th style={{ padding: historyDense ? '0.5rem 1.25rem' : '1rem 1.25rem' }}>RECEIPT</th>
+                                        <th style={{ padding: historyDense ? '0.5rem 1.25rem' : '1rem 1.25rem' }}></th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {payments.length === 0 ? (
-                                        <tr><td colSpan="5" className="text-center">No payment records found</td></tr>
-                                    ) : payments.map(p => (
-                                        <tr key={p.id}>
-                                            <td>{new Date(p.payment_date).toLocaleDateString()}</td>
-                                            <td>{p.Student?.User?.name} <small>({p.Student?.roll_number})</small></td>
-                                            <td style={{ color: '#10b981', fontWeight: '700' }}>+₹{parseFloat(p.amount_paid).toLocaleString()}</td>
-                                            <td style={{ textTransform: 'capitalize' }}>{p.payment_method}</td>
-                                            <td><span className={`badge badge-${p.status === 'success' ? 'success' : 'warning'}`}>{p.status}</span></td>
-                                            <td>
-                                                {p.status === 'success' && (
-                                                    <button 
-                                                        onClick={() => setViewingReceipt(p)}
-                                                        className="btn btn-sm btn-secondary"
-                                                        style={{ backgroundColor: "#4f46e5", color: "white", padding: "4px 8px", fontSize: "0.75rem", border: 'none', borderRadius: '6px', fontWeight: '600', cursor: 'pointer' }}
-                                                    >
-                                                        🧾 Receipt
+                                    {paginatedPayments.length === 0 ? (
+                                        <tr><td colSpan="9" style={{ textAlign: 'center', padding: '2rem', color: '#6b7280' }}>No payment records found</td></tr>
+                                    ) : paginatedPayments.map(p => {
+                                        // Randomize colors slightly for initials as per image (pink, orange, green, blue)
+                                        const colors = ['#fce7f3', '#ffedd5', '#d1fae5', '#e0e7ff'];
+                                        const textColors = ['#db2777', '#c2410c', '#059669', '#4338ca'];
+                                        const charCode = (p.Student?.User?.name || 'A').charCodeAt(0);
+                                        const colorIdx = charCode % 4;
+                                        
+                                        const pDate = new Date(p.payment_date);
+                                        
+                                        return (
+                                            <tr key={p.id} style={{ borderBottom: '1px solid #e5e7eb', transition: 'background 0.2s' }} onMouseOver={e => e.currentTarget.style.background = '#f9fafb'} onMouseOut={e => e.currentTarget.style.background = 'transparent'}>
+                                                <td style={{ padding: historyDense ? '0.5rem 1.25rem' : '1rem 1.25rem' }}>
+                                                    <div style={{ fontWeight: '600', color: '#374151', fontSize: '0.85rem' }}>{pDate.toLocaleDateString('en-GB')}</div>
+                                                    <div style={{ fontSize: '0.75rem', color: '#6b7280', marginTop: '4px' }}>{pDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+                                                </td>
+                                                <td style={{ padding: historyDense ? '0.5rem 1.25rem' : '1rem 1.25rem' }}>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                                        <div style={{
+                                                            width: '36px', height: '36px', borderRadius: '50%',
+                                                            background: colors[colorIdx], color: textColors[colorIdx],
+                                                            fontWeight: '700', fontSize: '0.9rem',
+                                                            display: 'flex', alignItems: 'center', justifyContent: 'center'
+                                                        }}>
+                                                            {(p.Student?.User?.name || 'S')[0].toUpperCase()}{(p.Student?.User?.name?.split(' ')[1]?.[0] || '').toUpperCase()}
+                                                        </div>
+                                                        <div>
+                                                            <div style={{ fontWeight: '600', color: '#111827', fontSize: '0.9rem' }}>{p.Student?.User?.name}</div>
+                                                            <div style={{ fontSize: '0.75rem', color: '#6b7280' }}>{p.Student?.roll_number}</div>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td style={{ padding: historyDense ? '0.5rem 1.25rem' : '1rem 1.25rem' }}>
+                                                    <div style={{ fontWeight: '500', color: '#374151', fontSize: '0.85rem' }}>
+                                                        {p.Student?.Class?.name || 'Class'} {p.Student?.Class?.section && `- ${p.Student.Class.section.replace('Section ', '')}`}
+                                                    </div>
+                                                </td>
+                                                <td style={{ padding: historyDense ? '0.5rem 1.25rem' : '1rem 1.25rem' }}>
+                                                    <span style={{ color: '#3b82f6', fontWeight: '500', fontSize: '0.8rem' }}>
+                                                        {p.StudentFee?.FeesStructure?.fee_type || 'Tuition Fee'}
+                                                    </span>
+                                                </td>
+                                                <td style={{ padding: historyDense ? '0.5rem 1.25rem' : '1rem 1.25rem' }}>
+                                                    <span style={{ fontWeight: '700', color: '#10b981', fontSize: '0.9rem' }}>
+                                                        ₹{parseFloat(p.amount_paid).toLocaleString()}
+                                                    </span>
+                                                </td>
+                                                <td style={{ padding: historyDense ? '0.5rem 1.25rem' : '1rem 1.25rem' }}>
+                                                    <span style={{ fontWeight: '500', color: '#374151', fontSize: '0.85rem', textTransform: 'capitalize' }}>
+                                                        {p.payment_method}
+                                                    </span>
+                                                </td>
+                                                <td style={{ padding: historyDense ? '0.5rem 1.25rem' : '1rem 1.25rem' }}>
+                                                    <span style={{
+                                                        padding: '4px 10px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: '600',
+                                                        background: p.status === 'success' ? '#d1fae5' : '#ffedd5',
+                                                        color: p.status === 'success' ? '#059669' : '#c2410c',
+                                                        display: 'inline-flex', alignItems: 'center', gap: '4px'
+                                                    }}>
+                                                        {p.status === 'success' ? '✓ Success' : 'Pending'}
+                                                    </span>
+                                                </td>
+                                                <td style={{ padding: historyDense ? '0.5rem 1.25rem' : '1rem 1.25rem' }}>
+                                                    <button onClick={() => setViewingReceipt(p)} style={{ background: 'none', border: 'none', color: '#8b5cf6', fontWeight: '600', fontSize: '0.85rem', cursor: 'pointer', padding: 0 }}>
+                                                        {p.transaction_id || `#RCP-000${p.id}`}
                                                     </button>
-                                                )}
-                                            </td>
-                                        </tr>
-                                    ))}
+                                                </td>
+                                                <td style={{ padding: historyDense ? '0.5rem 1.25rem' : '1rem 1.25rem' }}>
+                                                    <button style={{ background: 'none', border: 'none', color: '#9ca3af', cursor: 'pointer', fontSize: '1.2rem', display: 'flex', alignItems: 'center', justifyContent: 'center', height: '32px', width: '32px' }}>
+                                                        ⋮
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        );
+                                    })}
                                 </tbody>
                             </table>
                         </div>
-                    </div>
 
-                    <div className="card">
-                        <h3 style={{ marginBottom: '1rem' }}>🎉 Discount Logs</h3>
-                        <div className="table-container" style={{ maxHeight: '500px', overflowY: 'auto' }}>
-                            <table className="table mobile-keep">
-                                <thead>
-                                    <tr>
-                                        <th>Date</th>
-                                        <th>Student</th>
-                                        <th>Discount</th>
-                                        <th>Reason/Approver</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {discountLogs.length === 0 ? (
-                                        <tr><td colSpan="4" className="text-center">No discounts issued</td></tr>
-                                    ) : discountLogs.map(dl => (
-                                        <tr key={dl.id}>
-                                            <td>{new Date(dl.createdAt).toLocaleDateString()}</td>
-                                            <td>{dl.StudentFee?.Student?.User?.name}</td>
-                                            <td style={{ color: '#a855f7', fontWeight: '700' }}>-₹{parseFloat(dl.discount_amount).toLocaleString()}</td>
-                                            <td>
-                                                <small><b>{dl.reason}</b><br />by {dl.approver?.name}</small>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
+                        {/* Pagination footer */}
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1.25rem', borderTop: '1px solid #e5e7eb' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', color: '#4b5563' }}>
+                                Rows per page:
+                                <select value={historyItemsPerPage} onChange={e => { setHistoryItemsPerPage(Number(e.target.value)); setHistoryPage(1); }} style={{ border: '1px solid #e5e7eb', borderRadius: '6px', padding: '4px 8px', outline: 'none', background: '#fff', cursor: 'pointer' }}>
+                                    <option value="10">10</option>
+                                    <option value="20">20</option>
+                                    <option value="50">50</option>
+                                </select>
+                            </div>
+                            <div style={{ display: 'flex', gap: '4px' }}>
+                                <button
+                                    onClick={() => setHistoryPage(p => Math.max(1, p - 1))}
+                                    disabled={historyPage === 1}
+                                    style={{ padding: '6px 10px', borderRadius: '6px', border: '1px solid #e5e7eb', background: '#fff', color: '#374151', cursor: historyPage === 1 ? 'not-allowed' : 'pointer' }}
+                                >
+                                    &lt;
+                                </button>
+                                {Array.from({ length: Math.min(5, historyTotalPages) }, (_, i) => {
+                                    const pageNum = i + 1;
+                                    return (
+                                        <button
+                                            key={pageNum}
+                                            onClick={() => setHistoryPage(pageNum)}
+                                            style={{
+                                                padding: '6px 12px', borderRadius: '6px', border: '1px solid #e5e7eb', cursor: 'pointer',
+                                                background: historyPage === pageNum ? '#4f46e5' : '#fff',
+                                                color: historyPage === pageNum ? '#fff' : '#374151',
+                                                fontWeight: historyPage === pageNum ? '600' : '400'
+                                            }}
+                                        >
+                                            {pageNum}
+                                        </button>
+                                    );
+                                })}
+                                <button
+                                    onClick={() => setHistoryPage(p => Math.min(historyTotalPages, p + 1))}
+                                    disabled={historyPage === historyTotalPages}
+                                    style={{ padding: '6px 10px', borderRadius: '6px', border: '1px solid #e5e7eb', background: '#fff', color: '#374151', cursor: historyPage === historyTotalPages ? 'not-allowed' : 'pointer' }}
+                                >
+                                    &gt;
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -779,52 +1107,158 @@ function Fees() {
 
             {/* ═══ FEE STRUCTURES TAB ═══ */}
             {validTab === 'structure' && (hasPerm('fees', 'read') || user.permissions?.includes('collect_fees')) && (isAdmin || !user.permissions?.includes('fees.hide')) && (
-                <div className="card">
-                    <div className="table-container">
-                        <table className="table mobile-keep">
-                            <thead>
-                                <tr>
-                                    <th>Class & Subject</th>
-                                    <th>Fee Type</th>
-                                    <th>Amount</th>
-                                    <th>Due Date</th>
-                                    <th>Description</th>
-                                    {(hasPerm('fees', 'update') || hasPerm('fees', 'delete')) && <th style={{ textAlign: 'right' }}>Actions</th>}
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {feeStructures.length === 0 ? (
-                                    <tr><td colSpan={(hasPerm('fees', 'update') || hasPerm('fees', 'delete')) ? 6 : 5} className="text-center">No fee structures defined</td></tr>
-                                ) : feeStructures.map(fs => (
-                                    <tr key={fs.id}>
-                                        <td>
-                                            {fs.Class?.name} {fs.Class?.section}<br />
-                                            <small style={{ color: '#6b7280' }}>
-                                                {fs.Subject ? fs.Subject.name : 'All Subjects (Full Class)'}
-                                            </small>
-                                        </td>
-                                        <td><span className="badge badge-info">{fs.fee_type}</span></td>
-                                        <td>₹{parseFloat(fs.amount).toLocaleString()}</td>
-                                        <td>{new Date(fs.due_date).toLocaleDateString()}</td>
-                                        <td>{fs.description || '—'}</td>
-                                        {(hasPerm('fees', 'update') || hasPerm('fees', 'delete')) && (
-                                            <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
-                                                {hasPerm('fees', 'update') && (
-                                                    <button onClick={() => handleEditStructure(fs)} className="btn btn-secondary" style={{ padding: '4px 10px', fontSize: '0.8rem', marginRight: '6px' }}>
-                                                        ✏️ Edit
-                                                    </button>
-                                                )}
-                                                {hasPerm('fees', 'delete') && (
-                                                    <button onClick={() => handleDeleteStructure(fs.id)} className="btn btn-danger" style={{ padding: '4px 10px', fontSize: '0.8rem' }}>
-                                                        🗑️ Delete
-                                                    </button>
-                                                )}
-                                            </td>
-                                        )}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                    {/* Filters Section */}
+                    <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'center' }}>
+                        <div style={{ position: 'relative', flex: '1', minWidth: '250px' }}>
+                            <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#9ca3af' }}>🔍</span>
+                            <input
+                                type="text" className="form-input" placeholder="Search fee structure by class, subject or name..."
+                                value={structureSearch} onChange={e => { setStructureSearch(e.target.value); setStructurePage(1); }}
+                                style={{ width: '100%', paddingLeft: '36px', margin: 0, height: '42px', borderRadius: '8px', fontSize: '0.9rem' }}
+                            />
+                        </div>
+                        <select className="form-select" value={structureClass} onChange={e => { setStructureClass(e.target.value); setStructurePage(1); }}
+                            style={{ minWidth: '160px', flex: '1', margin: 0, height: '42px', borderRadius: '8px', fontSize: '0.9rem' }}>
+                            <option value="">🎓 All Classes</option>
+                            {classes.map(c => <option key={c.id} value={c.id}>{c.name} {c.section && `- ${c.section.replace('Section ', '')}`}</option>)}
+                        </select>
+                        <select className="form-select" value={structureFeeType} onChange={e => { setStructureFeeType(e.target.value); setStructurePage(1); }}
+                            style={{ minWidth: '160px', flex: '1', margin: 0, height: '42px', borderRadius: '8px', fontSize: '0.9rem' }}>
+                            <option value="">📋 All Fee Types</option>
+                            {uniqueFeeTypes.map(ft => <option key={ft} value={ft}>{ft}</option>)}
+                        </select>
+                        <select className="form-select" value={structureStatus} onChange={e => { setStructureStatus(e.target.value); setStructurePage(1); }}
+                            style={{ minWidth: '160px', flex: '1', margin: 0, height: '42px', borderRadius: '8px', fontSize: '0.9rem' }}>
+                            <option value="">🟢 Status: All</option>
+                            <option value="active">🟢 Status: Active</option>
+                        </select>
+                        
+                        {(hasPerm('fees', 'create')) && (
+                            <button onClick={() => {
+                                setStructureForm({ class_id: '', subject_id: '', fee_type: 'Tuition Fee', custom_fee_type: '', amount: '', due_date: '', description: '', student_target: 'all', individual_student_ids: [] });
+                                setEditingStructureId(null);
+                                setShowStructureModal(true);
+                            }} style={{ background: '#7e22ce', color: '#fff', border: 'none', fontWeight: '600', padding: '0 1.25rem', height: '42px', display: 'flex', alignItems: 'center', gap: '8px', borderRadius: '8px', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                                + Add Fee Structure
+                            </button>
+                        )}
+                    </div>
+
+                    {/* Table Section */}
+                    <div style={{ background: '#fff', borderRadius: '12px', border: '1px solid #e5e7eb', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+                        <div className="table-container" style={{ overflowX: 'auto' }}>
+                            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', minWidth: '1000px' }}>
+                                <thead>
+                                    <tr style={{ borderBottom: '1px solid #e5e7eb', color: '#6b7280', fontSize: '0.75rem', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                                        <th style={{ padding: '1.25rem' }}>CLASS / SUBJECT</th>
+                                        <th style={{ padding: '1.25rem' }}>FEE TYPE</th>
+                                        <th style={{ padding: '1.25rem' }}>AMOUNT</th>
+                                        <th style={{ padding: '1.25rem' }}>DUE DATE</th>
+                                        <th style={{ padding: '1.25rem' }}>DESCRIPTION</th>
+                                        <th style={{ padding: '1.25rem' }}>STATUS</th>
+                                        {(hasPerm('fees', 'update') || hasPerm('fees', 'delete')) && <th style={{ padding: '1.25rem', textAlign: 'right' }}>ACTIONS</th>}
                                     </tr>
-                                ))}
-                            </tbody>
-                        </table>
+                                </thead>
+                                <tbody>
+                                    {paginatedStructures.length === 0 ? (
+                                        <tr><td colSpan="7" style={{ textAlign: 'center', padding: '2rem', color: '#6b7280' }}>No fee structures found</td></tr>
+                                    ) : paginatedStructures.map(fs => (
+                                        <tr key={fs.id} style={{ borderBottom: '1px solid #e5e7eb', transition: 'background 0.2s' }} onMouseOver={e => e.currentTarget.style.background = '#f9fafb'} onMouseOut={e => e.currentTarget.style.background = 'transparent'}>
+                                            <td style={{ padding: '1.25rem' }}>
+                                                <div style={{ fontWeight: '600', color: '#374151', fontSize: '0.9rem' }}>
+                                                    {fs.Class?.name} {fs.Class?.section}
+                                                </div>
+                                                <div style={{ fontSize: '0.75rem', color: '#6b7280', marginTop: '2px' }}>
+                                                    {fs.Subject ? fs.Subject.name : 'All Subjects (Full Class)'}
+                                                </div>
+                                            </td>
+                                            <td style={{ padding: '1.25rem' }}>
+                                                <span style={{ color: '#3b82f6', fontWeight: '500', fontSize: '0.85rem' }}>
+                                                    {fs.fee_type}
+                                                </span>
+                                            </td>
+                                            <td style={{ padding: '1.25rem' }}>
+                                                <span style={{ fontWeight: '700', color: '#374151', fontSize: '0.9rem' }}>
+                                                    ₹{parseFloat(fs.amount).toLocaleString()}
+                                                </span>
+                                            </td>
+                                            <td style={{ padding: '1.25rem', color: '#4b5563', fontSize: '0.85rem' }}>
+                                                {new Date(fs.due_date).toLocaleDateString('en-GB')}
+                                            </td>
+                                            <td style={{ padding: '1.25rem', color: '#6b7280', fontSize: '0.85rem' }}>
+                                                {fs.description || '—'}
+                                            </td>
+                                            <td style={{ padding: '1.25rem' }}>
+                                                <span style={{
+                                                    padding: '4px 8px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: '600',
+                                                    color: '#059669', display: 'inline-flex', alignItems: 'center', gap: '6px'
+                                                }}>
+                                                    <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#10b981' }}></span>
+                                                    Active
+                                                </span>
+                                            </td>
+                                            {(hasPerm('fees', 'update') || hasPerm('fees', 'delete')) && (
+                                                <td style={{ padding: '1.25rem', textAlign: 'right', whiteSpace: 'nowrap' }}>
+                                                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
+                                                        {hasPerm('fees', 'update') && (
+                                                            <button onClick={() => handleEditStructure(fs)} style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: '6px', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#4b5563', transition: 'all 0.2s' }} onMouseOver={e => { e.currentTarget.style.borderColor = '#d1d5db'; e.currentTarget.style.background = '#f3f4f6'; }} onMouseOut={e => { e.currentTarget.style.borderColor = '#e5e7eb'; e.currentTarget.style.background = '#fff'; }} title="Edit">
+                                                                ✏️
+                                                            </button>
+                                                        )}
+                                                        {hasPerm('fees', 'delete') && (
+                                                            <button onClick={() => handleDeleteStructure(fs.id)} style={{ background: '#fff', border: '1px solid #fee2e2', borderRadius: '6px', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#ef4444', transition: 'all 0.2s' }} onMouseOver={e => { e.currentTarget.style.borderColor = '#fca5a5'; e.currentTarget.style.background = '#fef2f2'; }} onMouseOut={e => { e.currentTarget.style.borderColor = '#fee2e2'; e.currentTarget.style.background = '#fff'; }} title="Delete">
+                                                                🗑️
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                </td>
+                                            )}
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        {/* Pagination footer */}
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1.25rem', borderTop: '1px solid #e5e7eb' }}>
+                            <div style={{ fontSize: '0.85rem', color: '#6b7280' }}>
+                                Showing {Math.min((structurePage - 1) * structureItemsPerPage + 1, filteredStructures.length) || 0} to {Math.min(structurePage * structureItemsPerPage, filteredStructures.length)} of {filteredStructures.length} entries
+                            </div>
+                            <div style={{ display: 'flex', gap: '4px' }}>
+                                <button
+                                    onClick={() => setStructurePage(p => Math.max(1, p - 1))}
+                                    disabled={structurePage === 1}
+                                    style={{ padding: '6px 10px', borderRadius: '6px', border: '1px solid #e5e7eb', background: '#fff', color: '#374151', cursor: structurePage === 1 ? 'not-allowed' : 'pointer' }}
+                                >
+                                    &lt;
+                                </button>
+                                {Array.from({ length: Math.min(5, structureTotalPages) }, (_, i) => {
+                                    const pageNum = i + 1;
+                                    return (
+                                        <button
+                                            key={pageNum}
+                                            onClick={() => setStructurePage(pageNum)}
+                                            style={{
+                                                padding: '6px 12px', borderRadius: '6px', border: '1px solid #e5e7eb', cursor: 'pointer',
+                                                background: structurePage === pageNum ? '#7e22ce' : '#fff',
+                                                color: structurePage === pageNum ? '#fff' : '#374151',
+                                                fontWeight: structurePage === pageNum ? '600' : '400'
+                                            }}
+                                        >
+                                            {pageNum}
+                                        </button>
+                                    );
+                                })}
+                                <button
+                                    onClick={() => setStructurePage(p => Math.min(structureTotalPages, p + 1))}
+                                    disabled={structurePage === structureTotalPages}
+                                    style={{ padding: '6px 10px', borderRadius: '6px', border: '1px solid #e5e7eb', background: '#fff', color: '#374151', cursor: structurePage === structureTotalPages ? 'not-allowed' : 'pointer' }}
+                                >
+                                    &gt;
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
             )}
@@ -1047,166 +1481,256 @@ function Fees() {
 
             {/* ═══ STRUCTURE MODAL ═══ */}
             {showStructureModal && (hasPerm('fees', 'create') || hasPerm('fees', 'update')) && (
-                <div className="modal-overlay" style={{ zIndex: 1050, overflowY: 'auto', padding: '2rem 1rem', display: 'flex', alignItems: 'flex-start' }}>
-                    <div className="modal-content" style={{ maxWidth: '520px', width: '95%', margin: '0 auto' }}>
-                        <h2 style={{ marginBottom: '1.25rem' }}>{editingStructureId ? '✏️ Edit Fee Structure' : '📐 Add Fee Structure'}</h2>
-                        <form onSubmit={handleStructureSubmit}>
+                <div className="modal-overlay" style={{ zIndex: 1050, overflowY: 'auto', padding: '2rem 1rem', display: 'flex', alignItems: 'flex-start', justifyContent: 'center' }}>
+                    <div className="modal-content" style={{ maxWidth: '600px', width: '100%', margin: '0 auto', borderRadius: '16px', padding: '0', overflow: 'hidden', display: 'flex', flexDirection: 'column', maxHeight: '90vh' }}>
+                        {/* Header */}
+                        <div style={{ padding: '1.5rem 1.5rem 1rem', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexShrink: 0 }}>
+                            <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                                <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: '#f3e8ff', color: '#7e22ce', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem' }}>
+                                    {editingStructureId ? '✏️' : '📝'}
+                                </div>
+                                <div>
+                                    <h2 style={{ margin: 0, fontSize: '1.25rem', color: '#111827' }}>{editingStructureId ? 'Edit Fee Structure' : 'Add Fee Structure'}</h2>
+                                    <div style={{ color: '#6b7280', fontSize: '0.9rem', marginTop: '4px' }}>
+                                        {editingStructureId ? 'Update details of an existing fee structure.' : 'Create a new fee structure for a class or subject.'}
+                                    </div>
+                                </div>
+                            </div>
+                            <button onClick={() => { setShowStructureModal(false); setStructureForm({ class_id: '', subject_id: '', fee_type: 'Tuition Fee', custom_fee_type: '', amount: '', due_date: '', description: '', student_target: 'all', individual_student_ids: [] }); setEditingStructureId(null); }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9ca3af', fontSize: '1.25rem' }}>
+                                ✕
+                            </button>
+                        </div>
+
+                        <form onSubmit={handleStructureSubmit} style={{ padding: '0 1.5rem 1.5rem', overflowY: 'auto', flex: 1 }}>
                             {/* Class */}
-                            <div className="form-group">
-                                <label className="form-label">Class *</label>
+                            <div className="form-group" style={{ marginBottom: '1.25rem' }}>
+                                <label className="form-label" style={{ fontWeight: '600', color: '#374151', fontSize: '0.9rem' }}>Class <span style={{ color: '#ef4444' }}>*</span></label>
                                 <select className="form-select" value={structureForm.class_id} required
                                     onChange={e => {
-                                        setStructureForm({ ...structureForm, class_id: e.target.value, subject_id: '', individual_student_id: '' });
+                                        setStructureForm({ ...structureForm, class_id: e.target.value, subject_id: '', individual_student_ids: [] });
                                         fetchSubjectsForClass(e.target.value);
-                                    }}>
+                                    }} style={{ height: '46px', borderRadius: '8px', border: '1px solid #d1d5db' }}>
                                     <option value="">Select Class</option>
                                     {classes.map(c => <option key={c.id} value={c.id}>{c.name}{c.section ? ` - ${c.section}` : ''}</option>)}
                                 </select>
                             </div>
 
-                            {/* Subject (only shown after class is selected) */}
-                            <div className="form-group">
-                                <label className="form-label">Subject (Optional)</label>
+                            {/* Subject */}
+                            <div className="form-group" style={{ marginBottom: '1.25rem' }}>
+                                <label className="form-label" style={{ fontWeight: '600', color: '#374151', fontSize: '0.9rem' }}>Subject (Optional)</label>
                                 {structureForm.student_target === 'individual' ? (
-                                    <input type="text" className="form-input" value="None (Not applicable for individual student)" disabled style={{ backgroundColor: 'var(--gray-200)', color: 'var(--gray-500)', opacity: 0.7 }} title="Subject is automatically removed when applying fees to an individual." />
+                                    <input type="text" className="form-input" value="None (Not applicable for individual student)" disabled style={{ backgroundColor: '#f9fafb', color: '#9ca3af', height: '46px', borderRadius: '8px', border: '1px solid #e5e7eb' }} title="Subject is automatically removed when applying fees to an individual." />
                                 ) : (
                                     <>
                                         <select
                                             className="form-select"
                                             value={structureForm.subject_id}
                                             disabled={!structureForm.class_id}
-                                            onChange={e => setStructureForm({ ...structureForm, subject_id: e.target.value })}>
+                                            onChange={e => setStructureForm({ ...structureForm, subject_id: e.target.value })}
+                                            style={{ height: '46px', borderRadius: '8px', border: '1px solid #d1d5db', backgroundColor: !structureForm.class_id ? '#f9fafb' : '#fff' }}>
                                             <option value="">All Subjects (Full Class)</option>
                                             {availableSubjects.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                                         </select>
-                                        {structureForm.class_id && availableSubjects.length === 0 && (
-                                            <small style={{ color: '#f59e0b', marginTop: '4px', display: 'block' }}>No subjects found for this class.</small>
-                                        )}
                                     </>
                                 )}
                             </div>
 
-                            {/* Student Target */}
-                            <div className="form-group">
-                                <label className="form-label">Apply To</label>
-                                <div style={{ display: 'flex', gap: '0.5rem' }}>
-                                    {[['all', '👥 All Students'], ['individual', '👤 Individual Student']].map(([val, lbl]) => (
-                                        <button
-                                            key={val}
-                                            type="button"
-                                            onClick={() => setStructureForm({ ...structureForm, student_target: val, individual_student_id: '' })}
-                                            style={{
-                                                flex: 1, padding: '8px 6px', borderRadius: '8px', cursor: 'pointer',
-                                                fontSize: '0.82rem', fontWeight: '600',
-                                                border: `1.5px solid ${structureForm.student_target === val ? '#6366f1' : 'var(--border-color)'}`,
-                                                background: structureForm.student_target === val ? 'rgba(99,102,241,0.1)' : 'transparent',
-                                                color: structureForm.student_target === val ? '#6366f1' : 'var(--text-secondary)'
-                                            }}
-                                        >{lbl}</button>
-                                    ))}
+                            {/* Apply To */}
+                            <div className="form-group" style={{ marginBottom: '1.25rem' }}>
+                                <label className="form-label" style={{ fontWeight: '600', color: '#374151', fontSize: '0.9rem' }}>Apply To</label>
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                                    <div
+                                        onClick={() => setStructureForm({ ...structureForm, student_target: 'all', individual_student_ids: [] })}
+                                        style={{
+                                            padding: '1rem', borderRadius: '12px', cursor: 'pointer', position: 'relative',
+                                            border: `2px solid ${structureForm.student_target === 'all' ? '#7e22ce' : '#e5e7eb'}`,
+                                            background: structureForm.student_target === 'all' ? '#faf5ff' : '#fff',
+                                        }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginBottom: '8px' }}>
+                                            <span style={{ color: structureForm.student_target === 'all' ? '#7e22ce' : '#6b7280' }}>👥</span>
+                                            <span style={{ fontWeight: '600', color: structureForm.student_target === 'all' ? '#7e22ce' : '#374151' }}>All Students</span>
+                                        </div>
+                                        <div style={{ fontSize: '0.75rem', color: '#6b7280', textAlign: 'center' }}>
+                                            Apply this fee structure to all students in the selected class.
+                                        </div>
+                                        {structureForm.student_target === 'all' && (
+                                            <div style={{ position: 'absolute', top: '8px', right: '8px', width: '20px', height: '20px', background: '#7e22ce', borderRadius: '50%', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem' }}>✓</div>
+                                        )}
+                                    </div>
+                                    <div
+                                        onClick={() => setStructureForm({ ...structureForm, student_target: 'individual', individual_student_ids: [] })}
+                                        style={{
+                                            padding: '1rem', borderRadius: '12px', cursor: 'pointer', position: 'relative',
+                                            border: `2px solid ${structureForm.student_target === 'individual' ? '#7e22ce' : '#e5e7eb'}`,
+                                            background: structureForm.student_target === 'individual' ? '#faf5ff' : '#fff',
+                                        }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginBottom: '8px' }}>
+                                            <span style={{ color: structureForm.student_target === 'individual' ? '#7e22ce' : '#6b7280' }}>👤</span>
+                                            <span style={{ fontWeight: '600', color: structureForm.student_target === 'individual' ? '#7e22ce' : '#374151' }}>Individual Student</span>
+                                        </div>
+                                        <div style={{ fontSize: '0.75rem', color: '#6b7280', textAlign: 'center' }}>
+                                            Apply this fee structure to a specific student only.
+                                        </div>
+                                        {structureForm.student_target === 'individual' && (
+                                            <div style={{ position: 'absolute', top: '8px', right: '8px', width: '20px', height: '20px', background: '#7e22ce', borderRadius: '50%', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem' }}>✓</div>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
 
-                            {/* Individual Student dropdown (conditional) */}
+                            {/* Individual Student Dropdown */}
                             {structureForm.student_target === 'individual' && (
-                                <div className="form-group">
-                                    <label className="form-label">Select Student *</label>
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                                        <input 
-                                            type="text" 
-                                            className="form-input" 
-                                            placeholder="🔍 Search by name or roll number..." 
-                                            onChange={e => {
-                                                const val = e.target.value.toLowerCase();
-                                                const selects = document.querySelectorAll('.student-option-item');
-                                                selects.forEach(opt => {
-                                                    const text = opt.innerText.toLowerCase();
-                                                    if (text.includes(val)) opt.style.display = 'block';
-                                                    else opt.style.display = 'none';
-                                                });
-                                            }}
-                                        />
-                                        <div style={{ maxHeight: '180px', overflowY: 'auto', border: '1px solid var(--gray-300)', borderRadius: '8px', background: 'var(--card-bg, transparent)' }}>
+                                <div className="form-group" style={{ marginBottom: '1.25rem' }}>
+                                    <label className="form-label" style={{ fontWeight: '600', color: '#374151', fontSize: '0.9rem' }}>Select Student(s) <span style={{ color: '#ef4444' }}>*</span></label>
+                                    <div style={{ border: '1px solid #e5e7eb', borderRadius: '12px', background: '#fff', overflow: 'hidden' }}>
+                                        <div style={{ padding: '0.75rem 1rem', borderBottom: '1px solid #e5e7eb', background: '#f9fafb', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                            <span style={{ color: '#9ca3af' }}>🔍</span>
+                                            <input 
+                                                type="text" 
+                                                placeholder="Search students by name or roll number..." 
+                                                onChange={e => {
+                                                    const val = e.target.value.toLowerCase();
+                                                    const items = document.querySelectorAll('.student-option-item');
+                                                    items.forEach(item => {
+                                                        const text = item.innerText.toLowerCase();
+                                                        item.style.display = text.includes(val) ? 'flex' : 'none';
+                                                    });
+                                                }}
+                                                style={{ border: 'none', background: 'transparent', outline: 'none', width: '100%', fontSize: '0.9rem', color: '#374151' }}
+                                            />
+                                            <span style={{ fontSize: '0.8rem', color: '#6366f1', fontWeight: '600', whiteSpace: 'nowrap' }}>
+                                                {structureForm.individual_student_ids.length} selected
+                                            </span>
+                                        </div>
+                                        <div style={{ maxHeight: '220px', overflowY: 'auto' }}>
                                             {allStudentsForClass.length === 0 ? (
-                                                <div style={{ padding: '10px', color: '#f59e0b', fontSize: '0.9rem' }}>No students found in this class.</div>
+                                                <div style={{ padding: '2rem', textAlign: 'center', color: '#9ca3af', fontSize: '0.9rem' }}>No students found in this class.</div>
                                             ) : (
-                                                allStudentsForClass.map(s => (
-                                                    <div 
-                                                        key={s.id} 
-                                                        className="student-option-item"
-                                                        onClick={() => setStructureForm({ ...structureForm, individual_student_id: s.id })}
-                                                        style={{
-                                                            padding: '8px 12px',
-                                                            cursor: 'pointer',
-                                                            background: structureForm.individual_student_id === s.id ? 'rgba(99,102,241,0.1)' : 'transparent',
-                                                            borderBottom: '1px solid var(--gray-200)',
-                                                            fontWeight: structureForm.individual_student_id === s.id ? 'bold' : 'normal',
-                                                            color: structureForm.individual_student_id === s.id ? '#6366f1' : 'inherit',
-                                                            fontSize: '0.9rem'
-                                                        }}
-                                                    >
-                                                        {structureForm.individual_student_id === s.id && <span style={{ marginRight: '8px' }}>✅</span>}
-                                                        {s.User?.name || s.name} {s.roll_number ? `(Roll: ${s.roll_number})` : ''}
-                                                    </div>
-                                                ))
+                                                allStudentsForClass.map(s => {
+                                                    const isSelected = structureForm.individual_student_ids.includes(s.id);
+                                                    const initials = (s.User?.name || s.name || '?').substring(0, 2).toUpperCase();
+                                                    return (
+                                                        <div 
+                                                            key={s.id} 
+                                                            className="student-option-item"
+                                                            onClick={() => {
+                                                                const ids = [...structureForm.individual_student_ids];
+                                                                if (isSelected) {
+                                                                    setStructureForm({ ...structureForm, individual_student_ids: ids.filter(id => id !== s.id) });
+                                                                } else {
+                                                                    setStructureForm({ ...structureForm, individual_student_ids: [...ids, s.id] });
+                                                                }
+                                                            }}
+                                                            style={{
+                                                                padding: '1rem',
+                                                                display: 'flex',
+                                                                alignItems: 'center',
+                                                                gap: '1rem',
+                                                                cursor: 'pointer',
+                                                                borderBottom: '1px solid #f3f4f6',
+                                                                background: isSelected ? '#faf5ff' : '#fff',
+                                                                transition: 'background 0.2s'
+                                                            }}
+                                                            onMouseOver={e => { if(!isSelected) e.currentTarget.style.background = '#f9fafb'; }}
+                                                            onMouseOut={e => { if(!isSelected) e.currentTarget.style.background = '#fff'; }}
+                                                        >
+                                                            <div style={{ 
+                                                                width: '18px', height: '18px', borderRadius: '4px', 
+                                                                border: `2px solid ${isSelected ? '#7e22ce' : '#d1d5db'}`, 
+                                                                background: isSelected ? '#7e22ce' : '#fff',
+                                                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                                                flexShrink: 0
+                                                            }}>
+                                                                {isSelected && <span style={{ color: '#fff', fontSize: '10px' }}>✓</span>}
+                                                            </div>
+                                                            <div style={{ 
+                                                                width: '36px', height: '36px', borderRadius: '50%', 
+                                                                background: '#fee2e2', color: '#ef4444', 
+                                                                display: 'flex', alignItems: 'center', justifyContent: 'center', 
+                                                                fontSize: '0.85rem', fontWeight: 'bold', flexShrink: 0 
+                                                            }}>
+                                                                {initials}
+                                                            </div>
+                                                            <div style={{ flex: 1, minWidth: 0 }}>
+                                                                <div style={{ fontWeight: '600', color: '#111827', fontSize: '0.95rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                                                    {s.User?.name || s.name}
+                                                                </div>
+                                                                <div style={{ fontSize: '0.75rem', color: '#6b7280', display: 'flex', gap: '8px', alignItems: 'center', marginTop: '2px' }}>
+                                                                    <span>Roll: {s.roll_number || 'N/A'}</span>
+                                                                    <span>•</span>
+                                                                    <span>Class: {classes.find(c => c.id == structureForm.class_id)?.name || 'N/A'}</span>
+                                                                    {classes.find(c => c.id == structureForm.class_id)?.section && (
+                                                                        <>
+                                                                            <span>•</span>
+                                                                            <span>Section: {classes.find(c => c.id == structureForm.class_id)?.section.replace('Section ', '') || 'N/A'}</span>
+                                                                        </>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })
                                             )}
                                         </div>
                                     </div>
-                                    <select style={{ display: 'none' }} required value={structureForm.individual_student_id} onChange={() => {}}>
-                                        <option value="">Required</option>
-                                        <option value={structureForm.individual_student_id}>{structureForm.individual_student_id}</option>
-                                    </select>
                                 </div>
                             )}
 
-                            {/* Fee Type */}
-                            <div className="form-group">
-                                <label className="form-label">Fee Type</label>
-                                <select className="form-select" value={structureForm.fee_type}
-                                    onChange={e => setStructureForm({ ...structureForm, fee_type: e.target.value })}>
-                                    {['Tuition Fee', 'Exam Fee', 'Transport Fee', 'Library Fee', 'Other'].map(t => <option key={t}>{t}</option>)}
-                                </select>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem', marginBottom: '1.25rem' }}>
+                                {/* Fee Type */}
+                                <div className="form-group" style={{ margin: 0 }}>
+                                    <label className="form-label" style={{ fontWeight: '600', color: '#374151', fontSize: '0.9rem' }}>Fee Type <span style={{ color: '#ef4444' }}>*</span></label>
+                                    <select className="form-select" value={structureForm.fee_type}
+                                        onChange={e => setStructureForm({ ...structureForm, fee_type: e.target.value })} style={{ height: '46px', borderRadius: '8px', border: '1px solid #d1d5db' }}>
+                                        {['Tuition Fee', 'Exam Fee', 'Transport Fee', 'Library Fee', 'Other'].map(t => <option key={t}>{t}</option>)}
+                                    </select>
+                                </div>
+                                {/* Amount */}
+                                <div className="form-group" style={{ margin: 0 }}>
+                                    <label className="form-label" style={{ fontWeight: '600', color: '#374151', fontSize: '0.9rem' }}>Amount (₹) <span style={{ color: '#ef4444' }}>*</span></label>
+                                    <input type="number" className="form-input" required min="1" value={structureForm.amount} placeholder="Enter amount"
+                                        onChange={e => setStructureForm({ ...structureForm, amount: e.target.value })} style={{ height: '46px', borderRadius: '8px', border: '1px solid #d1d5db' }} />
+                                </div>
                             </div>
                             
                             {structureForm.fee_type === 'Other' && (
-                                <div className="form-group">
-                                    <label className="form-label">Custom Fee Type Name *</label>
+                                <div className="form-group" style={{ marginBottom: '1.25rem' }}>
+                                    <label className="form-label" style={{ fontWeight: '600', color: '#374151', fontSize: '0.9rem' }}>Custom Fee Type Name <span style={{ color: '#ef4444' }}>*</span></label>
                                     <input type="text" className="form-input" required value={structureForm.custom_fee_type}
                                         placeholder="e.g. Dance Fee, Sports Fee"
-                                        onChange={e => setStructureForm({ ...structureForm, custom_fee_type: e.target.value })} />
+                                        onChange={e => setStructureForm({ ...structureForm, custom_fee_type: e.target.value })} style={{ height: '46px', borderRadius: '8px', border: '1px solid #d1d5db' }} />
                                 </div>
                             )}
 
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
-                                <div className="form-group">
-                                    <label className="form-label">Amount (₹) *</label>
-                                    <input type="number" className="form-input" required min="1" value={structureForm.amount}
-                                        onChange={e => setStructureForm({ ...structureForm, amount: e.target.value })} />
-                                </div>
-                                <div className="form-group">
-                                    <label className="form-label">Due Date *</label>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem', marginBottom: '1.25rem' }}>
+                                {/* Due Date */}
+                                <div className="form-group" style={{ margin: 0 }}>
+                                    <label className="form-label" style={{ fontWeight: '600', color: '#374151', fontSize: '0.9rem' }}>Due Date <span style={{ color: '#ef4444' }}>*</span></label>
                                     <input type="date" className="form-input" required value={structureForm.due_date}
-                                        onChange={e => setStructureForm({ ...structureForm, due_date: e.target.value })} />
+                                        onChange={e => setStructureForm({ ...structureForm, due_date: e.target.value })} style={{ height: '46px', borderRadius: '8px', border: '1px solid #d1d5db' }} />
                                 </div>
-                            </div>
-
-                            <div className="form-group">
-                                <label className="form-label">Description</label>
-                                <textarea className="form-input" rows="2" value={structureForm.description}
-                                    onChange={e => setStructureForm({ ...structureForm, description: e.target.value })} />
+                                {/* Description */}
+                                <div className="form-group" style={{ margin: 0 }}>
+                                    <label className="form-label" style={{ fontWeight: '600', color: '#374151', fontSize: '0.9rem' }}>Description (Optional)</label>
+                                    <input type="text" className="form-input" value={structureForm.description} placeholder="Enter description"
+                                        onChange={e => setStructureForm({ ...structureForm, description: e.target.value })} style={{ height: '46px', borderRadius: '8px', border: '1px solid #d1d5db' }} />
+                                </div>
                             </div>
 
                             {/* Info hint */}
-                            <div style={{ background: 'rgba(99,102,241,0.06)', border: '1px solid rgba(99,102,241,0.3)', borderRadius: '8px', padding: '0.65rem 1rem', marginBottom: '1rem', fontSize: '0.82rem', color: 'var(--text-secondary)' }}>
-                                {structureForm.student_target === 'all'
-                                    ? '👥 This fee structure will be automatically assigned to all students in the selected class.'
-                                    : '👤 This fee structure will be assigned only to the selected student.'}
+                            <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: '8px', padding: '1rem', marginBottom: '1.5rem', display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
+                                <div style={{ background: '#3b82f6', color: '#fff', width: '20px', height: '20px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: 'bold', flexShrink: 0 }}>i</div>
+                                <div style={{ fontSize: '0.85rem', color: '#1e3a8a', lineHeight: '1.4' }}>
+                                    {structureForm.student_target === 'all'
+                                        ? 'This fee structure will be automatically assigned to all students in the selected class.'
+                                        : 'This fee structure will be assigned only to the selected student.'}
+                                </div>
                             </div>
 
-                            <div className="modal-actions">
-                                <button type="button" className="btn btn-secondary" onClick={() => { setShowStructureModal(false); setStructureForm({ class_id: '', subject_id: '', fee_type: 'Tuition Fee', custom_fee_type: '', amount: '', due_date: '', description: '', student_target: 'all', individual_student_id: '' }); setEditingStructureId(null); }}>Cancel</button>
-                                <button type="submit" className="btn btn-primary" style={{ background: 'linear-gradient(135deg,#6366f1,#a855f7)', border: 'none' }}>
-                                    {editingStructureId ? 'Save Changes' : 'Create Structure'}
+                            <div style={{ display: 'flex', gap: '1rem' }}>
+                                <button type="button" onClick={() => { setShowStructureModal(false); setStructureForm({ class_id: '', subject_id: '', fee_type: 'Tuition Fee', custom_fee_type: '', amount: '', due_date: '', description: '', student_target: 'all', individual_student_ids: [] }); setEditingStructureId(null); }} style={{ flex: 1, padding: '0.75rem', borderRadius: '8px', border: '1px solid #e5e7eb', background: '#fff', color: '#374151', fontWeight: '600', cursor: 'pointer' }}>Cancel</button>
+                                <button type="submit" style={{ flex: 2, padding: '0.75rem', borderRadius: '8px', border: 'none', background: '#6366f1', color: '#fff', fontWeight: '600', cursor: 'pointer' }}>
+                                    {editingStructureId ? 'Save Changes' : 'Create Fee Structure'}
                                 </button>
                             </div>
                         </form>

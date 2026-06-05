@@ -8,12 +8,13 @@ const { Op } = require("sequelize");
 
 exports.createSubject = async (req, res) => {
     try {
-        const { name, class_id, faculty_id } = req.body;
+        const { name, code, class_id, faculty_id } = req.body;
         const institute_id = req.user.institute_id;
 
         const subject = await Subject.create({
             institute_id,
             name,
+            code: code || null,
             class_id: class_id || null,
             faculty_id: faculty_id || null,
         });

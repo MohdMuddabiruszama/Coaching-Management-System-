@@ -1,26 +1,26 @@
-/**
- * Parent Assignments — Phase 13 Read-only View
- * Parents can see their child's assignments & submission status
- */
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import api from '../../services/api';
 import BackButton from '../../components/common/BackButton';
-import '../faculty/Assignments.css';
-import './Dashboard.css';
+import './ParentAssignments.css';
 
-const SUB_STATUS_CONFIG = {
-    pending:            { label: 'Not Submitted', color: '#6b7280', bg: '#f3f4f6', icon: '⏳' },
-    submitted:          { label: 'Submitted',     color: '#2563eb', bg: '#eff6ff', icon: '📩' },
-    late:               { label: 'Late',          color: '#d97706', bg: '#fef3c7', icon: '⚠️' },
-    graded:             { label: 'Graded',        color: '#16a34a', bg: '#f0fdf4', icon: '✅' },
-    resubmit_requested: { label: 'Resubmit Req.', color: '#7c3aed', bg: '#f5f3ff', icon: '🔄' },
+// SVG Icons
+const Icons = {
+    DocCheck: () => <svg viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 14l-4 4-2-2 1.41-1.41L12 17.17l2.59-2.58L16 16zm-3-9V3.5L18.5 9H13z"/></svg>,
+    DocCross: () => <svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="4" fill="currentColor"/><path d="M15 9l-6 6M9 9l6 6" stroke="white" strokeWidth="2" strokeLinecap="round"/></svg>,
+    DocPending: () => <svg viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm-2 14v-4h2v4h-2zm0-6V7h2v3h-2zm1-7V3.5L18.5 9H13z"/></svg>,
+    DocRefresh: () => <svg viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zM12 18c-2.21 0-4-1.79-4-4s1.79-4 4-4c1.1 0 2.1.45 2.82 1.18L13 13h5V8l-1.63 1.63C15.22 8.64 13.68 8 12 8c-3.31 0-6 2.69-6 6s2.69 6 6 6c2.42 0 4.5-1.44 5.45-3.5h-2.14C14.47 17.39 13.33 18 12 18zM13 9V3.5L18.5 9H13z"/></svg>,
+    Calendar: () => <svg viewBox="0 0 24 24"><path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11z"/></svg>,
+    ChatBubble: () => <svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>,
+    ChevronRight: () => <svg viewBox="0 0 24 24"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg>,
 };
 
-function StatusBadge({ status }) {
-    const cfg = SUB_STATUS_CONFIG[status];
-    if (!cfg) return null;
-    return <span className="fa-badge" style={{ background: cfg.bg, color: cfg.color }}>{cfg.icon} {cfg.label}</span>;
-}
+const getSubjectIcon = (name) => {
+    if (!name) return '📖';
+    const n = name.toLowerCase();
+    if (n.includes('math')) return '📗';
+    if (n.includes('science')) return '👨‍🔬';
+    return '📖';
+};
 
 export default function ParentAssignments() {
     const [students, setStudents] = useState([]);
@@ -28,6 +28,7 @@ export default function ParentAssignments() {
     const [assignments, setAssignments] = useState([]);
     const [loading, setLoading] = useState(true);
     const [loadingAsg, setLoadingAsg] = useState(false);
+    const [filter, setFilter] = useState('all');
     const [msg, setMsg] = useState(null);
 
     const flash = (text, type = 'success') => { setMsg({ text, type }); setTimeout(() => setMsg(null), 3000); };
@@ -38,7 +39,7 @@ export default function ParentAssignments() {
                 const res = await api.get('/parents/dashboard');
                 const children = res.data.data?.students || [];
                 setStudents(children);
-                if (children.length === 1) {
+                if (children.length > 0) {
                     setSelectedStudent(children[0]);
                 }
             } catch (e) {
@@ -60,6 +61,7 @@ export default function ParentAssignments() {
 
     useEffect(() => {
         if (selectedStudent?.id) {
+            setFilter('all'); // Reset filter when child changes
             fetchAssignments(selectedStudent.id);
         }
     }, [selectedStudent, fetchAssignments]);
@@ -69,40 +71,40 @@ export default function ParentAssignments() {
     const submitted = assignments.filter(a => a.my_submission && ['submitted', 'late'].includes(a.my_submission.status));
     const resubmit = assignments.filter(a => a.my_submission?.status === 'resubmit_requested');
 
+    const filteredAssignments = useMemo(() => {
+        if (filter === 'pending') return pending;
+        if (filter === 'graded') return graded;
+        if (filter === 'awaiting') return submitted;
+        if (filter === 'resubmit') return resubmit;
+        return assignments;
+    }, [assignments, filter, pending, graded, submitted, resubmit]);
+
     if (loading) {
         return (
-            <div className="dashboard-container">
+            <div className="pa-container">
                 <div style={{ textAlign: 'center', padding: '4rem' }}>
-                    <div className="fa-spinner" /><p style={{ marginTop: 12, color: '#6b7280' }}>Loading...</p>
+                    Loading...
                 </div>
             </div>
         );
     }
 
     return (
-        <div className="dashboard-container">
-            {msg && <div className={`fa-flash ${msg.type}`}>{msg.type === 'success' ? '✅' : '❌'} {msg.text}</div>}
+        <div className="pa-container">
+            {msg && <div style={{ padding: '12px', marginBottom: '16px', background: msg.type === 'success' ? '#dcfce7' : '#fee2e2', color: msg.type === 'success' ? '#16a34a' : '#dc2626', borderRadius: '8px' }}>{msg.text}</div>}
 
-            <div className="dashboard-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div>
-                    <h1>📝 Child's Assignments</h1>
-                    <p>Monitor your child's assignment progress and grades</p>
-                </div>
-                <BackButton to="/parent/dashboard" />
-            </div>
-
-            {/* Student Selector */}
-            {students.length > 1 && (
-                <div className="card" style={{ marginBottom: 16 }}>
-                    <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-                        <strong style={{ fontSize: 14, alignSelf: 'center' }}>Select Child:</strong>
+            {/* Student Selector Card */}
+            {students.length > 0 && (
+                <div className="pa-card">
+                    <div className="pa-student-selector">
+                        <div className="pa-student-selector-label">Select Child:</div>
                         {students.map(s => (
                             <button
                                 key={s.id}
-                                className={`fa-tab ${selectedStudent?.id === s.id ? 'active' : ''}`}
+                                className={`pa-student-btn ${selectedStudent?.id === s.id ? 'active' : ''}`}
                                 onClick={() => setSelectedStudent(s)}
                             >
-                                👤 {s.User?.name || s.name}
+                                <span style={{ marginRight: '6px' }}>👤</span> {s.User?.name || s.name}
                             </button>
                         ))}
                     </div>
@@ -110,112 +112,169 @@ export default function ParentAssignments() {
             )}
 
             {!selectedStudent && students.length === 0 && (
-                <div className="card fa-empty">
-                    <div style={{ fontSize: 48 }}>👨‍👩‍👧</div>
-                    <p>No children linked to your account. Contact the administrator.</p>
+                <div className="pa-card">
+                    <div style={{ textAlign: 'center', padding: '40px' }}>
+                        <div style={{ fontSize: 48, marginBottom: 16 }}>👨‍👩‍👧</div>
+                        <p style={{ color: '#64748b' }}>No children linked to your account. Contact the administrator.</p>
+                    </div>
                 </div>
             )}
 
             {selectedStudent && (
                 <>
-                    {/* Stats for Selected Child */}
+                    {/* Stats Grid */}
                     {!loadingAsg && (
-                        <div className="fa-stats-row">
-                            <div className="fa-stat-card" style={{ borderTopColor: '#d97706' }}>
-                                <div className="fa-stat-icon">⏳</div>
-                                <div><div className="fa-stat-value" style={{ color: '#d97706' }}>{pending.length}</div><div className="fa-stat-label">Pending</div></div>
+                        <div className="pa-stats-grid">
+                            <div className="pa-stat-card pa-stat-pending">
+                                <div className="pa-stat-icon-wrapper" style={{ fontSize: '22px' }}>⏳</div>
+                                <div className="pa-stat-content">
+                                    <div className="pa-stat-value">{pending.length}</div>
+                                    <div className="pa-stat-label">Pending</div>
+                                    <div className="pa-stat-subtext">Not submitted yet</div>
+                                </div>
                             </div>
-                            <div className="fa-stat-card" style={{ borderTopColor: '#7c3aed' }}>
-                                <div className="fa-stat-icon">🔄</div>
-                                <div><div className="fa-stat-value" style={{ color: '#7c3aed' }}>{resubmit.length}</div><div className="fa-stat-label">Needs Resubmit</div></div>
+                            <div className="pa-stat-card pa-stat-resubmit">
+                                <div className="pa-stat-icon-wrapper" style={{ fontSize: '22px' }}>🔄</div>
+                                <div className="pa-stat-content">
+                                    <div className="pa-stat-value">{resubmit.length}</div>
+                                    <div className="pa-stat-label">Needs Resubmit</div>
+                                    <div className="pa-stat-subtext">Action required</div>
+                                </div>
                             </div>
-                            <div className="fa-stat-card" style={{ borderTopColor: '#2563eb' }}>
-                                <div className="fa-stat-icon">📩</div>
-                                <div><div className="fa-stat-value" style={{ color: '#2563eb' }}>{submitted.length}</div><div className="fa-stat-label">Awaiting Grade</div></div>
+                            <div className="pa-stat-card pa-stat-awaiting">
+                                <div className="pa-stat-icon-wrapper" style={{ fontSize: '22px' }}>📥</div>
+                                <div className="pa-stat-content">
+                                    <div className="pa-stat-value">{submitted.length}</div>
+                                    <div className="pa-stat-label">Awaiting Grade</div>
+                                    <div className="pa-stat-subtext">Under review</div>
+                                </div>
                             </div>
-                            <div className="fa-stat-card" style={{ borderTopColor: '#16a34a' }}>
-                                <div className="fa-stat-icon">✅</div>
-                                <div><div className="fa-stat-value" style={{ color: '#16a34a' }}>{graded.length}</div><div className="fa-stat-label">Graded</div></div>
+                            <div className="pa-stat-card pa-stat-graded">
+                                <div className="pa-stat-icon-wrapper" style={{ fontSize: '22px' }}>✅</div>
+                                <div className="pa-stat-content">
+                                    <div className="pa-stat-value">{graded.length}</div>
+                                    <div className="pa-stat-label">Graded</div>
+                                    <div className="pa-stat-subtext">Completed</div>
+                                </div>
                             </div>
                         </div>
                     )}
 
-                    <div className="card">
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-                            <h3 style={{ margin: 0 }}>👤 {selectedStudent.User?.name || selectedStudent.name}'s Assignments</h3>
-                            <span style={{ fontSize: 13, color: '#6b7280' }}>{assignments.length} total</span>
+                    {/* Assignments List */}
+                    <div className="pa-assignments-card">
+                        <div className="pa-assignments-header">
+                            <div className="pa-assignments-title-group">
+                                <div className="pa-assignments-icon" style={{ fontSize: '20px' }}>👤</div>
+                                <h2>{selectedStudent.User?.name || selectedStudent.name}'s Assignments</h2>
+                            </div>
+                            <div className="pa-assignments-actions">
+                                <select 
+                                    className="pa-filter-dropdown" 
+                                    value={filter} 
+                                    onChange={(e) => setFilter(e.target.value)}
+                                >
+                                    <option value="all">All Assignments</option>
+                                    <option value="pending">Pending</option>
+                                    <option value="resubmit">Needs Resubmit</option>
+                                    <option value="awaiting">Awaiting Grade</option>
+                                    <option value="graded">Graded</option>
+                                </select>
+                                <span className="pa-total-count">{filteredAssignments.length} total</span>
+                            </div>
                         </div>
 
                         {loadingAsg ? (
-                            <div style={{ textAlign: 'center', padding: '2rem' }}><div className="fa-spinner" /></div>
-                        ) : assignments.length === 0 ? (
-                            <div className="fa-empty"><div style={{ fontSize: 48 }}>📭</div><p>No assignments found.</p></div>
+                            <div style={{ textAlign: 'center', padding: '40px', color: '#64748b' }}>Loading assignments...</div>
+                        ) : filteredAssignments.length === 0 ? (
+                            <div style={{ textAlign: 'center', padding: '40px', color: '#64748b' }}>No assignments found.</div>
                         ) : (
-                            <div className="fa-assignment-list">
-                                {assignments.map(asg => (
-                                    <div key={asg.id} className="fa-assignment-card">
-                                        <div className="fa-asg-header">
-                                            <div>
-                                                <StatusBadge status={asg.my_submission?.status || 'pending'} />
-                                                <h3 className="fa-asg-title">{asg.title}</h3>
-                                                <p className="fa-asg-meta">📚 {asg.Class?.name} | 📖 {asg.Subject?.name} | 👨‍🏫 {asg.faculty?.name}</p>
+                            <div className="pa-assignment-list">
+                                {filteredAssignments.map(asg => {
+                                    const sub = asg.my_submission;
+                                    const status = sub?.status || 'pending';
+                                    
+                                    let uiState = { icon: Icons.DocPending, cls: 'pending', badgeText: 'Not Submitted', badgeCls: 'pa-badge-pending' };
+                                    if (status === 'graded') uiState = { icon: Icons.DocCheck, cls: 'graded', badgeText: 'Graded', badgeCls: 'pa-badge-graded' };
+                                    else if (status === 'submitted' || status === 'late') uiState = { icon: Icons.DocCross, cls: 'awaiting', badgeText: 'Awaiting Grade', badgeCls: 'pa-badge-awaiting' }; // Using DocCross based on user's image 1 requirement
+                                    else if (status === 'resubmit_requested') uiState = { icon: Icons.DocRefresh, cls: 'resubmit', badgeText: 'Resubmit', badgeCls: 'pa-badge-resubmit' };
+
+                                    const pct = status === 'graded' ? Math.round((sub.marks_obtained / asg.max_marks) * 100) : 0;
+                                    const scoreColor = pct >= 80 ? '#16a34a' : pct >= 60 ? '#2563eb' : pct >= 40 ? '#d97706' : '#dc2626';
+
+                                    return (
+                                        <div key={asg.id} className="pa-asg-item">
+                                            <div className="pa-asg-main">
+                                                <div className={`pa-asg-icon-large ${uiState.cls}`}>
+                                                    <uiState.icon />
+                                                </div>
+                                                <div className="pa-asg-info">
+                                                    <div className={`pa-asg-badge ${uiState.badgeCls}`}>{uiState.badgeText}</div>
+                                                    <h3 className="pa-asg-title">{asg.title}</h3>
+                                                    <div className="pa-asg-meta">
+                                                        <div className="pa-asg-meta-item">📚 Class {asg.Class?.name}</div>
+                                                        <span className="pa-asg-meta-divider">|</span>
+                                                        <div className="pa-asg-meta-item" style={{ fontSize: '13px' }}>{getSubjectIcon(asg.Subject?.name)} {asg.Subject?.name}</div>
+                                                        <span className="pa-asg-meta-divider">|</span>
+                                                        <div className="pa-asg-meta-item">👤 {asg.faculty?.name || asg.faculty?.User?.name}</div>
+                                                    </div>
+                                                    <div className="pa-asg-dates">
+                                                        <div className="due">📅 Due: {new Date(asg.due_date).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}</div>
+                                                        {sub?.submitted_at && <div className="due">📅 Submitted on: {new Date(sub.submitted_at).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}</div>}
+                                                    </div>
+                                                </div>
                                             </div>
-                                            <div style={{ textAlign: 'right' }}>
-                                                {asg.my_submission?.status === 'graded' ? (
-                                                    <div>
-                                                        <div style={{ fontSize: 22, fontWeight: 800, color: '#16a34a' }}>
-                                                            {asg.my_submission.marks_obtained}/{asg.max_marks}
-                                                        </div>
-                                                        <div style={{ fontSize: 16, fontWeight: 700, color: '#2563eb' }}>
-                                                            Grade: {asg.my_submission.grade}
-                                                        </div>
+
+                                            <div className="pa-asg-metrics">
+                                                {status === 'graded' ? (
+                                                    <div className="pa-asg-metric-group">
+                                                        <div className="pa-metric-label">Score</div>
+                                                        <div><span className="pa-score-value" style={{ color: scoreColor }}>{sub.marks_obtained}</span> <span className="pa-score-total">/ {asg.max_marks}</span></div>
+                                                        <div className="pa-progress-bar"><div className="pa-progress-fill" style={{ width: `${pct}%`, background: scoreColor }}></div></div>
+                                                        <div className="pa-score-pct">{pct}%</div>
                                                     </div>
                                                 ) : (
-                                                    asg.is_overdue && (!asg.my_submission || asg.my_submission.status === 'pending') && (
-                                                        <span className="fa-countdown overdue">⛔ Overdue</span>
-                                                    )
-                                                )}
-                                            </div>
-                                        </div>
-
-                                        <div className="fa-due-info">
-                                            Due: {new Date(asg.due_date).toLocaleString()}
-                                            {asg.my_submission?.is_late && <span className="fa-late-badge">LATE</span>}
-                                        </div>
-
-                                        {/* Grade Details */}
-                                        {asg.my_submission?.status === 'graded' && (
-                                            <div style={{ marginTop: 8 }}>
-                                                {(() => {
-                                                    const pct = Math.round((asg.my_submission.marks_obtained / asg.max_marks) * 100);
-                                                    const color = pct >= 80 ? '#16a34a' : pct >= 60 ? '#2563eb' : pct >= 40 ? '#d97706' : '#dc2626';
-                                                    return (
-                                                        <>
-                                                            <div className="sa-grade-bar-wrap">
-                                                                <div className="sa-grade-bar" style={{ width: `${pct}%`, background: color }} />
-                                                            </div>
-                                                            <span style={{ fontSize: 12, color: '#6b7280' }}>{pct}% score</span>
-                                                        </>
-                                                    );
-                                                })()}
-                                                {asg.my_submission.feedback && (
-                                                    <div className="fa-feedback-preview" style={{ marginTop: 6 }}>
-                                                        💬 Teacher: {asg.my_submission.feedback}
+                                                    <div className="pa-asg-metric-group">
+                                                        <div className="pa-metric-label">Status</div>
+                                                        <div className="pa-status-badge">{status === 'pending' && asg.is_overdue ? 'Overdue' : status === 'pending' ? 'Not Started' : 'Under Review'}</div>
+                                                        <div className="pa-status-text">{status === 'pending' && asg.is_overdue ? 'Past due date' : status === 'pending' ? 'Please submit soon' : 'Teacher is reviewing your submission'}</div>
                                                     </div>
                                                 )}
-                                            </div>
-                                        )}
 
-                                        {/* Resubmit reason */}
-                                        {asg.my_submission?.status === 'resubmit_requested' && asg.my_submission.resubmit_reason && (
-                                            <div className="fa-resubmit-reason">
-                                                🔄 Reason for resubmission: {asg.my_submission.resubmit_reason}
+                                                <div className="pa-asg-metric-group" style={{ minWidth: 80 }}>
+                                                    <div className="pa-metric-label">Grade</div>
+                                                    <div className={status === 'graded' ? 'pa-grade-value' : 'pa-score-total'} style={status === 'graded' ? { color: scoreColor } : {}}>
+                                                        {status === 'graded' ? sub.grade || '-' : '-'}
+                                                    </div>
+                                                </div>
+
+                                                <div className="pa-asg-metric-group" style={{ minWidth: 200 }}>
+                                                    <div className="pa-metric-label">Teacher Feedback</div>
+                                                    {status === 'graded' && sub.feedback ? (
+                                                        <div className="pa-feedback-box"><Icons.ChatBubble /> {sub.feedback}</div>
+                                                    ) : (
+                                                        <div className="pa-feedback-empty">Not available yet</div>
+                                                    )}
+                                                </div>
                                             </div>
-                                        )}
-                                    </div>
-                                ))}
+                                        </div>
+                                    );
+                                })}
                             </div>
                         )}
+                    </div>
+
+                    {/* Support Card */}
+                    <div className="pa-support-card" style={{ marginTop: '24px' }}>
+                        <div className="pa-support-info">
+                            <div className="pa-support-icon">i</div>
+                            <div className="pa-support-text">
+                                <h4>Need help with assignments?</h4>
+                                <p>If you have any questions or need support, please contact your child's teacher.</p>
+                            </div>
+                        </div>
+                        <button className="pa-support-btn">
+                            <Icons.ChatBubble /> Contact Teacher
+                        </button>
                     </div>
                 </>
             )}

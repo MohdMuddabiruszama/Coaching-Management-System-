@@ -61,6 +61,7 @@ const LifetimeAccess = lazy(() => import("../pages/admin/LifetimeAccess"));
 const AdminPerformance = lazy(() => import("../pages/admin/Performance"));
 const FacultyViewAttendance = lazy(() => import("../pages/faculty/ViewAttendance"));
 const AdminLayout = lazy(() => import("../components/layout/AdminLayout"));
+const StudentLayout = lazy(() => import("../components/layout/StudentLayout"));
 
 const FacultyDashboard = lazy(() => import("../pages/faculty/Dashboard"));
 const MarkAttendance = lazy(() => import("../pages/faculty/MarkAttendance"));
@@ -252,25 +253,25 @@ export default function WebAppRoutes() {
           path="/student/*"
           element={
             <ProtectedRoute allowedRoles={["student"]}>
-              <Routes>
-                <Route path="dashboard" element={<StudentDashboard />} />
-                <Route path="attendance" element={<ViewAttendance />} />
-                <Route path="scan-attendance" element={<ScanAttendance />} />
-                <Route path="exams" element={<ViewMarks />} />
-                <Route path="announcements" element={<ViewAnnouncements />} />
-                <Route path="fees" element={<PayFees />} />
-                <Route path="buy-plan" element={<Pricing />} />
-                <Route path="timetable" element={<StudentTimetable />} />
-                <Route path="notes" element={<StudentNotes />} />
-                <Route path="assignments" element={<StudentAssignments />} />
-                <Route path="chat" element={<ChatApp />} />
-                <Route path="profile" element={<Profile />} />
-                <Route path="performance" element={<StudentPerformance />} />
-                <Route path="*" element={<Navigate to="/student/dashboard" />} />
-              </Routes>
+              <StudentLayout />
             </ProtectedRoute>
           }
-        />
+        >
+          <Route path="dashboard" element={<StudentDashboard />} />
+          <Route path="attendance" element={<ViewAttendance />} />
+          <Route path="scan-attendance" element={<ScanAttendance />} />
+          <Route path="exams" element={<ViewMarks />} />
+          <Route path="announcements" element={<ViewAnnouncements />} />
+          <Route path="fees" element={<PayFees />} />
+          <Route path="buy-plan" element={<Pricing />} />
+          <Route path="timetable" element={<StudentTimetable />} />
+          <Route path="notes" element={<StudentNotes />} />
+          <Route path="assignments" element={<StudentAssignments />} />
+          <Route path="chat" element={<ChatApp />} />
+          <Route path="profile" element={<Profile />} />
+          <Route path="performance" element={<StudentPerformance />} />
+          <Route path="*" element={<Navigate to="/student/dashboard" />} />
+        </Route>
 
         <Route
           path="/parent/*"

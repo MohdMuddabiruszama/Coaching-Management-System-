@@ -1,0 +1,179 @@
+/* ─── Detail View Header ───────────────────────────────────────── */
+.aa-detail-header {
+    background: white;
+    border: 1px solid #EDF2F7;
+    border-radius: 12px;
+    padding: 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 24px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+}
+
+.aa-detail-title-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.aa-detail-title-wrapper h2 {
+    margin: 0;
+    font-size: 1.4rem;
+    color: #1A202C;
+}
+
+.aa-detail-meta {
+    color: #718096;
+    font-size: 0.85rem;
+    margin: 4px 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.aa-detail-meta strong {
+    color: #4A5568;
+    font-weight: 500;
+}
+
+.aa-detail-actions {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+}
+
+/* ─── Mini Stats Row ─────────────────────────────────────────── */
+.aa-mini-stats {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+.aa-mini-stat-card {
+    flex: 1;
+    background: white;
+    border: 1px solid #EDF2F7;
+    border-radius: 10px;
+    padding: 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.aa-mini-icon-wrapper {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.aa-mini-icon-wrapper svg {
+    width: 18px;
+    height: 18px;
+}
+
+.aa-mini-stat-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.aa-mini-stat-value {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: #1A202C;
+}
+
+.aa-mini-stat-label {
+    font-size: 0.7rem;
+    color: #718096;
+    margin-top: 2px;
+}
+
+/* ─── Detail Tabs ────────────────────────────────────────────── */
+.aa-tabs-container {
+    display: flex;
+    gap: 24px;
+    border-bottom: 1px solid #E2E8F0;
+    margin-bottom: 20px;
+}
+
+.aa-tab {
+    padding: 12px 0;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #718096;
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.aa-tab:hover {
+    color: #4A5568;
+}
+
+.aa-tab.active {
+    color: #6B46C1;
+    border-bottom-color: #6B46C1;
+}
+
+/* ─── Status Badge Refinements ───────────────────────────────── */
+.aa-status-pill {
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+.aa-status-pill::before {
+    content: '';
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+}
+.aa-status-pill.graded { background: #F0FFF4; color: #38A169; }
+.aa-status-pill.graded::before { background: #38A169; }
+
+.aa-status-pill.pending { background: #FFF8F1; color: #DD6B20; }
+.aa-status-pill.pending::before { background: #DD6B20; }
+
+.aa-status-pill.not_submitted { background: #F7FAFC; color: #718096; }
+.aa-status-pill.not_submitted::before { background: #A0AEC0; }
+
+.aa-status-pill.late { background: #FFF5F5; color: #E53E3E; border: 1px solid #FED7D7; }
+.aa-status-pill.late::before { background: #E53E3E; }
+
+/* ─── Grade Colors ───────────────────────────────────────────── */
+.aa-grade-A { color: #38A169; font-weight: 700; }
+.aa-grade-B { color: #3182CE; font-weight: 700; }
+.aa-grade-C { color: #DD6B20; font-weight: 700; }
+.aa-grade-F { color: #E53E3E; font-weight: 700; }
+.aa-grade-default { color: #718096; font-weight: 600; }
+
+.aa-file-download {
+    color: #3182CE;
+    text-decoration: none;
+    font-size: 0.8rem;
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+.aa-file-download:hover {
+    text-decoration: underline;
+}
+
+/* Mini stat colors */
+.aa-mini-icon-wrapper.purple { background: #FAF5FF; color: #805AD5; }
+.aa-mini-icon-wrapper.black { background: #F7FAFC; color: #2D3748; }
+.aa-mini-icon-wrapper.orange { background: #FFF8F1; color: #DD6B20; }
+.aa-mini-icon-wrapper.green { background: #F0FFF4; color: #38A169; }
+.aa-mini-icon-wrapper.grey { background: #F7FAFC; color: #A0AEC0; }

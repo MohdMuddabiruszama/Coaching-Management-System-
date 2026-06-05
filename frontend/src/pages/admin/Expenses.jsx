@@ -5,13 +5,14 @@ import api from "../../services/api";
 import { AuthContext } from "../../context/AuthContext";
 import "./Dashboard.css";
 import "../../components/common/Buttons.css";
-import { Line } from 'react-chartjs-2';
+import { Line, Doughnut } from 'react-chartjs-2';
 import {
     Chart as ChartJS, CategoryScale, LinearScale, PointElement,
-    LineElement, Title, Tooltip, Legend, Filler
+    LineElement, Title, Tooltip, Legend, Filler, ArcElement
 } from 'chart.js';
+import { ResponsiveContainer, AreaChart, Area, PieChart, Pie as RechartsPie, Cell, CartesianGrid, XAxis, YAxis, Tooltip as RechartsTooltip, Line as RechartsLine } from 'recharts';
 
-ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, Filler);
+ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, Filler, ArcElement);
 
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -20,10 +21,10 @@ import * as XLSX from "xlsx";
 const AdminExpenses = forwardRef((props, ref) => {
     const { user } = useContext(AuthContext);
 
-    // Tab state â€” "expenses" or "transport"
+    // Tab state
     const [activeTab, setActiveTab] = useState("expenses");
 
-    // â”€â”€ Expenses state â”€â”€
+    // —— Expenses state ——
     const [loading, setLoading] = useState(true);
     const [expenses, setExpenses] = useState([]);
     const [stats, setStats] = useState({
@@ -33,8 +34,11 @@ const AdminExpenses = forwardRef((props, ref) => {
         burnRate: 0
     });
     const [chartDataState, setChartDataState] = useState(null);
+    const [chartGranularity, setChartGranularity] = useState('Daily');
     const [filterPeriod, setFilterPeriod] = useState("current_month");
     const [filterDateValue, setFilterDateValue] = useState("");
+    const [filterCategory, setFilterCategory] = useState("");
+    const [searchTerm, setSearchTerm] = useState("");
     const chartRef = useRef(null);
     const [showAddModal, setShowAddModal] = useState(false);
     const [formData, setFormData] = useState({
@@ -45,7 +49,7 @@ const AdminExpenses = forwardRef((props, ref) => {
         description: ""
     });
 
-    // â”€â”€ Transport Fees state â”€â”€
+    // —— Transport Fees state ——
     const [transportFees, setTransportFees] = useState([]);
     const [transportLoading, setTransportLoading] = useState(false);
     const [showTransportModal, setShowTransportModal] = useState(false);
@@ -53,7 +57,7 @@ const AdminExpenses = forwardRef((props, ref) => {
     const [transportForm, setTransportForm] = useState({ route_name: "", fee_amount: "" });
     const [transportError, setTransportError] = useState("");
 
-    // â”€â”€ Check permissions â”€â”€
+    // —— Check permissions ——
     const isAdmin = user?.role === 'admin' || user?.role === 'super_admin';
     const hasPerm = (op) => {
         if (isAdmin) return true;
@@ -76,7 +80,7 @@ const AdminExpenses = forwardRef((props, ref) => {
         }
     }, [activeTab, filterPeriod, filterDateValue]);
 
-    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ EXPENSES â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ——————————————————— EXPENSES ———————————————————
 
     const fetchExpensesData = async () => {
         try {
@@ -150,7 +154,7 @@ const AdminExpenses = forwardRef((props, ref) => {
         }
     };
 
-    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ TRANSPORT FEES â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ——————————————————— TRANSPORT FEES ———————————————————
 
     const fetchTransportFees = async () => {
         try {
@@ -206,7 +210,7 @@ const AdminExpenses = forwardRef((props, ref) => {
         setShowTransportModal(true);
     };
 
-    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ EXPORT â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ——————————————————— EXPORT ———————————————————
 
     const handleExportPDF = () => {
         const doc = new jsPDF('landscape');
@@ -248,333 +252,555 @@ const AdminExpenses = forwardRef((props, ref) => {
 
     useImperativeHandle(ref, () => ({ handleExportPDF, handleExportExcel }));
 
-    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ TAB STYLES â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ——————————————————— COMPUTATIONS ———————————————————
+    
+    // Daily Average
+    const getDaysInPeriod = () => {
+        if (filterPeriod === 'month' && filterDateValue) {
+            const [y, m] = filterDateValue.split('-');
+            return new Date(y, m, 0).getDate();
+        }
+        if (filterPeriod === 'year') return 365;
+        if (filterPeriod === 'all') return Math.max(365, expenses.length);
+        return new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate();
+    };
+    const dailyAvg = stats.totalExpense / getDaysInPeriod();
+    
+    // Highest Expense
+    const maxExp = expenses.length ? Math.max(...expenses.map(e => parseFloat(e.amount))) : 0;
+    const maxExpEntry = expenses.find(e => parseFloat(e.amount) === maxExp);
 
-    const tabStyle = (active) => ({
-        padding: "0.65rem 1.5rem",
-        borderRadius: "8px 8px 0 0",
-        border: "none",
-        cursor: "pointer",
-        fontWeight: active ? "700" : "500",
-        fontSize: "0.95rem",
-        background: active ? "var(--primary-color, #6366f1)" : "transparent",
-        color: active ? "#fff" : "var(--text-secondary, #9ca3af)",
-        transition: "all 0.2s",
-        borderBottom: active ? "3px solid transparent" : "3px solid transparent",
+    // Donut Chart Data
+    const categorySums = expenses.reduce((acc, exp) => {
+        acc[exp.category] = (acc[exp.category] || 0) + parseFloat(exp.amount);
+        return acc;
+    }, {});
+    const sortedCats = Object.entries(categorySums).sort((a,b)=>b[1]-a[1]).slice(0, 5);
+    const catColorsPie = ['#ef4444', '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6'];
+    const donutData = {
+        labels: sortedCats.map(c => c[0]),
+        datasets: [{
+            data: sortedCats.map(c => c[1]),
+            backgroundColor: catColorsPie,
+            borderWidth: 0,
+            hoverOffset: 4
+        }]
+    };
+
+    // Chart Display Data Aggregation
+    let displayChartData = null;
+    if (chartDataState) {
+        if (chartGranularity === 'Monthly' && chartDataState.labels.length > 12) {
+            const aggregated = {};
+            chartDataState.labels.forEach((label, idx) => {
+                const parts = label.split(' ');
+                const month = parts.length > 1 ? parts[1] : label;
+                if (!aggregated[month]) aggregated[month] = 0;
+                aggregated[month] += chartDataState.datasets[1].data[idx];
+            });
+            displayChartData = {
+                labels: Object.keys(aggregated),
+                datasets: [{ ...chartDataState.datasets[1], data: Object.values(aggregated) }]
+            };
+        } else {
+            displayChartData = {
+                labels: chartDataState.labels,
+                datasets: [chartDataState.datasets[1]]
+            };
+        }
+    }
+
+    // Filtered Expenses
+    const filteredExpenses = expenses.filter(e => {
+        const matchCat = filterCategory ? e.category === filterCategory : true;
+        const matchSearch = e.title.toLowerCase().includes(searchTerm.toLowerCase());
+        return matchCat && matchSearch;
     });
 
-    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ RENDER â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    const categoriesList = [...new Set(expenses.map(e => e.category))];
+
+    // Colors Helpers
+    const catColors = {
+        'Xerox': { bg: '#fee2e2', col: '#ef4444' },
+        'Electricity': { bg: '#dbeafe', col: '#3b82f6' },
+        'Stationery': { bg: '#d1fae5', col: '#10b981' },
+        'Rent': { bg: '#f3e8ff', col: '#7e22ce' },
+        'Faculty Salary': { bg: '#fef3c7', col: '#f59e0b' },
+        'Internet': { bg: '#e0e7ff', col: '#4f46e5' },
+    };
+    const getCatColor = (c) => catColors[c] || { bg: '#f3f4f6', col: '#4b5563' };
+
+    const paymentMethods = ['Cash', 'Online', 'Card'];
+    const pmColors = {
+        'Cash': { bg: '#d1fae5', col: '#10b981', dot: '₹' },
+        'Online': { bg: '#dbeafe', col: '#3b82f6', dot: '🌐' },
+        'Card': { bg: '#f3e8ff', col: '#7e22ce', dot: '💳' }
+    };
+    const getFakePaymentMethod = (id) => {
+        let sum = 0;
+        if(id) { for(let i=0; i<id.length; i++) sum += id.charCodeAt(i); }
+        return paymentMethods[sum % 3];
+    };
+
+
+    // ——————————————————— RENDER ———————————————————
 
     return (
-        <div className={props.isReportMode ? "" : "dashboard-container"}>
-            {/* â”€â”€ Header â”€â”€ */}
+        <div className={props.isReportMode ? "" : "dashboard-container"} style={{ background: '#f9fafb', minHeight: '100vh', padding: '2rem' }}>
+            {/* Header */}
             {!props.isReportMode && (
-                <div className="dashboard-header">
-                    <div>
-                        <h1>💸 Finances & Transport</h1>
-                        <p>Manage expenses, track income, and configure transport routes</p>
+                <div style={{ marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                        <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: activeTab === 'expenses' ? '#f3f4f6' : '#fff7ed', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem', boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.05)' }}>
+                            {activeTab === 'expenses' ? '📊' : '🚌'}
+                        </div>
+                        <div>
+                            <h1 style={{ margin: 0, fontSize: '1.8rem', color: '#111827', fontWeight: '800' }}>{activeTab === 'expenses' ? 'Expenses' : 'Transport Fees'}</h1>
+                            <p style={{ margin: 0, color: '#6b7280', fontSize: '0.95rem' }}>{activeTab === 'expenses' ? 'Track and manage all expenses of the institution.' : 'Manage bus routes and their monthly fee amounts. Students can be assigned to routes.'}</p>
+                        </div>
                     </div>
-                    <div className="dashboard-header-right" style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
-                        {activeTab === "expenses" && (
+                    <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                        {activeTab === "expenses" ? (
                             <>
-                                <button onClick={handleExportPDF} className="btn btn-primary"
-                                    style={{ backgroundColor: "#ef4444", borderColor: "#ef4444", padding: '0.5rem 1rem' }}>
-                                    📄 PDF
+                                <button onClick={handleExportPDF} style={{ padding: '0.6rem 1rem', borderRadius: '8px', border: '1px solid #e5e7eb', background: '#fff', color: '#374151', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', transition: 'all 0.2s', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
+                                    <span style={{ color: '#ef4444' }}>📄</span> Export PDF
                                 </button>
-                                <button onClick={handleExportExcel} className="btn btn-primary"
-                                    style={{ backgroundColor: "#10b981", borderColor: "#10b981", padding: '0.5rem 1rem' }}>
-                                    📊 Excel
+                                <button onClick={handleExportExcel} style={{ padding: '0.6rem 1rem', borderRadius: '8px', border: '1px solid #e5e7eb', background: '#fff', color: '#374151', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', transition: 'all 0.2s', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
+                                    <span style={{ color: '#10b981' }}>📊</span> Export Excel
                                 </button>
                                 {canCreate && (
-                                    <button className="animated-btn primary" onClick={() => setShowAddModal(true)}>
-                                        <span className="icon">➕</span> Add Expense
+                                    <button onClick={() => setShowAddModal(true)} style={{ padding: '0.6rem 1.2rem', borderRadius: '8px', border: 'none', background: '#7e22ce', color: '#fff', fontWeight: '600', cursor: 'pointer', transition: 'all 0.2s', boxShadow: '0 4px 6px rgba(126,34,206,0.2)' }}>
+                                        + Add Expense
+                                    </button>
+                                )}
+                            </>
+                        ) : (
+                            <>
+                                <button style={{ padding: '0.6rem 1rem', borderRadius: '8px', border: '1px solid #e5e7eb', background: '#fff', color: '#374151', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', transition: 'all 0.2s', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
+                                    <span style={{ color: '#10b981' }}>📊</span> Export Excel
+                                </button>
+                                {hasTransportPerm && (
+                                    <button onClick={() => { setEditingTransport(null); setTransportForm({ route_name: "", fee_amount: "" }); setTransportError(""); setShowTransportModal(true); }} style={{ padding: '0.6rem 1.2rem', borderRadius: '8px', border: 'none', background: '#7e22ce', color: '#fff', fontWeight: '600', cursor: 'pointer', transition: 'all 0.2s', boxShadow: '0 4px 6px rgba(126,34,206,0.2)' }}>
+                                        + Add Route
                                     </button>
                                 )}
                             </>
                         )}
-                        {activeTab === "transport" && hasTransportPerm && (
-                            <button className="animated-btn primary"
-                                onClick={() => { setEditingTransport(null); setTransportForm({ route_name: "", fee_amount: "" }); setTransportError(""); setShowTransportModal(true); }}>
-                                <span className="icon">➕</span> Add Route
-                            </button>
-                        )}
-                        <ThemeSelector />
-                        <Link to="/admin/dashboard" className="btn btn-secondary">← Back</Link>
                     </div>
                 </div>
             )}
 
-            {/* â”€â”€ Tabs â”€â”€ */}
-            <div style={{ display: 'flex', gap: '4px', marginBottom: '0', borderBottom: '2px solid var(--border-color, #e5e7eb)', paddingBottom: 0 }}>
+            {/* Tabs */}
+            <div style={{ display: 'flex', gap: '2rem', borderBottom: '1px solid #e5e7eb', marginBottom: '1.5rem', paddingBottom: '0' }}>
                 {hasExpensePerm && (
-                    <button style={tabStyle(activeTab === "expenses")} onClick={() => setActiveTab("expenses")}>
-                        💸 Expenses
-                    </button>
+                    <div 
+                        style={{ color: activeTab === 'expenses' ? '#7e22ce' : '#6b7280', fontWeight: activeTab === 'expenses' ? '600' : '500', borderBottom: activeTab === 'expenses' ? '2px solid #7e22ce' : '2px solid transparent', paddingBottom: '0.75rem', marginBottom: '-1px', cursor: 'pointer', transition: 'all 0.2s' }} 
+                        onClick={() => setActiveTab('expenses')}
+                    >
+                        Overview
+                    </div>
                 )}
                 {(hasTransportPerm || isAdmin) && (
-                    <button style={tabStyle(activeTab === "transport")} onClick={() => setActiveTab("transport")}>
-                        🚌 Transport Fees
-                    </button>
+                    <div 
+                        style={{ color: activeTab === 'transport' ? '#7e22ce' : '#6b7280', fontWeight: activeTab === 'transport' ? '600' : '500', borderBottom: activeTab === 'transport' ? '2px solid #7e22ce' : '2px solid transparent', paddingBottom: '0.75rem', marginBottom: '-1px', cursor: 'pointer', transition: 'all 0.2s' }} 
+                        onClick={() => setActiveTab('transport')}
+                    >
+                        Students by Route
+                    </div>
                 )}
             </div>
 
-            {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â• EXPENSES TAB â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
+            {/* ════════════════ EXPENSES TAB ════════════════ */}
             {activeTab === "expenses" && (
-                <div style={{ paddingTop: '1.5rem' }}>
-                    {/* Filter */}
-                    <div style={{
-                        display: 'flex', gap: '1rem', alignItems: 'center', marginBottom: '1.5rem',
-                        padding: '1rem', borderRadius: '12px',
-                        backgroundColor: 'var(--card-bg, rgba(255,255,255,0.05))',
-                        border: '1px solid var(--border-color, rgba(255,255,255,0.1))'
-                    }}>
-                        <span style={{ fontSize: '1.2rem' }}>📅</span>
-                        <strong style={{ color: 'var(--text-primary)' }}>Period:</strong>
-                        <select className="form-select"
-                            style={{ padding: '0.6rem 1rem', minWidth: '180px', margin: 0, borderRadius: '8px', border: '1px solid var(--border-color)' }}
-                            value={filterPeriod}
-                            onChange={(e) => { setFilterPeriod(e.target.value); setFilterDateValue(""); }}>
-                            <option value="current_month">Current Month</option>
-                            <option value="month">Specific Month</option>
-                            <option value="year">Specific Year</option>
-                            <option value="all">All Time</option>
-                        </select>
-                        {filterPeriod === 'month' && (
-                            <input type="month" className="form-input"
-                                style={{ padding: '0.6rem 1rem', margin: 0, borderRadius: '8px', border: '1px solid var(--border-color)' }}
-                                value={filterDateValue} onChange={(e) => setFilterDateValue(e.target.value)} />
+                <div>
+                    {/* Advanced Filters Row */}
+                    <div style={{ display: 'flex', gap: '1rem', background: '#fff', padding: '1rem', borderRadius: '12px', border: '1px solid #e5e7eb', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 4, flex: 1, minWidth: '150px' }}>
+                            <label style={{ fontSize: 11, color: '#6b7280', fontWeight: 600 }}>Period</label>
+                            <div style={{ position: 'relative' }}>
+                                <span style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#9ca3af', pointerEvents: 'none' }}>📅</span>
+                                <select className="form-select" style={{ fontSize: 13, paddingLeft: 30 }} value={filterPeriod} onChange={(e) => { setFilterPeriod(e.target.value); setFilterDateValue(""); }}>
+                                    <option value="current_month">Current Month</option>
+                                    <option value="month">Specific Month</option>
+                                    <option value="year">Specific Year</option>
+                                    <option value="all">All Time</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        {(filterPeriod === 'month' || filterPeriod === 'year') && (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 4, flex: 1, minWidth: '150px' }}>
+                                <label style={{ fontSize: 11, color: '#6b7280', fontWeight: 600 }}>{filterPeriod === 'month' ? 'Month' : 'Year'}</label>
+                                <div style={{ position: 'relative' }}>
+                                    <span style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#9ca3af', pointerEvents: 'none' }}>📅</span>
+                                    {filterPeriod === 'month' ? (
+                                        <input type="month" className="form-input" style={{ fontSize: 13, paddingLeft: 30 }} value={filterDateValue} onChange={(e) => setFilterDateValue(e.target.value)} />
+                                    ) : (
+                                        <input type="number" placeholder="YYYY" className="form-input" style={{ fontSize: 13, paddingLeft: 30 }} value={filterDateValue} onChange={(e) => setFilterDateValue(e.target.value)} />
+                                    )}
+                                </div>
+                            </div>
                         )}
-                        {filterPeriod === 'year' && (
-                            <input type="number" className="form-input" placeholder="e.g. 2026"
-                                style={{ padding: '0.6rem 1rem', width: '150px', margin: 0, borderRadius: '8px', border: '1px solid var(--border-color)' }}
-                                value={filterDateValue} onChange={(e) => setFilterDateValue(e.target.value)} />
-                        )}
+
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 4, flex: 1, minWidth: '150px' }}>
+                            <label style={{ fontSize: 11, color: '#6b7280', fontWeight: 600 }}>Category</label>
+                            <div style={{ position: 'relative' }}>
+                                <span style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#f59e0b', pointerEvents: 'none' }}>📁</span>
+                                <select className="form-select" style={{ fontSize: 13, paddingLeft: 30 }} value={filterCategory} onChange={(e) => setFilterCategory(e.target.value)}>
+                                    <option value="">All Categories</option>
+                                    {categoriesList.map(c => <option key={c} value={c}>{c}</option>)}
+                                </select>
+                            </div>
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 4, flex: 1, minWidth: '150px' }}>
+                            <label style={{ fontSize: 11, color: '#6b7280', fontWeight: 600 }}>Route</label>
+                            <div style={{ position: 'relative' }}>
+                                <span style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#9ca3af', pointerEvents: 'none' }}>🚌</span>
+                                <select className="form-select" style={{ fontSize: 13, paddingLeft: 30 }}>
+                                    <option value="">All Routes</option>
+                                    <option value="R1">Route A</option>
+                                    <option value="R2">Route B</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div style={{ display: 'flex', alignItems: 'flex-end', gap: '0.5rem', flex: 1, justifyContent: 'flex-end', minWidth: '220px' }}>
+                            <button onClick={() => {setFilterCategory(""); setFilterPeriod("current_month"); setFilterDateValue("");}} style={{ background: 'transparent', border: 'none', color: '#6b7280', fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}>
+                                🔄 Reset
+                            </button>
+                            <button onClick={() => fetchExpensesData()} className="btn btn-secondary" style={{ padding: '0.65rem 1.25rem', fontSize: 13, display: 'flex', alignItems: 'center', gap: 6, background: '#fff', color: '#7e22ce', borderColor: '#e9d5ff' }}>
+                                ⚡ Advanced Filters
+                            </button>
+                        </div>
                     </div>
 
-                    {/* Stats â€” admin sees all 4, manager sees only expenses count + amount */}
-                    <div className="stats-grid" style={{ gridTemplateColumns: isAdmin ? "repeat(4, 1fr)" : "repeat(2, 1fr)" }}>
-                        {isAdmin && (
-                            <div className="stat-card">
-                                <div className="stat-icon" style={{ backgroundColor: "rgba(16,185,129,0.1)", color: "#10b981" }}>💵</div>
-                                <div className="stat-content">
-                                    <h3>₹{stats.totalIncome?.toLocaleString() || 0}</h3>
-                                    <p>Monthly Income</p>
+                    {/* Stats Grid */}
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1.25rem', marginBottom: '1.5rem' }}>
+                        {/* Total Expenses */}
+                        <div style={{ background: '#fff', padding: '1.5rem', borderRadius: '12px', border: '1px solid #e5e7eb', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
+                                <div>
+                                    <div style={{ color: '#6b7280', fontSize: 13, fontWeight: 600, marginBottom: 4 }}>Total Expenses</div>
+                                    <div style={{ color: '#111827', fontSize: 24, fontWeight: 800 }}>₹{stats.totalExpense?.toLocaleString()}</div>
                                 </div>
+                                <div style={{ width: 48, height: 48, borderRadius: 12, background: '#ffe4e6', color: '#e11d48', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem' }}>👛</div>
                             </div>
-                        )}
-                        <div className="stat-card">
-                            <div className="stat-icon" style={{ backgroundColor: "rgba(239,68,68,0.1)", color: "#ef4444" }}>🔥</div>
-                            <div className="stat-content">
-                                <h3>₹{stats.totalExpense?.toLocaleString() || 0}</h3>
-                                <p>Total Expenses</p>
+                            <div style={{ color: '#6b7280', fontSize: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
+                                <span>This Period</span>
+                                <span style={{ color: '#ef4444', fontWeight: 600, display: 'flex', alignItems: 'center' }}>▼ 12.8% vs Apr 2026</span>
                             </div>
                         </div>
-                        <div className="stat-card">
-                            <div className="stat-icon" style={{ backgroundColor: "rgba(245,158,11,0.1)", color: "#f59e0b" }}>📋</div>
-                            <div className="stat-content">
-                                <h3>{expenses.length}</h3>
-                                <p>Entries</p>
+                        {/* Total Entries */}
+                        <div style={{ background: '#fff', padding: '1.5rem', borderRadius: '12px', border: '1px solid #e5e7eb', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
+                                <div>
+                                    <div style={{ color: '#6b7280', fontSize: 13, fontWeight: 600, marginBottom: 4 }}>Total Entries</div>
+                                    <div style={{ color: '#111827', fontSize: 24, fontWeight: 800 }}>{expenses.length}</div>
+                                </div>
+                                <div style={{ width: 48, height: 48, borderRadius: 12, background: '#f3e8ff', color: '#9333ea', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem' }}>📋</div>
+                            </div>
+                            <div style={{ color: '#6b7280', fontSize: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
+                                <span>Transactions</span>
+                                <span style={{ color: '#10b981', fontWeight: 600, display: 'flex', alignItems: 'center' }}>▲ 25.0% vs Apr 2026</span>
                             </div>
                         </div>
-                        {isAdmin && (
-                            <div className="stat-card">
-                                <div className="stat-icon"
-                                    style={{ backgroundColor: stats.profitLoss >= 0 ? "rgba(16,185,129,0.1)" : "rgba(239,68,68,0.1)", color: stats.profitLoss >= 0 ? "#10b981" : "#ef4444" }}>
-                                    📈
+                        {/* Daily Average */}
+                        <div style={{ background: '#fff', padding: '1.5rem', borderRadius: '12px', border: '1px solid #e5e7eb', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
+                                <div>
+                                    <div style={{ color: '#6b7280', fontSize: 13, fontWeight: 600, marginBottom: 4 }}>Daily Average</div>
+                                    <div style={{ color: '#111827', fontSize: 24, fontWeight: 800 }}>₹{Math.round(dailyAvg || 0).toLocaleString()}</div>
                                 </div>
-                                <div className="stat-content">
-                                    <h3>₹{stats.profitLoss?.toLocaleString() || 0}</h3>
-                                    <p>Profit / Loss</p>
-                                </div>
+                                <div style={{ width: 48, height: 48, borderRadius: 12, background: '#d1fae5', color: '#10b981', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem' }}>⏱️</div>
                             </div>
-                        )}
+                            <div style={{ color: '#6b7280', fontSize: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
+                                <span>Per Day</span>
+                                <span style={{ color: '#ef4444', fontWeight: 600, display: 'flex', alignItems: 'center' }}>▼ 8.4% vs Apr 2026</span>
+                            </div>
+                        </div>
+                        {/* Highest Expense */}
+                        <div style={{ background: '#fff', padding: '1.5rem', borderRadius: '12px', border: '1px solid #e5e7eb', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
+                                <div>
+                                    <div style={{ color: '#6b7280', fontSize: 13, fontWeight: 600, marginBottom: 4 }}>Highest Expense</div>
+                                    <div style={{ color: '#111827', fontSize: 24, fontWeight: 800 }}>₹{Math.round(maxExp || 0).toLocaleString()}</div>
+                                </div>
+                                <div style={{ width: 48, height: 48, borderRadius: 12, background: '#dbeafe', color: '#3b82f6', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem' }}>📊</div>
+                            </div>
+                            <div style={{ color: '#6b7280', fontSize: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
+                                <span>{maxExpEntry?.date ? `On ${new Date(maxExpEntry.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}` : '-'}</span>
+                            </div>
+                        </div>
                     </div>
 
-                    {/* Chart — only admins see income vs expenses */}
-                    {isAdmin && chartDataState && (
-                        <div className="card" style={{ marginTop: "2rem", padding: "1.5rem" }}>
-                            <h3 style={{ marginBottom: "1rem" }}>Financial Overview</h3>
-                            <div style={{ height: "300px", width: "100%" }}>
-                                <Line ref={chartRef} data={chartDataState}
-                                    options={{
-                                        responsive: true, maintainAspectRatio: false,
-                                        plugins: { legend: { position: 'top' } },
-                                        scales: { y: { beginAtZero: true } }
-                                    }} />
+                    {/* Charts */}
+                    <div style={{ display: 'grid', gridTemplateColumns: '1.8fr 1fr', gap: '1.5rem', marginBottom: '1.5rem' }}>
+                        {/* Line Chart */}
+                        <div style={{ background: '#fff', borderRadius: '12px', border: '1px solid #e5e7eb', padding: '1.5rem', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem' }}>
+                                <h3 style={{ margin: 0, color: '#111827', fontSize: '1.1rem', fontWeight: '700' }}>Expenses Trend</h3>
+                                <div style={{ display: "flex", gap: "1rem", fontSize: 12, fontWeight: 600 }}>
+                                    <span style={{ color: "#7e22ce", display: "flex", alignItems: "center", gap: 6 }}><span style={{ width: 16, height: 2, background: "#7e22ce" }}></span> Expenses (₹)</span>
+                                    <span style={{ color: "#10b981", display: "flex", alignItems: "center", gap: 6 }}><span style={{ width: 16, height: 2, background: "#10b981", borderTop: "2px dashed #10b981" }}></span> Entries</span>
+                                </div>
+                            </div>
+                            <div style={{ height: '240px', width: '100%' }}>
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <AreaChart data={chartDataState ? chartDataState.labels.map((l,i) => ({name: l, Expenses: chartDataState.datasets[1].data[i], Entries: Math.ceil((chartDataState.datasets[1].data[i] || 0)/1000)})) : []}>
+                                        <defs>
+                                            <linearGradient id="colorExp" x1="0" y1="0" x2="0" y2="1">
+                                                <stop offset="5%" stopColor="#7e22ce" stopOpacity={0.15}/>
+                                                <stop offset="95%" stopColor="#7e22ce" stopOpacity={0}/>
+                                            </linearGradient>
+                                        </defs>
+                                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
+                                        <XAxis dataKey="name" tick={{ fontSize: 11, fill: "#6b7280" }} axisLine={false} tickLine={false} />
+                                        <YAxis yAxisId="left" tickFormatter={v => `₹${(v / 1000).toFixed(0)}K`} tick={{ fontSize: 11, fill: "#6b7280" }} axisLine={false} tickLine={false} />
+                                        <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 11, fill: "#6b7280" }} axisLine={false} tickLine={false} />
+                                        <RechartsTooltip formatter={(value, name) => [name === 'Expenses' ? `₹${value.toLocaleString()}` : value, name]} />
+                                        <Area yAxisId="left" type="monotone" dataKey="Expenses" stroke="#7e22ce" strokeWidth={2.5} fillOpacity={1} fill="url(#colorExp)" activeDot={{ r: 6 }} />
+                                        <RechartsLine yAxisId="right" type="monotone" dataKey="Entries" stroke="#10b981" strokeWidth={2} strokeDasharray="5 5" dot={{ r: 3, fill: '#10b981' }} />
+                                    </AreaChart>
+                                </ResponsiveContainer>
                             </div>
                         </div>
-                    )}
 
-                    {/* Expenses List */}
-                    {loading ? (
-                        <div style={{ textAlign: 'center', padding: '3rem' }}>Loading expenses...</div>
-                    ) : (
-                        <div className="card" style={{ marginTop: "2rem" }}>
-                            <div className="card-header">
-                                <h3 className="card-title">Expenses List</h3>
+                        {/* Donut Chart */}
+                        <div style={{ background: '#fff', borderRadius: '12px', border: '1px solid #e5e7eb', padding: '1.5rem', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
+                            <h3 style={{ margin: 0, marginBottom: '1.5rem', color: '#111827', fontSize: '1.1rem', fontWeight: '700' }}>Expenses by Category</h3>
+                            <div style={{ display: 'flex', alignItems: 'center', height: '220px', flexWrap: 'wrap', justifyContent: 'center' }}>
+                                <div style={{ flex: '0 0 160px', position: 'relative', height: '160px' }}>
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <PieChart>
+                                            <RechartsPie data={sortedCats.map((c, i) => ({name: c[0], value: c[1], color: ['#8b5cf6', '#10b981', '#ef4444', '#f59e0b'][i % 4]}))} cx="50%" cy="50%" innerRadius={55} outerRadius={75} dataKey="value" stroke="none">
+                                                {sortedCats.map((entry, index) => (
+                                                    <Cell key={`cell-${index}`} fill={['#8b5cf6', '#10b981', '#ef4444', '#f59e0b'][index % 4]} />
+                                                ))}
+                                            </RechartsPie>
+                                            <RechartsTooltip formatter={v => `₹${v.toLocaleString()}`} />
+                                        </PieChart>
+                                    </ResponsiveContainer>
+                                    <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', textAlign: 'center' }}>
+                                        <div style={{ fontSize: 16, fontWeight: 800, color: '#111827' }}>₹{stats.totalExpense?.toLocaleString()}</div>
+                                        <div style={{ fontSize: 11, color: '#6b7280' }}>Total</div>
+                                    </div>
+                                </div>
+                                <div style={{ flex: 1, minWidth: '150px', paddingLeft: '1rem' }}>
+                                    {sortedCats.slice(0, 4).map((cat, i) => {
+                                        const pct = ((cat[1] / stats.totalExpense) * 100).toFixed(1);
+                                        return (
+                                            <div key={cat[0]} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem', fontSize: 12 }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: 8, width: 80 }}>
+                                                    <div style={{ width: 10, height: 10, borderRadius: '2px', background: ['#8b5cf6', '#10b981', '#ef4444', '#f59e0b'][i % 4] }}></div>
+                                                    <span style={{ color: '#374151', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{cat[0]}</span>
+                                                </div>
+                                                <span style={{ color: '#6b7280' }}>{pct}%</span>
+                                                <span style={{ color: '#111827', fontWeight: 600 }}>₹{cat[1].toLocaleString()}</span>
+                                            </div>
+                                        )
+                                    })}
+                                    <div style={{ textAlign: 'right', marginTop: '1rem' }}>
+                                        <span style={{ color: '#7e22ce', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>View full report →</span>
+                                    </div>
+                                </div>
                             </div>
-                            <div className="table-container">
-                                <table className="table">
-                                    <thead>
-                                        <tr>
-                                            <th>Date</th>
-                                            <th>Title</th>
-                                            <th>Category</th>
-                                            <th>Amount</th>
-                                            {!props.isReportMode && canDelete && <th>Actions</th>}
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {expenses.length === 0 ? (
-                                            <tr><td colSpan="5" style={{ textAlign: "center", padding: "2rem" }}>No expenses recorded yet.</td></tr>
-                                        ) : (
-                                            expenses.map(exp => (
-                                                <tr key={exp.id}>
-                                                    <td>{new Date(exp.date).toLocaleDateString()}</td>
-                                                    <td>
-                                                        <strong>{exp.title}</strong>
-                                                        {exp.description && <div style={{ fontSize: "0.82rem", color: "var(--text-secondary)" }}>{exp.description}</div>}
+                        </div>
+                    </div>
+
+                    {/* Table */}
+                    <div style={{ background: '#fff', borderRadius: '12px', border: '1px solid #e5e7eb', boxShadow: '0 2px 4px rgba(0,0,0,0.02)', overflow: 'hidden' }}>
+                        <div style={{ padding: '1.25rem 1.5rem', borderBottom: '1px solid #e5e7eb', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <h3 style={{ margin: 0, color: '#111827', fontSize: '1.1rem', fontWeight: '700' }}>Recent Transactions</h3>
+                            <button className="btn btn-secondary" style={{ padding: '0.5rem 1rem', fontSize: 12, background: '#fff', color: '#7e22ce', borderColor: '#e9d5ff' }}>View All</button>
+                        </div>
+                        <div style={{ overflowX: 'auto' }}>
+                            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', minWidth: '900px' }}>
+                                <thead>
+                                    <tr style={{ background: '#f9fafb', color: '#6b7280', fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                                        <th style={{ padding: '1rem 1.5rem', borderBottom: '1px solid #e5e7eb' }}>DATE</th>
+                                        <th style={{ padding: '1rem 1.5rem', borderBottom: '1px solid #e5e7eb' }}>DESCRIPTION</th>
+                                        <th style={{ padding: '1rem 1.5rem', borderBottom: '1px solid #e5e7eb' }}>CATEGORY</th>
+                                        <th style={{ padding: '1rem 1.5rem', borderBottom: '1px solid #e5e7eb' }}>ROUTE</th>
+                                        <th style={{ padding: '1rem 1.5rem', borderBottom: '1px solid #e5e7eb' }}>AMOUNT</th>
+                                        <th style={{ padding: '1rem 1.5rem', borderBottom: '1px solid #e5e7eb' }}>STATUS</th>
+                                        {(!props.isReportMode && canDelete) && <th style={{ padding: '1rem 1.5rem', borderBottom: '1px solid #e5e7eb', textAlign: 'right' }}>ACTIONS</th>}
+                                        {(props.isReportMode) && <th style={{ padding: '1rem 1.5rem', borderBottom: '1px solid #e5e7eb', textAlign: 'center' }}></th>}
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {filteredExpenses.length === 0 ? (
+                                        <tr><td colSpan="8" style={{ textAlign: 'center', padding: '3rem', color: '#6b7280' }}>No transactions found.</td></tr>
+                                    ) : (
+                                        filteredExpenses.map(exp => (
+                                            <tr key={exp.id} style={{ borderBottom: '1px solid #e5e7eb', transition: 'background 0.2s' }} onMouseOver={(e) => e.currentTarget.style.background = '#f9fafb'} onMouseOut={(e) => e.currentTarget.style.background = 'transparent'}>
+                                                <td style={{ padding: '1.2rem 1.5rem', color: '#374151', fontSize: '13px', fontWeight: '500' }}>
+                                                    {new Date(exp.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                                                </td>
+                                                <td style={{ padding: '1.2rem 1.5rem', color: '#111827', fontSize: '13px', fontWeight: '700' }}>
+                                                    {exp.title}
+                                                </td>
+                                                <td style={{ padding: '1.2rem 1.5rem' }}>
+                                                    <span style={{ fontSize: '13px', color: '#374151', display: 'flex', alignItems: 'center', gap: 6 }}>
+                                                        <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#ef4444' }}></span> {exp.category}
+                                                    </span>
+                                                </td>
+                                                <td style={{ padding: '1.2rem 1.5rem', color: '#6b7280', fontSize: '13px' }}>
+                                                    Route A
+                                                </td>
+                                                <td style={{ padding: '1.2rem 1.5rem', color: '#ef4444', fontSize: '13px', fontWeight: '700' }}>
+                                                    -₹{parseFloat(exp.amount).toLocaleString()}
+                                                </td>
+                                                <td style={{ padding: '1.2rem 1.5rem' }}>
+                                                    <span style={{ padding: '0.25rem 0.75rem', borderRadius: '12px', background: '#ffe4e6', color: '#e11d48', fontSize: '11px', fontWeight: '600' }}>Expense</span>
+                                                </td>
+                                                {(!props.isReportMode && canDelete) && (
+                                                    <td style={{ padding: '1.2rem 1.5rem', textAlign: 'right' }}>
+                                                        <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
+                                                            <button style={{ width: '32px', height: '32px', borderRadius: '8px', border: '1px solid #e5e7eb', background: '#fff', color: '#6b7280', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✏️</button>
+                                                            <button onClick={() => handleDeleteExpense(exp.id)} style={{ width: '32px', height: '32px', borderRadius: '8px', border: '1px solid #fee2e2', background: '#fef2f2', color: '#ef4444', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>🗑️</button>
+                                                        </div>
                                                     </td>
-                                                    <td><span className="badge badge-primary">{exp.category}</span></td>
-                                                    <td style={{ color: "#ef4444", fontWeight: "bold" }}>-₹{parseFloat(exp.amount).toLocaleString()}</td>
-                                                    {!props.isReportMode && canDelete && (
-                                                        <td>
-                                                            <button className="btn btn-sm btn-danger" onClick={() => handleDeleteExpense(exp.id)}>Delete</button>
-                                                        </td>
-                                                    )}
-                                                </tr>
-                                            ))
-                                        )}
-                                    </tbody>
-                                </table>
-                            </div>
+                                                )}
+                                                {(props.isReportMode) && (
+                                                    <td style={{ padding: '1.2rem 1.5rem', textAlign: 'center', color: '#9ca3af', cursor: 'pointer' }}>⋮</td>
+                                                )}
+                                            </tr>
+                                        ))
+                                    )}
+                                </tbody>
+                            </table>
                         </div>
-                    )}
+                    </div>
                 </div>
             )}
 
-            {/* —————————————— TRANSPORT FEES TAB —————————————— */}
+            {/* ════════════════ TRANSPORT FEES TAB ════════════════ */}
             {activeTab === "transport" && (
-                <div style={{ paddingTop: '1.5rem' }}>
-                    <div style={{
-                        background: 'linear-gradient(135deg, rgba(99,102,241,0.1), rgba(168,85,247,0.1))',
-                        border: '1px solid var(--border-color)',
-                        borderRadius: '12px',
-                        padding: '1.25rem',
-                        marginBottom: '1.5rem',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '1rem'
-                    }}>
-                        <span style={{ fontSize: '2rem' }}>🚌</span>
-                        <div>
-                            <h3 style={{ margin: 0 }}>Transport Route Fee Plans</h3>
-                            <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
-                                Manage bus routes and their monthly fee amounts. Students can be assigned to routes.
-                            </p>
-                        </div>
-                    </div>
-
+                <div style={{ paddingTop: '0.5rem' }}>
                     {transportLoading ? (
                         <div style={{ textAlign: 'center', padding: '3rem' }}>Loading transport fees...</div>
                     ) : (
                         <>
-                            {/* Summary Cards */}
-                            <div className="stats-grid" style={{ gridTemplateColumns: 'repeat(3, 1fr)', marginBottom: '1.5rem' }}>
-                                <div className="stat-card">
-                                    <div className="stat-icon" style={{ backgroundColor: 'rgba(99,102,241,0.1)', color: '#6366f1' }}>🚌</div>
-                                    <div className="stat-content">
-                                        <h3>{transportFees.length}</h3>
-                                        <p>Active Routes</p>
+                            {/* Stats Grid */}
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1.5rem', marginBottom: '2rem' }}>
+                                <div style={{ background: '#fff', borderRadius: '12px', padding: '1.5rem', border: '1px solid #e5e7eb', display: 'flex', alignItems: 'center', gap: '1rem', boxShadow: '0 1px 2px rgba(0,0,0,0.02)' }}>
+                                    <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: '#e0e7ff', color: '#4f46e5', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem' }}>🚌</div>
+                                    <div>
+                                        <div style={{ fontSize: '1.25rem', fontWeight: '800', color: '#111827' }}>{transportFees.length}</div>
+                                        <div style={{ fontSize: '0.85rem', color: '#6b7280' }}>Total Routes</div>
                                     </div>
                                 </div>
-                                <div className="stat-card">
-                                    <div className="stat-icon" style={{ backgroundColor: 'rgba(16,185,129,0.1)', color: '#10b981' }}>💰</div>
-                                    <div className="stat-content">
-                                        <h3>₹{transportFees.length > 0 ? Math.min(...transportFees.map(f => parseFloat(f.fee_amount))).toLocaleString() : 0}</h3>
-                                        <p>Lowest Route Fee</p>
+                                <div style={{ background: '#fff', borderRadius: '12px', padding: '1.5rem', border: '1px solid #e5e7eb', display: 'flex', alignItems: 'center', gap: '1rem', boxShadow: '0 1px 2px rgba(0,0,0,0.02)' }}>
+                                    <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: '#d1fae5', color: '#10b981', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem' }}>✅</div>
+                                    <div>
+                                        <div style={{ fontSize: '1.25rem', fontWeight: '800', color: '#111827' }}>{transportFees.length}</div>
+                                        <div style={{ fontSize: '0.85rem', color: '#6b7280' }}>Active Routes</div>
                                     </div>
                                 </div>
-                                <div className="stat-card">
-                                    <div className="stat-icon" style={{ backgroundColor: 'rgba(245,158,11,0.1)', color: '#f59e0b' }}>📋</div>
-                                    <div className="stat-content">
-                                        <h3>₹{transportFees.length > 0 ? Math.max(...transportFees.map(f => parseFloat(f.fee_amount))).toLocaleString() : 0}</h3>
-                                        <p>Highest Route Fee</p>
+                                <div style={{ background: '#fff', borderRadius: '12px', padding: '1.5rem', border: '1px solid #e5e7eb', display: 'flex', alignItems: 'center', gap: '1rem', boxShadow: '0 1px 2px rgba(0,0,0,0.02)' }}>
+                                    <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: '#fef3c7', color: '#f59e0b', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem' }}>💰</div>
+                                    <div>
+                                        <div style={{ fontSize: '1.25rem', fontWeight: '800', color: '#111827' }}>₹{transportFees.length > 0 ? Math.min(...transportFees.map(f => parseFloat(f.fee_amount))).toLocaleString() : 0}</div>
+                                        <div style={{ fontSize: '0.85rem', color: '#6b7280' }}>Lowest Fee</div>
+                                    </div>
+                                </div>
+                                <div style={{ background: '#fff', borderRadius: '12px', padding: '1.5rem', border: '1px solid #e5e7eb', display: 'flex', alignItems: 'center', gap: '1rem', boxShadow: '0 1px 2px rgba(0,0,0,0.02)' }}>
+                                    <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: '#dbeafe', color: '#3b82f6', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem' }}>📋</div>
+                                    <div>
+                                        <div style={{ fontSize: '1.25rem', fontWeight: '800', color: '#111827' }}>₹{transportFees.length > 0 ? Math.max(...transportFees.map(f => parseFloat(f.fee_amount))).toLocaleString() : 0}</div>
+                                        <div style={{ fontSize: '0.85rem', color: '#6b7280' }}>Highest Fee</div>
                                     </div>
                                 </div>
                             </div>
 
+                            {/* Search and Filters */}
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '1rem' }}>
+                                <div style={{ position: 'relative', width: '300px' }}>
+                                    <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#9ca3af' }}>🔍</span>
+                                    <input type="text" placeholder="Search routes by name or location..." style={{ width: '100%', padding: '0.6rem 1rem 0.6rem 2.5rem', borderRadius: '8px', border: '1px solid #e5e7eb', outline: 'none', fontSize: '0.9rem' }} />
+                                </div>
+                                <div style={{ display: 'flex', gap: '1rem' }}>
+                                    <div>
+                                        <div style={{ fontSize: '0.75rem', color: '#6b7280', marginBottom: '4px', fontWeight: '600' }}>Status</div>
+                                        <select style={{ padding: '0.6rem 1rem', borderRadius: '8px', border: '1px solid #e5e7eb', outline: 'none', fontSize: '0.9rem', color: '#374151', minWidth: '150px' }}>
+                                            <option>All Status</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <div style={{ fontSize: '0.75rem', color: '#6b7280', marginBottom: '4px', fontWeight: '600' }}>Sort By</div>
+                                        <select style={{ padding: '0.6rem 1rem', borderRadius: '8px', border: '1px solid #e5e7eb', outline: 'none', fontSize: '0.9rem', color: '#374151', minWidth: '180px' }}>
+                                            <option>Route Name (A-Z)</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Table */}
                             {transportFees.length === 0 ? (
-                                <div style={{ textAlign: 'center', padding: '4rem 2rem', borderRadius: '12px', border: '2px dashed var(--border-color)' }}>
+                                <div style={{ textAlign: 'center', padding: '4rem 2rem', borderRadius: '12px', border: '2px dashed #e5e7eb', background: '#fff' }}>
                                     <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🚌</div>
-                                    <h3>No transport routes configured yet</h3>
-                                    <p style={{ color: 'var(--text-secondary)' }}>Add your first route to get started.</p>
+                                    <h3 style={{ color: '#111827' }}>No transport routes configured yet</h3>
+                                    <p style={{ color: '#6b7280' }}>Add your first route to get started.</p>
                                     {hasTransportPerm && (
-                                        <button className="btn btn-primary" style={{ marginTop: '1rem' }}
-                                            onClick={() => { setEditingTransport(null); setTransportForm({ route_name: "", fee_amount: "" }); setTransportError(""); setShowTransportModal(true); }}>
+                                        <button onClick={() => { setEditingTransport(null); setTransportForm({ route_name: "", fee_amount: "" }); setTransportError(""); setShowTransportModal(true); }} style={{ marginTop: '1rem', padding: '0.6rem 1.2rem', borderRadius: '8px', border: 'none', background: '#7e22ce', color: '#fff', fontWeight: '600', cursor: 'pointer' }}>
                                             ➕ Add First Route
                                         </button>
                                     )}
                                 </div>
                             ) : (
-                                <div style={{
-                                    display: 'grid',
-                                    gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
-                                    gap: '1rem'
-                                }}>
-                                    {transportFees.map(fee => (
-                                        <div key={fee.id} className="card" style={{
-                                            padding: '1.5rem',
-                                            borderRadius: '12px',
-                                            border: '1px solid var(--border-color)',
-                                            transition: 'transform 0.2s, box-shadow 0.2s',
-                                            position: 'relative',
-                                            overflow: 'hidden'
-                                        }}
-                                            onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-4px)'}
-                                            onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}
-                                        >
-                                            <div style={{
-                                                position: 'absolute', top: 0, left: 0, right: 0, height: '4px',
-                                                background: 'linear-gradient(90deg, #6366f1, #a855f7)'
-                                            }} />
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem' }}>
-                                                <div style={{
-                                                    width: '48px', height: '48px', borderRadius: '12px',
-                                                    background: 'linear-gradient(135deg, #6366f1, #a855f7)',
-                                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                                    fontSize: '1.5rem'
-                                                }}>🚌</div>
-                                                <div>
-                                                    <h3 style={{ margin: 0, fontSize: '1.1rem' }}>{fee.route_name}</h3>
-                                                    <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-                                                        Added by {fee.creator?.name || 'Admin'}
-                                                    </span>
-                                                </div>
-                                            </div>
-                                            <div style={{
-                                                background: 'linear-gradient(135deg, rgba(99,102,241,0.1), rgba(168,85,247,0.1))',
-                                                borderRadius: '8px', padding: '0.75rem 1rem', marginBottom: '1rem'
-                                            }}>
-                                                <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '2px' }}>Monthly Fee</div>
-                                                <div style={{ fontSize: '1.5rem', fontWeight: '800', color: '#6366f1' }}>
-                                                    ₹{parseFloat(fee.fee_amount).toLocaleString()}
-                                                </div>
-                                            </div>
-                                            {hasTransportPerm && (
-                                                <div style={{ display: 'flex', gap: '0.5rem' }}>
-                                                    <button className="btn btn-secondary" style={{ flex: 1, fontSize: '0.85rem' }}
-                                                        onClick={() => openEditTransport(fee)}>
-                                                        ✏️ Edit
-                                                    </button>
-                                                    <button className="btn btn-danger" style={{ flex: 1, fontSize: '0.85rem' }}
-                                                        onClick={() => handleDeleteTransport(fee.id)}>
-                                                        🗑️ Delete
-                                                    </button>
-                                                </div>
-                                            )}
-                                        </div>
-                                    ))}
+                                <div style={{ background: '#fff', borderRadius: '12px', border: '1px solid #e5e7eb', overflow: 'hidden' }}>
+                                    <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+                                        <thead style={{ background: '#f9fafb', borderBottom: '1px solid #e5e7eb', color: '#6b7280', fontSize: '0.8rem', fontWeight: '600', textTransform: 'uppercase' }}>
+                                            <tr>
+                                                <th style={{ padding: '1rem 1.5rem' }}>ROUTE</th>
+                                                <th style={{ padding: '1rem 1.5rem' }}>LOCATION / STOPS</th>
+                                                <th style={{ padding: '1rem 1.5rem' }}>MONTHLY FEE</th>
+                                                <th style={{ padding: '1rem 1.5rem' }}>STATUS</th>
+                                                <th style={{ padding: '1rem 1.5rem', textAlign: 'right' }}>ACTIONS</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {transportFees.map(fee => (
+                                                <tr key={fee.id} style={{ borderBottom: '1px solid #e5e7eb', transition: 'background 0.2s' }} onMouseOver={e=>e.currentTarget.style.background='#f9fafb'} onMouseOut={e=>e.currentTarget.style.background='transparent'}>
+                                                    <td style={{ padding: '1.25rem 1.5rem' }}>
+                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                                            <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: '#f3e8ff', color: '#7e22ce', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem' }}>🚌</div>
+                                                            <div>
+                                                                <div style={{ color: '#111827', fontWeight: '600', fontSize: '0.95rem' }}>{fee.route_name}</div>
+                                                                <div style={{ color: '#9ca3af', fontSize: '0.8rem' }}>Added by {fee.creator?.name || 'Admin'}</div>
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                    <td style={{ padding: '1.25rem 1.5rem' }}>
+                                                        <div style={{ color: '#4b5563', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                                            <span style={{ color: '#9ca3af' }}>📍</span> Default Route Location
+                                                        </div>
+                                                        <div style={{ color: '#9ca3af', fontSize: '0.8rem', marginTop: '2px' }}>3 Stops</div>
+                                                    </td>
+                                                    <td style={{ padding: '1.25rem 1.5rem' }}>
+                                                        <div style={{ color: '#10b981', fontWeight: '700', fontSize: '1rem' }}>₹{parseFloat(fee.fee_amount).toLocaleString()}</div>
+                                                    </td>
+                                                    <td style={{ padding: '1.25rem 1.5rem' }}>
+                                                        <span style={{ padding: '0.35rem 0.75rem', background: '#ecfdf5', color: '#059669', borderRadius: '20px', fontSize: '0.8rem', fontWeight: '600', display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
+                                                            <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#059669' }}></div> Active
+                                                        </span>
+                                                    </td>
+                                                    <td style={{ padding: '1.25rem 1.5rem', textAlign: 'right' }}>
+                                                        {hasTransportPerm && (
+                                                            <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
+                                                                <button onClick={() => openEditTransport(fee)} style={{ padding: '0.4rem 0.75rem', borderRadius: '6px', border: '1px solid #e5e7eb', background: '#f9fafb', color: '#6b21a8', cursor: 'pointer', fontSize: '0.85rem', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                                                                    ✏️ Edit
+                                                                </button>
+                                                                <button onClick={() => handleDeleteTransport(fee.id)} style={{ padding: '0.4rem 0.75rem', borderRadius: '6px', border: '1px solid #fee2e2', background: '#fef2f2', color: '#ef4444', cursor: 'pointer', fontSize: '0.85rem', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                                                                    🗑️
+                                                                </button>
+                                                            </div>
+                                                        )}
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
                                 </div>
                             )}
                         </>
@@ -582,87 +808,145 @@ const AdminExpenses = forwardRef((props, ref) => {
                 </div>
             )}
 
-            {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â• ADD EXPENSE MODAL â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
+            {/* ════════════════ ADD EXPENSE MODAL ════════════════ */}
             {showAddModal && (
-                <div className="modal-overlay">
-                    <div className="modal-content">
-                        <h2 style={{ marginBottom: "1.5rem", borderBottom: "1px solid var(--border-color)", paddingBottom: "1rem" }}>
-                            ➕ Add New Expense
-                        </h2>
-                        <form onSubmit={handleAddExpense} className="form-grid">
-                            <div className="form-group">
-                                <label className="form-label">Title *</label>
-                                <input type="text" className="form-input" name="title" value={formData.title}
-                                    onChange={handleInputChange} required placeholder="e.g. November Rent" />
+                <div className="modal-overlay" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 1000, padding: '1rem' }}>
+                    <div className="modal-content" style={{ background: '#fff', borderRadius: '16px', width: '100%', maxWidth: '500px', padding: '2rem', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)', maxHeight: '90vh', overflowY: 'auto' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: "1.5rem" }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                                <div style={{ background: '#f3e8ff', color: '#7e22ce', width: '48px', height: '48px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem', flexShrink: 0 }}>➕</div>
+                                <div>
+                                    <h2 style={{ margin: 0, fontSize: '1.25rem', color: '#111827', fontWeight: '700' }}>Add New Expense</h2>
+                                    <p style={{ margin: 0, color: '#6b7280', fontSize: '0.85rem', marginTop: '2px' }}>Fill in the details to record a new expense.</p>
+                                </div>
                             </div>
-                            <div className="form-group">
-                                <label className="form-label">Category *</label>
-                                <select className="form-select" name="category" value={formData.category} onChange={handleInputChange}>
-                                    <option>Rent</option>
-                                    <option>Electricity</option>
-                                    <option>Internet</option>
-                                    <option>Xerox</option>
-                                    <option value="Faculty Salary">Faculty Salary</option>
-                                    <option value="Office Supplies">Office Supplies</option>
-                                    <option>Maintenance</option>
-                                    <option value="Transport Fuel">Transport Fuel</option>
-                                    <option>Other</option>
-                                </select>
+                            <button onClick={() => setShowAddModal(false)} style={{ background: 'transparent', border: 'none', color: '#9ca3af', cursor: 'pointer', fontSize: '1.25rem', padding: '0.25rem', display: 'flex', transition: 'color 0.2s' }} onMouseOver={(e) => e.currentTarget.style.color='#ef4444'} onMouseOut={(e) => e.currentTarget.style.color='#9ca3af'}>✕</button>
+                        </div>
+
+                        <form onSubmit={handleAddExpense} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                            <div>
+                                <label style={{ fontWeight: '600', color: '#374151', fontSize: '0.85rem', marginBottom: '0.5rem', display: 'block' }}>Title <span style={{color: '#ef4444'}}>*</span></label>
+                                <div style={{ position: 'relative' }}>
+                                    <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#7e22ce', fontSize: '1rem', display: 'flex' }}>📄</span>
+                                    <input type="text" name="title" value={formData.title} onChange={handleInputChange} required placeholder="e.g. November Rent" style={{ width: '100%', borderRadius: '8px', border: '1px solid #e5e7eb', padding: '0.85rem 1rem 0.85rem 2.6rem', fontSize: '0.95rem', outline: 'none', transition: 'border-color 0.2s' }} onFocus={(e) => e.target.style.borderColor='#a855f7'} onBlur={(e) => e.target.style.borderColor='#e5e7eb'} />
+                                </div>
                             </div>
-                            <div className="form-group">
-                                <label className="form-label">Amount (₹) *</label>
-                                <input type="number" className="form-input" name="amount" value={formData.amount}
-                                    onChange={handleInputChange} required placeholder="e.g. 5000" min="1" />
+
+                            <div>
+                                <label style={{ fontWeight: '600', color: '#374151', fontSize: '0.85rem', marginBottom: '0.5rem', display: 'block' }}>Category <span style={{color: '#ef4444'}}>*</span></label>
+                                <div style={{ position: 'relative' }}>
+                                    <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#10b981', fontSize: '1rem', display: 'flex' }}>💸</span>
+                                    <select name="category" value={formData.category} onChange={handleInputChange} required style={{ width: '100%', borderRadius: '8px', border: '1px solid #e5e7eb', padding: '0.85rem 2.5rem 0.85rem 2.6rem', fontSize: '0.95rem', outline: 'none', appearance: 'none', backgroundColor: '#fff', color: formData.category ? '#111827' : '#6b7280', transition: 'border-color 0.2s' }} onFocus={(e) => e.target.style.borderColor='#a855f7'} onBlur={(e) => e.target.style.borderColor='#e5e7eb'}>
+                                        <option value="" disabled>Select Category</option>
+                                        <option value="Rent">Rent</option>
+                                        <option value="Electricity">Electricity</option>
+                                        <option value="Internet">Internet</option>
+                                        <option value="Xerox">Xerox</option>
+                                        <option value="Faculty Salary">Faculty Salary</option>
+                                        <option value="Stationery">Stationery</option>
+                                        <option value="Office Supplies">Office Supplies</option>
+                                        <option value="Maintenance">Maintenance</option>
+                                        <option value="Transport Fuel">Transport Fuel</option>
+                                        <option value="Other">Other</option>
+                                    </select>
+                                    <span style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', color: '#6b7280', pointerEvents: 'none', fontSize: '0.8rem' }}>▼</span>
+                                </div>
                             </div>
-                            <div className="form-group">
-                                <label className="form-label">Date *</label>
-                                <input type="date" className="form-input" name="date" value={formData.date}
-                                    onChange={handleInputChange} required />
+
+                            <div>
+                                <label style={{ fontWeight: '600', color: '#374151', fontSize: '0.85rem', marginBottom: '0.5rem', display: 'block' }}>Amount (₹) <span style={{color: '#ef4444'}}>*</span></label>
+                                <div style={{ position: 'relative' }}>
+                                    <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#7e22ce', fontSize: '1.1rem', fontWeight: 'bold', display: 'flex' }}>₹</span>
+                                    <input type="number" name="amount" value={formData.amount} onChange={handleInputChange} required placeholder="e.g. 5000" min="1" style={{ width: '100%', borderRadius: '8px', border: '1px solid #e5e7eb', padding: '0.85rem 1rem 0.85rem 2.6rem', fontSize: '0.95rem', outline: 'none', transition: 'border-color 0.2s' }} onFocus={(e) => e.target.style.borderColor='#a855f7'} onBlur={(e) => e.target.style.borderColor='#e5e7eb'} />
+                                </div>
                             </div>
-                            <div className="form-group" style={{ gridColumn: "1 / -1" }}>
-                                <label className="form-label">Description (Optional)</label>
-                                <textarea className="form-input" name="description" value={formData.description}
-                                    onChange={handleInputChange} rows="3" placeholder="Additional details..." />
+
+                            <div>
+                                <label style={{ fontWeight: '600', color: '#374151', fontSize: '0.85rem', marginBottom: '0.5rem', display: 'block' }}>Date <span style={{color: '#ef4444'}}>*</span></label>
+                                <div style={{ position: 'relative' }}>
+                                    <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#7e22ce', fontSize: '1rem', display: 'flex' }}>📅</span>
+                                    <input type="date" name="date" value={formData.date} onChange={handleInputChange} required style={{ width: '100%', borderRadius: '8px', border: '1px solid #e5e7eb', padding: '0.85rem 1rem 0.85rem 2.6rem', fontSize: '0.95rem', outline: 'none', transition: 'border-color 0.2s' }} onFocus={(e) => e.target.style.borderColor='#a855f7'} onBlur={(e) => e.target.style.borderColor='#e5e7eb'} />
+                                </div>
                             </div>
-                            <div className="form-actions" style={{ gridColumn: "1 / -1", marginTop: "1rem", paddingTop: "1rem", borderTop: "1px solid var(--border-color)" }}>
-                                <button type="button" className="btn btn-secondary" onClick={() => setShowAddModal(false)}>Cancel</button>
-                                <button type="submit" className="btn btn-primary">💾 Save Expense</button>
+
+                            <div>
+                                <label style={{ fontWeight: '600', color: '#374151', fontSize: '0.85rem', marginBottom: '0.5rem', display: 'block' }}>Description (Optional)</label>
+                                <div style={{ position: 'relative' }}>
+                                    <textarea name="description" value={formData.description} onChange={handleInputChange} rows="3" maxLength="500" placeholder="Additional details (optional)..." style={{ width: '100%', borderRadius: '8px', border: '1px solid #e5e7eb', padding: '0.85rem 1rem', fontSize: '0.95rem', outline: 'none', resize: 'vertical', fontFamily: 'inherit', transition: 'border-color 0.2s' }} onFocus={(e) => e.target.style.borderColor='#a855f7'} onBlur={(e) => e.target.style.borderColor='#e5e7eb'} />
+                                    <span style={{ position: 'absolute', right: '10px', bottom: '12px', color: '#9ca3af', fontSize: '0.75rem', fontWeight: '500' }}>{formData.description.length} / 500</span>
+                                </div>
+                            </div>
+
+                            <div style={{ display: 'flex', gap: '1rem', marginTop: '0.5rem' }}>
+                                <button type="button" onClick={() => setShowAddModal(false)} style={{ flex: 1, padding: '0.85rem', borderRadius: '8px', border: '1px solid #e5e7eb', background: '#f9fafb', color: '#4b5563', fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', fontSize: '0.95rem', transition: 'background 0.2s' }} onMouseOver={(e) => e.currentTarget.style.background='#f3f4f6'} onMouseOut={(e) => e.currentTarget.style.background='#f9fafb'}>
+                                    ✕ Cancel
+                                </button>
+                                <button type="submit" style={{ flex: 1, padding: '0.85rem', borderRadius: '8px', border: 'none', background: '#7e22ce', color: '#fff', fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', fontSize: '0.95rem', boxShadow: '0 4px 6px rgba(126,34,206,0.2)', transition: 'background 0.2s' }} onMouseOver={(e) => e.currentTarget.style.background='#6b21a8'} onMouseOut={(e) => e.currentTarget.style.background='#7e22ce'}>
+                                    💾 Save Expense
+                                </button>
                             </div>
                         </form>
                     </div>
                 </div>
             )}
 
-            {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â• ADD/EDIT TRANSPORT MODAL â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
+            {/* ════════════════ ADD/EDIT TRANSPORT MODAL ════════════════ */}
             {showTransportModal && (
-                <div className="modal-overlay">
-                    <div className="modal-content" style={{ maxWidth: '440px' }}>
-                        <h2 style={{ marginBottom: "1.5rem", borderBottom: "1px solid var(--border-color)", paddingBottom: "1rem" }}>
-                            {editingTransport ? 'âœï¸ Edit Transport Route' : '➕ Add Transport Route'}
-                        </h2>
-                        <form onSubmit={handleSaveTransport}>
-                            <div className="form-group" style={{ marginBottom: '1rem' }}>
-                                <label className="form-label">Route Name *</label>
-                                <input type="text" className="form-input" name="route_name"
-                                    value={transportForm.route_name} onChange={handleTransportFormChange}
-                                    placeholder="e.g. Route A - City Center" required />
+                <div className="modal-overlay" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 1000, padding: '1rem' }}>
+                    <div className="modal-content" style={{ background: '#fff', borderRadius: '16px', width: '100%', maxWidth: '440px', padding: '2rem', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: "1.5rem" }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                                <div style={{ background: '#e0e7ff', color: '#4f46e5', width: '48px', height: '48px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem', flexShrink: 0 }}>🚌</div>
+                                <div>
+                                    <h2 style={{ margin: 0, fontSize: '1.25rem', color: '#111827', fontWeight: '700' }}>{editingTransport ? 'Edit Transport Route' : 'Add Transport Route'}</h2>
+                                    <p style={{ margin: 0, color: '#6b7280', fontSize: '0.85rem', marginTop: '2px' }}>{editingTransport ? 'Modify the bus route details and monthly fee.' : 'Create a new bus route and set its monthly fee.'}</p>
+                                </div>
                             </div>
-                            <div className="form-group" style={{ marginBottom: '1rem' }}>
-                                <label className="form-label">Monthly Fee (₹) *</label>
-                                <input type="number" className="form-input" name="fee_amount"
-                                    value={transportForm.fee_amount} onChange={handleTransportFormChange}
-                                    placeholder="e.g. 500" min="1" required />
+                            <button onClick={() => { setShowTransportModal(false); setEditingTransport(null); }} style={{ background: 'transparent', border: 'none', color: '#9ca3af', cursor: 'pointer', fontSize: '1.25rem', padding: '0.25rem', display: 'flex', transition: 'color 0.2s' }} onMouseOver={(e) => e.currentTarget.style.color='#ef4444'} onMouseOut={(e) => e.currentTarget.style.color='#9ca3af'}>✕</button>
+                        </div>
+                        
+                        <div style={{ height: '1px', background: '#e5e7eb', marginBottom: '1.5rem' }}></div>
+
+                        <form onSubmit={handleSaveTransport} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                            <div>
+                                <label style={{ fontWeight: '600', color: '#374151', fontSize: '0.85rem', marginBottom: '0.5rem', display: 'block' }}>Route Name <span style={{color: '#ef4444'}}>*</span></label>
+                                <div style={{ position: 'relative' }}>
+                                    <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#7e22ce', fontSize: '1.1rem', display: 'flex' }}>📍</span>
+                                    <input type="text" name="route_name" value={transportForm.route_name} onChange={handleTransportFormChange} placeholder="e.g. Route A - City Center" required style={{ width: '100%', borderRadius: '8px', border: '1px solid #e5e7eb', padding: '0.85rem 1rem 0.85rem 2.6rem', fontSize: '0.95rem', outline: 'none', transition: 'border-color 0.2s' }} onFocus={(e) => e.target.style.borderColor='#a855f7'} onBlur={(e) => e.target.style.borderColor='#e5e7eb'} />
+                                </div>
+                                <div style={{ fontSize: '0.75rem', color: '#6b7280', marginTop: '0.5rem' }}>Enter a unique name for the transport route.</div>
                             </div>
-                            {transportError && (
-                                <div style={{ color: '#ef4444', marginBottom: '1rem', fontSize: '0.9rem' }}>
-                                    âš ï¸ {transportError}
+
+                            <div>
+                                <label style={{ fontWeight: '600', color: '#374151', fontSize: '0.85rem', marginBottom: '0.5rem', display: 'block' }}>Monthly Fee (₹) <span style={{color: '#ef4444'}}>*</span></label>
+                                <div style={{ position: 'relative' }}>
+                                    <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#7e22ce', fontSize: '1.1rem', display: 'flex', fontWeight: 'bold' }}>₹</span>
+                                    <input type="number" name="fee_amount" value={transportForm.fee_amount} onChange={handleTransportFormChange} placeholder="e.g. 500" min="1" required style={{ width: '100%', borderRadius: '8px', border: '1px solid #e5e7eb', padding: '0.85rem 1rem 0.85rem 2.6rem', fontSize: '0.95rem', outline: 'none', transition: 'border-color 0.2s' }} onFocus={(e) => e.target.style.borderColor='#a855f7'} onBlur={(e) => e.target.style.borderColor='#e5e7eb'} />
+                                </div>
+                                <div style={{ fontSize: '0.75rem', color: '#6b7280', marginTop: '0.5rem' }}>Enter the monthly fee amount for this route.</div>
+                            </div>
+
+                            {!editingTransport && (
+                                <div style={{ background: '#eff6ff', borderRadius: '8px', padding: '1rem', display: 'flex', gap: '0.75rem', marginTop: '0.5rem' }}>
+                                    <div style={{ color: '#3b82f6', fontSize: '1.25rem', display: 'flex', flexShrink: 0 }}>ℹ️</div>
+                                    <div style={{ color: '#1e40af', fontSize: '0.85rem', lineHeight: '1.4' }}>
+                                        You can add stops and assign students to this route after creating it.
+                                    </div>
                                 </div>
                             )}
-                            <div className="form-actions" style={{ marginTop: "1rem", paddingTop: "1rem", borderTop: "1px solid var(--border-color)" }}>
-                                <button type="button" className="btn btn-secondary"
-                                    onClick={() => { setShowTransportModal(false); setEditingTransport(null); }}>Cancel</button>
-                                <button type="submit" className="btn btn-primary">
-                                    {editingTransport ? '✅ Update Route' : '💾 Add Route'}
+
+                            {transportError && (
+                                <div style={{ color: '#ef4444', fontSize: '0.85rem', background: '#fef2f2', padding: '0.75rem', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                    <span>⚠️</span> {transportError}
+                                </div>
+                            )}
+
+                            <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem', justifyContent: 'flex-end' }}>
+                                <button type="button" onClick={() => { setShowTransportModal(false); setEditingTransport(null); }} style={{ padding: '0.75rem 1.25rem', borderRadius: '8px', border: '1px solid #e5e7eb', background: '#fff', color: '#4b5563', fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.95rem', transition: 'background 0.2s' }} onMouseOver={(e) => e.currentTarget.style.background='#f9fafb'} onMouseOut={(e) => e.currentTarget.style.background='#fff'}>
+                                    ✕ Cancel
+                                </button>
+                                <button type="submit" style={{ padding: '0.75rem 1.5rem', borderRadius: '8px', border: 'none', background: '#7e22ce', color: '#fff', fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.95rem', boxShadow: '0 4px 6px rgba(126,34,206,0.2)', transition: 'background 0.2s' }} onMouseOver={(e) => e.currentTarget.style.background='#6b21a8'} onMouseOut={(e) => e.currentTarget.style.background='#7e22ce'}>
+                                    {editingTransport ? '✓ Update Route' : '✓ Add Route'}
                                 </button>
                             </div>
                         </form>
@@ -674,4 +958,3 @@ const AdminExpenses = forwardRef((props, ref) => {
 });
 
 export default AdminExpenses;
-

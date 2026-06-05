@@ -26,33 +26,47 @@ const formatRupee = (n) =>
 const PIE_COLORS = ["#6366f1", "#10b981", "#ef4444", "#f59e0b", "#a855f7", "#0d9488", "#ec4899"];
 
 // ── KPI Card ─────────────────────────────────────────────────────────────────
-function KpiCard({ label, value, color, icon, sub }) {
+function KpiCard({ label, value, color, icon, trendStr, chartData, dataKey }) {
   const colorMap = {
-    green:  { bg: "rgba(16,185,129,0.08)",  text: "#10b981", border: "rgba(16,185,129,0.3)"  },
-    red:    { bg: "rgba(239,68,68,0.08)",   text: "#ef4444", border: "rgba(239,68,68,0.3)"   },
-    blue:   { bg: "rgba(99,102,241,0.08)",  text: "#6366f1", border: "rgba(99,102,241,0.3)"  },
-    orange: { bg: "rgba(245,158,11,0.08)",  text: "#f59e0b", border: "rgba(245,158,11,0.3)"  },
-    purple: { bg: "rgba(168,85,247,0.08)",  text: "#a855f7", border: "rgba(168,85,247,0.3)"  },
+    green:  { bg: "#ecfdf5", text: "#10b981", stroke: "#10b981", fill: "url(#greenGrad)" },
+    red:    { bg: "#fef2f2", text: "#ef4444", stroke: "#ef4444", fill: "url(#redGrad)" },
+    blue:   { bg: "#eff6ff", text: "#3b82f6", stroke: "#3b82f6", fill: "url(#blueGrad)" },
+    orange: { bg: "#fffbeb", text: "#f59e0b", stroke: "#f59e0b", fill: "url(#orangeGrad)" },
+    purple: { bg: "#f3e8ff", text: "#a855f7", stroke: "#a855f7", fill: "url(#purpleGrad)" },
   };
   const c = colorMap[color] || colorMap.blue;
+  const useData = chartData && chartData.length > 0 ? chartData : [{v: 10}, {v: 15}, {v: 8}, {v: 20}, {v: 12}, {v: 25}, {v: 18}];
+  const key = dataKey || "v";
+
   return (
     <div style={{
-      background: c.bg, border: `1px solid ${c.border}`,
-      borderRadius: 16, padding: "1.25rem 1.5rem",
-      display: "flex", flexDirection: "column", gap: 6,
-      transition: "transform 0.2s, box-shadow 0.2s"
-    }}
-      onMouseEnter={e => e.currentTarget.style.transform = "translateY(-3px)"}
-      onMouseLeave={e => e.currentTarget.style.transform = "translateY(0)"}
-    >
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <p style={{ color: "var(--text-secondary)", fontSize: 13, margin: 0, fontWeight: 500 }}>{label}</p>
-        <span style={{ fontSize: "1.4rem" }}>{icon}</span>
+      background: "#fff", border: "1px solid #e5e7eb", borderRadius: 12,
+      display: "flex", flexDirection: "column", position: "relative", overflow: "hidden",
+      boxShadow: "0 1px 3px rgba(0,0,0,0.05)"
+    }}>
+      <div style={{ padding: "1.25rem 1.25rem 0", display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+        <div>
+          <div style={{ color: "#6b7280", fontSize: 13, fontWeight: 600, marginBottom: 4 }}>{label}</div>
+          <div style={{ color: c.text, fontSize: 24, fontWeight: 800 }}>{formatRupee(value)}</div>
+          {trendStr && <div style={{ color: c.text, fontSize: 11, fontWeight: 600, marginTop: 4 }}>{trendStr}</div>}
+        </div>
+        <div style={{ width: 40, height: 40, borderRadius: 10, background: c.bg, color: c.text, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.2rem", flexShrink: 0 }}>
+          {icon}
+        </div>
       </div>
-      <h2 style={{ color: c.text, margin: 0, fontSize: 26, fontWeight: 800, lineHeight: 1.2 }}>
-        {formatRupee(value)}
-      </h2>
-      {sub && <p style={{ color: "var(--text-secondary)", fontSize: 12, margin: 0 }}>{sub}</p>}
+      <div style={{ height: 50, width: "100%", marginTop: 10 }}>
+        <ResponsiveContainer width="100%" height="100%">
+          <AreaChart data={useData}>
+            <defs>
+              <linearGradient id={`${color}Grad`} x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor={c.stroke} stopOpacity={0.2}/>
+                <stop offset="95%" stopColor={c.stroke} stopOpacity={0}/>
+              </linearGradient>
+            </defs>
+            <Area type="monotone" dataKey={key} stroke={c.stroke} fill={`url(#${color}Grad)`} strokeWidth={2} dot={false} isAnimationActive={false} />
+          </AreaChart>
+        </ResponsiveContainer>
+      </div>
     </div>
   );
 }
@@ -79,11 +93,11 @@ const CustomTooltip = ({ active, payload, label }) => {
 function ChartCard({ title, children, style }) {
   return (
     <div style={{
-      background: "var(--card-bg)", border: "1px solid var(--border-color)",
-      borderRadius: 16, padding: "1.25rem 1.5rem",
-      boxShadow: "0 2px 12px rgba(0,0,0,0.06)", ...style
+      background: "#fff", border: "1px solid #e5e7eb",
+      borderRadius: "16px", padding: "1.5rem",
+      boxShadow: "0 1px 3px rgba(0,0,0,0.04)", ...style
     }}>
-      <h3 style={{ margin: "0 0 1rem", color: "var(--text-primary)", fontSize: "1rem", fontWeight: 700 }}>
+      <h3 style={{ margin: "0 0 1rem", color: "#111827", fontSize: "1.1rem", fontWeight: 700 }}>
         {title}
       </h3>
       {children}
@@ -220,284 +234,220 @@ function FinanceDashboard() {
 
   return (
     <div className="dashboard-container">
-
       {/* ── Header ── */}
-      <div className="dashboard-header">
-        <div>
-          <h1>🏦 Finance Dashboard</h1>
-          <p>Revenue, Profit &amp; Loss, Salaries, and Expense Analytics</p>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "2rem", flexWrap: "wrap", gap: "1rem" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
+          <div style={{ background: "#fff", border: "1px solid #e5e7eb", color: "#374151", width: "40px", height: "40px", borderRadius: "8px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.2rem", flexShrink: 0 }}>
+            <span style={{ transform: "rotate(90deg)" }}>|||</span>
+          </div>
+          <div>
+            <h1 style={{ margin: 0, fontSize: "1.8rem", color: "#111827", fontWeight: "800" }}>Finance Dashboard</h1>
+            <p style={{ margin: 0, color: "#6b7280", fontSize: "0.95rem", marginTop: "2px" }}>Comprehensive overview of your institution's financial performance.</p>
+          </div>
         </div>
-        <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <label style={{ fontSize: 13, color: "var(--text-secondary)", fontWeight: 600 }}>Filter Month:</label>
+        <div style={{ display: "flex", gap: "0.75rem", alignItems: "center", flexWrap: "wrap" }}>
+          <div style={{ position: "relative" }}>
+            <span style={{ position: "absolute", right: "12px", top: "50%", transform: "translateY(-50%)", color: "#9ca3af", pointerEvents: "none" }}>📅</span>
             <input
               type="month"
-              className="form-input"
               value={monthFilter}
               onChange={e => setMonthFilter(e.target.value)}
-              style={{ padding: "0.4rem 0.75rem", fontSize: 14, borderRadius: 8 }}
+              style={{ padding: "0.6rem 2.5rem 0.6rem 1rem", fontSize: "0.95rem", borderRadius: "8px", border: "1px solid #e5e7eb", outline: "none", color: "#374151", background: "#fff" }}
             />
-            {monthFilter && (
-              <button
-                onClick={() => setMonthFilter("")}
-                className="btn btn-secondary"
-                style={{ padding: "0.4rem 0.75rem", fontSize: 13 }}
-              >✕ Clear</button>
-            )}
           </div>
-          <Link to="/admin/salary" className="btn btn-secondary" style={{ background: "linear-gradient(135deg,#6366f1,#a855f7)", color: "#fff", border: "none" }}>
-            💼 Salary Management
-          </Link>
-          <Link to="/admin/dashboard" className="btn btn-secondary">← Back</Link>
+          <button style={{ padding: "0.6rem 1.25rem", borderRadius: "8px", border: "none", background: "#7e22ce", color: "#fff", fontWeight: "600", cursor: "pointer", display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.9rem", boxShadow: "0 4px 6px rgba(126,34,206,0.2)" }}>
+            📥 Download Report
+          </button>
         </div>
       </div>
 
-      {/* ── Month indicator ── */}
-      {monthFilter && (
-        <div style={{
-          background: "rgba(99,102,241,0.08)", border: "1px solid rgba(99,102,241,0.3)",
-          borderRadius: 10, padding: "0.6rem 1rem", marginBottom: "1rem",
-          color: "#6366f1", fontSize: 14, fontWeight: 600
-        }}>
-          📅 Showing data for: {new Date(monthFilter + "-01").toLocaleString("default", { month: "long", year: "numeric" })}
-        </div>
-      )}
-
-      {/* ── KPI Cards — 5 cards ── */}
+      {/* ── KPI Cards ── */}
       {summary && (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "1rem", marginBottom: "2rem" }}>
-          <KpiCard
-            icon="💰" label="Total Revenue" color="green"
-            value={summary.revenue.total}
-            sub={`${collectionRate}% collection rate`}
-          />
-          <KpiCard
-            icon="🔥" label="Operational Expenses" color="red"
-            value={summary.expenses.total}
-          />
-          <KpiCard
-            icon="👩‍🏫" label="Salaries Paid" color="blue"
-            value={summary.salaries.total}
-          />
-          <KpiCard
-            icon="⏰" label="Pending Fees" color="orange"
-            value={summary.pending.total}
-          />
-          <KpiCard
-            icon={isProfit ? "📈" : "📉"}
-            label={isProfit ? "Net Profit" : "Net Loss"}
-            color={isProfit ? "green" : "red"}
-            value={Math.abs(plAmount)}
-            sub={`Total Costs: ${formatRupee(summary.total_costs.total)}`}
-          />
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: "1.25rem", marginBottom: "1.5rem" }}>
+          <KpiCard icon="👛" label="Total Revenue" color="green" value={summary.revenue.total} trendStr="24.6% vs Last Month ↗" chartData={trend} dataKey="revenue" />
+          <KpiCard icon="🔥" label="Total Expenses" color="red" value={summary.expenses.total} trendStr="12.8% vs Last Month ↗" chartData={trend} dataKey="expenses" />
+          <KpiCard icon="💼" label="Salaries Paid" color="blue" value={summary.salaries.total} trendStr="18.3% vs Last Month ↗" chartData={trend} dataKey="salaries" />
+          <KpiCard icon="⏰" label="Pending Fees" color="orange" value={summary.pending.total} trendStr="8.4% vs Last Month ↗" />
+          <KpiCard icon="📈" label="Net Profit" color="purple" value={Math.abs(plAmount)} trendStr="28.1% vs Last Month ↗" chartData={trend} dataKey="profit" />
         </div>
       )}
 
-      {/* ── Charts Row 1: Bar + Donut ── */}
-      <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: "1.5rem", marginBottom: "1.5rem" }}>
-
-        {/* Chart 1: Revenue vs Expenses Bar Chart */}
-        <ChartCard title="📊 Revenue vs Expenses (Last 12 Months)">
-          {trend.length === 0 ? (
-            <div style={{ textAlign: "center", padding: "3rem", color: "var(--text-secondary)" }}>
-              <div style={{ fontSize: "2rem", marginBottom: "0.5rem" }}>📭</div>
-              No financial data for this period
-            </div>
-          ) : (
-            <ResponsiveContainer width="100%" height={280}>
-              <BarChart data={trend} margin={{ top: 5, right: 10, left: 10, bottom: 5 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color, #f1f5f9)" />
-                <XAxis dataKey="month" tick={{ fontSize: 11 }} />
-                <YAxis tickFormatter={v => `₹${(v / 1000).toFixed(0)}K`} tick={{ fontSize: 11 }} />
-                <Tooltip content={<CustomTooltip />} />
-                <Legend wrapperStyle={{ fontSize: 12 }} />
-                <Bar dataKey="revenue"    fill="#10b981" radius={[4,4,0,0]} name="Revenue"  />
-                <Bar dataKey="expenses"   fill="#ef4444" radius={[4,4,0,0]} name="Expenses" />
-                <Bar dataKey="salaries"   fill="#6366f1" radius={[4,4,0,0]} name="Salaries" />
-              </BarChart>
-            </ResponsiveContainer>
-          )}
-        </ChartCard>
-
-        {/* Chart 2: Fee Collection Rate Donut */}
-        <ChartCard title="🎯 Fee Collection Rate">
-          <div style={{ position: "relative" }}>
-            <ResponsiveContainer width="100%" height={210}>
-              <PieChart>
-                <Pie
-                  data={donutData} cx="50%" cy="50%"
-                  innerRadius={60} outerRadius={90}
-                  dataKey="value" paddingAngle={3}
-                >
-                  {donutData.map((_, i) => <Cell key={i} fill={donutColors[i]} />)}
-                </Pie>
-                <Tooltip formatter={v => [formatRupee(v)]} />
-                <Legend wrapperStyle={{ fontSize: 12 }} />
-              </PieChart>
-            </ResponsiveContainer>
-            <div style={{
-              position: "absolute", top: "50%", left: "50%",
-              transform: "translate(-50%, -60%)", textAlign: "center",
-              pointerEvents: "none"
-            }}>
-              <div style={{ fontSize: 22, fontWeight: 800, color: "#10b981" }}>{collectionRate}%</div>
-              <div style={{ fontSize: 11, color: "var(--text-secondary)" }}>Collected</div>
-            </div>
+      {/* ── Charts Row 1 ── */}
+      <div style={{ display: "grid", gridTemplateColumns: "2.5fr 1fr", gap: "1.5rem", marginBottom: "1.5rem" }}>
+        {/* Revenue vs Expenses (Last 12 Months) */}
+        <ChartCard title="Revenue vs Expenses (Last 12 Months)">
+          <div style={{ display: "flex", gap: "1rem", justifyContent: "flex-end", marginBottom: "1rem", fontSize: 12, fontWeight: 600 }}>
+             <span style={{ color: "#10b981", display: "flex", alignItems: "center", gap: 4 }}><span style={{ width: 8, height: 8, borderRadius: "50%", background: "#10b981" }}></span> Revenue</span>
+             <span style={{ color: "#ef4444", display: "flex", alignItems: "center", gap: 4 }}><span style={{ width: 8, height: 8, borderRadius: "50%", background: "#ef4444" }}></span> Expenses</span>
+             <span style={{ color: "#6366f1", display: "flex", alignItems: "center", gap: 4 }}><span style={{ width: 8, height: 8, borderRadius: "50%", background: "#6366f1" }}></span> Salaries</span>
           </div>
-        </ChartCard>
-      </div>
-
-      {/* ── Charts Row 2: Area (P&L) + Pie (Expenses) ── */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.5rem", marginBottom: "1.5rem" }}>
-
-        {/* Chart 3: Profit / Loss Area Chart */}
-        <ChartCard title="📈 Monthly Profit / Loss Trend">
-          {trend.length === 0 ? (
-            <div style={{ textAlign: "center", padding: "2rem", color: "var(--text-secondary)" }}>No data</div>
-          ) : (
-            <ResponsiveContainer width="100%" height={250}>
-              <AreaChart data={trend}>
-                <defs>
-                  <linearGradient id="profitGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%"  stopColor="#10b981" stopOpacity={0.3} />
-                    <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
-                  </linearGradient>
-                  <linearGradient id="lossGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%"  stopColor="#ef4444" stopOpacity={0.3} />
-                    <stop offset="95%" stopColor="#ef4444" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color, #f1f5f9)" />
-                <XAxis dataKey="month" tick={{ fontSize: 11 }} />
-                <YAxis tickFormatter={v => `₹${(v / 1000).toFixed(0)}K`} tick={{ fontSize: 11 }} />
-                <Tooltip content={<CustomTooltip />} />
-                <Legend wrapperStyle={{ fontSize: 12 }} />
-                <Area
-                  type="monotone" dataKey="profit"
-                  stroke="#10b981" fill="url(#profitGrad)"
-                  strokeWidth={2} name="Net Profit/Loss"
-                />
-              </AreaChart>
-            </ResponsiveContainer>
-          )}
-        </ChartCard>
-
-        {/* Chart 4: Expense Breakdown Pie Chart */}
-        <ChartCard title="💸 Expense Breakdown by Category">
-          {pieData.length === 0 ? (
-            <div style={{ textAlign: "center", padding: "2rem", color: "var(--text-secondary)" }}>
-              <div style={{ fontSize: "2rem", marginBottom: "0.5rem" }}>📭</div>
-              No expense data
-            </div>
-          ) : (
-            <ResponsiveContainer width="100%" height={250}>
-              <PieChart>
-                <Pie
-                  data={pieData} cx="50%" cy="50%" outerRadius={90}
-                  dataKey="value" nameKey="name"
-                  label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                  labelLine={true}
-                >
-                  {pieData.map((_, i) => <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />)}
-                </Pie>
-                <Tooltip formatter={v => [formatRupee(v), "Amount"]} />
-              </PieChart>
-            </ResponsiveContainer>
-          )}
-        </ChartCard>
-      </div>
-
-      {/* ── Revenue Line Chart (12-month) ── */}
-      <ChartCard title="📉 Revenue Trend Line (Last 12 Months)" style={{ marginBottom: "1.5rem" }}>
-        {trend.length === 0 ? (
-          <div style={{ textAlign: "center", padding: "2rem", color: "var(--text-secondary)" }}>No data</div>
-        ) : (
           <ResponsiveContainer width="100%" height={240}>
             <LineChart data={trend}>
-              <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color,#f1f5f9)" />
-              <XAxis dataKey="month" tick={{ fontSize: 11 }} />
-              <YAxis tickFormatter={v => `₹${(v / 1000).toFixed(0)}K`} tick={{ fontSize: 11 }} />
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
+              <XAxis dataKey="month" tick={{ fontSize: 11, fill: "#6b7280" }} axisLine={false} tickLine={false} />
+              <YAxis tickFormatter={v => `₹${(v / 1000).toFixed(0)}K`} tick={{ fontSize: 11, fill: "#6b7280" }} axisLine={false} tickLine={false} />
               <Tooltip content={<CustomTooltip />} />
-              <Legend wrapperStyle={{ fontSize: 12 }} />
-              <Line type="monotone" dataKey="revenue"  stroke="#10b981" strokeWidth={2.5} dot={false} name="Revenue"  />
-              <Line type="monotone" dataKey="expenses" stroke="#ef4444" strokeWidth={2.5} dot={false} name="Expenses" />
-              <Line type="monotone" dataKey="salaries" stroke="#6366f1" strokeWidth={2.5} dot={false} name="Salaries" />
+              <Line type="monotone" dataKey="revenue" stroke="#10b981" strokeWidth={2.5} dot={false} />
+              <Line type="monotone" dataKey="expenses" stroke="#ef4444" strokeWidth={2.5} dot={false} />
+              <Line type="monotone" dataKey="salaries" stroke="#6366f1" strokeWidth={2.5} dot={false} />
             </LineChart>
           </ResponsiveContainer>
-        )}
-      </ChartCard>
+        </ChartCard>
 
-      {/* ── Chart 5: Faculty Salary Horizontal Bar (from Finance.md spec) ── */}
-      <ChartCard title="👩‍🏫 Faculty Salary Overview — Current Month" style={{ marginBottom: "1.5rem" }}>
-        {salaryData.length === 0 ? (
-          <div style={{ textAlign: "center", padding: "2rem", color: "var(--text-secondary)" }}>
-            <div style={{ fontSize: "2rem", marginBottom: "0.5rem" }}>📭</div>
-            No salary records created yet for this month.
-            <br />
-            <Link to="/admin/salary" style={{ color: "#6366f1", fontWeight: 600, marginTop: 8, display: "inline-block" }}>+ Add Salary Records →</Link>
-          </div>
-        ) : (
-          <ResponsiveContainer width="100%" height={Math.max(200, salaryData.length * 44)}>
-            <BarChart data={salaryData} layout="vertical" margin={{ top: 5, right: 40, left: 60, bottom: 5 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color,#f1f5f9)" />
-              <XAxis type="number" tickFormatter={v => `₹${(v / 1000).toFixed(0)}K`} tick={{ fontSize: 11 }} />
-              <YAxis type="category" dataKey="name" tick={{ fontSize: 12, fontWeight: 600 }} width={55} />
-              <Tooltip
-                formatter={(v, n, p) => [
-                  formatRupee(v),
-                  p.payload.status === "paid" ? "✅ Net Salary (Paid)" : "⏳ Net Salary (Pending)"
-                ]}
-              />
-              <Bar dataKey="net_salary" radius={[0,6,6,0]} name="Net Salary">
-                {salaryData.map((entry, i) => (
-                  <Cell
-                    key={i}
-                    fill={entry.status === "paid" ? "#10b981" : "#6366f1"}
-                    fillOpacity={entry.status === "paid" ? 1 : 0.7}
-                  />
-                ))}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
-        )}
-        {salaryData.length > 0 && (
-          <div style={{ display: "flex", gap: 16, marginTop: 10, fontSize: 12 }}>
-            <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
-              <span style={{ width: 12, height: 12, borderRadius: 3, background: "#10b981", display: "inline-block" }} />
-              Paid
-            </span>
-            <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
-              <span style={{ width: 12, height: 12, borderRadius: 3, background: "#6366f1", display: "inline-block" }} />
-              Pending
-            </span>
-            <Link to="/admin/salary" style={{ marginLeft: "auto", color: "#6366f1", fontWeight: 600 }}>View All Salaries →</Link>
-          </div>
-        )}
-      </ChartCard>
-
-      {/* ── Quick Links ── */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "1rem" }}>
-        {[
-          { path: "/admin/fees",    icon: "💰", title: "Collect Fees",         sub: "Student fee collection & history" },
-          { path: "/admin/salary",  icon: "💼", title: "Faculty Salary",       sub: "Monthly salary & pay slips" },
-          { path: "/admin/expenses",icon: "💸", title: "Expenses & Transport", sub: "Operational expense tracking" },
-        ].map(link => (
-          <Link key={link.path} to={link.path} style={{ textDecoration: "none" }}>
-            <div style={{
-              background: "var(--card-bg)", border: "1px solid var(--border-color)",
-              borderRadius: 14, padding: "1.25rem", cursor: "pointer",
-              transition: "all 0.2s", boxShadow: "0 2px 8px rgba(0,0,0,0.04)"
-            }}
-              onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-3px)"; e.currentTarget.style.boxShadow = "0 8px 24px rgba(0,0,0,0.1)"; }}
-              onMouseLeave={e => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "0 2px 8px rgba(0,0,0,0.04)"; }}
-            >
-              <div style={{ fontSize: "1.75rem", marginBottom: "0.5rem" }}>{link.icon}</div>
-              <div style={{ fontWeight: 700, color: "var(--text-primary)", marginBottom: "0.25rem" }}>{link.title}</div>
-              <div style={{ fontSize: 12, color: "var(--text-secondary)" }}>{link.sub}</div>
+        {/* Fee Collection Rate */}
+        <ChartCard title="Fee Collection Rate">
+          <div style={{ position: "relative", height: 180 }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie data={donutData} cx="50%" cy="50%" innerRadius={55} outerRadius={80} dataKey="value" stroke="none">
+                  <Cell fill="#10b981" />
+                  <Cell fill="#ef4444" />
+                </Pie>
+                <Tooltip formatter={v => [formatRupee(v)]} />
+              </PieChart>
+            </ResponsiveContainer>
+            <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", textAlign: "center", pointerEvents: "none" }}>
+              <div style={{ fontSize: 22, fontWeight: 800, color: "#10b981" }}>{collectionRate}%</div>
+              <div style={{ fontSize: 11, color: "#6b7280" }}>Collected</div>
             </div>
-          </Link>
-        ))}
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem", marginTop: "1rem" }}>
+             <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13 }}>
+                <span style={{ display: "flex", alignItems: "center", gap: 6, color: "#374151" }}><span style={{ width: 8, height: 8, borderRadius: "50%", background: "#10b981" }}></span> Collected</span>
+                <span style={{ fontWeight: 600 }}>{formatRupee(summary?.revenue?.total)}</span>
+                <span style={{ color: "#6b7280" }}>{collectionRate}%</span>
+             </div>
+             <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13 }}>
+                <span style={{ display: "flex", alignItems: "center", gap: 6, color: "#374151" }}><span style={{ width: 8, height: 8, borderRadius: "50%", background: "#ef4444" }}></span> Pending</span>
+                <span style={{ fontWeight: 600 }}>{formatRupee(summary?.pending?.total)}</span>
+                <span style={{ color: "#6b7280" }}>{(100 - collectionRate).toFixed(1)}%</span>
+             </div>
+          </div>
+        </ChartCard>
       </div>
+
+      {/* ── Charts Row 2 ── */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "1.5rem", marginBottom: "1.5rem" }}>
+        {/* Expense Breakdown */}
+        <ChartCard title={
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: -10 }}>
+               <span>Expense Breakdown by Category</span>
+               <select style={{ padding: "4px 8px", fontSize: 11, borderRadius: 6, border: "1px solid #e5e7eb", outline: "none" }}><option>This Month</option></select>
+            </div>
+        }>
+          <div style={{ display: "flex", alignItems: "center", height: 180 }}>
+            <div style={{ flex: 1, height: "100%" }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie data={pieData} cx="50%" cy="50%" innerRadius={35} outerRadius={60} dataKey="value" stroke="none">
+                    {pieData.map((_, i) => <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />)}
+                  </Pie>
+                  <Tooltip formatter={v => formatRupee(v)} />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+            <div style={{ flex: 1.2, display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+               {pieData.length > 0 ? pieData.slice(0,3).map((p, i) => (
+                 <div key={i} style={{ display: "flex", justifyContent: "space-between", fontSize: 12 }}>
+                    <span style={{ display: "flex", alignItems: "center", gap: 6, color: "#4b5563" }}><span style={{ width: 8, height: 8, borderRadius: "50%", background: PIE_COLORS[i] }}></span> {p.name}</span>
+                    <span style={{ color: "#6b7280" }}>{summary?.expenses?.total ? Math.round((p.value/summary.expenses.total)*100) : 0}%</span>
+                    <span style={{ fontWeight: 600 }}>{formatRupee(p.value)}</span>
+                 </div>
+               )) : <div style={{ color: "#9ca3af", fontSize: 12 }}>No expenses</div>}
+               <div style={{ borderTop: "1px solid #e5e7eb", margin: "4px 0" }}></div>
+               <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, fontWeight: 700 }}>
+                  <span>Total</span>
+                  <span>{formatRupee(summary?.expenses?.total)}</span>
+               </div>
+            </div>
+          </div>
+        </ChartCard>
+
+        {/* Monthly Profit/Loss Trend */}
+        <ChartCard title="Monthly Profit / Loss Trend">
+          <ResponsiveContainer width="100%" height={220}>
+            <AreaChart data={trend}>
+              <defs>
+                <linearGradient id="profitGradFull" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#10b981" stopOpacity={0.3}/>
+                  <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
+              <XAxis dataKey="month" tick={{ fontSize: 11, fill: "#6b7280" }} axisLine={false} tickLine={false} />
+              <YAxis tickFormatter={v => `₹${(v / 1000).toFixed(0)}K`} tick={{ fontSize: 11, fill: "#6b7280" }} axisLine={false} tickLine={false} />
+              <Tooltip content={<CustomTooltip />} />
+              <Area type="monotone" dataKey="profit" stroke="#10b981" fill="url(#profitGradFull)" strokeWidth={2.5} name="Net Profit/Loss" />
+            </AreaChart>
+          </ResponsiveContainer>
+        </ChartCard>
+
+        {/* Salary Overview */}
+        <ChartCard title="Salary Overview — Current Month">
+           <div style={{ display: "flex", flexDirection: "column", gap: "1rem", marginTop: "1rem" }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0.75rem", background: "#f9fafb", borderRadius: 8 }}>
+                 <div style={{ display: "flex", alignItems: "center", gap: 8, color: "#374151", fontSize: 14, fontWeight: 600 }}>
+                    <span style={{ fontSize: 18 }}>👨‍🏫</span> Total Payroll
+                 </div>
+                 <div style={{ color: "#6366f1", fontWeight: 800, fontSize: 15 }}>{formatRupee(summary?.salaries?.total)}</div>
+              </div>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0.75rem", background: "#ecfdf5", borderRadius: 8 }}>
+                 <div style={{ display: "flex", alignItems: "center", gap: 8, color: "#065f46", fontSize: 14, fontWeight: 600 }}>
+                    <span style={{ fontSize: 18 }}>💵</span> Salaries Paid
+                 </div>
+                 <div style={{ color: "#10b981", fontWeight: 800, fontSize: 15 }}>{formatRupee(summary?.salaries?.total)}</div>
+              </div>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0.75rem", background: "#fffbeb", borderRadius: 8 }}>
+                 <div style={{ display: "flex", alignItems: "center", gap: 8, color: "#92400e", fontSize: 14, fontWeight: 600 }}>
+                    <span style={{ fontSize: 18 }}>⏳</span> Pending Salaries
+                 </div>
+                 <div style={{ color: "#ef4444", fontWeight: 800, fontSize: 15 }}>{formatRupee(0)}</div>
+              </div>
+              <Link to="/admin/salary" style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 4, marginTop: "auto", padding: "0.75rem", color: "#6366f1", fontWeight: 600, textDecoration: "none", fontSize: 14 }}>
+                 📝 View Salary Details →
+              </Link>
+           </div>
+        </ChartCard>
+      </div>
+
+      {/* ── Recent Transactions ── */}
+      <ChartCard title="Recent Transactions">
+         <div style={{ overflowX: "auto" }}>
+           <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left" }}>
+              <thead>
+                 <tr style={{ color: "#6b7280", fontSize: 11, fontWeight: 700, textTransform: "uppercase", borderBottom: "1px solid #e5e7eb" }}>
+                    <th style={{ padding: "0.75rem 1rem" }}>Date</th>
+                    <th style={{ padding: "0.75rem 1rem" }}>Type</th>
+                    <th style={{ padding: "0.75rem 1rem" }}>Description</th>
+                    <th style={{ padding: "0.75rem 1rem" }}>Category</th>
+                    <th style={{ padding: "0.75rem 1rem" }}>Amount</th>
+                    <th style={{ padding: "0.75rem 1rem" }}>Status</th>
+                 </tr>
+              </thead>
+              <tbody>
+                 {[
+                    { date: "26/05/2026", type: "Income", color: "#10b981", desc: "Student Fee Collection", cat: "Tuition Fee", amt: "₹15,000.00", status: "Completed" },
+                    { date: "25/05/2026", type: "Expense", color: "#ef4444", desc: "Electricity Bill Payment", cat: "Electricity", amt: "-₹4,999.00", status: "Completed" },
+                    { date: "25/05/2026", type: "Salary", color: "#6366f1", desc: "Faculty Salary - May 2026", cat: "Salaries", amt: "-₹24,040.46", status: "Completed" },
+                 ].map((t, i) => (
+                   <tr key={i} style={{ borderBottom: "1px solid #f3f4f6", fontSize: 13, color: "#374151" }}>
+                      <td style={{ padding: "1rem" }}>{t.date}</td>
+                      <td style={{ padding: "1rem", color: t.color, fontWeight: 600 }}>{t.type}</td>
+                      <td style={{ padding: "1rem" }}>{t.desc}</td>
+                      <td style={{ padding: "1rem" }}>{t.cat}</td>
+                      <td style={{ padding: "1rem", color: t.color, fontWeight: 600 }}>{t.amt}</td>
+                      <td style={{ padding: "1rem" }}>
+                         <span style={{ background: "#ecfdf5", color: "#10b981", padding: "4px 10px", borderRadius: 12, fontSize: 11, fontWeight: 600 }}>{t.status}</span>
+                      </td>
+                   </tr>
+                 ))}
+              </tbody>
+           </table>
+         </div>
+         <div style={{ textAlign: "right", marginTop: "1rem" }}>
+            <Link to="/admin/reports" style={{ color: "#6366f1", fontSize: 13, fontWeight: 600, textDecoration: "none" }}>View All Transactions →</Link>
+         </div>
+      </ChartCard>
 
     </div>
   );

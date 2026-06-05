@@ -24,16 +24,16 @@ const currentMonthYear = () => new Date().toISOString().slice(0, 7);
 // ── Status Badge ──────────────────────────────────────────────────────────────
 function SalaryBadge({ status }) {
   const map = {
-    paid:        { bg: "rgba(16,185,129,0.15)",  color: "#10b981", label: "✅ Paid"       },
-    pending:     { bg: "rgba(245,158,11,0.15)",  color: "#f59e0b", label: "⏳ Pending"    },
-    on_hold:     { bg: "rgba(239,68,68,0.15)",   color: "#ef4444", label: "⏸️ On Hold"    },
-    not_created: { bg: "rgba(156,163,175,0.15)", color: "#9ca3af", label: "➕ Not Created" },
+    paid:        { bg: "#ecfdf5",  color: "#059669", label: "✅ Paid"       },
+    pending:     { bg: "#fffbeb",  color: "#d97706", label: "⏳ Pending"    },
+    on_hold:     { bg: "#fef2f2",  color: "#dc2626", label: "⏸️ On Hold"    },
+    not_created: { bg: "#f3f4f6", color: "#4b5563", label: "➕ Not Created" },
   };
   const s = map[status] || map.not_created;
   return (
     <span style={{
       background: s.bg, color: s.color,
-      padding: "3px 10px", borderRadius: 20, fontSize: 12, fontWeight: 700
+      padding: "0.35rem 0.75rem", borderRadius: "20px", fontSize: "0.75rem", fontWeight: "700", display: "inline-flex", alignItems: "center", gap: "0.35rem"
     }}>
       {s.label}
     </span>
@@ -58,6 +58,7 @@ function FacultySalaryPage() {
   const [loading, setLoading]       = useState(true);
   const [monthFilter, setMonthFilter] = useState(currentMonthYear());
   const [summaryStats, setSummaryStats] = useState(null);
+  const [searchTerm, setSearchTerm]   = useState("");
 
   // ── Modals ────────────────────────────────────────────────────────────────
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -249,34 +250,59 @@ function FacultySalaryPage() {
     ? new Date(monthFilter + "-01").toLocaleString("default", { month: "long", year: "numeric" })
     : "All Months";
 
+  const filteredSalaries = salaries.filter(s => {
+    const facName = s.Faculty?.User?.name || "Unknown";
+    return facName.toLowerCase().includes(searchTerm.toLowerCase());
+  });
+
+  const handleDownload = () => {
+    const csvContent = "data:text/csv;charset=utf-8," 
+      + "Faculty,Month,Basic,Allowances,Deductions,Net Salary,Status\n"
+      + filteredSalaries.map(s => {
+          const facName = s.Faculty?.User?.name || "Unknown";
+          return `${facName},${s.month_year},${s.basic_salary},${s.allowances},${s.deductions},${s.net_salary},${s.status}`;
+      }).join("\n");
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `salary_records_${monthFilter}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
     <div className="dashboard-container">
 
       {/* ── Header ── */}
-      <div className="dashboard-header">
-        <div>
-          <h1>💼 Faculty Salary Management</h1>
-          <p>Monthly salary records, attendance-based calculation, and payment tracking</p>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "2rem", flexWrap: "wrap", gap: "1rem" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
+          <div style={{ background: "#f3e8ff", color: "#7e22ce", width: "48px", height: "48px", borderRadius: "12px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.5rem", flexShrink: 0 }}>💼</div>
+          <div>
+            <h1 style={{ margin: 0, fontSize: "1.8rem", color: "#111827", fontWeight: "800" }}>Faculty Salary Management</h1>
+            <p style={{ margin: 0, color: "#6b7280", fontSize: "0.95rem", marginTop: "2px" }}>Manage monthly salary records, attendance-based calculations, and payment tracking.</p>
+          </div>
         </div>
-        <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
-          <input
-            type="month"
-            className="form-input"
-            value={monthFilter}
-            onChange={e => setMonthFilter(e.target.value)}
-            style={{ padding: "0.4rem 0.75rem", fontSize: 14, borderRadius: 8 }}
-          />
+        <div style={{ display: "flex", gap: "0.75rem", alignItems: "center", flexWrap: "wrap" }}>
+          <div style={{ position: "relative" }}>
+            <span style={{ position: "absolute", right: "12px", top: "50%", transform: "translateY(-50%)", color: "#9ca3af", pointerEvents: "none" }}>📅</span>
+            <input
+              type="month"
+              value={monthFilter}
+              onChange={e => setMonthFilter(e.target.value)}
+              style={{ padding: "0.6rem 2.5rem 0.6rem 1rem", fontSize: "0.95rem", borderRadius: "8px", border: "1px solid #e5e7eb", outline: "none", color: "#374151" }}
+            />
+          </div>
           {canCreate && (
             <button
-              className="btn btn-primary"
               onClick={() => { setEditingRecord(null); setForm({ ...emptyForm, month_year: monthFilter }); setFormError(""); setShowCreateModal(true); }}
-              style={{ background: "linear-gradient(135deg,#6366f1,#a855f7)", border: "none" }}
+              style={{ padding: "0.6rem 1.25rem", borderRadius: "8px", border: "none", background: "#7e22ce", color: "#fff", fontWeight: "600", cursor: "pointer", display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.9rem", boxShadow: "0 4px 6px rgba(126,34,206,0.2)" }}
             >
               + Add Salary Record
             </button>
           )}
-          <Link to="/admin/finance" className="btn btn-secondary">🏦 Finance Dashboard</Link>
-          <Link to="/admin/dashboard" className="btn btn-secondary">← Back</Link>
+          <Link to="/admin/finance" style={{ padding: "0.6rem 1.25rem", borderRadius: "8px", border: "1px solid #e5e7eb", background: "#fff", color: "#374151", fontWeight: "600", cursor: "pointer", display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.9rem", textDecoration: "none" }}>📊 Finance Dashboard</Link>
+          <Link to="/admin/dashboard" style={{ padding: "0.6rem 1.25rem", borderRadius: "8px", border: "1px solid #e5e7eb", background: "#fff", color: "#374151", fontWeight: "600", cursor: "pointer", display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.9rem", textDecoration: "none" }}>← Back</Link>
         </div>
       </div>
 
@@ -293,21 +319,24 @@ function FacultySalaryPage() {
 
       {/* ── KPI Summary ── */}
       {summaryStats && (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "1rem", marginBottom: "1.5rem" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "1.25rem", marginBottom: "2rem" }}>
           {[
-            { icon: "📋", label: "Total Records",   value: salaries.length,             isNum: true, color: "#6366f1" },
-            { icon: "✅", label: "Paid",             value: summaryStats.paidCount,       isNum: true, color: "#10b981" },
-            { icon: "⏳", label: "Pending",          value: summaryStats.pendingCount,    isNum: true, color: "#f59e0b" },
-            { icon: "💰", label: "Total Salary Paid",value: summaryStats.paidTotal,       isNum: false, color: "#10b981" },
-            { icon: "📊", label: "Total Payroll",    value: summaryStats.total,           isNum: false, color: "#6366f1" },
+            { icon: "📄", label: "Total Records", value: salaries.length, isNum: true, bg: "#f3e8ff", color: "#7e22ce" },
+            { icon: "✅", label: "Paid", value: summaryStats.paidCount, isNum: true, bg: "#d1fae5", color: "#10b981" },
+            { icon: "⏳", label: "Pending", value: summaryStats.pendingCount, isNum: true, bg: "#fef3c7", color: "#f59e0b" },
+            { icon: "👝", label: "Total Salary Paid", value: summaryStats.paidTotal, isNum: false, bg: "#e0e7ff", color: "#4f46e5" },
+            { icon: "📈", label: "Total Payroll", value: summaryStats.total, isNum: false, bg: "#dbeafe", color: "#3b82f6" },
           ].map((s, i) => (
-            <div key={i} className="stat-card">
-              <div className="stat-icon" style={{ color: s.color }}>{s.icon}</div>
-              <div className="stat-content">
-                <h3 style={{ color: s.color }}>
+            <div key={i} style={{ background: "#fff", borderRadius: "12px", padding: "1.25rem", border: "1px solid #e5e7eb", display: "flex", alignItems: "center", gap: "1rem", boxShadow: "0 1px 2px rgba(0,0,0,0.02)" }}>
+              <div style={{ width: "48px", height: "48px", borderRadius: "12px", background: s.bg, color: s.color, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.5rem", flexShrink: 0 }}>
+                {s.icon}
+              </div>
+              <div>
+                <div style={{ fontSize: s.isNum ? "1.5rem" : "1.1rem", fontWeight: "800", color: s.color }}>
                   {s.isNum ? s.value : formatRupee(s.value)}
-                </h3>
-                <p>{s.label}</p>
+                </div>
+                <div style={{ fontSize: "0.8rem", color: "#374151", fontWeight: "600", marginTop: "2px" }}>{s.label}</div>
+                <div style={{ fontSize: "0.7rem", color: "#9ca3af", marginTop: "2px" }}>This Month</div>
               </div>
             </div>
           ))}
@@ -340,62 +369,95 @@ function FacultySalaryPage() {
           )}
         </div>
       ) : (
-        <div className="card">
-          <div className="table-container">
-            <table className="table">
-              <thead>
+        <>
+        <div style={{ background: "#fff", borderRadius: "12px", border: "1px solid #e5e7eb", overflow: "hidden", marginBottom: "1.5rem" }}>
+          {/* Table Header inside the card */}
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "1.25rem 1.5rem", borderBottom: "1px solid #e5e7eb" }}>
+             <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", color: "#111827", fontWeight: "700", fontSize: "1.1rem" }}>
+                 <span style={{ color: "#7e22ce" }}>📄</span> Salary Records
+             </div>
+             <div style={{ display: "flex", gap: "0.75rem" }}>
+                 <div style={{ position: "relative", width: "240px" }}>
+                     <span style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", color: "#9ca3af" }}>🔍</span>
+                     <input type="text" placeholder="Search by faculty name..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} style={{ width: "100%", padding: "0.5rem 1rem 0.5rem 2.5rem", borderRadius: "8px", border: "1px solid #e5e7eb", outline: "none", fontSize: "0.9rem" }} />
+                 </div>
+                 <button style={{ padding: "0.5rem 1rem", borderRadius: "8px", border: "1px solid #e5e7eb", background: "#fff", color: "#374151", fontWeight: "600", cursor: "pointer", display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.9rem" }}>
+                     <span>⚗️</span> Filter
+                 </button>
+                 <button onClick={handleDownload} style={{ padding: "0.5rem", borderRadius: "8px", border: "1px solid #e5e7eb", background: "#fff", color: "#374151", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                     📥
+                 </button>
+             </div>
+          </div>
+
+          <div style={{ overflowX: "auto" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left" }}>
+              <thead style={{ background: "#f9fafb", borderBottom: "1px solid #e5e7eb", color: "#6b7280", fontSize: "0.75rem", fontWeight: "700", textTransform: "uppercase" }}>
                 <tr>
-                  <th>Faculty</th>
-                  <th>Month</th>
-                  <th>Basic</th>
-                  <th>Allowances</th>
-                  <th>Deductions</th>
-                  <th>Net Salary</th>
-                  <th>Attendance</th>
-                  <th>Status</th>
-                  <th>Payment</th>
-                  <th style={{ textAlign: "right" }}>Actions</th>
+                  <th style={{ padding: "1rem 1.5rem" }}>FACULTY</th>
+                  <th style={{ padding: "1rem 1.5rem" }}>MONTH</th>
+                  <th style={{ padding: "1rem 1.5rem" }}>BASIC SALARY</th>
+                  <th style={{ padding: "1rem 1.5rem" }}>ALLOWANCES</th>
+                  <th style={{ padding: "1rem 1.5rem" }}>DEDUCTIONS</th>
+                  <th style={{ padding: "1rem 1.5rem" }}>NET SALARY</th>
+                  <th style={{ padding: "1rem 1.5rem" }}>ATTENDANCE</th>
+                  <th style={{ padding: "1rem 1.5rem" }}>STATUS</th>
+                  <th style={{ padding: "1rem 1.5rem" }}>PAYMENT</th>
+                  <th style={{ padding: "1rem 1.5rem", textAlign: "right" }}>ACTIONS</th>
                 </tr>
               </thead>
               <tbody>
-                {salaries.map(s => (
-                  <tr key={s.id}>
-                    <td>
-                      <div style={{ fontWeight: 700 }}>{s.Faculty?.User?.name || "Unknown"}</div>
-                      <small style={{ color: "var(--text-secondary)" }}>{s.Faculty?.User?.email}</small>
+                {filteredSalaries.map(s => {
+                  const facName = s.Faculty?.User?.name || "Unknown";
+                  const initials = facName.split(" ").map(n => n[0]).join("").substring(0,2).toUpperCase();
+                  return (
+                  <tr key={s.id} style={{ borderBottom: "1px solid #e5e7eb", transition: "background 0.2s" }} onMouseOver={e=>e.currentTarget.style.background="#f9fafb"} onMouseOut={e=>e.currentTarget.style.background="transparent"}>
+                    <td style={{ padding: "1.25rem 1.5rem" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+                          <div style={{ width: "40px", height: "40px", borderRadius: "50%", background: "#f3e8ff", color: "#7e22ce", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1rem", fontWeight: "700" }}>{initials}</div>
+                          <div>
+                              <div style={{ color: "#111827", fontWeight: "600", fontSize: "0.95rem" }}>{facName}</div>
+                              <div style={{ color: "#6b7280", fontSize: "0.8rem" }}>{s.Faculty?.User?.email}</div>
+                              <div style={{ color: "#9ca3af", fontSize: "0.75rem", marginTop: "2px" }}>Emp ID: {s.Faculty?.emp_id || "N/A"}</div>
+                          </div>
+                      </div>
                     </td>
-                    <td style={{ fontWeight: 600 }}>{s.month_year}</td>
-                    <td>{formatRupee(s.basic_salary)}</td>
-                    <td style={{ color: "#10b981" }}>+{formatRupee(s.allowances)}</td>
-                    <td style={{ color: "#ef4444" }}>-{formatRupee(s.deductions)}</td>
-                    <td style={{ fontWeight: 800, color: "#6366f1" }}>{formatRupee(s.net_salary)}</td>
-                    <td style={{ fontSize: 12 }}>
-                      <span style={{
-                        background: "rgba(99,102,241,0.1)", color: "#6366f1",
-                        padding: "2px 8px", borderRadius: 20, fontWeight: 600
-                      }}>
-                        {s.present_days}/{s.working_days} days
-                      </span>
+                    <td style={{ padding: "1.25rem 1.5rem", color: "#374151", fontSize: "0.9rem", fontWeight: "500" }}>{new Date(s.month_year + "-01").toLocaleString("default", { month: "short", year: "numeric" })}</td>
+                    <td style={{ padding: "1.25rem 1.5rem", color: "#111827", fontWeight: "600", fontSize: "0.95rem" }}>{formatRupee(s.basic_salary)}</td>
+                    <td style={{ padding: "1.25rem 1.5rem" }}>
+                        <div style={{ color: "#10b981", fontWeight: "600", fontSize: "0.9rem" }}>+{formatRupee(s.allowances)}</div>
+                        <div style={{ color: "#6b7280", fontSize: "0.75rem", marginTop: "2px" }}>({s.allowances > 0 ? "1 or more" : "0"} Allowances)</div>
                     </td>
-                    <td><SalaryBadge status={s.status} /></td>
-                    <td style={{ fontSize: 12, color: "var(--text-secondary)" }}>
+                    <td style={{ padding: "1.25rem 1.5rem" }}>
+                        <div style={{ color: "#ef4444", fontWeight: "600", fontSize: "0.9rem" }}>-{formatRupee(s.deductions)}</div>
+                        <div style={{ color: "#6b7280", fontSize: "0.75rem", marginTop: "2px" }}>({s.deductions > 0 ? "1 or more" : "0"} Deduction)</div>
+                    </td>
+                    <td style={{ padding: "1.25rem 1.5rem", color: "#7e22ce", fontWeight: "800", fontSize: "1rem" }}>{formatRupee(s.net_salary)}</td>
+                    <td style={{ padding: "1.25rem 1.5rem" }}>
+                      <div style={{ background: "#eff6ff", color: "#3b82f6", padding: "0.35rem 0.75rem", borderRadius: "20px", fontSize: "0.75rem", fontWeight: "600", display: "inline-block", marginBottom: "4px" }}>
+                        {s.present_days} / {s.working_days} days
+                      </div>
+                      <div style={{ color: "#6b7280", fontSize: "0.75rem", fontWeight: "600" }}>
+                        {((s.present_days / (s.working_days || 1)) * 100).toFixed(2)}%
+                      </div>
+                    </td>
+                    <td style={{ padding: "1.25rem 1.5rem" }}><SalaryBadge status={s.status} /></td>
+                    <td style={{ padding: "1.25rem 1.5rem", fontSize: "0.85rem", color: "#4b5563" }}>
                       {s.payment_date ? (
                         <>
-                          <div>{new Date(s.payment_date).toLocaleDateString()}</div>
+                          <div style={{ fontWeight: "600", color: "#111827" }}>{new Date(s.payment_date).toLocaleDateString("en-GB")}</div>
                           <div style={{ textTransform: "capitalize" }}>{s.payment_method?.replace("_", " ")}</div>
-                          {s.transaction_ref && <div style={{ color: "#6366f1" }}>Ref: {s.transaction_ref}</div>}
+                          <div style={{ color: "#10b981", fontWeight: "600", fontSize: "0.75rem", marginTop: "2px" }}>Paid by {s.paidBy?.name || "IT Hub"}</div>
                         </>
-                      ) : "—"}
+                      ) : (
+                          <div style={{ color: "#9ca3af" }}>—</div>
+                      )}
                     </td>
-                    <td style={{ textAlign: "right", whiteSpace: "nowrap" }}>
-                      <div style={{ display: "flex", gap: "6px", alignItems: "center", justifyContent: "flex-end" }}>
+                    <td style={{ padding: "1.25rem 1.5rem", textAlign: "right", whiteSpace: "nowrap" }}>
+                      <div style={{ display: "flex", gap: "0.5rem", justifyContent: "flex-end" }}>
                         {s.status !== "paid" && canUpdate && (
                           <button
-                            className="btn btn-primary"
-                            style={{
-                              padding: "4px 12px", fontSize: "0.78rem",
-                              background: "linear-gradient(135deg,#10b981,#059669)", border: "none"
-                            }}
+                            style={{ padding: "0.4rem 0.75rem", borderRadius: "6px", background: "#10b981", color: "#fff", border: "none", cursor: "pointer", fontSize: "0.85rem", fontWeight: "600", display: "flex", alignItems: "center", gap: "0.25rem", boxShadow: "0 2px 4px rgba(16,185,129,0.2)" }}
                             onClick={() => {
                               setPayingRecord(s);
                               setPayForm({ payment_method: "bank_transfer", transaction_ref: "" });
@@ -408,23 +470,12 @@ function FacultySalaryPage() {
                         )}
                         {canUpdate && (
                           <button
-                            className="btn btn-secondary"
-                            style={{ padding: "4px 10px", fontSize: "0.78rem", border: "1px solid #d1d5db", background: "white" }}
+                            style={{ padding: "0.4rem 0.75rem", borderRadius: "6px", border: "1px solid #e5e7eb", background: "#f9fafb", color: "#374151", cursor: "pointer", fontSize: "0.85rem", fontWeight: "600", display: "flex", alignItems: "center", gap: "0.25rem" }}
                             onClick={() => {
                               setForm({
-                                faculty_id: s.faculty_id,
-                                month_year: s.month_year,
-                                basic_salary: s.basic_salary,
-                                allowances: s.allowances,
-                                deductions: s.deductions,
-                                advance_paid: s.advance_paid,
-                                working_days: s.working_days,
-                                present_days: s.present_days,
-                                remarks: s.remarks || ""
+                                faculty_id: s.faculty_id, month_year: s.month_year, basic_salary: s.basic_salary, allowances: s.allowances, deductions: s.deductions, advance_paid: s.advance_paid, working_days: s.working_days, present_days: s.present_days, remarks: s.remarks || ""
                               });
-                              setEditingRecord(s);
-                              setFormError("");
-                              setShowCreateModal(true);
+                              setEditingRecord(s); setFormError(""); setShowCreateModal(true);
                             }}
                           >
                             ✏️
@@ -432,26 +483,40 @@ function FacultySalaryPage() {
                         )}
                         {canDelete && (
                           <button
-                            className="btn btn-danger"
-                            style={{ padding: "4px 10px", fontSize: "0.78rem" }}
+                            style={{ padding: "0.4rem 0.75rem", borderRadius: "6px", border: "1px solid #fee2e2", background: "#fef2f2", color: "#ef4444", cursor: "pointer", fontSize: "0.85rem", fontWeight: "600", display: "flex", alignItems: "center", gap: "0.25rem" }}
                             onClick={() => handleDelete(s.id)}
                           >
                             🗑️
                           </button>
                         )}
                       </div>
-                      {s.status === "paid" && (
-                        <div style={{ fontSize: 11, color: "#10b981", fontWeight: 600, marginTop: 6, opacity: 0.9 }}>
-                          Paid by {s.paidBy?.name || "Admin"}
-                        </div>
-                      )}
                     </td>
                   </tr>
-                ))}
+                )})}
               </tbody>
             </table>
           </div>
+          {/* Pagination Footer */}
+          <div style={{ padding: "1rem 1.5rem", borderTop: "1px solid #e5e7eb", display: "flex", justifyContent: "space-between", alignItems: "center", background: "#fff" }}>
+              <div style={{ color: "#6b7280", fontSize: "0.85rem" }}>
+                  Showing 1 to {filteredSalaries.length} of {filteredSalaries.length} records
+              </div>
+              <div style={{ display: "flex", gap: "0.25rem" }}>
+                  <button style={{ width: "32px", height: "32px", borderRadius: "8px", border: "1px solid #e5e7eb", background: "#fff", color: "#9ca3af", cursor: "pointer" }}>&lt;</button>
+                  <button style={{ width: "32px", height: "32px", borderRadius: "8px", border: "none", background: "#f3e8ff", color: "#7e22ce", cursor: "pointer", fontWeight: "600" }}>1</button>
+                  <button style={{ width: "32px", height: "32px", borderRadius: "8px", border: "1px solid #e5e7eb", background: "#fff", color: "#9ca3af", cursor: "pointer" }}>&gt;</button>
+              </div>
+          </div>
         </div>
+        
+        {/* Alert Box at the bottom */}
+        <div style={{ background: "#eff6ff", borderRadius: "8px", padding: "1rem 1.5rem", display: "flex", gap: "0.75rem", alignItems: "center", border: "1px solid #bfdbfe" }}>
+            <div style={{ background: "#3b82f6", color: "#fff", width: "24px", height: "24px", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "0.9rem", fontWeight: "bold", flexShrink: 0 }}>i</div>
+            <div style={{ color: "#1e40af", fontSize: "0.9rem" }}>
+                Salaries are calculated based on attendance and configured allowances & deductions.
+            </div>
+        </div>
+        </>
       )}
 
       {/* ═════════════════════ CREATE SALARY MODAL ══════════════════════ */}

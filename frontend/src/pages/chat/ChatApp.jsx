@@ -4,6 +4,7 @@ import api from "../../services/api";
 import { AuthContext } from "../../context/AuthContext";
 import LoadingSpinner from "../../components/common/LoadingSpinner";
 import { toast } from "react-hot-toast";
+import EmojiPicker from "emoji-picker-react";
 import "./ChatApp.css";
 
 /** Detect small/mobile screen */
@@ -25,6 +26,7 @@ function ChatApp() {
     const [loadingData, setLoadingData] = useState(true);
     const [sending, setSending] = useState(false);
     const [showParticipants, setShowParticipants] = useState(true);
+    const [showEmojiPicker, setShowEmojiPicker] = useState(false);
     const [chatUsage, setChatUsage] = useState(null); // { used, limit, unlimited, percent }
 
     const [showCreateModal, setShowCreateModal] = useState(false);
@@ -42,6 +44,7 @@ function ChatApp() {
         class_id: "",
         parent_id: ""
     });
+    const [showFilters, setShowFilters] = useState(false);
     const [filterData, setFilterData] = useState({
         faculties: [],
         subjects: [],
@@ -485,167 +488,141 @@ function ChatApp() {
 
             {/* ── Sidebar: Rooms ─────────────────────────────── */}
             <div className="chat-sidebar">
-                <div className="chat-sidebar-header" style={{ paddingBottom: '1rem', borderBottom: '1px solid var(--border)' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                        <button className="btn btn-secondary" style={{ padding: '4px 8px', fontSize: '0.8rem' }} onClick={() => navigate(-1)}>
-                            ⬅ Back
+                <div className="chat-sidebar-header">
+                    {!isReadOnly && (
+                        <button className="chat-back-btn" onClick={() => navigate(-1)}>
+                            ← Back
                         </button>
-                    </div>
-                    <div style={{ marginTop: '0.8rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <div>
-                            <h3 style={{ margin: 0 }}>💬 Academic Chat</h3>
-                            <p style={{ fontSize: "0.78rem", color: "var(--text-secondary)", margin: "4px 0 0" }}>
-                                {user?.role === "faculty" ? "Manage your rooms" : (user?.role === "student" || user?.role === "parent") ? "Your chats" : "Monitor all chats"}
-                            </p>
-                        </div>
-                        {user?.role === "faculty" && (
-                            <button className="btn btn-primary" style={{ padding: '6px 12px', fontSize: '0.8rem' }} onClick={() => setShowCreateModal(true)}>
-                                + Create Room
-                            </button>
-                        )}
-                    </div>
-
-                    {/* Admin Filters UI */}
-                    {(user?.role === "admin" || user?.role === "manager" || user?.role === "owner") && (
-                        <div className="chat-filters">
-                            <select
-                                className="form-input"
-                                style={{ fontSize: '0.75rem', padding: '4px' }}
-                                value={filters.type}
-                                onChange={(e) => handleFilterChange('type', e.target.value)}
-                            >
-                                <option value="">All Types</option>
-                                <option value="group">Group Rooms</option>
-                                <option value="direct">Direct Chats</option>
-                            </select>
-                            <select
-                                className="form-input"
-                                style={{ fontSize: '0.75rem', padding: '4px' }}
-                                value={filters.class_id}
-                                onChange={(e) => handleFilterChange('class_id', e.target.value)}
-                            >
-                                <option value="">All Classes</option>
-                                {filterData.classes.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                            </select>
-                            <select
-                                className="form-input"
-                                style={{ fontSize: '0.75rem', padding: '4px' }}
-                                value={filters.faculty_id}
-                                onChange={(e) => handleFilterChange('faculty_id', e.target.value)}
-                            >
-                                <option value="">All Faculty</option>
-                                {filterData.faculties.map(f => <option key={f.id} value={f.id}>{f.User?.name || f.id}</option>)}
-                            </select>
-                            <select
-                                className="form-input"
-                                style={{ fontSize: '0.75rem', padding: '4px' }}
-                                value={filters.subject_id}
-                                onChange={(e) => handleFilterChange('subject_id', e.target.value)}
-                            >
-                                <option value="">All Subjects</option>
-                                {filterData.subjects.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-                            </select>
-                            <select
-                                className="form-input filter-full"
-                                style={{ fontSize: '0.75rem', padding: '4px' }}
-                                value={filters.parent_id}
-                                onChange={(e) => handleFilterChange('parent_id', e.target.value)}
-                            >
-                                <option value="">Filter by Parent</option>
-                                {filterData.parents.map(p => <option key={p.id} value={p.id}>{p.User?.name || p.name || 'Parent'}</option>)}
-                            </select>
-                        </div>
                     )}
+                    <h3>
+                        <span style={{ fontSize: '1.4rem' }}>💬</span> Academic Chat
+                    </h3>
+                    <p>Connect with your faculty and classmates</p>
                 </div>
 
-                {/* Usage Bar — shown ONLY for admin roles when limit applies */}
-                {chatUsage && !chatUsage.unlimited && ['admin', 'manager', 'owner'].includes(user?.role) && (
-                    <div className="chat-usage-bar-wrapper">
-                        <div className="chat-usage-bar-label">
-                            <span>💬 Messages this month</span>
-                            <span>{chatUsage.used} / {chatUsage.limit}</span>
-                        </div>
-                        <div className="chat-usage-bar-track">
-                            <div
-                                className={`chat-usage-bar-fill${chatUsage.percent >= 100 ? ' danger' : chatUsage.percent >= 80 ? ' warning' : ''}`}
-                                style={{ width: `${Math.min(100, chatUsage.percent || 0)}%` }}
-                            />
-                        </div>
+                {/* Admin Filters UI */}
+                {(user?.role === "admin" || user?.role === "manager" || user?.role === "owner") && (
+                    <div className="chat-filters-card">
+                        <h4 
+                            onClick={() => setShowFilters(!showFilters)}
+                            style={{ margin: showFilters ? '0 0 12px 0' : '0', fontSize: 14, color: '#111827', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}
+                        >
+                            Filters <span style={{ color: '#6b7280' }}>{showFilters ? '▴' : '▾'}</span>
+                        </h4>
+                        {showFilters && (
+                            <div className="chat-filters">
+                                <select className="form-input" value={filters.type} onChange={(e) => handleFilterChange('type', e.target.value)}>
+                                    <option value="">All Types</option>
+                                    <option value="group">Group Rooms</option>
+                                    <option value="direct">Direct Chats</option>
+                                </select>
+                                <select className="form-input" value={filters.class_id} onChange={(e) => handleFilterChange('class_id', e.target.value)}>
+                                    <option value="">All Classes</option>
+                                    {filterData.classes.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                                </select>
+                                <select className="form-input" value={filters.faculty_id} onChange={(e) => handleFilterChange('faculty_id', e.target.value)}>
+                                    <option value="">All Faculty</option>
+                                    {filterData.faculties.map(f => <option key={f.id} value={f.id}>{f.User?.name || f.id}</option>)}
+                                </select>
+                                <select className="form-input" value={filters.subject_id} onChange={(e) => handleFilterChange('subject_id', e.target.value)}>
+                                    <option value="">All Subjects</option>
+                                    {filterData.subjects.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                                </select>
+                                <select className="form-input" value={filters.parent_id} onChange={(e) => handleFilterChange('parent_id', e.target.value)}>
+                                    <option value="">Filter by Parent</option>
+                                    {filterData.parents.map(p => <option key={p.id} value={p.id}>{p.User?.name || p.name || 'Parent'}</option>)}
+                                </select>
+                            </div>
+                        )}
                     </div>
                 )}
 
-                <div className="chat-room-list">
+                <div className="chat-room-list-container">
                     {loadingData ? (
                         <div style={{ padding: 20 }}><LoadingSpinner /></div>
                     ) : (
-                        <>
-                            {/* --- FOR STUDENTS AND PARENTS: Direct Chats --- */}
-                            {(user?.role === "student" || user?.role === "parent") && (
-                                <div style={{ marginBottom: '1.5rem' }}>
-                                    <div style={{ padding: '8px 16px', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', color: 'var(--text-secondary)' }}>
-                                        Direct Chats (1-on-1)
-                                    </div>
-                                    {buildStudentSubjectItems().map((room, idx) => {
-                                        const displayName = getRoomLabel(room);
-                                        const isActive = activeRoom?.subject_id === room.subject_id && activeRoom?.type === 'direct';
-                                        
-                                        return (
-                                        <div
-                                            key={room.id || `pending-${idx}`}
-                                            className={`chat-room-item ${isActive ? "active" : ""}`}
-                                            onClick={() => selectRoom(room)}
-                                        >
-                                            <div className="room-avatar direct-room-avatar" style={{ background: 'var(--primary-light)', color: 'var(--primary)' }}>D</div>
-                                            <div className="room-details">
-                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                                    <h4 className="room-name">{displayName}</h4>
-                                                    {room.unread_count > 0 && (
-                                                        <span className="msg-count-badge">{room.unread_count}</span>
-                                                    )}
-                                                </div>
-                                                <p className="room-subtitle">1-on-1 with Faculty</p>
-                                            </div>
-                                        </div>
-                                    )})}
-                                    {buildStudentSubjectItems().length === 0 && (
-                                        <div style={{ padding: '12px 16px', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>You are not enrolled in any subjects.</div>
-                                    )}
-                                </div>
-                            )}
-
-                            {/* --- Group Rooms List --- */}
-                            <div style={{ padding: '8px 16px', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', color: 'var(--text-secondary)' }}>
-                                {(user?.role === "student" || user?.role === "parent") ? "Group Rooms" : "All Rooms"}
+                        <div className="chat-room-list">
+                            <div className="chat-list-section-header">
+                                <span>Chats</span>
                             </div>
-                            {rooms.filter(r => (user?.role === "student" || user?.role === "parent") ? r.type !== "direct" : true).map(room => (
+                            
+                            {(user?.role === "student" || user?.role === "parent") && buildStudentSubjectItems().map((room, idx) => {
+                                const displayName = getRoomLabel(room);
+                                const isActive = activeRoom?.subject_id === room.subject_id && activeRoom?.type === 'direct';
+                                const timeStr = room.last_message_at ? new Date(room.last_message_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '';
+                                
+                                // Color logic based on index or name
+                                const colors = ['purple', 'blue', 'green', 'orange'];
+                                const colorClass = colors[idx % colors.length];
+
+                                return (
+                                <div
+                                    key={room.id || `pending-${idx}`}
+                                    className={`chat-room-item ${isActive ? "active" : ""}`}
+                                    onClick={() => selectRoom(room)}
+                                >
+                                    <div className={`room-avatar ${colorClass}`}>
+                                        {displayName.charAt(0).toUpperCase()}
+                                    </div>
+                                    <div className="room-details">
+                                        <div className="room-details-top">
+                                            <h4 className="room-name">{displayName}</h4>
+                                            <span className="room-time">{timeStr}</span>
+                                        </div>
+                                        <div className="room-details-bottom">
+                                            <p className="room-subtitle">
+                                                {room.last_message_text ? room.last_message_text : "1-on-1 with Faculty"}
+                                            </p>
+                                            {room.unread_count > 0 && (
+                                                <span className="msg-count-badge red">{room.unread_count}</span>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            )})}
+
+                            <div className="section-label">
+                                GROUP ROOMS
+                            </div>
+                            
+                            {rooms.filter(r => (user?.role === "student" || user?.role === "parent") ? r.type !== "direct" : true).map((room, idx) => {
+                                const timeStr = room.last_message_at ? (() => {
+                                    const d = new Date(room.last_message_at);
+                                    const now = new Date();
+                                    if(d.toDateString() === now.toDateString()) return d.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                                    now.setDate(now.getDate() - 1);
+                                    if(d.toDateString() === now.toDateString()) return 'Yesterday';
+                                    return Math.floor((new Date() - d) / (1000*60*60*24)) + ' days ago';
+                                })() : '';
+
+                                const colors = ['blue', 'purple', 'green', 'orange'];
+                                const colorClass = colors[idx % colors.length];
+
+                                return (
                                 <div
                                     key={room.id}
                                     className={`chat-room-item ${activeRoom?.id === room.id ? "active" : ""}`}
                                     onClick={() => selectRoom(room)}
-                                    style={{ position: 'relative' }}
                                 >
-                                    <div className="room-avatar">{getRoomInitial(room)}</div>
+                                    <div className={`room-avatar ${colorClass}`}>
+                                        {getRoomInitial(room)}
+                                    </div>
                                     <div className="room-details">
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                        <div className="room-details-top">
                                             <h4 className="room-name">{getRoomLabel(room)}</h4>
+                                            <span className="room-time">{timeStr}</span>
+                                        </div>
+                                        <div className="room-details-bottom">
+                                            <p className="room-subtitle">
+                                                {room.last_message_text ? room.last_message_text : getRoomSubLabel(room)}
+                                            </p>
                                             {room.unread_count > 0 && (
-                                                <span className="msg-count-badge">{room.unread_count}</span>
+                                                <span className="msg-count-badge green">{room.unread_count}</span>
                                             )}
                                         </div>
-                                        <p className="room-subtitle">{getRoomSubLabel(room)}</p>
                                     </div>
-                                    {(user?.role === "faculty" && room.faculty_id && room.type !== "direct") && (
-                                        <button
-                                            className="btn btn-secondary"
-                                            style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', padding: '2px 8px', fontSize: '0.8rem', background: 'transparent', border: 'none', color: 'var(--danger)' }}
-                                            onClick={(e) => handleDeleteRoom(room.id, e)}
-                                            title="Delete Room"
-                                        >
-                                            🗑️
-                                        </button>
-                                    )}
                                 </div>
-                            ))}
+                            )})}
 
                             {rooms.length === 0 && (user?.role !== "student" && user?.role !== "parent") && (
                                 <div className="chat-no-rooms">
@@ -653,7 +630,7 @@ function ChatApp() {
                                     <p>No rooms available.</p>
                                 </div>
                             )}
-                        </>
+                        </div>
                     )}
                 </div>
             </div>
@@ -663,40 +640,21 @@ function ChatApp() {
                 {activeRoom ? (
                     <>
                         <div className="chat-header">
-                            {/* Mobile back button — goes back to room list */}
                             <button
                                 className="chat-mobile-back"
                                 onClick={handleMobileBack}
-                                style={{ display: 'none' }}  /* shown via CSS @media */
-                                aria-label="Back to rooms"
+                                style={{ display: 'none' }} 
                             >
                                 ← Back
                             </button>
-                            <div style={{ flex: 1, minWidth: 0 }}>
-                                <h3 style={{ margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                    {getRoomLabel(activeRoom)}
-                                </h3>
-                                <p style={{ margin: "2px 0 0", fontSize: "0.82rem", color: "var(--text-secondary)" }}>
-                                    {getRoomSubLabel(activeRoom)}
-                                    <span className={`badge badge-${activeRoom.type === 'direct' ? 'primary' : 'info'}`} style={{ marginLeft: 8, fontSize: "0.7rem" }}>
-                                        {activeRoom.type}
-                                    </span>
-                                </p>
+                            <div className="chat-header-info">
+                                <h3>{getRoomLabel(activeRoom)}</h3>
+                                <span className="chat-header-pill">
+                                    {activeRoom.type === 'direct' ? 'Direct Chat' : 'Group Chat'}
+                                </span>
                             </div>
-                            <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
-                                {isReadOnly && (
-                                    <span className="monitor-badge">👁️ Monitor Mode</span>
-                                )}
-                                {/* Toggle Participants Button — hidden on mobile */}
-                                {activeRoom.type !== "direct" && user?.role !== "student" && user?.role !== "parent" && (
-                                    <button
-                                        className="btn btn-secondary"
-                                        style={{ padding: "6px 12px", fontSize: "0.82rem" }}
-                                        onClick={() => setShowParticipants(!showParticipants)}
-                                    >
-                                        👥
-                                    </button>
-                                )}
+                            <div className="chat-header-actions" style={{ marginRight: isReadOnly ? '260px' : '0' }}>
+                                <div className="chat-header-icon" onClick={() => setShowParticipants(!showParticipants)}>ⓘ</div>
                             </div>
                         </div>
 
@@ -713,7 +671,7 @@ function ChatApp() {
                         )}
 
                         <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
-                            <div className="chat-messages" style={{ flex: 1 }}>
+                            <div className="chat-messages">
                                 {!activeRoom.id ? (
                                     <div className="no-messages">
                                         <div style={{ fontSize: "2rem", marginBottom: "1rem" }}>👋</div>
@@ -732,13 +690,9 @@ function ChatApp() {
                                                     onClick={() => loadMessages(activeRoom.id, true)}
                                                     disabled={loadingOlder}
                                                     style={{
-                                                        background: "var(--surface)",
-                                                        border: "1px solid var(--border)",
-                                                        padding: "5px 15px",
-                                                        borderRadius: "15px",
-                                                        cursor: "pointer",
-                                                        color: "var(--text-secondary)",
-                                                        fontSize: "0.85rem"
+                                                        background: "#ffffff", border: "1px solid #e5e7eb", padding: "6px 16px",
+                                                        borderRadius: "16px", cursor: "pointer", color: "#6b7280", fontSize: "0.85rem",
+                                                        fontWeight: 600
                                                     }}
                                                 >
                                                     {loadingOlder ? "Loading..." : "Load older messages"}
@@ -752,17 +706,48 @@ function ChatApp() {
                                         const msgTime = new Date(msg.created_at).toLocaleTimeString([], {
                                             hour: "2-digit", minute: "2-digit"
                                         });
+                                        const msgDate = new Date(msg.created_at).toDateString();
+                                        const showDate = idx === 0 || new Date(messages[idx - 1].created_at).toDateString() !== msgDate;
+
+                                        let isRead = false;
+                                        if (isMe && participants && participants.length > 0) {
+                                            const otherParticipants = participants.filter(p => Number(p.user_id) !== myUserId);
+                                            // Check if faculty read it, otherwise check if any participant read it
+                                            const facultyParticipants = otherParticipants.filter(p => p.role === "faculty");
+                                            const targetParticipants = facultyParticipants.length > 0 ? facultyParticipants : otherParticipants;
+                                            
+                                            isRead = targetParticipants.some(p => {
+                                                if (!p.last_read_at) return false;
+                                                return new Date(p.last_read_at) >= new Date(msg.created_at);
+                                            });
+                                        }
 
                                         return (
-                                            <div key={msg.id || idx} className={`chat-message ${isMe ? "sent" : "received"}`}>
-                                                {!isMe && !msg.sender?.is_hidden_student && (
-                                                    <div className="msg-sender">
-                                                        {senderName}
-                                                        <span className={`role-badge role-${msg.sender_role}`}>{msg.sender_role}</span>
+                                            <div key={msg.id || idx}>
+                                                {showDate && (
+                                                    <div className="date-divider">
+                                                        <span>{msgDate === new Date().toDateString() ? 'Today' : msgDate}</span>
                                                     </div>
                                                 )}
-                                                <div className="msg-bubble">{msg.message}</div>
-                                                <div className="msg-time">{msgTime}</div>
+                                                <div className={`chat-message-container ${isMe ? "sent" : "received"}`}>
+                                                    {!isMe && (
+                                                        <div className="chat-message-avatar">
+                                                            {senderName.charAt(0).toUpperCase()}
+                                                        </div>
+                                                    )}
+                                                    <div className="chat-message-content" style={{ display: 'flex', flexDirection: 'column', alignItems: isMe ? 'flex-end' : 'flex-start' }}>
+                                                        {isReadOnly && !isMe && (
+                                                            <span style={{ fontSize: '0.7rem', color: '#64748b', marginBottom: '2px', marginLeft: '4px', fontWeight: 600 }}>{senderName}</span>
+                                                        )}
+                                                        <div className="msg-bubble">
+                                                            {msg.message}
+                                                        </div>
+                                                        <div className="msg-footer">
+                                                            <span>{msgTime}</span>
+                                                            {isMe && <span className={`read-receipts ${isRead ? 'read' : 'delivered'}`}>✔✔</span>}
+                                                        </div>
+                                                    </div>
+                                                </div>
                                             </div>
                                         );
                                     })}
@@ -775,98 +760,117 @@ function ChatApp() {
                             {showParticipants && activeRoom.id && (
                                 <div className="chat-participants-panel">
                                     <div className="participants-header">
-                                        <span>👥 Room Members</span>
+                                        <h3>Participants ({participants.length})</h3>
                                         <button className="close-participants" onClick={() => setShowParticipants(false)}>✕</button>
                                     </div>
-
-                                    {facultyParticipants.length > 0 && (
-                                        <div className="participants-section">
-                                            <div className="participants-section-title">👨‍🏫 Faculty ({facultyParticipants.length})</div>
-                                            {facultyParticipants.map(p => (
-                                                <div key={p.id} className="participant-item">
-                                                    <div className="participant-avatar faculty-avatar">{(p.User?.name || "?")[0].toUpperCase()}</div>
-                                                    <div className="participant-name">
-                                                        {p.User?.name || "Unknown"}
-                                                        {Number(p.user_id) === myUserId && <span style={{ fontSize: "0.7rem", color: "#6366f1", marginLeft: 4 }}>(you)</span>}
-                                                    </div>
+                                    <div className="participants-content">
+                                        {facultyParticipants.length > 0 && (
+                                            <div>
+                                                <div className="participants-section-title">
+                                                    <span>🏛️</span> FACULTY ({facultyParticipants.length})
                                                 </div>
-                                            ))}
-                                        </div>
-                                    )}
-
-                                    {studentParticipants.length > 0 && (
-                                        <div className="participants-section">
-                                            <div className="participants-section-title">👩‍🎓 Students ({studentParticipants.length})</div>
-                                            {(user?.role !== "student" && user?.role !== "parent") && studentParticipants.map(p => (
-                                                <div key={p.id} className="participant-item">
-                                                    <div className="participant-avatar student-avatar">{(p.User?.name || "?")[0].toUpperCase()}</div>
-                                                    <div className="participant-name">
-                                                        {p.User?.name || "Unknown"}
-                                                        {Number(p.user_id) === myUserId && <span style={{ fontSize: "0.7rem", color: "#10b981", marginLeft: 4 }}>(you)</span>}
+                                                {facultyParticipants.map(p => (
+                                                    <div key={p.id} className="participant-item">
+                                                        <div className="participant-avatar">
+                                                            {(p.User?.name || "?")[0].toUpperCase()}
+                                                        </div>
+                                                        <div className="participant-info">
+                                                            <div className="participant-name">
+                                                                {p.User?.name || "Unknown"} {Number(p.user_id) === myUserId && "(you)"}
+                                                            </div>
+                                                            <div className="participant-role">Faculty</div>
+                                                        </div>
+                                                        <div className="status-dot online"></div>
                                                     </div>
+                                                ))}
+                                            </div>
+                                        )}
+
+                                        {studentParticipants.length > 0 && (
+                                            <div style={{ marginTop: 24 }}>
+                                                <div className="participants-section-title">
+                                                    <span>🎓</span> STUDENTS ({studentParticipants.length})
                                                 </div>
-                                            ))}
-                                        </div>
-                                    )}
+                                                {(user?.role !== "student" && user?.role !== "parent") && studentParticipants.map(p => (
+                                                    <div key={p.id} className="participant-item">
+                                                        <div className="participant-avatar student">
+                                                            {(p.User?.name || "?")[0].toUpperCase()}
+                                                        </div>
+                                                        <div className="participant-info">
+                                                            <div className="participant-name">
+                                                                {p.User?.name || "Unknown"} {Number(p.user_id) === myUserId && "(you)"}
+                                                            </div>
+                                                            <div className="participant-role">Student</div>
+                                                        </div>
+                                                        <div className="status-dot offline"></div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
                             )}
                         </div>
 
                         {/* Input Area */}
                         {isReadOnly ? (
-                            <div className="chat-monitor-banner">👁️ You are viewing this chat as Admin — read only</div>
-                        ) : chatUsage && !chatUsage.unlimited && chatUsage.percent >= 100 ? (
-                            ['admin', 'manager', 'owner'].includes(user?.role) ? (
-                                <div className="chat-limit-overlay">
-                                    <div className="chat-limit-icon">🔒</div>
-                                    <h3 className="chat-limit-title">Monthly Message Limit Reached</h3>
-                                    <p className="chat-limit-subtitle">
-                                        Your institute has used all <strong>{chatUsage.limit} messages</strong> for this month.
-                                        Resets on the 1st of next month.
-                                    </p>
-                                    <div className="chat-limit-progress">
-                                        <div className="chat-limit-progress-header">
-                                            <span>Usage</span>
-                                            <span>{chatUsage.used} / {chatUsage.limit}</span>
-                                        </div>
-                                        <div className="chat-limit-progress-bar">
-                                            <div className="chat-limit-progress-fill" />
-                                        </div>
-                                    </div>
-                                    <div className="chat-limit-cta">⬆️ Contact Admin to Upgrade</div>
-                                    <p className="chat-limit-reset">Limit resets on the 1st of each month</p>
-                                </div>
-                            ) : (
-                                <div className="chat-limit-overlay" style={{ background: "var(--bg-secondary)", padding: "1.5rem" }}>
-                                    <div className="chat-limit-icon" style={{ fontSize: "2rem", marginBottom: "0.5rem" }}>🔒</div>
-                                    <h3 className="chat-limit-title" style={{ fontSize: "1.2rem", color: "var(--text-primary)" }}>Messaging Disabled</h3>
-                                    <p className="chat-limit-subtitle" style={{ fontSize: "0.9rem", color: "var(--text-secondary)", margin: 0 }}>
-                                        Messaging is currently disabled. Please contact your institute administrator.
-                                    </p>
-                                </div>
-                            )
+                            <div className="chat-monitor-banner" style={{ background: '#fef3c7', color: '#92400e', fontSize: 12, fontWeight: 600, padding: '12px', textAlign: 'center' }}>
+                                👁️ You are viewing this chat as Admin — read only
+                            </div>
                         ) : (
-                            <form className="chat-input-area" onSubmit={sendMessage}>
-                                <input
-                                    type="text"
-                                    className="chat-input"
-                                    placeholder="Type a message… (Enter to send)"
-                                    value={newMessage}
-                                    onChange={e => setNewMessage(e.target.value)}
-                                    disabled={sending}
-                                    autoFocus
-                                />
-                                <button type="submit" className="btn btn-primary chat-send-btn" disabled={!newMessage.trim() || sending}>
-                                    {sending ? "⏳" : "Send ➤"}
-                                </button>
+                            <form className="chat-input-area" onSubmit={sendMessage} style={{ position: 'relative' }}>
+                                {showEmojiPicker && (
+                                    <div style={{ position: 'absolute', bottom: '100%', right: '20px', zIndex: 100 }}>
+                                        <EmojiPicker 
+                                            onEmojiClick={(emojiData) => {
+                                                setNewMessage(prev => prev + emojiData.emoji);
+                                                setShowEmojiPicker(false);
+                                            }}
+                                            width={300}
+                                            height={400}
+                                        />
+                                    </div>
+                                )}
+                                <div className="chat-input-wrapper">
+                                    <textarea
+                                        className="chat-input"
+                                        placeholder="Type your message..."
+                                        value={newMessage}
+                                        onChange={e => {
+                                            setNewMessage(e.target.value);
+                                            e.target.style.height = 'auto';
+                                            e.target.style.height = (e.target.scrollHeight < 100 ? e.target.scrollHeight : 100) + 'px';
+                                        }}
+                                        onKeyDown={e => {
+                                            if (e.key === 'Enter' && !e.shiftKey) {
+                                                e.preventDefault();
+                                                if (newMessage.trim() && !sending) {
+                                                    sendMessage(e);
+                                                }
+                                            }
+                                        }}
+                                        disabled={sending}
+                                        autoFocus
+                                        rows={1}
+                                        style={{ resize: 'none', minHeight: '24px', maxHeight: '100px', overflowY: 'auto' }}
+                                    />
+                                    <div className="chat-input-actions" style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                                        <span onClick={() => setNewMessage(prev => prev + '\n')} title="Next line" style={{ cursor: 'pointer', fontSize: '1.2rem', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>↵</span>
+                                        <span onClick={() => setShowEmojiPicker(!showEmojiPicker)} title="Add Emoji" style={{ cursor: 'pointer', fontSize: '1.2rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>😀</span>
+                                        <span style={{ fontSize: '0.8rem' }}>{newMessage.length} / 2000</span>
+                                    </div>
+                                    <button type="submit" className="chat-send-btn" disabled={!newMessage.trim() || sending}>
+                                        {sending ? "⏳" : "➤"}
+                                    </button>
+                                </div>
                             </form>
                         )}
                     </>
                 ) : (
                     <div className="chat-empty-state">
-                        <div className="chat-empty-icon">💬</div>
-                        <h2>Select a chat room</h2>
-                        <p>Select a room or direct chat from the list to start messaging.</p>
+                        <div style={{ fontSize: "3rem", opacity: 0.5, marginBottom: 16 }}>💬</div>
+                        <h2 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 700, color: '#111827' }}>Select a chat room</h2>
+                        <p style={{ margin: '8px 0 0', fontSize: '0.9rem' }}>Select a room or direct chat from the list to start messaging.</p>
                     </div>
                 )}
             </div>
@@ -876,7 +880,7 @@ function ChatApp() {
                 <div className="modal-overlay">
                     <div className="modal-content" style={{ maxWidth: 450 }}>
                         <h2>Create Group Room</h2>
-                        <p style={{ color: "var(--text-secondary)", marginBottom: 16 }}>Create a designated discussion room for your students.</p>
+                        <p style={{ color: "#6b7280", marginBottom: 16 }}>Create a designated discussion room for your students.</p>
                         <form onSubmit={createRoom}>
                             <div className="form-group">
                                 <label className="form-label">Room Name</label>
@@ -912,11 +916,10 @@ function ChatApp() {
                                     <option value="Boys">Boys Only</option>
                                     <option value="Girls">Girls Only</option>
                                 </select>
-                                <small style={{ color: "var(--text-secondary)" }}>Only students of this gender will see and join this room. Message senders are kept anonymous (e.g. "Male Student").</small>
                             </div>
-                            <div className="modal-actions">
-                                <button type="button" className="btn btn-secondary" onClick={() => setShowCreateModal(false)}>Cancel</button>
-                                <button type="submit" className="btn btn-primary">Create Room</button>
+                            <div className="modal-actions" style={{ marginTop: 20, display: 'flex', justifyContent: 'flex-end', gap: 12 }}>
+                                <button type="button" style={{ background: '#f3f4f6', border: 'none', padding: '8px 16px', borderRadius: 8, cursor: 'pointer', fontWeight: 600 }} onClick={() => setShowCreateModal(false)}>Cancel</button>
+                                <button type="submit" style={{ background: '#7e22ce', color: '#fff', border: 'none', padding: '8px 16px', borderRadius: 8, cursor: 'pointer', fontWeight: 600 }}>Create Room</button>
                             </div>
                         </form>
                     </div>

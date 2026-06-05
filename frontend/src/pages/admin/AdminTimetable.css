@@ -1,0 +1,424 @@
+/* AdminTimetable.css */
+.ap-timetable-wrapper {
+    padding: 24px 32px;
+    background: #F8FAFC;
+    min-height: calc(100vh - 60px);
+    font-family: 'Inter', sans-serif;
+    padding-top: 48px; /* Offset for global nav */
+}
+
+.ap-tt-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+    background: white;
+    padding: 20px 24px;
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.ap-tt-title-group {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.ap-tt-icon-bg {
+    background: #F3E8FF;
+    color: #7E22CE;
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.ap-tt-title {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #1E293B;
+}
+
+.ap-tt-subtitle {
+    margin: 4px 0 0 0;
+    font-size: 0.875rem;
+    color: #64748B;
+}
+
+.ap-tt-actions {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+}
+
+.ap-btn-white {
+    background: white;
+    border: 1px solid #E2E8F0;
+    color: #475569;
+    padding: 10px 18px;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 0.875rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.2s;
+}
+
+.ap-btn-white:hover {
+    background: #F8FAFC;
+    border-color: #CBD5E1;
+}
+
+.ap-btn-purple {
+    background: #6366F1;
+    color: white;
+    border: none;
+    padding: 10px 18px;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 0.875rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.2s;
+}
+
+.ap-btn-purple:hover {
+    background: #4F46E5;
+}
+
+.ap-tt-filters {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: white;
+    padding: 16px 24px;
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    margin-bottom: 24px;
+}
+
+.ap-tt-filter-left {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.ap-tt-filter-label {
+    font-weight: 600;
+    color: #334155;
+    font-size: 0.9rem;
+}
+
+.ap-tt-select {
+    padding: 10px 16px;
+    border: 1px solid #E2E8F0;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    color: #1E293B;
+    background: white;
+    min-width: 250px;
+    outline: none;
+    cursor: pointer;
+}
+
+.ap-tt-select:focus {
+    border-color: #8B5CF6;
+    box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+}
+
+.ap-tt-grid-card {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    padding: 24px;
+    overflow-x: auto;
+}
+
+.ap-tt-table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 900px;
+}
+
+.ap-tt-table th {
+    padding: 16px;
+    text-align: center;
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: #475569;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-bottom: 2px solid #F1F5F9;
+}
+
+.ap-tt-table td {
+    padding: 16px;
+    border-bottom: 1px dashed #E2E8F0;
+    border-right: 1px dashed #E2E8F0;
+    vertical-align: top;
+}
+.ap-tt-table td:last-child {
+    border-right: none;
+}
+.ap-tt-table tr:last-child td {
+    border-bottom: none;
+}
+
+.ap-tt-time-col {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+}
+
+.ap-tt-period-name {
+    font-weight: 700;
+    color: #1E293B;
+    font-size: 0.95rem;
+}
+
+.ap-tt-time-range {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: #64748B;
+    font-size: 0.85rem;
+}
+.ap-tt-time-range svg {
+    color: #8B5CF6;
+}
+
+.ap-tt-cell {
+    border-radius: 8px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    min-height: 100px;
+    position: relative;
+    transition: transform 0.2s;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+}
+
+.ap-tt-cell:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+}
+
+.ap-tt-cell-empty {
+    border: 1px dashed #CBD5E1;
+    color: #94A3B8;
+    background: transparent;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    font-size: 0.85rem;
+    border-radius: 8px;
+    padding: 12px;
+    min-height: 100px;
+}
+
+.ap-tt-subject {
+    font-weight: 700;
+    font-size: 0.95rem;
+    margin-bottom: 6px;
+}
+
+.ap-tt-faculty {
+    font-size: 0.8rem;
+    color: #475569;
+    margin-bottom: 8px;
+}
+
+.ap-tt-room {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #475569;
+}
+
+.ap-tt-room-icon {
+    width: 6px;
+    height: 10px;
+    border-radius: 2px;
+    background: #B45309; /* Fixed brown color for all cards */
+}
+
+.ap-tt-footer-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #64748B;
+    font-size: 0.85rem;
+    margin-top: 24px;
+}
+
+.ap-tt-delete-btn {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    background: white;
+    border: none;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #EF4444;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.2s;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+}
+
+.ap-tt-cell:hover .ap-tt-delete-btn {
+    opacity: 1;
+}
+
+/* Color Themes for Subjects */
+.tt-theme-0 { background: #FFF7ED; }
+.tt-theme-0 .ap-tt-subject { color: #D97706; } /* Orange */
+
+.tt-theme-1 { background: #FAF5FF; }
+.tt-theme-1 .ap-tt-subject { color: #9333EA; } /* Purple */
+
+.tt-theme-2 { background: #F0FDF4; }
+.tt-theme-2 .ap-tt-subject { color: #16A34A; } /* Green */
+
+.tt-theme-3 { background: #EFF6FF; }
+.tt-theme-3 .ap-tt-subject { color: #2563EB; } /* Blue */
+
+.tt-theme-4 { background: #FEF2F2; }
+.tt-theme-4 .ap-tt-subject { color: #DC2626; } /* Red */
+
+.tt-theme-5 { background: #FFFBEB; }
+.tt-theme-5 .ap-tt-subject { color: #D97706; } /* Yellow/Gold */
+
+.tt-theme-6 { background: #F8FAFC; }
+.tt-theme-6 .ap-tt-subject { color: #475569; } /* Slate */
+
+/* ------------------- MODAL STYLES ------------------- */
+.tt-modal-overlay {
+    position: fixed; top: 0; left: 0; right: 0; bottom: 0; 
+    background: rgba(15, 23, 42, 0.4); backdrop-filter: blur(4px); 
+    z-index: 1000;
+    display: flex; justify-content: center; align-items: center; padding: 20px;
+}
+.tt-modal-content {
+    background: white; border-radius: 16px; width: 100%; max-width: 500px;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    display: flex; flex-direction: column; max-height: 90vh;
+    animation: ap-slide-up 0.3s ease-out;
+}
+.tt-modal-header {
+    padding: 24px; border-bottom: 1px solid #E2E8F0; display: flex; justify-content: space-between; align-items: flex-start;
+    flex-shrink: 0;
+}
+.tt-modal-header-left { display: flex; gap: 16px; align-items: center; }
+.tt-modal-icon { width: 48px; height: 48px; border-radius: 12px; background: #F3E8FF; color: #7E22CE; display: flex; align-items: center; justify-content: center; }
+.tt-modal-title { margin: 0; font-size: 1.25rem; font-weight: 700; color: #1E293B; }
+.tt-modal-subtitle { margin: 4px 0 0; font-size: 0.875rem; color: #64748B; }
+.tt-modal-close { background: none; border: none; color: #94A3B8; cursor: pointer; display: flex; padding: 4px; transition: 0.2s; }
+.tt-modal-close:hover { color: #475569; }
+.tt-modal-body { padding: 24px; overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 24px; }
+.tt-modal-footer { padding: 16px 24px; border-top: 1px solid #E2E8F0; display: flex; justify-content: flex-end; gap: 12px; background: #F8FAFC; border-radius: 0 0 16px 16px; flex-shrink: 0; }
+
+.tt-section-title { font-size: 0.95rem; font-weight: 700; color: #1E293B; margin-bottom: 12px; }
+.tt-slot-list { display: flex; flex-direction: column; gap: 8px; }
+.tt-slot-item { border: 1px solid #E2E8F0; border-radius: 8px; padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; background: white; }
+.tt-slot-item-left { display: flex; align-items: center; gap: 12px; font-weight: 600; color: #334155; font-size: 0.9rem; }
+.tt-slot-item-left svg { color: #94A3B8; }
+.tt-btn-delete-slot { color: #EF4444; background: none; border: none; cursor: pointer; display: flex; align-items: center; padding: 4px; opacity: 0.7; transition: 0.2s; }
+.tt-btn-delete-slot:hover { opacity: 1; }
+
+.tt-form-group { display: flex; flex-direction: column; gap: 8px; }
+.tt-form-label { font-size: 0.875rem; font-weight: 600; color: #334155; }
+.tt-form-label span { color: #EF4444; }
+.tt-input { width: 100%; padding: 10px 16px; border: 1px solid #E2E8F0; border-radius: 8px; font-size: 0.95rem; color: #1E293B; outline: none; transition: 0.2s; background: white; }
+.tt-input:focus { border-color: #8B5CF6; box-shadow: 0 0 0 3px rgba(139,92,246,0.1); }
+select.tt-input { cursor: pointer; }
+
+/* ------------------- PRINT STYLES ------------------- */
+.ap-print-only-header {
+    display: none;
+}
+
+@media print {
+    @page {
+        size: landscape;
+        margin: 10mm;
+    }
+
+    body * {
+        visibility: hidden;
+    }
+    
+    .ap-printable-area {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        visibility: visible;
+    }
+    
+    .ap-printable-area * {
+        visibility: visible;
+    }
+
+    .ap-print-only-header {
+        display: block !important;
+        margin-bottom: 20px;
+        text-align: center;
+        color: #1E293B;
+        font-size: 1.4rem;
+        font-weight: 700;
+    }
+
+    .ap-tt-grid-card {
+        box-shadow: none !important;
+        border: none !important;
+        padding: 0 !important;
+    }
+    
+    .ap-tt-table {
+        min-width: 100% !important;
+    }
+    
+    .ap-tt-table th, .ap-tt-table td {
+        padding: 8px !important;
+        font-size: 0.75rem !important;
+    }
+    
+    .ap-tt-cell, .ap-tt-cell-empty {
+        padding: 8px !important;
+        min-height: 70px !important;
+    }
+    
+    .ap-tt-subject {
+        font-size: 0.85rem !important;
+        margin-bottom: 4px !important;
+    }
+    
+    .ap-tt-delete-btn {
+        display: none !important;
+    }
+
+    /* Ensure pastel backgrounds and icons print properly */
+    * {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+}

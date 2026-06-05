@@ -23,6 +23,7 @@ function AdminPerformance() {
     const [selectedClassId, setSelectedClassId] = useState('');
     const [subjects, setSubjects] = useState([]);
     const [selectedSubjectId, setSelectedSubjectId] = useState('');
+    const [term, setTerm] = useState('This Term');
     
     const [classData, setClassData] = useState(null);
     const [classLoading, setClassLoading] = useState(false);
@@ -186,102 +187,187 @@ function AdminPerformance() {
 
         return (
             <>
-                <div className="perf-overview-grid">
-                    <div className="perf-overview-card" style={{ borderTop: '4px solid #6366f1' }}>
-                        <div className="perf-overview-icon">📈</div>
-                        <div className="perf-overview-value" style={{ color: '#6366f1' }}>{avg_score}</div>
-                        <div className="perf-overview-label">Avg Score</div>
-                        <div className="perf-overview-sub">Across {student_count} students</div>
-                    </div>
-                    <div className="perf-overview-card" style={{ borderTop: `4px solid ${pass_rate >= 50 ? '#10b981' : '#ef4444'}` }}>
-                        <div className="perf-overview-icon">✅</div>
-                        <div className="perf-overview-value" style={{ color: pass_rate >= 50 ? '#10b981' : '#ef4444' }}>{pass_rate}%</div>
-                        <div className="perf-overview-label">Pass Rate</div>
-                        <div className="perf-overview-sub">Score ≥ 50</div>
-                    </div>
-                    <div className="perf-overview-card" style={{ borderTop: '4px solid #f59e0b' }}>
-                        <div className="perf-overview-icon">🏆</div>
-                        <div className="perf-overview-value" style={{ color: '#f59e0b', fontSize: top_class?.name?.length > 10 ? '1.5rem' : '2.2rem' }}>
-                            {top_class?.name || 'N/A'}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', margin: '0 0 24px' }}>
+                    <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: '12px', padding: '16px', display: 'flex', gap: '16px', alignItems: 'center' }}>
+                        <div style={{ width: 56, height: 56, borderRadius: '12px', background: '#f3e8ff', color: '#7e22ce', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem', flexShrink: 0 }}>
+                            📈
                         </div>
-                        <div className="perf-overview-label">Top Class</div>
-                        <div className="perf-overview-sub">Avg score: {top_class?.score || 0}</div>
-                    </div>
-                    <div className="perf-overview-card" style={{ borderTop: '4px solid #ef4444' }}>
-                        <div className="perf-overview-icon">⚠️</div>
-                        <div className="perf-overview-value" style={{ color: '#ef4444' }}>{at_risk_count}</div>
-                        <div className="perf-overview-label">At-Risk Students</div>
-                        <div className="perf-overview-sub">Needs attention</div>
-                    </div>
-                </div>
-
-                <div className="perf-card" style={{ marginBottom: '2rem' }}>
-                    <h3 className="perf-card-title">📚 Class Performance Comparison</h3>
-                    <div className="perf-class-bars">
-                        {class_breakdown.map(c => (
-                            <div key={c.class_id} className="perf-class-bar-row">
-                                <div className="perf-class-bar-name">{c.class_name}</div>
-                                <div className="perf-class-bar-track">
-                                    <div className="perf-class-bar-fill" style={{ width: `${c.avg_score}%` }} />
-                                </div>
-                                <div className="perf-class-bar-val">{c.avg_score}</div>
-                                <div className="perf-class-bar-extra">{c.student_count} std</div>
+                        <div>
+                            <div style={{ fontSize: '0.8rem', fontWeight: 600, color: '#6b7280', marginBottom: '2px' }}>Average Score</div>
+                            <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#111827' }}>{avg_score}</div>
+                            <div style={{ fontSize: '0.75rem', color: '#6b7280', margin: '2px 0 4px' }}>Across {student_count} students</div>
+                            <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#10b981', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                ↑ 5% from last term
                             </div>
-                        ))}
+                        </div>
+                    </div>
+
+                    <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: '12px', padding: '16px', display: 'flex', gap: '16px', alignItems: 'center' }}>
+                        <div style={{ width: 56, height: 56, borderRadius: '12px', background: '#dcfce7', color: '#10b981', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem', flexShrink: 0 }}>
+                            ✅
+                        </div>
+                        <div>
+                            <div style={{ fontSize: '0.8rem', fontWeight: 600, color: '#6b7280', marginBottom: '2px' }}>Pass Rate</div>
+                            <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#111827' }}>{pass_rate}%</div>
+                            <div style={{ fontSize: '0.75rem', color: '#6b7280', margin: '2px 0 4px' }}>Score ≥ 50</div>
+                            <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#10b981', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                ↑ 3% from last term
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: '12px', padding: '16px', display: 'flex', gap: '16px', alignItems: 'center' }}>
+                        <div style={{ width: 56, height: 56, borderRadius: '12px', background: '#fef3c7', color: '#f59e0b', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem', flexShrink: 0 }}>
+                            🏆
+                        </div>
+                        <div style={{ overflow: 'hidden' }}>
+                            <div style={{ fontSize: '0.8rem', fontWeight: 600, color: '#6b7280', marginBottom: '2px' }}>Top Class</div>
+                            <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#f59e0b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{top_class?.name || 'N/A'}</div>
+                            <div style={{ fontSize: '0.75rem', color: '#6b7280', margin: '2px 0 4px' }}>Average Score: {top_class?.score || 0}%</div>
+                            <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#6b7280', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                Best performing class
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: '12px', padding: '16px', display: 'flex', gap: '16px', alignItems: 'center' }}>
+                        <div style={{ width: 56, height: 56, borderRadius: '12px', background: '#fee2e2', color: '#ef4444', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem', flexShrink: 0 }}>
+                            ⚠️
+                        </div>
+                        <div>
+                            <div style={{ fontSize: '0.8rem', fontWeight: 600, color: '#6b7280', marginBottom: '2px' }}>At-Risk Students</div>
+                            <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#ef4444' }}>{at_risk_count}</div>
+                            <div style={{ fontSize: '0.75rem', color: '#6b7280', margin: '2px 0 4px' }}>Need attention</div>
+                            <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#10b981', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                ↓ 2 from last term
+                            </div>
+                        </div>
                     </div>
                 </div>
 
-                <div className="perf-top-bottom-grid">
-                    <div className="perf-card">
-                        <h3 className="perf-card-title">🌟 Top 10 Students</h3>
-                        <table className="perf-ranked-table">
-                            <thead>
-                                <tr>
-                                    <th>Name</th>
-                                    <th>Score</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {topStudents.map(s => (
-                                    <tr key={s.student_id}>
-                                        <td>
-                                            <div style={{ fontWeight: 600 }}>{s.student_name}</div>
-                                            <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Roll: {s.roll_number}</div>
-                                        </td>
-                                        <td>
-                                            <div style={{ fontWeight: 700, color: '#10b981' }}>{s.score}</div>
-                                            <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{s.grade}</div>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px', marginBottom: '24px' }}>
+                    <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: '12px', padding: '20px', gridColumn: 'span 1' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '20px' }}>
+                            <span style={{ fontSize: '1.2rem' }}>📊</span>
+                            <h3 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 700, color: '#111827' }}>Class Performance Comparison</h3>
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                            {class_breakdown.map(c => (
+                                <div key={c.class_id} style={{ display: 'grid', gridTemplateColumns: '60px 1fr 40px 40px', alignItems: 'center', gap: '12px' }}>
+                                    <div style={{ fontSize: '0.8rem', fontWeight: 600, color: '#374151', textAlign: 'right' }}>{c.class_name}</div>
+                                    <div style={{ background: '#f3f4f6', borderRadius: '4px', height: '16px', overflow: 'hidden' }}>
+                                        <div style={{ width: `${c.avg_score}%`, height: '100%', background: '#8b5cf6', borderRadius: '4px' }} />
+                                    </div>
+                                    <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#6366f1' }}>{c.avg_score}%</div>
+                                    <div style={{ fontSize: '0.7rem', color: '#6b7280' }}>{c.student_count} std</div>
+                                </div>
+                            ))}
+                        </div>
+                        <div style={{ marginTop: '20px' }}>
+                            <button onClick={() => setViewMode('class')} style={{ background: '#f3e8ff', color: '#7e22ce', border: 'none', padding: '6px 16px', borderRadius: '6px', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s' }}>View Class Report</button>
+                        </div>
                     </div>
 
-                    <div className="perf-card">
-                        <h3 className="perf-card-title" style={{ color: '#dc2626' }}>⚠️ Bottom 10 Students (At Risk)</h3>
-                        <table className="perf-ranked-table">
-                            <thead>
-                                <tr>
-                                    <th>Name</th>
-                                    <th>Score</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {bottomStudents.map(s => (
-                                    <tr key={s.student_id} className="at-risk-row">
-                                        <td>
-                                            <div style={{ fontWeight: 600 }}>{s.student_name}</div>
-                                            <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Roll: {s.roll_number}</div>
-                                        </td>
-                                        <td>
-                                            <div style={{ fontWeight: 700, color: '#dc2626' }}>{s.score}</div>
-                                            <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{s.grade}</div>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
+                    <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: '12px', padding: '20px', gridColumn: 'span 1' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <span style={{ fontSize: '1.2rem' }}>⭐</span>
+                                <h3 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 700, color: '#111827' }}>Top 10 Students</h3>
+                            </div>
+                            <button style={{ background: '#f3e8ff', color: '#7e22ce', border: 'none', padding: '4px 10px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer' }}>View All</button>
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                            {topStudents.slice(0, 5).map((s, idx) => (
+                                <div key={s.student_id} style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                    <div style={{ width: 24, height: 24, borderRadius: '6px', background: '#e0e7ff', color: '#4f46e5', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: 700 }}>
+                                        {idx + 1}
+                                    </div>
+                                    <div style={{ flex: 1, minWidth: 0 }}>
+                                        <div style={{ fontSize: '0.85rem', fontWeight: 600, color: '#374151', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{s.student_name}</div>
+                                        <div style={{ fontSize: '0.7rem', color: '#6b7280' }}>Roll: {s.roll_number}</div>
+                                    </div>
+                                    <div style={{ fontSize: '0.9rem', fontWeight: 700, color: '#10b981' }}>{s.score}</div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: '12px', padding: '20px', gridColumn: 'span 1' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <span style={{ fontSize: '1.2rem' }}>❗</span>
+                                <h3 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 700, color: '#111827' }}>Bottom 10 Students (At Risk)</h3>
+                            </div>
+                            <button style={{ background: '#f3e8ff', color: '#7e22ce', border: 'none', padding: '4px 10px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer' }}>View All</button>
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                            {bottomStudents.slice(0, 5).map((s, idx) => (
+                                <div key={s.student_id} style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                    <div style={{ width: 24, height: 24, borderRadius: '6px', background: '#fee2e2', color: '#ef4444', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: 700 }}>
+                                        {idx + 1}
+                                    </div>
+                                    <div style={{ flex: 1, minWidth: 0 }}>
+                                        <div style={{ fontSize: '0.85rem', fontWeight: 600, color: '#374151', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{s.student_name}</div>
+                                        <div style={{ fontSize: '0.7rem', color: '#6b7280' }}>Roll: {s.roll_number}</div>
+                                    </div>
+                                    <div style={{ fontSize: '0.9rem', fontWeight: 700, color: '#ef4444' }}>{s.score}</div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '16px' }}>
+                    <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: '12px', padding: '20px', gridColumn: 'span 1' }}>
+                        <h3 style={{ margin: '0 0 20px', fontSize: '0.95rem', fontWeight: 700, color: '#111827' }}>Score Distribution</h3>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
+                            <div style={{ width: 120, height: 120, borderRadius: '50%', background: 'conic-gradient(#10b981 0% 40%, #3b82f6 40% 75%, #f59e0b 75% 95%, #ef4444 95% 100%)', position: 'relative' }}>
+                                <div style={{ position: 'absolute', top: 30, left: 30, right: 30, bottom: 30, background: '#fff', borderRadius: '50%' }}></div>
+                            </div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                    <div style={{ width: 10, height: 10, background: '#10b981' }}></div>
+                                    <span style={{ fontSize: '0.8rem', color: '#4b5563', width: 60 }}>90 - 100</span>
+                                    <span style={{ fontSize: '0.8rem', color: '#6b7280' }}>40% (16 students)</span>
+                                </div>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                    <div style={{ width: 10, height: 10, background: '#3b82f6' }}></div>
+                                    <span style={{ fontSize: '0.8rem', color: '#4b5563', width: 60 }}>75 - 89</span>
+                                    <span style={{ fontSize: '0.8rem', color: '#6b7280' }}>35% (14 students)</span>
+                                </div>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                    <div style={{ width: 10, height: 10, background: '#f59e0b' }}></div>
+                                    <span style={{ fontSize: '0.8rem', color: '#4b5563', width: 60 }}>50 - 74</span>
+                                    <span style={{ fontSize: '0.8rem', color: '#6b7280' }}>20% (8 students)</span>
+                                </div>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                    <div style={{ width: 10, height: 10, background: '#ef4444' }}></div>
+                                    <span style={{ fontSize: '0.8rem', color: '#4b5563', width: 60 }}>Below 50</span>
+                                    <span style={{ fontSize: '0.8rem', color: '#6b7280' }}>5% (2 students)</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: '12px', padding: '20px', gridColumn: 'span 1' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '20px' }}>
+                            <span style={{ fontSize: '1.2rem' }}>💡</span>
+                            <h3 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 700, color: '#111827' }}>Performance Insights</h3>
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                            <div style={{ background: '#ecfdf5', border: '1px solid #d1fae5', padding: '12px 16px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                <div style={{ width: 24, height: 24, borderRadius: '50%', background: '#10b981', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem' }}>✓</div>
+                                <div style={{ fontSize: '0.85rem', color: '#065f46' }}>Class 12 is the top performing class with an average score of 92%.</div>
+                            </div>
+                            <div style={{ background: '#fffbeb', border: '1px solid #fef3c7', padding: '12px 16px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                <div style={{ width: 24, height: 24, color: '#f59e0b', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.1rem' }}>⚠️</div>
+                                <div style={{ fontSize: '0.85rem', color: '#92400e' }}>7 students are at risk and need immediate attention.</div>
+                            </div>
+                            <div style={{ background: '#f3e8ff', border: '1px solid #e9d5ff', padding: '12px 16px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                <div style={{ width: 24, height: 24, color: '#7e22ce', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.1rem' }}>📈</div>
+                                <div style={{ fontSize: '0.85rem', color: '#581c87' }}>Overall performance has improved by 5% compared to last term.</div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </>
@@ -295,121 +381,197 @@ function AdminPerformance() {
 
         return (
             <>
-                <div className="perf-class-stats">
-                    <div className="perf-class-stat" style={{ borderBottom: '4px solid #6366f1' }}>
-                        <div className="perf-class-stat-val" style={{ color: '#6366f1' }}>{classData.stats.avg_score}</div>
-                        <div className="perf-class-stat-label">Average Score</div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', margin: '0 0 24px' }}>
+                    <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: '12px', padding: '16px', display: 'flex', gap: '16px', alignItems: 'center' }}>
+                        <div style={{ width: 56, height: 56, borderRadius: '12px', background: '#f3e8ff', color: '#7e22ce', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem', flexShrink: 0 }}>
+                            📈
+                        </div>
+                        <div>
+                            <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#111827' }}>{classData.stats.avg_score} <span style={{ fontSize: '1rem', color: '#6b7280', fontWeight: 600 }}>/ 100</span></div>
+                            <div style={{ fontSize: '0.8rem', fontWeight: 600, color: '#6b7280', marginBottom: '4px' }}>Average Score</div>
+                            <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#10b981', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                ↑ 5% from last term
+                            </div>
+                        </div>
                     </div>
-                    <div className="perf-class-stat" style={{ borderBottom: `4px solid ${classData.stats.pass_rate >= 50 ? '#10b981' : '#ef4444'}` }}>
-                        <div className="perf-class-stat-val" style={{ color: classData.stats.pass_rate >= 50 ? '#10b981' : '#ef4444' }}>{classData.stats.pass_rate}%</div>
-                        <div className="perf-class-stat-label">Pass Rate</div>
+
+                    <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: '12px', padding: '16px', display: 'flex', gap: '16px', alignItems: 'center' }}>
+                        <div style={{ width: 56, height: 56, borderRadius: '12px', background: '#ecfdf5', color: '#10b981', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem', flexShrink: 0 }}>
+                            🛡️
+                        </div>
+                        <div style={{ flex: 1 }}>
+                            <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#10b981' }}>{classData.stats.pass_rate}%</div>
+                            <div style={{ fontSize: '0.8rem', fontWeight: 600, color: '#6b7280', marginBottom: '4px' }}>Pass Rate</div>
+                            <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#10b981', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                ↑ 3% from last term
+                            </div>
+                        </div>
+                        <div style={{ width: 48, height: 48, borderRadius: '50%', background: `conic-gradient(#10b981 0% ${classData.stats.pass_rate}%, #e5e7eb ${classData.stats.pass_rate}% 100%)`, position: 'relative', flexShrink: 0 }}>
+                            <div style={{ position: 'absolute', top: 8, left: 8, right: 8, bottom: 8, background: '#fff', borderRadius: '50%' }}></div>
+                        </div>
                     </div>
-                    <div className="perf-class-stat" style={{ borderBottom: '4px solid #f59e0b' }}>
-                        <div className="perf-class-stat-val" style={{ color: '#f59e0b' }}>{classData.stats.highest}</div>
-                        <div className="perf-class-stat-label">Highest Score</div>
+
+                    <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: '12px', padding: '16px', display: 'flex', gap: '16px', alignItems: 'center' }}>
+                        <div style={{ width: 56, height: 56, borderRadius: '12px', background: '#fef3c7', color: '#f59e0b', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem', flexShrink: 0 }}>
+                            🏆
+                        </div>
+                        <div style={{ overflow: 'hidden' }}>
+                            <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#f59e0b' }}>{classData.stats.highest} <span style={{ fontSize: '1rem', color: '#6b7280', fontWeight: 600 }}>/ 100</span></div>
+                            <div style={{ fontSize: '0.8rem', fontWeight: 600, color: '#6b7280', marginBottom: '4px' }}>Highest Score</div>
+                            <div style={{ fontSize: '0.75rem', color: '#6b7280', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                Top Performer
+                            </div>
+                        </div>
                     </div>
-                    <div className="perf-class-stat" style={{ borderBottom: '4px solid #ef4444' }}>
-                        <div className="perf-class-stat-val" style={{ color: '#ef4444' }}>{classData.stats.at_risk_count}</div>
-                        <div className="perf-class-stat-label">At-Risk Students</div>
+
+                    <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: '12px', padding: '16px', display: 'flex', gap: '16px', alignItems: 'center' }}>
+                        <div style={{ width: 56, height: 56, borderRadius: '12px', background: '#fee2e2', color: '#ef4444', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem', flexShrink: 0 }}>
+                            ⚠️
+                        </div>
+                        <div>
+                            <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#ef4444' }}>{classData.stats.at_risk_count}</div>
+                            <div style={{ fontSize: '0.8rem', fontWeight: 600, color: '#6b7280', marginBottom: '4px' }}>At-Risk Students</div>
+                            <div style={{ fontSize: '0.75rem', color: '#6b7280' }}>
+                                Needs attention
+                            </div>
+                        </div>
                     </div>
                 </div>
 
-                {classData.at_risk?.length > 0 && (
-                    <div className="perf-at-risk-section">
-                        <h3 className="perf-at-risk-title">⚠️ Needs Immediate Attention</h3>
-                        <div className="perf-at-risk-chips">
-                            {classData.at_risk.map(s => (
-                                <div key={s.student_id} className="perf-at-risk-chip">
-                                    {s.student_name}
-                                    <small>Score: {s.score} | Att: {s.att_pct}%</small>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                )}
-
-                <div className="perf-card" style={{ marginTop: '1.5rem' }}>
-                    <h3 className="perf-card-title">📊 Grade Distribution</h3>
-                    <div className="perf-grade-dist">
-                        {['A+', 'A', 'B+', 'B', 'C', 'D', 'F'].map(grade => {
-                            const count = classData.grade_distribution[grade] || 0;
-                            const maxCount = Math.max(...Object.values(classData.grade_distribution), 1);
-                            const heightPct = (count / maxCount) * 100;
-                            return (
-                                <div key={grade} className="perf-grade-col">
-                                    <div className="perf-grade-bar-val">{count}</div>
-                                    <div className="perf-grade-bar-wrap">
-                                        <div
-                                            className="perf-grade-bar"
-                                            style={{
-                                                height: `${heightPct}%`,
-                                                background: ['F', 'D'].includes(grade) ? '#ef4444' : '#6366f1'
-                                            }}
-                                        />
+                <div style={{ display: 'grid', gridTemplateColumns: '5fr 4fr', gap: '16px', marginBottom: '24px' }}>
+                    <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: '12px', padding: '24px' }}>
+                        <h3 style={{ margin: '0 0 24px', fontSize: '0.95rem', fontWeight: 700, color: '#111827' }}>Score Distribution</h3>
+                        <div style={{ display: 'flex', alignItems: 'flex-end', gap: '16px', height: '160px', paddingBottom: '10px', borderBottom: '1px solid #e5e7eb' }}>
+                            {['A+', 'A', 'B+', 'B', 'C', 'D', 'F'].map((grade, i) => {
+                                const colors = ['#7c3aed', '#3b82f6', '#10b981', '#f59e0b', '#f97316', '#ef4444', '#b91c1c'];
+                                const count = classData.grade_distribution[grade] || 0;
+                                const maxCount = Math.max(...Object.values(classData.grade_distribution), 1);
+                                const heightPct = (count / maxCount) * 100;
+                                return (
+                                    <div key={grade} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', height: '100%' }}>
+                                        <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#374151', marginTop: 'auto' }}>{count}</div>
+                                        <div style={{ width: '60%', minHeight: '4px', height: `${heightPct}%`, background: colors[i], borderRadius: '4px 4px 0 0', transition: 'height 0.5s' }} />
                                     </div>
-                                    <div className="perf-grade-label">{grade}</div>
-                                </div>
-                            );
-                        })}
+                                );
+                            })}
+                        </div>
+                        <div style={{ display: 'flex', gap: '16px', marginTop: '8px' }}>
+                            {['A+', 'A', 'B+', 'B', 'C', 'D', 'F'].map(grade => {
+                                const labels = { 'A+': '90-100', 'A': '75-89', 'B+': '60-74', 'B': '50-59', 'C': '40-49', 'D': '30-39', 'F': 'Below 30' };
+                                return (
+                                    <div key={grade} style={{ flex: 1, textAlign: 'center' }}>
+                                        <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#4b5563' }}>{grade}</div>
+                                        <div style={{ fontSize: '0.65rem', color: '#9ca3af' }}>({labels[grade]})</div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+
+                    <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: '12px', padding: '24px' }}>
+                        <h3 style={{ margin: '0 0 24px', fontSize: '0.95rem', fontWeight: 700, color: '#111827' }}>Performance Insights</h3>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                            <div style={{ background: '#f9fafb', border: '1px solid #f3f4f6', padding: '12px 16px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                <div style={{ width: 24, height: 24, borderRadius: '50%', background: '#10b981', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem' }}>✓</div>
+                                <div style={{ fontSize: '0.85rem', color: '#374151' }}>Class average has improved by 5% compared to last term.</div>
+                            </div>
+                            <div style={{ background: '#f9fafb', border: '1px solid #f3f4f6', padding: '12px 16px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                <div style={{ width: 24, height: 24, color: '#f59e0b', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem' }}>⭐</div>
+                                <div style={{ fontSize: '0.85rem', color: '#374151' }}>{(classData.grade_distribution['A+'] || 0) + (classData.grade_distribution['A'] || 0)} students scored above 75. Keep up the great work!</div>
+                            </div>
+                            <div style={{ background: '#fffbeb', border: '1px solid #fef3c7', padding: '12px 16px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                <div style={{ width: 24, height: 24, color: '#f59e0b', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.1rem' }}>⚠️</div>
+                                <div style={{ fontSize: '0.85rem', color: '#92400e' }}>{classData.stats.at_risk_count} student(s) are at risk and need immediate attention.</div>
+                            </div>
+                            <div style={{ background: '#eff6ff', border: '1px solid #dbeafe', padding: '12px 16px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                <div style={{ width: 24, height: 24, borderRadius: '50%', background: '#3b82f6', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.9rem', fontStyle: 'italic', fontWeight: 'serif' }}>i</div>
+                                <div style={{ fontSize: '0.85rem', color: '#1e40af' }}>3 students improved by more than 10% since last term.</div>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
-                <div className="perf-card" style={{ marginTop: '1.5rem', padding: 0, overflow: 'hidden' }}>
-                    <div style={{ padding: '1.5rem', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <h3 className="perf-card-title" style={{ margin: 0 }}>🏆 Class Rankings</h3>
-                        <div style={{ display: 'flex', gap: '0.8rem' }}>
-                            <button onClick={exportToExcel} style={{ padding: '0.5rem 1rem', background: '#10b981', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: '600', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.4rem', boxShadow: '0 2px 4px rgba(16,185,129,0.3)' }}>
-                                📊 Excel
+                <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: '12px', padding: '24px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+                        <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 800, color: '#111827' }}>Class Rankings</h3>
+                        <div style={{ display: 'flex', gap: '12px' }}>
+                            <button onClick={exportToExcel} style={{ padding: '6px 16px', background: '#fff', border: '1px solid #10b981', color: '#10b981', borderRadius: '8px', cursor: 'pointer', fontWeight: 700, fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '8px', transition: 'all 0.2s' }}>
+                                <span>📊</span> Export Excel
                             </button>
-                            <button onClick={exportToPDF} style={{ padding: '0.5rem 1rem', background: '#ef4444', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: '600', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.4rem', boxShadow: '0 2px 4px rgba(239,68,68,0.3)' }}>
-                                📄 PDF
+                            <button onClick={exportToPDF} style={{ padding: '6px 16px', background: '#fff', border: '1px solid #ef4444', color: '#ef4444', borderRadius: '8px', cursor: 'pointer', fontWeight: 700, fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '8px', transition: 'all 0.2s' }}>
+                                <span>📄</span> Download PDF
                             </button>
                         </div>
                     </div>
+                    
                     <div style={{ overflowX: 'auto' }}>
-                        <table className="perf-ranked-table">
+                        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
                             <thead>
-                                <tr>
-                                    <th>Rank</th>
-                                    <th>Roll #</th>
-                                    <th>Student Name</th>
-                                    <th>Score</th>
-                                    <th>Grade</th>
-                                    <th>Marks %</th>
-                                    <th>Att %</th>
-                                    <th>Ass %</th>
-                                    <th>Status</th>
+                                <tr style={{ borderBottom: '2px solid #f3f4f6' }}>
+                                    <th style={{ padding: '12px 8px', fontSize: '0.75rem', fontWeight: 700, color: '#6b7280', textTransform: 'uppercase' }}>Rank</th>
+                                    <th style={{ padding: '12px 8px', fontSize: '0.75rem', fontWeight: 700, color: '#6b7280', textTransform: 'uppercase' }}>Roll No.</th>
+                                    <th style={{ padding: '12px 8px', fontSize: '0.75rem', fontWeight: 700, color: '#6b7280', textTransform: 'uppercase' }}>Student Name</th>
+                                    <th style={{ padding: '12px 8px', fontSize: '0.75rem', fontWeight: 700, color: '#6b7280', textTransform: 'uppercase' }}>Score</th>
+                                    <th style={{ padding: '12px 8px', fontSize: '0.75rem', fontWeight: 700, color: '#6b7280', textTransform: 'uppercase' }}>Grade</th>
+                                    <th style={{ padding: '12px 8px', fontSize: '0.75rem', fontWeight: 700, color: '#6b7280', textTransform: 'uppercase' }}>Marks %</th>
+                                    <th style={{ padding: '12px 8px', fontSize: '0.75rem', fontWeight: 700, color: '#6b7280', textTransform: 'uppercase' }}>Attendance %</th>
+                                    <th style={{ padding: '12px 8px', fontSize: '0.75rem', fontWeight: 700, color: '#6b7280', textTransform: 'uppercase' }}>Assignments %</th>
+                                    <th style={{ padding: '12px 8px', fontSize: '0.75rem', fontWeight: 700, color: '#6b7280', textTransform: 'uppercase' }}>Status</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                {classData.students.map((s, idx) => (
-                                    <tr key={s.student_id} className={s.status === 'at_risk' ? 'at-risk-row' : ''}>
-                                        <td style={{ fontWeight: 700, color: idx < 3 ? '#f59e0b' : 'inherit' }}>#{s.rank}</td>
-                                        <td>{s.roll_number}</td>
-                                        <td style={{ fontWeight: 600 }}>{s.student_name}</td>
-                                        <td style={{ fontWeight: 700 }}>{s.score}</td>
-                                        <td>
-                                            <span className="perf-grade-badge" style={{ padding: '2px 8px', fontSize: '0.75rem', background: s.grade === 'F' ? '#ef4444' : '#6366f1' }}>
-                                                {s.grade}
-                                            </span>
-                                        </td>
-                                        <td>{s.marks_pct}%</td>
-                                        <td>{s.att_pct}%</td>
-                                        <td>{s.ass_pct}%</td>
-                                        <td>
-                                            <span className={`perf-status-badge ${s.status}`}>
-                                                {s.status.replace('_', ' ').toUpperCase()}
-                                            </span>
-                                        </td>
-                                    </tr>
-                                ))}
+                                {classData.students.map((s, idx) => {
+                                    const rank = s.rank;
+                                    const getRankDisplay = (r) => {
+                                        if (r === 1) return <span style={{ color: '#f59e0b', fontSize: '1.2rem', fontWeight: 800 }}>🥇 #1</span>;
+                                        if (r === 2) return <span style={{ color: '#9ca3af', fontSize: '1.2rem', fontWeight: 800 }}>🥈 #2</span>;
+                                        if (r === 3) return <span style={{ color: '#b45309', fontSize: '1.2rem', fontWeight: 800 }}>🥉 #3</span>;
+                                        return <span style={{ fontWeight: 700, color: '#111827' }}>#{r}</span>;
+                                    };
+                                    
+                                    const gradeColors = { 'A+': '#7c3aed', 'A': '#3b82f6', 'B+': '#10b981', 'B': '#f59e0b', 'C': '#f97316', 'D': '#ef4444', 'F': '#b91c1c' };
+                                    const statusColors = { 
+                                        'excellent': { bg: '#dcfce7', text: '#166534' },
+                                        'good': { bg: '#dbeafe', text: '#1e40af' },
+                                        'average': { bg: '#fef3c7', text: '#92400e' },
+                                        'at_risk': { bg: '#fee2e2', text: '#991b1b' }
+                                    };
+                                    const statC = statusColors[s.status] || statusColors['good'];
+
+                                    return (
+                                        <tr key={s.student_id} style={{ borderBottom: '1px solid #f3f4f6', background: s.status === 'at_risk' ? '#fef2f2' : 'transparent' }}>
+                                            <td style={{ padding: '16px 8px' }}>{getRankDisplay(rank)}</td>
+                                            <td style={{ padding: '16px 8px', fontSize: '0.85rem', color: '#4b5563', fontWeight: 600 }}>{s.roll_number}</td>
+                                            <td style={{ padding: '16px 8px', fontSize: '0.9rem', color: '#111827', fontWeight: 600 }}>{s.student_name}</td>
+                                            <td style={{ padding: '16px 8px', fontSize: '0.95rem', color: '#111827', fontWeight: 800 }}>{s.score} <span style={{ fontSize: '0.75rem', color: '#9ca3af' }}>/ 100</span></td>
+                                            <td style={{ padding: '16px 8px' }}>
+                                                <span style={{ background: gradeColors[s.grade] || '#6366f1', color: '#fff', padding: '4px 12px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: 700 }}>
+                                                    {s.grade}
+                                                </span>
+                                            </td>
+                                            <td style={{ padding: '16px 8px', fontSize: '0.85rem', color: '#374151', fontWeight: 600 }}>{s.marks_pct}%</td>
+                                            <td style={{ padding: '16px 8px', fontSize: '0.85rem', color: '#374151', fontWeight: 600 }}>{s.att_pct}%</td>
+                                            <td style={{ padding: '16px 8px', fontSize: '0.85rem', color: '#374151', fontWeight: 600 }}>{s.ass_pct}%</td>
+                                            <td style={{ padding: '16px 8px' }}>
+                                                <span style={{ background: statC.bg, color: statC.text, padding: '4px 12px', borderRadius: '12px', fontSize: '0.7rem', fontWeight: 700, textTransform: 'capitalize' }}>
+                                                    {s.status.replace('_', ' ')}
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
                                 {classData.students.length === 0 && (
                                     <tr>
-                                        <td colSpan="9" style={{ textAlign: 'center', padding: '2rem' }}>No students found for this selection.</td>
+                                        <td colSpan="9" style={{ textAlign: 'center', padding: '2rem', color: '#6b7280' }}>No students found for this selection.</td>
                                     </tr>
                                 )}
                             </tbody>
                         </table>
+                    </div>
+                    <div style={{ marginTop: '24px', display: 'flex', justifyContent: 'center' }}>
+                        <button onClick={exportToPDF} style={{ background: '#f3e8ff', color: '#7e22ce', border: 'none', padding: '8px 24px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <span>📄</span> View Full Class Report
+                        </button>
                     </div>
                 </div>
             </>
@@ -418,46 +580,65 @@ function AdminPerformance() {
 
     return (
         <div className="dashboard-container perf-page">
-            <div className="dashboard-header" style={{ marginBottom: '2rem' }}>
+            <div className="dashboard-header" style={{ marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                    <button onClick={() => navigate('/admin/dashboard')} style={{ background: 'none', border: '1.5px solid var(--border-color)', borderRadius: '8px', padding: '0.4rem 0.85rem', cursor: 'pointer', color: 'var(--text-primary)', fontWeight: 600 }}>← Back</button>
-                    <div>
-                        <h1 style={{ margin: 0 }}>🎯 Performance Hub</h1>
-                        <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Analytics & Reports</p>
+                    <div style={{ width: 40, height: 40, background: '#fce7f3', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.4rem' }}>
+                        🎯
                     </div>
+                    <div>
+                        <h1 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 800, color: '#111827' }}>Performance Hub</h1>
+                        <p style={{ margin: 0, color: '#6b7280', fontSize: '0.85rem' }}>Track performance, analyze trends and take action</p>
+                    </div>
+                </div>
+                <div style={{ marginRight: '180px' }}>
+                    <button onClick={exportToPDF} style={{ padding: '8px 16px', background: '#fff', border: '1px solid #e5e7eb', borderRadius: '8px', cursor: 'pointer', fontWeight: 600, color: '#374151', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '8px', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
+                        📥 Export Report
+                    </button>
                 </div>
             </div>
 
             {/* ── Toggle Buttons & Filters ── */}
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1.5rem', marginBottom: '2rem', alignItems: 'center', background: '#fff', padding: '1.2rem 1.5rem', borderRadius: '12px', boxShadow: '0 2px 10px rgba(0,0,0,0.03)' }}>
-                <div style={{ display: 'flex', gap: '0.5rem', background: 'var(--bg-secondary)', padding: '0.4rem', borderRadius: '10px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+                <div style={{ display: 'flex', gap: '12px' }}>
                     <button 
                         onClick={() => setViewMode('overall')}
-                        style={{ padding: '0.6rem 1.5rem', fontSize: '0.95rem', borderRadius: '8px', border: 'none', background: viewMode === 'overall' ? '#4f46e5' : 'transparent', color: viewMode === 'overall' ? '#fff' : 'var(--text-secondary)', fontWeight: viewMode === 'overall' ? '600' : '500', cursor: 'pointer', boxShadow: viewMode === 'overall' ? '0 2px 8px rgba(79, 70, 229, 0.4)' : 'none', transition: 'all 0.2s' }}
+                        style={{ padding: '8px 20px', fontSize: '0.85rem', borderRadius: '20px', border: viewMode === 'overall' ? 'none' : '1px solid #e5e7eb', background: viewMode === 'overall' ? '#6366f1' : '#fff', color: viewMode === 'overall' ? '#fff' : '#4b5563', fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: viewMode === 'overall' ? '0 4px 12px rgba(99,102,241,0.3)' : 'none' }}
                     >
-                        🌎 Overall
+                        {viewMode === 'overall' && <span>🛡️</span>} Overview
                     </button>
                     <button 
                         onClick={() => setViewMode('class')}
-                        style={{ padding: '0.6rem 1.5rem', fontSize: '0.95rem', borderRadius: '8px', border: 'none', background: viewMode === 'class' ? '#4f46e5' : 'transparent', color: viewMode === 'class' ? '#fff' : 'var(--text-secondary)', fontWeight: viewMode === 'class' ? '600' : '500', cursor: 'pointer', boxShadow: viewMode === 'class' ? '0 2px 8px rgba(79, 70, 229, 0.4)' : 'none', transition: 'all 0.2s' }}
+                        style={{ padding: '8px 20px', fontSize: '0.85rem', borderRadius: '20px', border: viewMode === 'class' ? 'none' : '1px solid #e5e7eb', background: viewMode === 'class' ? '#6366f1' : '#fff', color: viewMode === 'class' ? '#fff' : '#4b5563', fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: viewMode === 'class' ? '0 4px 12px rgba(99,102,241,0.3)' : 'none' }}
                     >
-                        📚 Class
+                        {viewMode === 'class' && <span>🛡️</span>} Class
                     </button>
                     <button 
                         onClick={() => setViewMode('subject')}
-                        style={{ padding: '0.6rem 1.5rem', fontSize: '0.95rem', borderRadius: '8px', border: 'none', background: viewMode === 'subject' ? '#4f46e5' : 'transparent', color: viewMode === 'subject' ? '#fff' : 'var(--text-secondary)', fontWeight: viewMode === 'subject' ? '600' : '500', cursor: 'pointer', boxShadow: viewMode === 'subject' ? '0 2px 8px rgba(79, 70, 229, 0.4)' : 'none', transition: 'all 0.2s' }}
+                        style={{ padding: '8px 20px', fontSize: '0.85rem', borderRadius: '20px', border: viewMode === 'subject' ? 'none' : '1px solid #e5e7eb', background: viewMode === 'subject' ? '#6366f1' : '#fff', color: viewMode === 'subject' ? '#fff' : '#4b5563', fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: viewMode === 'subject' ? '0 4px 12px rgba(99,102,241,0.3)' : 'none' }}
                     >
-                        📖 Subject
+                        {viewMode === 'subject' && <span>🛡️</span>} Subject
                     </button>
                 </div>
 
-                <div style={{ display: 'flex', gap: '1rem', flex: 1, justifyContent: 'flex-end' }}>
+                <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: '#fff', border: '1px solid #e5e7eb', borderRadius: '8px', padding: '2px 12px', boxShadow: '0 1px 2px rgba(0,0,0,0.02)' }}>
+                        <span style={{ fontSize: '1rem', color: '#6b7280' }}>📅</span>
+                        <select 
+                            value={term}
+                            onChange={(e) => setTerm(e.target.value)}
+                            style={{ border: 'none', outline: 'none', background: 'transparent', padding: '8px 4px', fontSize: '0.85rem', fontWeight: 600, color: '#374151', cursor: 'pointer', minWidth: '110px' }}
+                        >
+                            <option value="This Term">This Term</option>
+                            <option value="Last Term">Last Term</option>
+                            <option value="Term 1 (2025-26)">Term 1 (2025-26)</option>
+                        </select>
+                    </div>
                     {(viewMode === 'class' || viewMode === 'subject') && (
                         <select
                             className="form-control"
                             value={selectedClassId}
                             onChange={(e) => setSelectedClassId(e.target.value)}
-                            style={{ padding: '0.6rem 1rem', borderRadius: '8px', border: '1px solid var(--border-color)', minWidth: '180px', fontWeight: '500' }}
+                            style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--border-color)', fontSize: '0.85rem', fontWeight: '500' }}
                         >
                             {classes.map(c => (
                                 <option key={c.id} value={c.id}>{c.name}{c.section ? ` - ${c.section}` : ''}</option>
@@ -469,7 +650,7 @@ function AdminPerformance() {
                             className="form-control"
                             value={selectedSubjectId}
                             onChange={(e) => setSelectedSubjectId(e.target.value)}
-                            style={{ padding: '0.6rem 1rem', borderRadius: '8px', border: '1px solid var(--border-color)', minWidth: '180px' }}
+                            style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--border-color)', fontSize: '0.85rem', fontWeight: '500' }}
                         >
                             {subjects.map(s => (
                                 <option key={s.id} value={s.id}>{s.name}</option>

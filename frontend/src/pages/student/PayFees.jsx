@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import api from "../../services/api";
 import { AuthContext } from "../../context/AuthContext";
 import BackButton from "../../components/common/BackButton";
-import "../admin/Dashboard.css";
+import "./PayFees.css";
 import { useRazorpayPayment } from "../../hooks/useRazorpayPayment";
 
 function PayFees() {
@@ -162,49 +162,60 @@ function PayFees() {
     const balanceDue = feeStructures.reduce((sum, fee) => sum + parseFloat(fee.due_amount || 0), 0);
 
     return (
-        <div className="dashboard-container">
-            <div className="dashboard-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div>
-                    <h1>💳 Pay Fees</h1>
-                    <p>View your fee structures and make online payments</p>
+        <div className="payfees-container">
+            <div className="payfees-header">
+                <div className="payfees-header-left">
+                    <div className="payfees-header-icon">💳</div>
+                    <div className="payfees-header-text">
+                        <h1>Pay Fees</h1>
+                        <p>View your fee structures and make secure online payments.</p>
+                    </div>
                 </div>
-                <BackButton to="/student/dashboard" />
+                <Link to="/student/dashboard" className="payfees-back-btn">← Back to Dashboard</Link>
             </div>
 
             {error && <div style={{ color: "red", padding: "10px", marginBottom: "1rem", backgroundColor: "#ffebeb", borderRadius: "5px" }}>{error}</div>}
 
-            <div className="stats-grid" style={{ marginBottom: "2rem" }}>
-                <div className="stat-card">
-                    <div className="stat-icon">📈</div>
-                    <div className="stat-content">
-                        <h3>${totalRequired.toFixed(2)}</h3>
+            <div className="payfees-stats-grid">
+                <div className="payfees-stat-card">
+                    <div className="pf-stat-icon total">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4Z"/></svg>
+                    </div>
+                    <div className="pf-stat-content">
                         <p>Total Fees Assigned</p>
+                        <h3>${totalRequired.toFixed(2)}</h3>
                     </div>
                 </div>
-                <div className="stat-card">
-                    <div className="stat-icon">💰</div>
-                    <div className="stat-content">
-                        <h3>${safeTotalPaid.toFixed(2)}</h3>
+                <div className="payfees-stat-card">
+                    <div className="pf-stat-icon paid">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                    </div>
+                    <div className="pf-stat-content">
                         <p>Total Paid</p>
+                        <h3 style={{ color: '#10b981' }}>${safeTotalPaid.toFixed(2)}</h3>
                     </div>
                 </div>
-                <div className="stat-card">
-                    <div className="stat-icon">⚠️</div>
-                    <div className="stat-content">
-                        <h3 style={{ color: balanceDue > 0 ? "red" : "green" }}>
+                <div className="payfees-stat-card">
+                    <div className={`pf-stat-icon due ${balanceDue <= 0 ? 'zero' : ''}`}>
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
+                    </div>
+                    <div className="pf-stat-content">
+                        <p>Balance Due</p>
+                        <h3 style={{ color: balanceDue > 0 ? '#f59e0b' : '#10b981' }}>
                             ${Math.max(0, balanceDue).toFixed(2)}
                         </h3>
-                        <p>Balance Due</p>
                     </div>
                 </div>
             </div>
 
-            <div className="card" style={{ marginBottom: "2rem" }}>
-                <div className="card-header">
-                    <h3 className="card-title">Pending Fee Structures</h3>
+            <div className="payfees-section">
+                <div className="payfees-section-header">
+                    <h3 className="payfees-section-title">
+                        <span style={{ color: '#6366f1', fontSize: '1.2rem' }}>📄</span> Pending Fee Structures
+                    </h3>
                 </div>
-                <div className="table-container">
-                    <table className="table mobile-keep">
+                <div className="payfees-table-container">
+                    <table className="payfees-table">
                         <thead>
                             <tr>
                                 <th>Fee Type</th>
@@ -215,9 +226,9 @@ function PayFees() {
                             </tr>
                         </thead>
                         <tbody>
-                                {feeStructures.length === 0 ? (
+                            {feeStructures.length === 0 ? (
                                 <tr>
-                                    <td colSpan="6" style={{ textAlign: "center", padding: "2rem" }}>
+                                    <td colSpan="5" style={{ textAlign: "center", padding: "3rem", color: "#6b7280" }}>
                                         No fees assigned to your account yet.
                                     </td>
                                 </tr>
@@ -231,21 +242,32 @@ function PayFees() {
                                     return (
                                         <tr key={fee.id}>
                                             <td>
-                                                <strong>{fee.FeesStructure?.fee_type || 'General Fee'}</strong>
+                                                <strong style={{ color: '#111827', fontSize: '1.05rem' }}>{fee.FeesStructure?.fee_type || 'General Fee'}</strong>
                                                 <br />
                                                 <small style={{ color: "#6b7280" }}>
                                                     {fee.FeesStructure?.Subject ? `Subject: ${fee.FeesStructure.Subject.name}` : "Full Course / General"}
                                                 </small>
                                             </td>
-                                            <td>{fee.FeesStructure?.description || "-"}</td>
-                                            <td>{fee.FeesStructure?.due_date ? new Date(fee.FeesStructure.due_date).toLocaleDateString() : '-'}</td>
+                                            <td style={{ color: '#4b5563' }}>{fee.FeesStructure?.description || "-"}</td>
                                             <td>
-                                                Total: ${finalAmount.toFixed(2)}<br />
-                                                <small style={{ color: "gray" }}>Paid: ${paidAmount.toFixed(2)}</small><br />
-                                                <strong style={{ color: balance > 0 ? "red" : "green" }}>Due: ${balance.toFixed(2)}</strong>
+                                                <div style={{ fontWeight: 600, color: '#374151' }}>
+                                                    {fee.FeesStructure?.due_date ? new Date(fee.FeesStructure.due_date).toLocaleDateString('en-GB') : '-'}
+                                                </div>
+                                                {balance > 0 && fee.FeesStructure?.due_date && (
+                                                    <small style={{ color: '#ef4444' }}>
+                                                        {Math.ceil((new Date(fee.FeesStructure.due_date) - new Date()) / (1000 * 60 * 60 * 24)) > 0 
+                                                            ? `(Due in ${Math.ceil((new Date(fee.FeesStructure.due_date) - new Date()) / (1000 * 60 * 60 * 24))} days)` 
+                                                            : '(Overdue)'}
+                                                    </small>
+                                                )}
                                             </td>
                                             <td>
-                                                <span className={`badge ${isPaidOff ? 'badge-success' : paidAmount > 0 ? 'badge-warning' : 'badge-secondary'}`}>
+                                                Total: <strong style={{ color: '#111827' }}>${finalAmount.toFixed(2)}</strong><br />
+                                                Paid: <span style={{ color: '#6b7280' }}>${paidAmount.toFixed(2)}</span><br />
+                                                Due: <strong style={{ color: balance > 0 ? '#ef4444' : '#10b981' }}>${balance.toFixed(2)}</strong>
+                                            </td>
+                                            <td>
+                                                <span className={`pf-badge ${isPaidOff ? 'paid' : paidAmount > 0 ? 'partial' : 'pending'}`}>
                                                     {isPaidOff ? 'Paid' : paidAmount > 0 ? 'Partial' : 'Pending'}
                                                 </span>
                                             </td>
@@ -258,12 +280,14 @@ function PayFees() {
                 </div>
             </div>
 
-            <div className="card">
-                <div className="card-header">
-                    <h3 className="card-title">Payment History</h3>
+            <div className="payfees-section">
+                <div className="payfees-section-header">
+                    <h3 className="payfees-section-title">
+                        <span style={{ color: '#6366f1', fontSize: '1.2rem' }}>🕒</span> Payment History
+                    </h3>
                 </div>
-                <div className="table-container">
-                    <table className="table mobile-keep">
+                <div className="payfees-table-container">
+                    <table className="payfees-table">
                         <thead>
                             <tr>
                                 <th>Transaction ID</th>
@@ -271,13 +295,12 @@ function PayFees() {
                                 <th>Method</th>
                                 <th>Amount Paid</th>
                                 <th>Status</th>
-                                <th>Action</th>
                             </tr>
                         </thead>
                         <tbody>
                             {payments.length === 0 ? (
                                 <tr>
-                                    <td colSpan="5" style={{ textAlign: "center", padding: "2rem" }}>
+                                    <td colSpan="5" style={{ textAlign: "center", padding: "3rem", color: "#6b7280" }}>
                                         No payment history found.
                                     </td>
                                 </tr>
@@ -285,32 +308,40 @@ function PayFees() {
                                 payments.map((payment) => (
                                     <tr key={payment.id}>
                                         <td>
-                                            <span className="badge badge-secondary">{payment.transaction_id}</span>
+                                            <strong style={{ color: '#4f46e5', fontSize: '0.9rem' }}>
+                                                {payment.payment_method?.toLowerCase() === 'cash' ? 'N/A' : payment.transaction_id}
+                                            </strong>
                                         </td>
-                                        <td>{new Date(payment.payment_date).toLocaleDateString()}</td>
-                                        <td>{payment.payment_method}</td>
-                                        <td><strong>${parseFloat(payment.amount_paid).toFixed(2)}</strong></td>
                                         <td>
-                                            <span className={`badge ${payment.status === 'success' ? 'badge-success' : 'badge-danger'}`}>
-                                                {payment.status}
+                                            <div style={{ fontWeight: 600, color: '#374151' }}>{new Date(payment.payment_date).toLocaleDateString('en-GB')}</div>
+                                            <small style={{ color: '#6b7280' }}>{new Date(payment.payment_date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</small>
+                                        </td>
+                                        <td>
+                                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', color: '#4b5563', fontWeight: 500 }}>
+                                                <span style={{ color: '#10b981' }}>💵</span> {payment.payment_method}
                                             </span>
                                         </td>
+                                        <td><strong style={{ color: '#111827', fontSize: '1.1rem' }}>${parseFloat(payment.amount_paid).toFixed(2)}</strong></td>
                                         <td>
-                                            {payment.status === 'success' && (
-                                                <button
-                                                    onClick={() => setViewingReceipt(payment)}
-                                                    className="btn btn-sm btn-secondary"
-                                                    style={{ backgroundColor: "#4f46e5", color: "white" }}
-                                                >
-                                                    🧾 Receipt
-                                                </button>
-                                            )}
+                                            <span className={`pf-badge ${payment.status === 'success' ? 'success' : 'danger'}`}>
+                                                {payment.status}
+                                            </span>
                                         </td>
                                     </tr>
                                 ))
                             )}
                         </tbody>
                     </table>
+                </div>
+            </div>
+
+            <div className="payfees-support">
+                <div className="payfees-support-left">
+                    <div className="payfees-support-icon">i</div>
+                    <div className="payfees-support-text">
+                        <h4>Need help with your payments?</h4>
+                        <p>If you face any issue while making a payment, please contact the administration.</p>
+                    </div>
                 </div>
             </div>
 
