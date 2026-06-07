@@ -433,6 +433,14 @@ function AdminDashboard() {
                         progress={(((stats.totalAdmins || 0) / (planDetails?.plan?.max_admin_users || 1)) * 100).toFixed(1)}
                     />
                     <AdvancedStatCard
+                        icon="👔"
+                        colorClass="asc-indigo"
+                        label="Total Managers"
+                        value={`${stats.totalManagers || 0} / ${planDetails?.plan?.max_admin_users || 1}`}
+                        subLabel="Active / Total"
+                        progress={(((stats.totalManagers || 0) / (planDetails?.plan?.max_admin_users || 1)) * 100).toFixed(1)}
+                    />
+                    <AdvancedStatCard
                         icon="👨‍🎓"
                         colorClass="asc-blue"
                         label="Total Students"

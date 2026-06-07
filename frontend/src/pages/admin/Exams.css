@@ -1,7 +1,7 @@
 /* Exams.css */
 .exams-page-container {
-    padding: 80px 32px 32px 32px;
-    background-color: #F8F9FB; /* Light grayish blue background */
+    padding: 1.5rem;
+    background-color: #f8fafc; /* Light grayish blue background */
     min-height: 100vh;
 }
 
@@ -96,18 +96,17 @@
 .exams-summary-card {
     background: #ffffff;
     border: 1px solid #E2E8F0;
-    border-radius: 16px;
-    padding: 20px;
+    border-radius: 12px;
+    padding: 1.5rem;
     display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+    align-items: flex-start;
+    gap: 16px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
 }
 
 .exams-summary-icon-row {
     display: flex;
     align-items: center;
-    margin-bottom: 16px;
 }
 
 .exams-summary-icon {
@@ -123,15 +122,21 @@
 .exams-summary-icon.orange { background: #FFEDD5; color: #C2410C; }
 .exams-summary-icon.blue { background: #E0F2FE; color: #0369A1; }
 
+.exams-summary-content {
+    display: flex;
+    flex-direction: column;
+}
+
 .exams-summary-content h3 {
-    font-size: 24px;
+    font-size: 1.5rem;
     font-weight: 700;
-    color: #1A202C;
+    color: #0f172a;
+    line-height: 1;
     margin: 0;
 }
 .exams-summary-content p {
-    font-size: 12px;
-    color: #718096;
+    font-size: 0.85rem;
+    color: #64748b;
     margin: 4px 0 0 0;
 }
 

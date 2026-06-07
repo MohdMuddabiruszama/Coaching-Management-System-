@@ -481,6 +481,7 @@ function ChatApp() {
 
     const facultyParticipants = participants.filter(p => p.User?.role === "faculty");
     const studentParticipants = participants.filter(p => p.User?.role === "student");
+    const parentParticipants = participants.filter(p => p.User?.role === "parent");
 
 
     return (
@@ -801,6 +802,28 @@ function ChatApp() {
                                                                 {p.User?.name || "Unknown"} {Number(p.user_id) === myUserId && "(you)"}
                                                             </div>
                                                             <div className="participant-role">Student</div>
+                                                        </div>
+                                                        <div className="status-dot offline"></div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+
+                                        {parentParticipants.length > 0 && (
+                                            <div style={{ marginTop: 24 }}>
+                                                <div className="participants-section-title">
+                                                    <span>👨‍👩‍👧</span> PARENTS ({parentParticipants.length})
+                                                </div>
+                                                {parentParticipants.map(p => (
+                                                    <div key={p.id} className="participant-item">
+                                                        <div className="participant-avatar parent" style={{ background: '#fef3c7', color: '#92400e' }}>
+                                                            {(p.User?.name || "?")[0].toUpperCase()}
+                                                        </div>
+                                                        <div className="participant-info">
+                                                            <div className="participant-name">
+                                                                {p.User?.name || "Unknown"} {Number(p.user_id) === myUserId && "(you)"}
+                                                            </div>
+                                                            <div className="participant-role">Parent</div>
                                                         </div>
                                                         <div className="status-dot offline"></div>
                                                     </div>

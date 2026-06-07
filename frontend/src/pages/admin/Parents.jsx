@@ -381,25 +381,34 @@ function Parents() {
 
     return (
         <div className="ap-wrapper">
-            <div className="ap-header-container">
-                <div>
-                    <div className="ap-header-title">
-                        <ParentGroupIcon />
-                        <h1>Parent Management</h1>
+            <div className="ap-header-container" style={{ flexDirection: 'column', alignItems: 'stretch' }}>
+                <div style={{ display: 'flex', justifyContent: 'flex-start', marginBottom: '1rem' }}>
+                    <div>
+                        <div className="ap-header-title">
+                            <ParentGroupIcon />
+                            <h1>Parent Management</h1>
+                        </div>
+                        <p className="ap-header-subtitle">Manage parents and link them to students</p>
                     </div>
-                    <p className="ap-header-subtitle">Manage parents and link them to students</p>
                 </div>
-                <div className="ap-header-actions">
-                    <button className="ap-btn-outline" onClick={() => document.querySelector('.bulk-import-btn')?.click()}>
-                        <UploadIcon /> Import Parents
-                    </button>
-                    {/* Hidden actual bulk import button to trigger it programmatically */}
-                    <div style={{ display: 'none' }}>
-                        <BulkImportButton type="parents" onSuccess={handleBulkSuccess} />
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div className="st-breadcrumbs" style={{ fontSize: '0.8rem', color: '#94a3b8', display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                        <span>Dashboard</span>
+                        <span>›</span>
+                        <span style={{ color: '#0f172a', fontWeight: '500' }}>Parent Management</span>
                     </div>
-                    <button onClick={() => { resetForm(); setShowModal(true); }} className="ap-btn-primary">
-                        <PlusIcon /> Add Parent
-                    </button>
+                    <div className="ap-header-actions">
+                        <button className="ap-btn-outline" onClick={() => document.querySelector('.bulk-import-btn')?.click()}>
+                            <UploadIcon /> Import Parents
+                        </button>
+                        {/* Hidden actual bulk import button to trigger it programmatically */}
+                        <div style={{ display: 'none' }}>
+                            <BulkImportButton type="parents" onSuccess={handleBulkSuccess} />
+                        </div>
+                        <button onClick={() => { resetForm(); setShowModal(true); }} className="ap-btn-primary">
+                            <PlusIcon /> Add Parent
+                        </button>
+                    </div>
                 </div>
             </div>
 

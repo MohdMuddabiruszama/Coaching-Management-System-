@@ -3,6 +3,7 @@ import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { AuthContext } from "../../context/AuthContext";
 import ThemeSelector from "../ThemeSelector";
 import InstituteLogo from "../../components/common/InstituteLogo";
+import api from "../../services/api";
 import "./AdminLayout.css";
 
 const AdminLayout = () => {
@@ -25,6 +26,61 @@ const AdminLayout = () => {
             return user.permissions && user.permissions.some(p => p === featureKey || p.startsWith(featureKey + '.'));
         }
         return false;
+    };
+
+    const [sidebarStats, setSidebarStats] = useState({
+        unreadAssignmentCount: 0,
+        unreadNotesCount: 0,
+        unreadAnnouncementCount: 0,
+        unreadChatCount: 0,
+        unreadEnquiryCount: 0
+    });
+
+    useEffect(() => {
+        const fetchSidebarStats = async () => {
+            try {
+                const response = await api.get("/admin/stats");
+                if (response.data && response.data.data) {
+                    setSidebarStats({
+                        unreadAssignmentCount: response.data.data.unreadAssignmentCount || 0,
+                        unreadNotesCount: response.data.data.unreadNotesCount || 0,
+                        unreadAnnouncementCount: response.data.data.unreadAnnouncementCount || 0,
+                        unreadChatCount: response.data.data.unreadChatCount || 0,
+                        unreadEnquiryCount: response.data.data.unreadEnquiryCount || 0
+                    });
+                }
+            } catch (error) {
+                console.error("Error fetching sidebar stats:", error);
+            }
+        };
+
+        if (user) {
+            fetchSidebarStats();
+        }
+    }, [user, isAdmin]);
+
+    const handleMenuClick = async (type) => {
+        setSidebarOpen(false);
+        try {
+            if (type === 'assignments' && sidebarStats.unreadAssignmentCount > 0) {
+                setSidebarStats(s => ({ ...s, unreadAssignmentCount: 0 }));
+                await api.post("/admin/clear-unread-assignments");
+            } else if (type === 'notes' && sidebarStats.unreadNotesCount > 0) {
+                setSidebarStats(s => ({ ...s, unreadNotesCount: 0 }));
+                await api.post("/admin/clear-unread-notes");
+            } else if (type === 'announcements' && sidebarStats.unreadAnnouncementCount > 0) {
+                setSidebarStats(s => ({ ...s, unreadAnnouncementCount: 0 }));
+                await api.post("/admin/clear-unread-announcements");
+            } else if (type === 'chat' && sidebarStats.unreadChatCount > 0) {
+                setSidebarStats(s => ({ ...s, unreadChatCount: 0 }));
+                await api.post("/admin/clear-unread-chats");
+            } else if (type === 'public_page' && sidebarStats.unreadEnquiryCount > 0) {
+                setSidebarStats(s => ({ ...s, unreadEnquiryCount: 0 }));
+                await api.post("/admin/clear-unread-enquiries");
+            }
+        } catch (error) {
+            console.error("Error clearing unread counts", error);
+        }
     };
 
     // --- Search functionality ---
@@ -107,7 +163,8 @@ const AdminLayout = () => {
     // -----------------------------
 
     const navLinkClass = (path) => {
-        return location.pathname.startsWith(path) ? "al-nav-link active" : "al-nav-link";
+        const isMatch = location.pathname === path || location.pathname.startsWith(path + '/');
+        return isMatch ? "al-nav-link active" : "al-nav-link";
     };
 
     return (
@@ -142,7 +199,11 @@ const AdminLayout = () => {
                             <button className={`al-nav-link ${openMenus['students'] ? 'dropdown-open' : ''}`} onClick={() => toggleMenu('students')}>
                                 <span className="al-nav-icon">👥</span>
                                 <span className="al-nav-text">Students</span>
-                                <span className="al-nav-arrow">{openMenus['students'] ? '▾' : '›'}</span>
+                                <span className="al-nav-arrow">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                        <polyline points="9 18 15 12 9 6"></polyline>
+                                    </svg>
+                                </span>
                             </button>
                             {openMenus['students'] && (
                                 <div className="al-nav-submenu">
@@ -167,7 +228,11 @@ const AdminLayout = () => {
                             <button className={`al-nav-link ${openMenus['faculty'] ? 'dropdown-open' : ''}`} onClick={() => toggleMenu('faculty')}>
                                 <span className="al-nav-icon">👩‍🏫</span>
                                 <span className="al-nav-text">Faculty</span>
-                                <span className="al-nav-arrow">{openMenus['faculty'] ? '▾' : '›'}</span>
+                                <span className="al-nav-arrow">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                        <polyline points="9 18 15 12 9 6"></polyline>
+                                    </svg>
+                                </span>
                             </button>
                             {openMenus['faculty'] && (
                                 <div className="al-nav-submenu">
@@ -192,7 +257,11 @@ const AdminLayout = () => {
                             <button className={`al-nav-link ${openMenus['academics'] ? 'dropdown-open' : ''}`} onClick={() => toggleMenu('academics')}>
                                 <span className="al-nav-icon">📚</span>
                                 <span className="al-nav-text">Academics</span>
-                                <span className="al-nav-arrow">{openMenus['academics'] ? '▾' : '›'}</span>
+                                <span className="al-nav-arrow">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                        <polyline points="9 18 15 12 9 6"></polyline>
+                                    </svg>
+                                </span>
                             </button>
                             {openMenus['academics'] && (
                                 <div className="al-nav-submenu">
@@ -212,13 +281,23 @@ const AdminLayout = () => {
                                         </Link>
                                     )}
                                     {hasPermission('assignments') && (
-                                        <Link to="/admin/assignments" className={navLinkClass('/admin/assignments')} onClick={() => setSidebarOpen(false)}>
+                                        <Link to="/admin/assignments" className={navLinkClass('/admin/assignments')} onClick={() => handleMenuClick('assignments')}>
                                             <span className="al-nav-icon">📄</span> Assignments
+                                            {sidebarStats.unreadAssignmentCount > 0 && (
+                                                <span className="al-sidebar-badge" style={{background: '#ef4444', color: '#fff', borderRadius: '12px', padding: '2px 8px', fontSize: '0.75rem', marginLeft: 'auto', fontWeight: '600'}}>
+                                                    {sidebarStats.unreadAssignmentCount > 99 ? '99+' : sidebarStats.unreadAssignmentCount}
+                                                </span>
+                                            )}
                                         </Link>
                                     )}
                                     {hasPermission('notes') && (
-                                        <Link to="/admin/notes" className={navLinkClass('/admin/notes')} onClick={() => setSidebarOpen(false)}>
+                                        <Link to="/admin/notes" className={navLinkClass('/admin/notes')} onClick={() => handleMenuClick('notes')}>
                                             <span className="al-nav-icon">📓</span> Notes
+                                            {sidebarStats.unreadNotesCount > 0 && (
+                                                <span className="al-sidebar-badge" style={{background: '#ef4444', color: '#fff', borderRadius: '12px', padding: '2px 8px', fontSize: '0.75rem', marginLeft: 'auto', fontWeight: '600'}}>
+                                                    {sidebarStats.unreadNotesCount > 99 ? '99+' : sidebarStats.unreadNotesCount}
+                                                </span>
+                                            )}
                                         </Link>
                                     )}
                                 </div>
@@ -276,15 +355,25 @@ const AdminLayout = () => {
                         </Link>
                     )}
                     {hasPermission('announcements') && (
-                        <Link to="/admin/announcements" className={navLinkClass('/admin/announcements')} onClick={() => setSidebarOpen(false)}>
+                        <Link to="/admin/announcements" className={navLinkClass('/admin/announcements')} onClick={() => handleMenuClick('announcements')}>
                             <span className="al-nav-icon">📢</span>
                             <span className="al-nav-text">Announcements</span>
+                            {sidebarStats.unreadAnnouncementCount > 0 && (
+                                <span className="al-sidebar-badge" style={{background: '#ef4444', color: '#fff', borderRadius: '12px', padding: '2px 8px', fontSize: '0.75rem', marginLeft: 'auto', fontWeight: '600'}}>
+                                    {sidebarStats.unreadAnnouncementCount > 99 ? '99+' : sidebarStats.unreadAnnouncementCount}
+                                </span>
+                            )}
                         </Link>
                     )}
                     {hasPermission('chat') && (
-                        <Link to="/admin/chat-monitor" className={navLinkClass('/admin/chat-monitor')} onClick={() => setSidebarOpen(false)}>
+                        <Link to="/admin/chat-monitor" className={navLinkClass('/admin/chat-monitor')} onClick={() => handleMenuClick('chat')}>
                             <span className="al-nav-icon">💬</span>
                             <span className="al-nav-text">Chat Monitor</span>
+                            {sidebarStats.unreadChatCount > 0 && (
+                                <span className="al-sidebar-badge" style={{background: '#ef4444', color: '#fff', borderRadius: '12px', padding: '2px 8px', fontSize: '0.75rem', marginLeft: 'auto', fontWeight: '600'}}>
+                                    {sidebarStats.unreadChatCount > 99 ? '99+' : sidebarStats.unreadChatCount}
+                                </span>
+                            )}
                         </Link>
                     )}
                     {hasPermission('performance') && (
@@ -293,10 +382,21 @@ const AdminLayout = () => {
                             <span className="al-nav-text">Performance Hub</span>
                         </Link>
                     )}
+                    {(isAdmin || hasPermission('biometric')) && (
+                        <Link to="/admin/biometric" className={navLinkClass('/admin/biometric')} onClick={() => setSidebarOpen(false)}>
+                            <span className="al-nav-icon">🔐</span>
+                            <span className="al-nav-text">Biometric Attendance</span>
+                        </Link>
+                    )}
                     {isAdmin && (
-                        <Link to="/admin/public-page" className={navLinkClass('/admin/public-page')} onClick={() => setSidebarOpen(false)}>
+                        <Link to="/admin/public-page" className={navLinkClass('/admin/public-page')} onClick={() => handleMenuClick('public_page')}>
                             <span className="al-nav-icon">🌐</span>
                             <span className="al-nav-text">Public Website</span>
+                            {sidebarStats.unreadEnquiryCount > 0 && (
+                                <span className="al-sidebar-badge" style={{background: '#ef4444', color: '#fff', borderRadius: '12px', padding: '2px 8px', fontSize: '0.75rem', marginLeft: 'auto', fontWeight: '600'}}>
+                                    {sidebarStats.unreadEnquiryCount > 99 ? '99+' : sidebarStats.unreadEnquiryCount}
+                                </span>
+                            )}
                         </Link>
                     )}
                     {isAdmin && (

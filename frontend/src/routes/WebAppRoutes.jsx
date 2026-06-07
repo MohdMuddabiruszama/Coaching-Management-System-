@@ -62,6 +62,7 @@ const AdminPerformance = lazy(() => import("../pages/admin/Performance"));
 const FacultyViewAttendance = lazy(() => import("../pages/faculty/ViewAttendance"));
 const AdminLayout = lazy(() => import("../components/layout/AdminLayout"));
 const StudentLayout = lazy(() => import("../components/layout/StudentLayout"));
+const FacultyLayout = lazy(() => import("../components/layout/FacultyLayout"));
 
 const FacultyDashboard = lazy(() => import("../pages/faculty/Dashboard"));
 const MarkAttendance = lazy(() => import("../pages/faculty/MarkAttendance"));
@@ -228,26 +229,26 @@ export default function WebAppRoutes() {
           path="/faculty/*"
           element={
             <ProtectedRoute allowedRoles={["faculty"]}>
-              <Routes>
-                <Route path="dashboard" element={<FacultyDashboard />} />
-                <Route path="attendance" element={<MarkAttendance />} />
-                <Route path="view-attendance" element={<FacultyViewAttendance />} />
-                <Route path="smart-attendance" element={<FacultySmartAttendance />} />
-                <Route path="scan-attendance" element={<ScanFacultyQR />} />
-                <Route path="marks" element={<EnterMarks />} />
-                <Route path="students" element={<ViewStudents />} />
-                <Route path="announcements" element={<FacultyAnnouncements />} />
-                <Route path="timetable" element={<FacultySchedule />} />
-                <Route path="notes" element={<FacultyNotes />} />
-                <Route path="assignments" element={<FacultyAssignments />} />
-                <Route path="chat" element={<ChatApp />} />
-                <Route path="profile" element={<Profile />} />
-                <Route path="class-performance" element={<FacultyClassPerformance />} />
-                <Route path="*" element={<Navigate to="/faculty/dashboard" />} />
-              </Routes>
+              <FacultyLayout />
             </ProtectedRoute>
           }
-        />
+        >
+          <Route path="dashboard" element={<FacultyDashboard />} />
+          <Route path="attendance" element={<MarkAttendance />} />
+          <Route path="view-attendance" element={<FacultyViewAttendance />} />
+          <Route path="smart-attendance" element={<FacultySmartAttendance />} />
+          <Route path="scan-attendance" element={<ScanFacultyQR />} />
+          <Route path="marks" element={<EnterMarks />} />
+          <Route path="students" element={<ViewStudents />} />
+          <Route path="announcements" element={<FacultyAnnouncements />} />
+          <Route path="timetable" element={<FacultySchedule />} />
+          <Route path="notes" element={<FacultyNotes />} />
+          <Route path="assignments" element={<FacultyAssignments />} />
+          <Route path="chat" element={<ChatApp />} />
+          <Route path="profile" element={<Profile />} />
+          <Route path="class-performance" element={<FacultyClassPerformance />} />
+          <Route path="*" element={<Navigate to="/faculty/dashboard" />} />
+        </Route>
 
         <Route
           path="/student/*"

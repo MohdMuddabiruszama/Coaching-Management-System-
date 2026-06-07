@@ -6,6 +6,7 @@ import { resolveFileUrl } from "../../utils/resolveUrl";
 import { toast } from "react-hot-toast";
 import { downloadRemoteFile } from "../../utils/capacitorPermissions";
 import "./StudentNotesV2.css";
+import "../admin/Students.css";
 
 const getFileTypeConfig = (note) => {
     const title = (note.title || '').toLowerCase();
@@ -175,32 +176,33 @@ function StudentNotes() {
         <div className="notes-v2-container">
             
             {/* Header */}
-            <div className="notes-v2-header-wrapper">
-                <div className="notes-v2-header-left">
-                    <div className="notes-v2-header-icon">
-                        <span role="img" aria-label="books" style={{filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.1))'}}>📚</span>
-                    </div>
-                    <div>
-                        <h1 className="notes-v2-header-title">Study Materials</h1>
-                        <p className="notes-v2-header-sub">Access notes and study materials shared by your faculty.</p>
+            <div className="st-header">
+                <div className="st-header-top-row">
+                    <div className="st-header-left">
+                        <h1>Study Materials</h1>
+                        <p>Access notes and study materials shared by your faculty.</p>
                     </div>
                 </div>
-                <div className="notes-v2-header-right">
-                    {subjects.length > 0 && (
-                        <select
-                            className="notes-v2-select"
-                            value={selectedSubject}
-                            onChange={e => setSelectedSubject(e.target.value)}
-                        >
-                            <option value="">All Subjects</option>
-                            {subjects.map(s => (
-                                <option key={s.id} value={s.id}>{s.name}</option>
-                            ))}
-                        </select>
-                    )}
-                    <button className="notes-v2-btn-outline" onClick={() => navigate("/student/dashboard")}>
-                        ← Back to Dashboard
-                    </button>
+                <div className="st-header-bottom-row">
+                    <div className="st-breadcrumbs">
+                        <span>Dashboard</span>
+                        <span>›</span>
+                        <span className="active">Study Materials</span>
+                    </div>
+                    <div className="st-header-actions">
+                        {subjects.length > 0 && (
+                            <select
+                                className="st-select"
+                                value={selectedSubject}
+                                onChange={e => setSelectedSubject(e.target.value)}
+                            >
+                                <option value="">All Subjects</option>
+                                {subjects.map(s => (
+                                    <option key={s.id} value={s.id}>{s.name}</option>
+                                ))}
+                            </select>
+                        )}
+                    </div>
                 </div>
             </div>
 

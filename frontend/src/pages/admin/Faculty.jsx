@@ -28,7 +28,7 @@ function Faculty() {
     const [search, setSearch] = useState("");
     
     // Filters and Pagination
-    const [departmentFilter, setDepartmentFilter] = useState("all");
+    const [subjectFilter, setSubjectFilter] = useState("all");
     const [designationFilter, setDesignationFilter] = useState("all");
     const [statusFilter, setStatusFilter] = useState("all");
     const [currentPage, setCurrentPage] = useState(1);
@@ -391,6 +391,19 @@ function Faculty() {
         }
     };
 
+    const handleToggleStatus = async (facultyMember) => {
+        const newStatus = facultyMember.User?.status === "active" ? "blocked" : "active";
+        if (!window.confirm(`Are you sure you want to ${newStatus === 'blocked' ? 'block' : 'activate'} this faculty member?`)) return;
+
+        try {
+            await api.put(`/faculty/${facultyMember.id}`, { status: newStatus });
+            alert(`Faculty ${newStatus === 'blocked' ? 'blocked' : 'activated'} successfully`);
+            fetchFaculty();
+        } catch (error) {
+            alert("Error updating status: " + error.response?.data?.message);
+        }
+    };
+
     const resetForm = () => {
         setFormData({
             name: "",
@@ -423,7 +436,7 @@ function Faculty() {
         alert(`✅ ${result.inserted} faculty member(s) imported successfully!${result.failed > 0 ? ` (${result.failed} rows had errors)` : ''}`);
     };
 
-    const uniqueDepartments = Array.from(new Set(subjects.map(s => s.name)));
+    const uniqueSubjectsList = Array.from(new Set(subjects.map(s => s.name)));
     const uniqueDesignations = Array.from(new Set(faculty.map(f => f.designation).filter(Boolean)));
 
     let filteredFaculty = faculty.filter(
@@ -438,11 +451,13 @@ function Faculty() {
                 safeEmail.toLowerCase().includes(searchTerm) ||
                 safeDesignation.toLowerCase().includes(searchTerm);
 
-            const matchesDepartment = departmentFilter === "all" || (f.Subjects && f.Subjects.some(s => s.name === departmentFilter));
+            const matchesSubject = subjectFilter === "all" || (f.Subjects && f.Subjects.some(s => s.name === subjectFilter));
             const matchesDesignation = designationFilter === "all" || f.designation === designationFilter;
-            const matchesStatus = statusFilter === "all" || f.User?.status === statusFilter;
+            const matchesStatus = statusFilter === "all" || 
+                (statusFilter === "active" && f.User?.status === "active") || 
+                (statusFilter === "inactive" && f.User?.status !== "active");
 
-            return matchesSearch && matchesDepartment && matchesDesignation && matchesStatus;
+            return matchesSearch && matchesSubject && matchesDesignation && matchesStatus;
         }
     );
 
@@ -523,18 +538,18 @@ function Faculty() {
                 </div>
                 <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', width: '100%' }}>
                     <div style={{ flex: 1, minWidth: '200px' }}>
-                        <label style={{ fontSize: '0.75rem', fontWeight: 600, color: '#64748b', marginBottom: '4px', display: 'block' }}>Department</label>
+                        <label style={{ fontSize: '0.75rem', fontWeight: 600, color: '#64748b', marginBottom: '4px', display: 'block' }}>Subject</label>
                         <select
                             className="st-select"
                             style={{ width: '100%' }}
-                            value={departmentFilter}
+                            value={subjectFilter}
                             onChange={(e) => {
-                                setDepartmentFilter(e.target.value);
+                                setSubjectFilter(e.target.value);
                                 setCurrentPage(1);
                             }}
                         >
-                            <option value="all">All Departments</option>
-                            {uniqueDepartments.map(dep => (
+                            <option value="all">All Subjects</option>
+                            {uniqueSubjectsList.map(dep => (
                                 <option key={dep} value={dep}>{dep}</option>
                             ))}
                         </select>
@@ -569,16 +584,16 @@ function Faculty() {
                         >
                             <option value="all">All Status</option>
                             <option value="active">Active</option>
-                            <option value="inactive">Inactive</option>
+                            <option value="inactive">Inactive / Blocked</option>
                         </select>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'flex-end' }}>
                         <button 
                             className="st-filter-btn"
-                            style={{ height: '42px', color: (search || departmentFilter !== "all" || designationFilter !== "all" || statusFilter !== "all") ? '#ef4444' : '' }}
+                            style={{ height: '42px', color: (search || subjectFilter !== "all" || designationFilter !== "all" || statusFilter !== "all") ? '#ef4444' : '' }}
                             onClick={() => {
                                 setSearch("");
-                                setDepartmentFilter("all");
+                                setSubjectFilter("all");
                                 setDesignationFilter("all");
                                 setStatusFilter("all");
                                 setCurrentPage(1);
@@ -714,7 +729,7 @@ function Faculty() {
                                 <th>ID</th>
                                 <th>EMAIL</th>
                                 <th>PHONE</th>
-                                <th>DEPARTMENT</th>
+                                <th>SUBJECTS</th>
                                 <th>DESIGNATION</th>
                                 <th>SALARY</th>
                                 <th>JOIN DATE</th>
@@ -777,7 +792,7 @@ function Faculty() {
                                         </td>
                                         <td>
                                             <span className={`st-status ${facultyMember.User?.status === "active" ? "" : "inactive"}`}>
-                                                {facultyMember.User?.status === "active" ? "Active" : "Inactive"}
+                                                {facultyMember.User?.status === "active" ? "Active" : (facultyMember.User?.status === "blocked" ? "Blocked" : "Inactive")}
                                             </span>
                                         </td>
                                         <td>
@@ -787,11 +802,6 @@ function Faculty() {
                                                 </button>
                                                 {(canUpdate || canDelete) && (
                                                     <div className="st-menu-container">
-                                                        {canUpdate && (
-                                                            <button className="st-action-chip" style={{ padding: '0.4rem 0.6rem', border: '1px solid #e2e8f0', background: '#fff' }} onClick={() => handleEdit(facultyMember)}>
-                                                                ✏️
-                                                            </button>
-                                                        )}
                                                         <button 
                                                             className="st-action-chip"
                                                             style={{ padding: '0.4rem 0.6rem', border: '1px solid #e2e8f0', background: '#fff' }}
@@ -804,6 +814,16 @@ function Faculty() {
                                                         </button>
                                                         {actionMenuOpen === facultyMember.id && (
                                                             <div className="st-dropdown-menu">
+                                                                {canUpdate && (
+                                                                    <>
+                                                                        <button className="st-dropdown-item" onClick={() => { setActionMenuOpen(null); handleEdit(facultyMember); }}>
+                                                                            ✏️ Edit
+                                                                        </button>
+                                                                        <button className="st-dropdown-item" onClick={() => { setActionMenuOpen(null); handleToggleStatus(facultyMember); }}>
+                                                                            {facultyMember.User?.status === "active" ? "🚫 Block" : "✅ Activate"}
+                                                                        </button>
+                                                                    </>
+                                                                )}
                                                                 <button className="st-dropdown-item" onClick={() => { setActionMenuOpen(null); handleViewSingleCredentials(facultyMember.id); }}>
                                                                     🔑 Credentials
                                                                 </button>
@@ -868,12 +888,45 @@ function Faculty() {
                                     </div>
                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #f1f5f9', paddingTop: '1rem' }}>
                                         <span className={`st-status ${facultyMember.User?.status === "active" ? "" : "inactive"}`}>
-                                            {facultyMember.User?.status === "active" ? "Active" : "Inactive"}
+                                            {facultyMember.User?.status === "active" ? "Active" : (facultyMember.User?.status === "blocked" ? "Blocked" : "Inactive")}
                                         </span>
                                         <div className="st-actions-col">
-                                            <button className="st-action-chip" style={{ color: '#8b5cf6', background: '#f5f3ff', border: 'none' }} onClick={() => handleViewQr(facultyMember)}>👁</button>
-                                            {canUpdate && (
-                                                <button className="st-action-chip" style={{ border: '1px solid #e2e8f0', background: '#fff' }} onClick={() => handleEdit(facultyMember)}>✏️</button>
+                                            <button className="st-action-chip" style={{ color: '#8b5cf6', background: '#f5f3ff', border: 'none' }} onClick={() => handleViewQr(facultyMember)}>👁 View</button>
+                                            {(canUpdate || canDelete) && (
+                                                <div className="st-menu-container">
+                                                    <button 
+                                                        className="st-action-chip"
+                                                        style={{ padding: '0.4rem 0.6rem', border: '1px solid #e2e8f0', background: '#fff' }}
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            setActionMenuOpen(actionMenuOpen === facultyMember.id ? null : facultyMember.id);
+                                                        }}
+                                                    >
+                                                        ⋮
+                                                    </button>
+                                                    {actionMenuOpen === facultyMember.id && (
+                                                        <div className="st-dropdown-menu" style={{ right: 0, bottom: '100%', top: 'auto', marginBottom: '0.5rem' }}>
+                                                            {canUpdate && (
+                                                                <>
+                                                                    <button className="st-dropdown-item" onClick={() => { setActionMenuOpen(null); handleEdit(facultyMember); }}>
+                                                                        ✏️ Edit
+                                                                    </button>
+                                                                    <button className="st-dropdown-item" onClick={() => { setActionMenuOpen(null); handleToggleStatus(facultyMember); }}>
+                                                                        {facultyMember.User?.status === "active" ? "🚫 Block" : "✅ Activate"}
+                                                                    </button>
+                                                                </>
+                                                            )}
+                                                            <button className="st-dropdown-item" onClick={() => { setActionMenuOpen(null); handleViewSingleCredentials(facultyMember.id); }}>
+                                                                🔑 Credentials
+                                                            </button>
+                                                            {canDelete && (
+                                                                <button className="st-dropdown-item danger" onClick={() => { setActionMenuOpen(null); handleDelete(facultyMember.id); }}>
+                                                                    🗑️ Delete
+                                                                </button>
+                                                            )}
+                                                        </div>
+                                                    )}
+                                                </div>
                                             )}
                                         </div>
                                     </div>
@@ -930,116 +983,97 @@ function Faculty() {
 
             {/* Add/Edit Faculty Modal */}
             {showModal && (
-                <div className="modal-overlay" onClick={() => setShowModal(false)}>
-                    <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: "600px" }}>
-                        <div className="modal-header">
-                            <h3>{editMode ? "Edit Faculty" : "Add New Faculty"}</h3>
-                            <button onClick={() => setShowModal(false)} className="btn btn-sm">
+                <div className="modal-overlay" style={{ backdropFilter: 'blur(4px)', backgroundColor: 'rgba(15, 23, 42, 0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'fixed', inset: 0, zIndex: 999 }} onClick={() => setShowModal(false)}>
+                    <div className="modal" onClick={(e) => e.stopPropagation()} style={{ 
+                        width: '90%', 
+                        maxWidth: '750px', 
+                        background: '#ffffff', 
+                        borderRadius: '24px', 
+                        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)', 
+                        overflow: 'hidden',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        maxHeight: '90vh'
+                    }}>
+                        {/* ── Beautiful Header ── */}
+                        <div style={{ padding: '1.5rem 2rem', borderBottom: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f8fafc' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                                <div style={{ width: '48px', height: '48px', background: '#e0e7ff', color: '#4f46e5', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem' }}>
+                                    👨‍🏫
+                                </div>
+                                <div>
+                                    <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 700, color: '#0f172a' }}>{editMode ? "Edit Faculty" : "Add New Faculty"}</h3>
+                                    <p style={{ margin: 0, fontSize: '0.85rem', color: '#64748b', marginTop: '0.2rem' }}>Enter faculty details to create a new record</p>
+                                </div>
+                            </div>
+                            <button onClick={() => setShowModal(false)} style={{ background: 'transparent', border: 'none', fontSize: '1.5rem', color: '#94a3b8', cursor: 'pointer', padding: '0.5rem', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s' }} onMouseOver={(e) => { e.currentTarget.style.color = '#ef4444'; e.currentTarget.style.background = '#fee2e2'; }} onMouseOut={(e) => { e.currentTarget.style.color = '#94a3b8'; e.currentTarget.style.background = 'transparent'; }}>
                                 ×
                             </button>
                         </div>
-                        <div className="modal-body">
-                            <form onSubmit={handleSubmit}>
-                                <div className="form-group">
-                                    <label className="form-label">Full Name *</label>
-                                    <input
-                                        type="text"
-                                        name="name"
-                                        className="form-input"
-                                        placeholder="John Doe"
-                                        value={formData.name}
-                                        onChange={handleChange}
-                                        required
-                                    />
-                                </div>
 
-                                <div className="form-group">
-                                    <label className="form-label">Email *</label>
-                                    <input
-                                        type="email"
-                                        name="email"
-                                        className="form-input"
-                                        placeholder="john@example.com"
-                                        value={formData.email}
-                                        onChange={handleChange}
-                                        required
-                                        disabled={editMode}
-                                    />
-                                </div>
-
-                                <div className="form-group">
-                                    <label className="form-label">Phone</label>
-                                    <input
-                                        type="tel"
-                                        name="phone"
-                                        className="form-input"
-                                        placeholder="9876543210"
-                                        value={formData.phone}
-                                        onChange={handleChange}
-                                    />
-                                </div>
-
-                                {!editMode && (
-                                    <div className="form-group">
-                                        <label className="form-label">Password *</label>
-                                        <input
-                                            type="password"
-                                            name="password"
-                                            className="form-input"
-                                            placeholder="Minimum 6 characters"
-                                            value={formData.password}
-                                            onChange={handleChange}
-                                            required={!editMode}
-                                            minLength={6}
-                                        />
+                        {/* ── Scrollable Form Body ── */}
+                        <div style={{ padding: '2rem', overflowY: 'auto', flex: 1 }}>
+                            <form id="facultyForm" onSubmit={handleSubmit}>
+                                {/* Section 1: Personal Information */}
+                                <div style={{ marginBottom: '2.5rem' }}>
+                                    <h4 style={{ fontSize: '1rem', fontWeight: 600, color: '#334155', marginBottom: '1.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                        <span style={{ color: '#4f46e5' }}>👤</span> Personal Information
+                                    </h4>
+                                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
+                                        <div className="form-group">
+                                            <label className="form-label" style={{ fontSize: '0.85rem', fontWeight: 600, color: '#475569', marginBottom: '0.4rem' }}>Full Name <span style={{color:'#ef4444'}}>*</span></label>
+                                            <input type="text" name="name" className="form-input" placeholder="Enter full name" value={formData.name} onChange={handleChange} required />
+                                        </div>
+                                        <div className="form-group">
+                                            <label className="form-label" style={{ fontSize: '0.85rem', fontWeight: 600, color: '#475569', marginBottom: '0.4rem' }}>Email <span style={{color:'#ef4444'}}>*</span></label>
+                                            <input type="email" name="email" className="form-input" placeholder="Enter email address" value={formData.email} onChange={handleChange} required disabled={editMode} />
+                                        </div>
+                                        <div className="form-group">
+                                            <label className="form-label" style={{ fontSize: '0.85rem', fontWeight: 600, color: '#475569', marginBottom: '0.4rem' }}>Phone</label>
+                                            <input type="tel" name="phone" className="form-input" placeholder="Enter phone number" value={formData.phone} onChange={handleChange} />
+                                        </div>
+                                        {!editMode && (
+                                            <div className="form-group">
+                                                <label className="form-label" style={{ fontSize: '0.85rem', fontWeight: 600, color: '#475569', marginBottom: '0.4rem' }}>Password <span style={{color:'#ef4444'}}>*</span></label>
+                                                <div style={{ position: 'relative' }}>
+                                                    <input type="password" name="password" className="form-input" placeholder="Min 6 characters" value={formData.password} onChange={handleChange} required={!editMode} minLength={6} style={{ width: '100%' }} />
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
-                                )}
-
-                                <div className="form-group">
-                                    <label className="form-label">Designation</label>
-                                    <input
-                                        type="text"
-                                        name="designation"
-                                        className="form-input"
-                                        placeholder="e.g., Senior Teacher, HOD"
-                                        value={formData.designation}
-                                        onChange={handleChange}
-                                    />
                                 </div>
 
-                                <div className="form-group">
-                                    <label className="form-label">Salary (₹)</label>
-                                    <input
-                                        type="number"
-                                        name="salary"
-                                        className="form-input"
-                                        placeholder="30000"
-                                        value={formData.salary}
-                                        onChange={handleChange}
-                                        min="0"
-                                    />
-                                </div>
-
-                                <div className="form-group">
-                                    <label className="form-label">Join Date</label>
-                                    <input
-                                        type="date"
-                                        name="join_date"
-                                        className="form-input"
-                                        value={formData.join_date}
-                                        onChange={handleChange}
-                                    />
-                                </div>
-
-                                <div className="modal-footer">
-                                    <button type="button" onClick={() => setShowModal(false)} className="btn btn-secondary">
-                                        Cancel
-                                    </button>
-                                    <button type="submit" className="btn btn-primary">
-                                        {editMode ? "Update Faculty" : "Add Faculty"}
-                                    </button>
+                                {/* Section 2: Professional Information */}
+                                <div style={{ marginBottom: '1rem' }}>
+                                    <h4 style={{ fontSize: '1rem', fontWeight: 600, color: '#334155', marginBottom: '1.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem', borderTop: '1px solid #f1f5f9', paddingTop: '2rem' }}>
+                                        <span style={{ color: '#8b5cf6' }}>🎓</span> Professional Information
+                                    </h4>
+                                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
+                                        <div className="form-group">
+                                            <label className="form-label" style={{ fontSize: '0.85rem', fontWeight: 600, color: '#475569', marginBottom: '0.4rem' }}>Designation</label>
+                                            <input type="text" name="designation" className="form-input" placeholder="e.g., Senior Teacher, HOD" value={formData.designation} onChange={handleChange} />
+                                        </div>
+                                        <div className="form-group">
+                                            <label className="form-label" style={{ fontSize: '0.85rem', fontWeight: 600, color: '#475569', marginBottom: '0.4rem' }}>Salary (₹)</label>
+                                            <input type="number" name="salary" className="form-input" placeholder="Enter amount" value={formData.salary} onChange={handleChange} min="0" />
+                                        </div>
+                                        <div className="form-group">
+                                            <label className="form-label" style={{ fontSize: '0.85rem', fontWeight: 600, color: '#475569', marginBottom: '0.4rem' }}>Join Date</label>
+                                            <input type="date" name="join_date" className="form-input" value={formData.join_date} onChange={handleChange} />
+                                        </div>
+                                    </div>
                                 </div>
                             </form>
+                        </div>
+
+                        {/* ── Pinned Footer ── */}
+                        <div style={{ padding: '1.5rem 2rem', borderTop: '1px solid #f1f5f9', background: '#fff', display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
+                            <button type="button" onClick={() => setShowModal(false)} style={{ padding: '0.75rem 1.5rem', borderRadius: '12px', border: '1px solid #e2e8f0', background: '#fff', color: '#475569', fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s' }} onMouseOver={(e) => e.currentTarget.style.background = '#f8fafc'} onMouseOut={(e) => e.currentTarget.style.background = '#fff'}>
+                                Cancel
+                            </button>
+                            <button type="submit" form="facultyForm" style={{ padding: '0.75rem 1.5rem', borderRadius: '12px', border: 'none', background: '#4f46e5', color: '#fff', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem', boxShadow: '0 4px 6px -1px rgba(79, 70, 229, 0.2)', transition: 'all 0.2s' }} onMouseOver={(e) => { e.currentTarget.style.background = '#4338ca'; e.currentTarget.style.transform = 'translateY(-1px)'; }} onMouseOut={(e) => { e.currentTarget.style.background = '#4f46e5'; e.currentTarget.style.transform = 'none'; }}>
+                                <span style={{ fontSize: '1.1rem' }}>👨‍🏫</span> {editMode ? "Update Faculty" : "Add Faculty"}
+                            </button>
                         </div>
                     </div>
                 </div>

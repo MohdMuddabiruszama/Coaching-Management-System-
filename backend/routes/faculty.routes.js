@@ -22,6 +22,7 @@ const validate = require("../middlewares/validate.middleware"); // ✅ Phase 7
 const facValidator = require("../validators/faculty.validator"); // ✅ Phase 7
 
 router.get("/me", verifyToken, checkSubscription, allowRoles("faculty"), facultyController.getMe);
+router.get("/dashboard-stats", verifyToken, checkSubscription, allowRoles("faculty"), facultyController.getDashboardStats);
 router.post("/", verifyToken, checkSubscription, allowRoles("admin", "manager"), checkManagerPermission("faculty.create"), checkFacultyLimit, validate(facValidator.createFaculty), facultyController.createFaculty);
 
 /**

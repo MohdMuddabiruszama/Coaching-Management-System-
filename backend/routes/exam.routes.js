@@ -80,6 +80,14 @@ router.get(
     examController.getAllExams
 );
 
+// Bulk import/update marks (admin/faculty)
+router.post(
+    '/marks/bulk',
+    verifyToken,
+    allowRoles('admin', 'manager', 'faculty'),
+    examController.bulkEnterMarks
+);
+
 // Enter/update marks (admin/faculty)
 router.post(
     '/marks',

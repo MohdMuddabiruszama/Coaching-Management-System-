@@ -47,4 +47,9 @@ router.get("/student/:id", verifyToken, ctrl.getStudentBiometricReport);
 // ── Phase 12: Excel Export ───────────────────────────────────────
 router.get("/export/excel", verifyToken, allowRoles("admin"), ctrl.exportExcel);
 
+// ── Test Mode (Simulator — no physical device needed) ────────────
+router.post("/test/setup-mock-device", verifyToken, allowRoles("admin"), ctrl.setupMockDevice);
+router.post("/test/punch", verifyToken, allowRoles("admin"), ctrl.testPunch);
+router.post("/test/heartbeat", verifyToken, allowRoles("admin"), ctrl.testHeartbeat);
+
 module.exports = router;

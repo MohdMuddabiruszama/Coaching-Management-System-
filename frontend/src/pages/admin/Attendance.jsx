@@ -36,17 +36,7 @@ function Attendance() {
         fetchClasses();
     }, []);
 
-    // Phase 3: Detect Sunday when date changes
-    useEffect(() => {
-        if (selectedDate) {
-            const d = new Date(selectedDate + 'T00:00:00');
-            if (d.getDay() === 0) { // 0 = Sunday
-                setSundayPopup(true);
-            } else {
-                setSundayPopup(false);
-            }
-        }
-    }, [selectedDate]);
+
 
     useEffect(() => {
         if (selectedClass) {
@@ -99,16 +89,28 @@ function Attendance() {
         // Obsolete - stats are computed locally in real-time
     };
 
-    const fetchClassAttendance = async () => {
+    const fetchClassAttendance = async (checkSunday = false) => {
         setLoading(true);
         try {
             const response = await api.get(`/attendance/class/${selectedClass}/subject/${selectedSubject}/date/${selectedDate}`);
-            setStudents(response.data.data || []);
+            const fetchedStudents = response.data.data || [];
+            setStudents(fetchedStudents);
             setHasLoadedStudents(true);
+
+            // If it's a Sunday and there are pending students, show the popup
+            if (checkSunday) {
+                const pendingCount = fetchedStudents.filter(s => !s.attendance).length;
+                if (pendingCount > 0) {
+                    const d = new Date(selectedDate + 'T00:00:00');
+                    if (d.getDay() === 0) {
+                        setSundayPopup(true);
+                    }
+                }
+            }
 
             // Initialize attendance data
             const initialData = {};
-            response.data.data.forEach(student => {
+            fetchedStudents.forEach(student => {
                 if (student.attendance) {
                     initialData[student.student_id] = {
                         status: student.attendance.status,
@@ -139,7 +141,8 @@ function Attendance() {
             alert("Future date attendance not allowed.");
             return;
         }
-        fetchClassAttendance();
+
+        fetchClassAttendance(true);
     };
 
     const handleStatusChange = (studentId, status) => {
@@ -335,9 +338,6 @@ function Attendance() {
                         <span className="active">Student Attendance</span>
                     </div>
                     <div className="st-header-actions">
-                        <Link to="/admin/dashboard" className="st-btn st-btn-outline">
-                            ← Back
-                        </Link>
                         {selectedClass && (
                             <button onClick={handleViewReport} className="st-btn st-btn-outline" style={{ color: "#4f46e5", borderColor: "#c7d2fe", background: "#eef2ff" }}>
                                 📊 Reports
@@ -417,13 +417,27 @@ function Attendance() {
                         onChange={(e) => setSelectedDate(e.target.value)}
                     />
                 </div>
-                <div style={{display: 'flex', alignItems: 'flex-end', paddingBottom: '2px'}}>
+                <div style={{display: 'flex', flexDirection: 'column'}}>
+                    <label style={{display: 'block', fontSize: '0.8rem', color: 'transparent', marginBottom: '0.4rem', userSelect: 'none'}}>&nbsp;</label>
                     <button 
                         onClick={handleLoadStudents}
-                        className="st-btn st-btn-outline" 
-                        style={{ color: "#4f46e5", borderColor: "#c7d2fe", background: "#eef2ff", height: '42px' }}
+                        className="st-btn st-btn-primary" 
+                        style={{ 
+                            height: '42px', 
+                            padding: '0 1.5rem', 
+                            display: 'flex', 
+                            alignItems: 'center', 
+                            gap: '8px', 
+                            boxShadow: '0 4px 6px -1px rgba(79, 70, 229, 0.2), 0 2px 4px -1px rgba(79, 70, 229, 0.1)',
+                            transition: 'all 0.2s ease',
+                            fontWeight: '600'
+                        }}
                     >
-                        ↻ Load Students
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8" />
+                            <path d="M21 3v5h-5" />
+                        </svg>
+                        Load Students
                     </button>
                 </div>
             </div>
@@ -673,9 +687,6 @@ function Attendance() {
                         <h2 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#10b981' }}>
                             ✅ Marked Attendance ({markedStudents.length} students)
                         </h2>
-                        <button className="st-btn st-btn-outline" style={{ color: "#4f46e5", borderColor: "#c7d2fe", background: "#eef2ff" }}>
-                            View Summary
-                        </button>
                     </div>
 
                     <div style={{ overflowX: "auto" }}>

@@ -4,6 +4,7 @@ import api from "../../services/api";
 import { AuthContext } from "../../context/AuthContext";
 import BackButton from "../../components/common/BackButton";
 import "./PayFees.css";
+import "../admin/Students.css";
 import { useRazorpayPayment } from "../../hooks/useRazorpayPayment";
 
 function PayFees() {
@@ -163,15 +164,22 @@ function PayFees() {
 
     return (
         <div className="payfees-container">
-            <div className="payfees-header">
-                <div className="payfees-header-left">
-                    <div className="payfees-header-icon">💳</div>
-                    <div className="payfees-header-text">
+            <div className="st-header">
+                <div className="st-header-top-row">
+                    <div className="st-header-left">
                         <h1>Pay Fees</h1>
                         <p>View your fee structures and make secure online payments.</p>
                     </div>
                 </div>
-                <Link to="/student/dashboard" className="payfees-back-btn">← Back to Dashboard</Link>
+                <div className="st-header-bottom-row">
+                    <div className="st-breadcrumbs">
+                        <span>Dashboard</span>
+                        <span>›</span>
+                        <span className="active">Pay Fees</span>
+                    </div>
+                    <div className="st-header-actions">
+                    </div>
+                </div>
             </div>
 
             {error && <div style={{ color: "red", padding: "10px", marginBottom: "1rem", backgroundColor: "#ffebeb", borderRadius: "5px" }}>{error}</div>}

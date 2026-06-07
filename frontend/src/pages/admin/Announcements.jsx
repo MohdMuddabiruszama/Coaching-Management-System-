@@ -96,7 +96,7 @@ function Announcements() {
         }
     };
 
-    if (loading) return <div className="dashboard-container">Loading...</div>;
+    if (loading) return <div className="students-container">Loading...</div>;
 
     const filteredAnnouncements = announcements
         .filter(ann => ann.title.toLowerCase().includes(searchQuery.toLowerCase()) || ann.content.toLowerCase().includes(searchQuery.toLowerCase()))
@@ -116,28 +116,37 @@ function Announcements() {
         });
 
     return (
-        <div className="dashboard-container" style={{ background: '#f9fafb', minHeight: '100vh', padding: '2rem' }}>
+        <div className="students-container" style={{ background: '#f9fafb', minHeight: '100vh', padding: '1.5rem' }}>
             {/* Header */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                    <div style={{ width: 48, height: 48, background: '#f3e8ff', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem', color: '#8b5cf6' }}>
-                        📢
-                    </div>
-                    <div>
-                        <h1 style={{ margin: 0, fontSize: '1.5rem', color: '#111827', fontWeight: 800 }}>Announcements</h1>
-                        <p style={{ margin: 0, color: '#6b7280', fontSize: '0.9rem', marginTop: 4 }}>Communicate important updates to the right audience</p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '2rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'flex-start', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                        <div style={{ width: 48, height: 48, background: '#f3e8ff', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem', color: '#8b5cf6' }}>
+                            📢
+                        </div>
+                        <div>
+                            <h1 style={{ margin: 0, fontSize: '1.5rem', color: '#111827', fontWeight: 800 }}>Announcements</h1>
+                            <p style={{ margin: 0, color: '#6b7280', fontSize: '0.9rem', marginTop: 4 }}>Communicate important updates to the right audience</p>
+                        </div>
                     </div>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                    <ThemeSelector />
-                    <Link to="/admin/dashboard" className="btn btn-secondary" style={{ background: '#fff', border: '1px solid #e5e7eb', color: '#374151', padding: '0.5rem 1rem', borderRadius: 8, textDecoration: 'none', fontWeight: 600, fontSize: 13, display: 'flex', alignItems: 'center', gap: 6 }}>
-                        ← Back
-                    </Link>
-                    {['admin', 'faculty', 'manager'].includes(user?.role) && (
-                        <button onClick={() => handleOpenModal()} style={{ background: '#7e22ce', color: '#fff', border: 'none', padding: '0.5rem 1rem', borderRadius: 8, cursor: 'pointer', fontWeight: 600, fontSize: 13, display: 'flex', alignItems: 'center', gap: 6 }}>
-                            + New Announcement
-                        </button>
-                    )}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
+                    <div className="st-breadcrumbs" style={{ fontSize: '0.8rem', color: '#94a3b8', display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                        <span>Dashboard</span>
+                        <span>›</span>
+                        <span style={{ color: '#0f172a', fontWeight: '500' }}>Announcements</span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+                        <ThemeSelector />
+                        <Link to="/admin/dashboard" className="btn btn-secondary" style={{ background: '#fff', border: '1px solid #e5e7eb', color: '#374151', padding: '0.5rem 1rem', borderRadius: 8, textDecoration: 'none', fontWeight: 600, fontSize: 13, display: 'flex', alignItems: 'center', gap: 6 }}>
+                            ← Back
+                        </Link>
+                        {['admin', 'faculty', 'manager'].includes(user?.role) && (
+                            <button onClick={() => handleOpenModal()} style={{ background: '#7e22ce', color: '#fff', border: 'none', padding: '0.5rem 1rem', borderRadius: 8, cursor: 'pointer', fontWeight: 600, fontSize: 13, display: 'flex', alignItems: 'center', gap: 6 }}>
+                                + New Announcement
+                            </button>
+                        )}
+                    </div>
                 </div>
             </div>
 

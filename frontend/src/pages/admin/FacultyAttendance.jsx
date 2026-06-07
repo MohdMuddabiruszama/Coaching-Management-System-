@@ -261,7 +261,7 @@ function FacultyAttendance() {
     };
 
     return (
-        <div className="dashboard-container" style={{ backgroundColor: "#f8fafc", minHeight: "100vh" }}>
+        <div className="students-container">
             <div className="st-header" style={{ marginBottom: "2rem" }}>
                 <div className="st-header-top-row">
                     <div className="st-header-left">

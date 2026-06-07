@@ -7,6 +7,7 @@ import { downloadRemoteFile } from '../../utils/capacitorPermissions';
 import { toast } from 'react-hot-toast';
 import './StudentAssignmentsV2.css';
 import '../admin/Dashboard.css';
+import '../admin/Students.css';
 
 const SUB_STATUS_CONFIG = {
     pending: { label: 'Pending', icon: '⏳', badgeClass: 'badge-pending', cardClass: 'status-pending' },
@@ -285,22 +286,27 @@ export default function StudentAssignments() {
             </div>}
 
             {/* ── HEADER ── */}
-            <div className="asg-v2-header">
-                <div className="asg-v2-header-left">
-                    <div className="asg-v2-header-icon">📋</div>
-                    <div className="asg-v2-header-titles">
+            <div className="st-header">
+                <div className="st-header-top-row">
+                    <div className="st-header-left">
                         <h1>My Assignments</h1>
                         <p>View, submit, and track your assignment submissions</p>
                     </div>
                 </div>
-                {detailAsg && (
-                    <div style={{ display: 'flex', gap: '10px' }}>
-                        <button style={{ padding: '8px 16px', borderRadius: 20, background: '#fff', border: '1px solid #e2e8f0', cursor: 'pointer', fontWeight: 600, color: '#475569' }} onClick={() => setDetailAsg(null)}>
-                            ← Back to List
-                        </button>
-                        <BackButton to="/student/dashboard" style={{ padding: '8px 16px', borderRadius: 20, background: '#6366f1', color: '#fff', border: 'none', cursor: 'pointer', fontWeight: 600, textDecoration: 'none' }} />
+                <div className="st-header-bottom-row">
+                    <div className="st-breadcrumbs">
+                        <span>Dashboard</span>
+                        <span>›</span>
+                        <span className="active">My Assignments</span>
                     </div>
-                )}
+                    <div className="st-header-actions">
+                        {detailAsg && (
+                            <button className="st-btn st-btn-outline" onClick={() => setDetailAsg(null)}>
+                                ← Back to List
+                            </button>
+                        )}
+                    </div>
+                </div>
             </div>
 
             {/* ── DETAIL VIEW ── */}
@@ -399,9 +405,49 @@ export default function StudentAssignments() {
                                         onChange={e => setFile(e.target.files[0])}
                                     />
                                     <div style={{ marginLeft: 'auto', paddingLeft: '24px' }}>
-                                        <button className="asg-v2-btn-purple" onClick={(e) => { e.stopPropagation(); handleSubmit(); }} disabled={uploading}>
-                                            {uploading ? 'Uploading...' : 'Choose File'}
-                                        </button>
+                                        {file ? (
+                                            <button 
+                                                style={{ 
+                                                    background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', 
+                                                    color: 'white', 
+                                                    border: 'none', 
+                                                    padding: '12px 24px', 
+                                                    borderRadius: '12px', 
+                                                    fontWeight: '600', 
+                                                    cursor: uploading ? 'not-allowed' : 'pointer', 
+                                                    display: 'flex', 
+                                                    alignItems: 'center', 
+                                                    gap: '8px', 
+                                                    boxShadow: '0 4px 12px rgba(16, 185, 129, 0.3)',
+                                                    transition: 'all 0.2s',
+                                                    fontSize: '1rem'
+                                                }} 
+                                                onClick={(e) => { e.stopPropagation(); handleSubmit(); }} 
+                                                disabled={uploading}
+                                            >
+                                                {uploading ? (
+                                                    <>
+                                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ animation: 'spin 1s linear infinite' }}><path d="M21 12a9 9 0 1 1-6.219-8.56"></path></svg>
+                                                        Submitting...
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 2L11 13"></path><path d="M22 2L15 22 11 13 2 9 22 2z"></path></svg>
+                                                        Submit Now
+                                                    </>
+                                                )}
+                                            </button>
+                                        ) : (
+                                            <button 
+                                                className="asg-v2-btn-purple" 
+                                                onClick={(e) => { e.stopPropagation(); document.getElementById('file-inp').click(); }} 
+                                                disabled={uploading}
+                                                style={{ padding: '12px 24px', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '1rem', fontWeight: '600', boxShadow: '0 4px 12px rgba(99, 102, 241, 0.3)' }}
+                                            >
+                                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                                                Choose File
+                                            </button>
+                                        )}
                                     </div>
                                 </div>
                             )}

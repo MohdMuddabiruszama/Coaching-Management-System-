@@ -15,6 +15,10 @@ const markService = {
     save: (data) =>
         api.post('/exams/marks', data).then(r => r.data),
 
+    // Bulk save
+    bulkSave: (data) =>
+        api.post('/exams/marks/bulk', data).then(r => r.data),
+
     // ─── Student ──────────────────────────────────────────────
     // All locked exam marks with %, rank, grade, subject
     getAll: () =>

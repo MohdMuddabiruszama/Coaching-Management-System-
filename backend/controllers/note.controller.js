@@ -60,6 +60,57 @@ exports.uploadNote = async (req, res) => {
     }
 };
 
+// 1.5 Update a note
+exports.updateNote = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { title, description, class_id, subject_id } = req.body;
+        const { user } = req;
+
+        if (user.role !== "faculty") {
+            return res.status(403).json({ success: false, message: "Only faculty can edit notes" });
+        }
+
+        const faculty = await Faculty.findOne({ where: { user_id: user.id } });
+        const note = await Note.findOne({ where: { id: id, institute_id: user.institute_id } });
+
+        if (!note) {
+            return res.status(404).json({ success: false, message: "Note not found" });
+        }
+
+        if (note.faculty_id !== faculty.id) {
+            return res.status(403).json({ success: false, message: "You can only edit your own notes" });
+        }
+
+        // Prepare update data
+        const updateData = {
+            title: title || note.title,
+            description: description !== undefined ? description : note.description,
+            class_id: class_id || note.class_id,
+            subject_id: subject_id || note.subject_id
+        };
+
+        if (req.file) {
+            // Delete old file from Cloudinary safely
+            const imageTypes = ["image/jpeg", "image/png", "image/jpg", "image/webp"];
+            const resourceType = imageTypes.includes(note.file_type) ? "image" : "raw";
+            destroyCloudinary(note.file_url, resourceType);
+
+            // Set new file details
+            updateData.file_url = req.file.path;
+            updateData.file_type = req.file.mimetype;
+            updateData.file_size = req.file.size;
+        }
+
+        await note.update(updateData);
+
+        res.status(200).json({ success: true, message: "Note updated successfully", note });
+    } catch (error) {
+        console.error("Update note error:", error);
+        res.status(500).json({ success: false, message: "Server error", error: error.message });
+    }
+};
+
 // 2. Get notes by class
 exports.getNotesByClass = async (req, res) => {
     try {

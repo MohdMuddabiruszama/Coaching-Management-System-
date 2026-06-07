@@ -2,7 +2,7 @@
  * Announcement Service — Smart Announcement System (Phase 2)
  * All business logic for announcements: filtering by role, read/unread tracking, bell icon data.
  */
-const { Announcement, AnnouncementRead, User } = require("../models");
+const { Announcement, AnnouncementRead, User, Student, StudentSubject, Subject, Faculty, StudentParent } = require("../models");
 const { Op } = require("sequelize");
 
 // ─── FUNCTION 1: getAnnouncementsForUser ─────────────────────────────────────
@@ -54,11 +54,50 @@ async function getAnnouncementsForUser(userId, role, instituteId, classId = null
         ],
     });
 
-    return announcements.map((a) => ({
+    let mappedAnnouncements = announcements.map((a) => ({
         ...a.toJSON(),
         is_read: a.AnnouncementReads && a.AnnouncementReads.length > 0,
         read_at: a.AnnouncementReads?.[0]?.read_at || null,
     }));
+
+    // --- Phase 3 & 4: Filter Faculty Announcements by Subjects ---
+    if (role === "student" || role === "parent") {
+        let studentIds = [];
+        if (role === "student") {
+            const student = await Student.findOne({ where: { user_id: userId } });
+            if (student) studentIds.push(student.id);
+        } else if (role === "parent") {
+            const linkedStudents = await StudentParent.findAll({ where: { parent_id: userId } });
+            studentIds = linkedStudents.map(sp => sp.student_id);
+        }
+
+        if (studentIds.length > 0) {
+            // Get all subjects these students are enrolled in
+            const studentSubjects = await StudentSubject.findAll({
+                where: { student_id: { [Op.in]: studentIds } }
+            });
+            const subjectIds = studentSubjects.map(ss => ss.subject_id);
+
+            // Get faculties teaching these subjects
+            const subjects = await Subject.findAll({
+                where: { id: { [Op.in]: subjectIds } },
+                include: [{ model: Faculty, attributes: ['user_id'] }]
+            });
+            const validFacultyUserIds = subjects.map(s => s.Faculty?.user_id).filter(Boolean);
+
+            mappedAnnouncements = mappedAnnouncements.filter(ann => {
+                // If the creator is not faculty (e.g., admin), everyone sees it
+                if (ann.creator?.role !== "faculty") return true;
+                // If it is from a faculty, the student/parent only sees it if they are taught by them
+                return validFacultyUserIds.includes(ann.created_by);
+            });
+        } else {
+            // If student/parent not found or no students linked, only show non-faculty announcements
+            mappedAnnouncements = mappedAnnouncements.filter(ann => ann.creator?.role !== "faculty");
+        }
+    }
+
+    return mappedAnnouncements;
 }
 
 // ─── FUNCTION 2: getUnreadCount ───────────────────────────────────────────────

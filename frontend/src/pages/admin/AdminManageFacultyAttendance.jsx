@@ -15,8 +15,7 @@ function AdminManageFacultyAttendance() {
 
     // Pagination for Pending Faculty
     const [currentPage, setCurrentPage] = useState(1);
-    const [itemsPerPage] = useState(6); // The mock showed 6 items per page
-    
+    const [itemsPerPage] = useState(10);
     // Pagination for Marked Faculty
     const [markedCurrentPage, setMarkedCurrentPage] = useState(1);
     const [markedItemsPerPage] = useState(10);
@@ -24,30 +23,13 @@ function AdminManageFacultyAttendance() {
     // Phase 3: Sunday detection
     const [sundayPopup, setSundayPopup] = useState(false);
     const [sundayMarkingHoliday, setSundayMarkingHoliday] = useState(false);
+    const [futureDatePopup, setFutureDatePopup] = useState(false);
 
     useEffect(() => {
         fetchDashboardStats();
+        fetchFacultyAttendance();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
-
-    useEffect(() => {
-        if (selectedDate) {
-            fetchFacultyAttendance();
-        } else {
-            setFacultyList([]);
-        }
-    }, [selectedDate]);
-
-    // Detect Sunday on date change
-    useEffect(() => {
-        if (selectedDate) {
-            const d = new Date(selectedDate + 'T00:00:00');
-            if (d.getDay() === 0) { // 0 = Sunday
-                setSundayPopup(true);
-            } else {
-                setSundayPopup(false);
-            }
-        }
-    }, [selectedDate]);
 
     const fetchDashboardStats = async () => {
         try {
@@ -62,21 +44,37 @@ function AdminManageFacultyAttendance() {
         setLoading(true);
         try {
             const response = await api.get(`/faculty-attendance/date/${selectedDate}`);
-            setFacultyList(response.data.data || []);
+            const data = response.data.data || [];
+            setFacultyList(data);
 
-            // Initialize attendance data - DONT set default to present! The mock shows them unselected initially.
             const initialData = {};
-            response.data.data.forEach(faculty => {
+            let pendingCount = 0;
+            let markedCount = 0;
+            data.forEach(faculty => {
                 if (faculty.attendance) {
+                    markedCount++;
                     initialData[faculty.faculty_id] = {
                         status: faculty.attendance.status,
                         remarks: faculty.attendance.remarks || ""
                     };
+                } else {
+                    pendingCount++;
                 }
             });
             setAttendanceData(initialData);
             setCurrentPage(1); // Reset pagination on load
             setMarkedCurrentPage(1);
+
+            // Phase 3: Sunday detection - Only show if it's Sunday, we have faculty, and NO attendance is marked yet
+            if (selectedDate) {
+                const d = new Date(selectedDate + 'T00:00:00');
+                if (d.getDay() === 0 && data.length > 0 && markedCount === 0) {
+                    setSundayPopup(true);
+                } else {
+                    setSundayPopup(false);
+                }
+            }
+
         } catch (error) {
             console.error("Error fetching attendance:", error);
             alert("Error loading attendance data");
@@ -190,7 +188,10 @@ function AdminManageFacultyAttendance() {
         // Clear all attendanceData that belongs to pending faculty
         const newData = { ...attendanceData };
         facultyList.filter(f => !f.attendance).forEach(faculty => {
-             delete newData[faculty.faculty_id];
+             newData[faculty.faculty_id] = {
+                 status: "",
+                 remarks: newData[faculty.faculty_id]?.remarks || ""
+             };
         });
         setAttendanceData(newData);
     };
@@ -310,12 +311,12 @@ function AdminManageFacultyAttendance() {
                                 <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
                             </div>
                             <div style={{ textAlign: "right" }}>
-                                <p style={{ margin: 0, fontSize: "0.85rem", color: "#64748b" }}>Today's Attendance</p>
-                                <h3 style={{ margin: "4px 0 0 0", fontSize: "1.6rem", color: "#0f172a", fontWeight: "700" }}>{dashboardStats.today.percentage}%</h3>
+                                <p style={{ margin: 0, fontSize: "0.85rem", color: "#64748b" }}>Today Attendance</p>
+                                <h3 style={{ margin: "4px 0 0 0", fontSize: "1.6rem", color: "#0f172a", fontWeight: "700" }}>{dashboardStats.today.present}</h3>
                             </div>
                         </div>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginTop: "auto" }}>
-                            <small style={{ color: "#64748b", fontSize: "0.8rem" }}>{dashboardStats.today.present} / {dashboardStats.today.total} Present</small>
+                            <small style={{ color: "#64748b", fontSize: "0.8rem" }}>{dashboardStats.today.present} Present Today</small>
                             <img src={chartPurple} alt="trend" style={{ height: "20px" }} />
                         </div>
                     </div>
@@ -381,13 +382,37 @@ function AdminManageFacultyAttendance() {
                         <input
                             type="date"
                             value={selectedDate}
-                            onChange={(e) => setSelectedDate(e.target.value)}
+                            onChange={(e) => {
+                                const newDate = e.target.value;
+                                if (!newDate) return;
+                                const selected = new Date(newDate + 'T00:00:00');
+                                const today = new Date();
+                                today.setHours(0, 0, 0, 0);
+                                if (selected > today) {
+                                    setFutureDatePopup(true);
+                                    // Revert to today
+                                    setSelectedDate(today.toISOString().split('T')[0]);
+                                } else {
+                                    setSelectedDate(newDate);
+                                }
+                            }}
                             max={new Date().toISOString().split('T')[0]}
                             style={{ padding: "0.6rem 1rem", border: "1px solid #e2e8f0", borderRadius: "8px", outline: "none", color: "#334155", fontFamily: "inherit", width: "220px" }}
                         />
                     </div>
                 </div>
-                <button onClick={fetchFacultyAttendance} style={{ padding: "0.6rem 1.2rem", backgroundColor: "#f8fafc", color: "#6366f1", border: "1px solid #e2e8f0", borderRadius: "8px", cursor: "pointer", fontWeight: "600", fontSize: "0.9rem", display: "flex", alignItems: "center", gap: "8px" }}>
+                <button onClick={() => { 
+                    const selected = new Date(selectedDate + 'T00:00:00');
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+                    
+                    if (selected > today) {
+                        setFutureDatePopup(true);
+                    } else {
+                        fetchFacultyAttendance(); 
+                        fetchDashboardStats(); 
+                    }
+                }} style={{ padding: "0.6rem 1.2rem", backgroundColor: "#f8fafc", color: "#6366f1", border: "1px solid #e2e8f0", borderRadius: "8px", cursor: "pointer", fontWeight: "600", fontSize: "0.9rem", display: "flex", alignItems: "center", gap: "8px" }}>
                     <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
                     Load Faculty
                 </button>
@@ -410,6 +435,7 @@ function AdminManageFacultyAttendance() {
                                 <button onClick={markAllAbsent} style={{ padding: "0.4rem 0.8rem", backgroundColor: "#ef4444", color: "#fff", border: "none", borderRadius: "6px", fontSize: "0.8rem", fontWeight: "600", cursor: "pointer" }}>× All Absent</button>
                                 <button onClick={markAllLate} style={{ padding: "0.4rem 0.8rem", backgroundColor: "#f59e0b", color: "#fff", border: "none", borderRadius: "6px", fontSize: "0.8rem", fontWeight: "600", cursor: "pointer" }}>🕒 Late</button>
                                 <button onClick={markAllHoliday} style={{ padding: "0.4rem 0.8rem", backgroundColor: "#3b82f6", color: "#fff", border: "none", borderRadius: "6px", fontSize: "0.8rem", fontWeight: "600", cursor: "pointer" }}>🏖️ Holiday</button>
+                                <button onClick={clearAllPending} style={{ padding: "0.4rem 0.8rem", backgroundColor: "#f8fafc", color: "#64748b", border: "1px solid #e2e8f0", borderRadius: "6px", fontSize: "0.8rem", fontWeight: "600", cursor: "pointer" }}>↺ Clear Select</button>
                             </div>
                         )}
                     </div>
@@ -513,7 +539,6 @@ function AdminManageFacultyAttendance() {
                         </h3>
                         <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
                             <span style={{ fontSize: "0.8rem", color: "#10b981", backgroundColor: "#ecfdf5", padding: "4px 8px", borderRadius: "12px", fontWeight: "600" }}>Present: {presentCount}</span>
-                            <button onClick={clearAllPending} style={{ padding: "4px 10px", backgroundColor: "#f8fafc", color: "#64748b", border: "1px solid #e2e8f0", borderRadius: "6px", fontSize: "0.75rem", cursor: "pointer" }}>Clear Select</button>
                         </div>
                     </div>
 
@@ -617,6 +642,27 @@ function AdminManageFacultyAttendance() {
                             </button>
                             <button onClick={() => setSundayPopup(false)} style={{ padding: "0.8rem 1.8rem", borderRadius: "12px", border: "1px solid #cbd5e1", background: "#fff", color: "#334155", fontWeight: "700", fontSize: "1rem", cursor: "pointer" }}>
                                 🏫 Working Day
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* ═══ FUTURE DATE DETECTION POPUP ═══ */}
+            {futureDatePopup && (
+                <div className="modal-overlay" style={{ zIndex: 2000 }}>
+                    <div className="modal" style={{ maxWidth: "480px", textAlign: "center", padding: "2.5rem 2rem", borderRadius: "20px" }}>
+                        <div style={{ fontSize: "4rem", marginBottom: "1rem" }}>⏳</div>
+                        <h2 style={{ marginBottom: "0.5rem", color: "#0f172a", fontSize: "1.8rem" }}>Future Date Not Possible!</h2>
+                        <p style={{ color: "#64748b", marginBottom: "0.25rem", fontSize: "1.1rem" }}>
+                            <strong>{new Date(selectedDate + 'T00:00:00').toLocaleDateString('en-IN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</strong>
+                        </p>
+                        <p style={{ color: "#64748b", marginBottom: "2rem", fontSize: "0.95rem" }}>
+                            You cannot mark or load attendance for a future date. Please select today or a past date.
+                        </p>
+                        <div style={{ display: "flex", gap: "1rem", justifyContent: "center" }}>
+                            <button onClick={() => setFutureDatePopup(false)} style={{ padding: "0.8rem 1.8rem", borderRadius: "12px", border: "none", background: "linear-gradient(135deg,#6366f1,#4f46e5)", color: "#fff", fontWeight: "700", fontSize: "1rem", cursor: "pointer", boxShadow: "0 4px 12px rgba(99,102,241,0.3)" }}>
+                                Got It
                             </button>
                         </div>
                     </div>

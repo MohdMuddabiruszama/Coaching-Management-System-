@@ -30,7 +30,7 @@
 }
 
 .st-header-left {
-    margin-left: 3.5rem; /* Make room for the sidebar toggle button */
+    margin-left: 0;
 }
 
 .st-header-left h1 {
@@ -78,8 +78,18 @@
     display: inline-flex;
     align-items: center;
     gap: 0.5rem;
-    transition: all 0.2s;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     border: 1px solid transparent;
+}
+
+.st-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+}
+
+.st-btn:active {
+    transform: translateY(0);
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
 }
 
 .st-btn-outline {
@@ -100,6 +110,7 @@
 
 .st-btn-primary:hover {
     background: #4f46e5;
+    color: #ffffff !important;
 }
 
 /* ── Filters Bar ── */
@@ -156,8 +167,18 @@
     -webkit-appearance: none;
     cursor: pointer;
     min-width: 140px;
+    transition: all 0.2s ease;
 }
 
+.st-select:hover {
+    border-color: #cbd5e1;
+    box-shadow: 0 2px 4px -1px rgba(0,0,0,0.02);
+}
+
+.st-select:focus {
+    border-color: #6366f1;
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
 .st-filter-btn {
     padding: 0.6rem 1rem;
     border: 1px solid #e2e8f0;

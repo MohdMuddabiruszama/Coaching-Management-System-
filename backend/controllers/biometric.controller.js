@@ -49,8 +49,12 @@ function calcMinutesLate(punchTime, classStartTimeStr) {
 
 /**
  * Process a single punch record — create attendance from raw punch
+ * @param {object} punch  - BiometricPunch model instance
+ * @param {object} options
+ * @param {boolean} options.bypassWorkingDay - Skip working-day restriction (used in test mode)
+ * @returns {object} { ok, reason, status } — result descriptor
  */
-async function processPunch(punch) {
+async function processPunch(punch, options = {}) {
     try {
         const enrollment = await BiometricEnrollment.findOne({
             where: {
@@ -61,7 +65,7 @@ async function processPunch(punch) {
         });
         if (!enrollment) {
             await punch.update({ processed: true });
-            return; // Unknown user
+            return { ok: false, reason: "No active enrollment found for this device + user ID" };
         }
 
         const settings = await getOrCreateSettings(enrollment.institute_id);
@@ -83,7 +87,7 @@ async function processPunch(punch) {
         });
         if (recentPunch) {
             await punch.update({ processed: true });
-            return; // Duplicate
+            return { ok: false, reason: `Duplicate punch — same user already punched within ${settings.duplicate_punch_window_secs || 300}s window` };
         }
 
         const punchDate = new Date(punch.punch_time).toISOString().split("T")[0];
@@ -91,16 +95,19 @@ async function processPunch(punch) {
             .toTimeString()
             .split(" ")[0]; // HH:MM:SS
 
-        // Check working day
+        // Check working day (skipped in test mode via bypassWorkingDay)
         const dayName = new Date(punch.punch_time).toLocaleString("en-US", {
+            weekday: "long",  // Use full name for clearer reporting
+        });
+        const dayShort = new Date(punch.punch_time).toLocaleString("en-US", {
             weekday: "short",
         });
         const workingDays = settings.working_days || [
             "Mon", "Tue", "Wed", "Thu", "Fri", "Sat",
         ];
-        if (!workingDays.includes(dayName)) {
+        if (!options.bypassWorkingDay && !workingDays.includes(dayShort)) {
             await punch.update({ processed: true });
-            return; // Non-working day
+            return { ok: false, reason: `Non-working day (${dayName}) — punch discarded. Working days: ${workingDays.join(", ")}` };
         }
 
         // Calculate lateness
@@ -115,12 +122,29 @@ async function processPunch(punch) {
         if (isHalfDay) status = "half_day";
         else if (isLate) status = "late";
 
+        let attendanceCreated = false;
+        let attendanceUpdated = false;
+
         if (enrollment.user_role === "student") {
+            // IMPORTANT: enrollment.user_id = users.id, but Attendance.student_id = students.id
+            // We must look up the Student record to get the correct student PK.
+            const student = await Student.findOne({
+                where: {
+                    user_id: enrollment.user_id,
+                    institute_id: enrollment.institute_id,
+                },
+            });
+
+            if (!student) {
+                await punch.update({ processed: true });
+                return { ok: false, reason: `Student profile not found for user_id=${enrollment.user_id}. Ensure the student is properly registered.` };
+            }
+
             // Check already present today
             const existing = await Attendance.findOne({
                 where: {
                     institute_id: enrollment.institute_id,
-                    student_id: enrollment.user_id,
+                    student_id: student.id,           // ← students.id (not users.id)
                     date: punchDate,
                 },
             });
@@ -128,7 +152,7 @@ async function processPunch(punch) {
             if (!existing) {
                 await Attendance.create({
                     institute_id: enrollment.institute_id,
-                    student_id: enrollment.user_id,
+                    student_id: student.id,            // ← students.id
                     date: punchDate,
                     status,
                     marked_by_type: "biometric",
@@ -139,13 +163,15 @@ async function processPunch(punch) {
                     is_half_day: isHalfDay,
                     marked_by: null,
                 });
+                attendanceCreated = true;
             } else if (punch.punch_type === "out" && !existing.time_out) {
                 await existing.update({ time_out: punchTime });
+                attendanceUpdated = true;
             }
 
-            // Parent notifications
+            // Parent notifications (pass student.id, which is the correct FK)
             await sendParentNotification(
-                enrollment.user_id,
+                student.id,
                 enrollment.institute_id,
                 status,
                 punchTime,
@@ -155,8 +181,22 @@ async function processPunch(punch) {
         }
 
         await punch.update({ processed: true });
+        return {
+            ok: true,
+            status,
+            isLate,
+            minsLate: Math.max(0, minsLate),
+            attendanceCreated,
+            attendanceUpdated,
+            reason: attendanceCreated
+                ? `Attendance created — Status: ${status}${isLate ? ` (${Math.max(0, minsLate)}m late)` : ""}`
+                : attendanceUpdated
+                    ? `Time-out recorded`
+                    : `Already marked present today`,
+        };
     } catch (err) {
         console.error("❌ processPunch error:", err.message);
+        return { ok: false, reason: `Internal error: ${err.message}` };
     }
 }
 
@@ -979,6 +1019,204 @@ exports.getPunchLogs = async (req, res) => {
 
 // Export processPunch and markAbsentStudents for use in cron
 exports._processPunch = processPunch;
+
+// ─────────────────────────────────────────────────────────────────
+// TEST MODE — SIMULATOR ENDPOINTS (admin JWT auth, no device key)
+// ─────────────────────────────────────────────────────────────────
+
+/**
+ * POST /api/biometric/test/setup-mock-device
+ * Creates a pre-configured test device if it doesn't exist.
+ * Returns device + secret_key so the simulator can use it.
+ */
+exports.setupMockDevice = async (req, res) => {
+    try {
+        const institute_id = req.user.institute_id;
+        const MOCK_SERIAL = "CDK9191960001-TEST";
+        const MOCK_NAME = "Test-Gate-1 Fingerprint (Simulator)";
+
+        let device = await BiometricDevice.findOne({
+            where: { device_serial: MOCK_SERIAL, institute_id },
+        });
+
+        if (!device) {
+            const secret_key = crypto.randomBytes(32).toString("hex");
+            device = await BiometricDevice.create({
+                institute_id,
+                device_name: MOCK_NAME,
+                device_serial: MOCK_SERIAL,
+                device_type: "fingerprint",
+                location: "Simulator (Test Mode)",
+                ip_address: "127.0.0.1",
+                secret_key,
+                status: "active",
+                last_sync: new Date(),
+            });
+        } else {
+            // Bump last_sync so it shows as online
+            await device.update({ last_sync: new Date() });
+        }
+
+        res.json({
+            success: true,
+            message: device.created_at === device.updated_at
+                ? "Mock device created"
+                : "Mock device already exists — refreshed",
+            data: {
+                id: device.id,
+                device_name: device.device_name,
+                device_serial: device.device_serial,
+                location: device.location,
+                secret_key: device.secret_key,
+            },
+        });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+};
+
+/**
+ * POST /api/biometric/test/punch
+ * Simulate a biometric punch from the UI.
+ * Requires admin JWT — no device secret key needed.
+ * Body: { device_id, device_user_id, punch_type, timestamp? }
+ */
+exports.testPunch = async (req, res) => {
+    try {
+        const institute_id = req.user.institute_id;
+        const { device_id, device_user_id, punch_type = "in", timestamp } = req.body;
+
+        if (!device_id || !device_user_id) {
+            return res.status(400).json({
+                success: false,
+                message: "device_id and device_user_id are required",
+            });
+        }
+
+        // Verify device belongs to this institute
+        const device = await BiometricDevice.findOne({
+            where: { id: device_id, institute_id, status: "active" },
+        });
+        if (!device) {
+            return res.status(404).json({ success: false, message: "Device not found" });
+        }
+
+        // Check enrollment exists
+        const enrollment = await BiometricEnrollment.findOne({
+            where: {
+                device_id,
+                device_user_id: String(device_user_id),
+                institute_id,
+                status: "active",
+            },
+        });
+        if (!enrollment) {
+            return res.status(404).json({
+                success: false,
+                message: "No active enrollment found for this device + user ID. Please enroll first.",
+            });
+        }
+
+        const punch_time = timestamp ? new Date(timestamp) : new Date();
+
+        // Create the raw punch record
+        const punch = await BiometricPunch.create({
+            institute_id,
+            device_id,
+            device_user_id: String(device_user_id),
+            punch_time,
+            punch_type,
+            raw_payload: {
+                source: "test_simulator",
+                simulated_by: req.user.id,
+                simulated_at: new Date().toISOString(),
+            },
+            processed: false,
+        });
+
+        // Update device last_sync (marks device as "online")
+        await device.update({ last_sync: new Date() });
+
+        // Run the real processPunch pipeline.
+        // Pass bypassWorkingDay:true so test punches work on any day (including weekends).
+        const result = await processPunch(punch, { bypassWorkingDay: true });
+
+        // Re-fetch punch to get processed status
+        await punch.reload();
+
+        // Find attendance record created/updated
+        const punchDate = punch_time.toISOString().split("T")[0];
+        const { Attendance } = require("../models");
+        const attendanceRecord = await Attendance.findOne({
+            where: {
+                institute_id,
+                student_id: enrollment.user_id,
+                date: punchDate,
+            },
+        });
+
+        res.json({
+            success: true,
+            message: result?.reason || `Simulated ${punch_type.toUpperCase()} punch processed`,
+            data: {
+                punch_id: punch.id,
+                punch_time: punch_time.toISOString(),
+                punch_type,
+                processed: punch.processed,
+                person_id: enrollment.user_id,
+                person_role: enrollment.user_role,
+                result_ok: result?.ok,
+                result_reason: result?.reason,
+                attendance: attendanceRecord
+                    ? {
+                        id: attendanceRecord.id,
+                        status: attendanceRecord.status,
+                        time_in: attendanceRecord.time_in,
+                        is_late: attendanceRecord.is_late,
+                        late_by_minutes: attendanceRecord.late_by_minutes,
+                    }
+                    : null,
+            },
+        });
+    } catch (err) {
+        console.error("testPunch error:", err.message);
+        res.status(500).json({ success: false, message: err.message });
+    }
+};
+
+/**
+ * POST /api/biometric/test/heartbeat
+ * Updates last_sync on a device to mark it as online.
+ * Body: { device_id }
+ */
+exports.testHeartbeat = async (req, res) => {
+    try {
+        const institute_id = req.user.institute_id;
+        const { device_id } = req.body;
+
+        if (!device_id) {
+            return res.status(400).json({ success: false, message: "device_id is required" });
+        }
+
+        const device = await BiometricDevice.findOne({
+            where: { id: device_id, institute_id },
+        });
+        if (!device) {
+            return res.status(404).json({ success: false, message: "Device not found" });
+        }
+
+        await device.update({ last_sync: new Date() });
+
+        res.json({
+            success: true,
+            message: "Heartbeat received — device marked online",
+            data: { device_id: device.id, last_sync: device.last_sync },
+        });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+};
+
 
 // ─────────────────────────────────────────────────────────────────
 // PHASE 12 — EXCEL EXPORT

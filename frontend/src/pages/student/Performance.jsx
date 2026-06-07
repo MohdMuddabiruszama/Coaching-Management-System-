@@ -7,6 +7,7 @@ import { AuthContext } from '../../context/AuthContext';
 import performanceService from '../../services/performance.service';
 import api from '../../services/api';
 import './StudentPerformanceV2.css';
+import '../admin/Students.css';
 
 // Chart.js imports
 import {
@@ -222,29 +223,20 @@ function StudentPerformance() {
         <div className="perf-v2-dashboard">
 
             {/* ── Header ── */}
-            <div className="perf-v2-header">
-                <div className="perf-v2-header-left">
-                    <div className="perf-v2-header-icon">📊</div>
-                    <div className="perf-v2-header-titles">
+            <div className="st-header">
+                <div className="st-header-top-row">
+                    <div className="st-header-left">
                         <h1>My Performance</h1>
                         <p>Complete overview of your academic performance</p>
                     </div>
                 </div>
-                <div className="perf-v2-header-right">
-                    <div className="perf-v2-academic-year">
-                        <span>Academic Year</span>
-                        <span>2025 - 2026 ⌄</span>
+                <div className="st-header-bottom-row">
+                    <div className="st-breadcrumbs">
+                        <span>Dashboard</span>
+                        <span>›</span>
+                        <span className="active">My Performance</span>
                     </div>
-                    <div className="perf-v2-bell">
-                        🔔
-                        <span className="perf-v2-bell-badge">2</span>
-                    </div>
-                    <div className="perf-v2-user-profile">
-                        <div className="perf-v2-avatar">{user?.name?.charAt(0) || 'S'}</div>
-                        <div className="perf-v2-user-info">
-                            <span className="perf-v2-user-name">{user?.name || 'Sameer Reddy'}</span>
-                            <span className="perf-v2-user-role">{studentClass}</span>
-                        </div>
+                    <div className="st-header-actions">
                     </div>
                 </div>
             </div>

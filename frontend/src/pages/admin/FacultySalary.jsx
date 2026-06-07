@@ -231,7 +231,7 @@ function FacultySalaryPage() {
   // ── Guard ─────────────────────────────────────────────────────────────────
   if (!canRead) {
     return (
-      <div className="dashboard-container">
+      <div className="students-container">
         <div style={{
           textAlign: "center", padding: "4rem 2rem",
           background: "rgba(239,68,68,0.06)", border: "2px dashed rgba(239,68,68,0.4)",
@@ -272,37 +272,47 @@ function FacultySalaryPage() {
   };
 
   return (
-    <div className="dashboard-container">
+    <div className="students-container">
 
       {/* ── Header ── */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "2rem", flexWrap: "wrap", gap: "1rem" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
-          <div style={{ background: "#f3e8ff", color: "#7e22ce", width: "48px", height: "48px", borderRadius: "12px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.5rem", flexShrink: 0 }}>💼</div>
-          <div>
-            <h1 style={{ margin: 0, fontSize: "1.8rem", color: "#111827", fontWeight: "800" }}>Faculty Salary Management</h1>
-            <p style={{ margin: 0, color: "#6b7280", fontSize: "0.95rem", marginTop: "2px" }}>Manage monthly salary records, attendance-based calculations, and payment tracking.</p>
+      <div style={{ display: "flex", flexDirection: "column", gap: "1rem", marginBottom: "2rem" }}>
+        <div style={{ display: "flex", justifyContent: "flex-start", alignItems: "center", flexWrap: "wrap", gap: "1rem" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
+            <div style={{ background: "#f3e8ff", color: "#7e22ce", width: "48px", height: "48px", borderRadius: "12px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.5rem", flexShrink: 0 }}>💼</div>
+            <div>
+              <h1 style={{ margin: 0, fontSize: "1.8rem", color: "#111827", fontWeight: "800" }}>Faculty Salary Management</h1>
+              <p style={{ margin: 0, color: "#6b7280", fontSize: "0.95rem", marginTop: "2px" }}>Manage monthly salary records, attendance-based calculations, and payment tracking.</p>
+            </div>
           </div>
         </div>
-        <div style={{ display: "flex", gap: "0.75rem", alignItems: "center", flexWrap: "wrap" }}>
-          <div style={{ position: "relative" }}>
-            <span style={{ position: "absolute", right: "12px", top: "50%", transform: "translateY(-50%)", color: "#9ca3af", pointerEvents: "none" }}>📅</span>
-            <input
-              type="month"
-              value={monthFilter}
-              onChange={e => setMonthFilter(e.target.value)}
-              style={{ padding: "0.6rem 2.5rem 0.6rem 1rem", fontSize: "0.95rem", borderRadius: "8px", border: "1px solid #e5e7eb", outline: "none", color: "#374151" }}
-            />
+        
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "1rem" }}>
+          <div className="st-breadcrumbs" style={{ fontSize: '0.8rem', color: '#94a3b8', display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+              <span>Dashboard</span>
+              <span>›</span>
+              <span style={{ color: '#0f172a', fontWeight: '500' }}>Faculty Salary Management</span>
           </div>
-          {canCreate && (
-            <button
-              onClick={() => { setEditingRecord(null); setForm({ ...emptyForm, month_year: monthFilter }); setFormError(""); setShowCreateModal(true); }}
-              style={{ padding: "0.6rem 1.25rem", borderRadius: "8px", border: "none", background: "#7e22ce", color: "#fff", fontWeight: "600", cursor: "pointer", display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.9rem", boxShadow: "0 4px 6px rgba(126,34,206,0.2)" }}
-            >
-              + Add Salary Record
-            </button>
-          )}
-          <Link to="/admin/finance" style={{ padding: "0.6rem 1.25rem", borderRadius: "8px", border: "1px solid #e5e7eb", background: "#fff", color: "#374151", fontWeight: "600", cursor: "pointer", display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.9rem", textDecoration: "none" }}>📊 Finance Dashboard</Link>
-          <Link to="/admin/dashboard" style={{ padding: "0.6rem 1.25rem", borderRadius: "8px", border: "1px solid #e5e7eb", background: "#fff", color: "#374151", fontWeight: "600", cursor: "pointer", display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.9rem", textDecoration: "none" }}>← Back</Link>
+          <div style={{ display: "flex", gap: "0.75rem", alignItems: "center", flexWrap: "wrap" }}>
+            <div style={{ position: "relative" }}>
+              <span style={{ position: "absolute", right: "12px", top: "50%", transform: "translateY(-50%)", color: "#9ca3af", pointerEvents: "none" }}>📅</span>
+              <input
+                type="month"
+                value={monthFilter}
+                onChange={e => setMonthFilter(e.target.value)}
+                style={{ padding: "0.6rem 2.5rem 0.6rem 1rem", fontSize: "0.95rem", borderRadius: "8px", border: "1px solid #e5e7eb", outline: "none", color: "#374151" }}
+              />
+            </div>
+            {canCreate && (
+              <button
+                onClick={() => { setEditingRecord(null); setForm({ ...emptyForm, month_year: monthFilter }); setFormError(""); setShowCreateModal(true); }}
+                style={{ padding: "0.6rem 1.25rem", borderRadius: "8px", border: "none", background: "#7e22ce", color: "#fff", fontWeight: "600", cursor: "pointer", display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.9rem", boxShadow: "0 4px 6px rgba(126,34,206,0.2)" }}
+              >
+                + Add Salary Record
+              </button>
+            )}
+            <Link to="/admin/finance" style={{ padding: "0.6rem 1.25rem", borderRadius: "8px", border: "1px solid #e5e7eb", background: "#fff", color: "#374151", fontWeight: "600", cursor: "pointer", display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.9rem", textDecoration: "none" }}>📊 Finance Dashboard</Link>
+            <Link to="/admin/dashboard" style={{ padding: "0.6rem 1.25rem", borderRadius: "8px", border: "1px solid #e5e7eb", background: "#fff", color: "#374151", fontWeight: "600", cursor: "pointer", display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.9rem", textDecoration: "none" }}>← Back</Link>
+          </div>
         </div>
       </div>
 

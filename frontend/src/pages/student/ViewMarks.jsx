@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../../context/AuthContext';
 import markService from '../../services/mark.service';
 import './StudentMarks.css';
+import '../admin/Students.css';
 
 // ─── Chart.js setup ───────────────────────────────────────────
 import {
@@ -355,33 +356,21 @@ function ViewMarks() {
     return (
         <div className="marks-dashboard">
             {/* Header */}
-            <div className="marks-header">
-                <div className="marks-header-left">
-                    <div className="marks-header-icon">📝</div>
-                    <div className="marks-header-titles">
+            <div className="st-header">
+                <div className="st-header-top-row">
+                    <div className="st-header-left">
                         <h1>My Exam Marks</h1>
                         <p>View your performance across all exams. Click an exam name to see the full scorecard.</p>
                     </div>
                 </div>
-                <div className="marks-header-right">
-                    <div className="marks-academic-year">
-                        <span>Academic Year</span>
-                        <span>2025 - 2026</span>
+                <div className="st-header-bottom-row">
+                    <div className="st-breadcrumbs">
+                        <span>Dashboard</span>
+                        <span>›</span>
+                        <span className="active">My Exam Marks</span>
                     </div>
-                    <div className="marks-bell">
-                        🔔
-                        <span className="marks-bell-badge">2</span>
+                    <div className="st-header-actions">
                     </div>
-                    <div className="marks-user-profile">
-                        <div className="marks-avatar">{user?.name?.charAt(0) || 'S'}</div>
-                        <div className="marks-user-info">
-                            <span className="marks-user-name">{user?.name || 'Sameer Reddy'}</span>
-                            <span className="marks-user-role">{marks[0]?.Class?.name || 'Computer Science'}</span>
-                        </div>
-                    </div>
-                    <button className="marks-back-btn" onClick={() => navigate('/student/dashboard')}>
-                        ← Back to Dashboard
-                    </button>
                 </div>
             </div>
 

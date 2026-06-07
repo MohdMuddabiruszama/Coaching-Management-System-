@@ -4,7 +4,7 @@
  * Implements institute-level data isolation
  */
 
-const { Faculty, User, Subject, Institute, Plan, Class } = require("../models");
+const { Faculty, User, Subject, Institute, Plan, Class, StudentClass } = require("../models");
 const { Op } = require("sequelize");
 const { hashPassword } = require("../utils/hashPassword");
 
@@ -286,6 +286,7 @@ exports.updateFaculty = async (req, res) => {
             designation,
             salary,
             join_date,
+            status,
         } = req.body;
 
         const faculty = await Faculty.findOne({
@@ -308,19 +309,20 @@ exports.updateFaculty = async (req, res) => {
         }
 
         // Update user details
-        if (name || email || phone) {
+        if (name !== undefined || email !== undefined || phone !== undefined || status !== undefined) {
             await faculty.User.update({
-                name: name || faculty.User.name,
-                email: email || faculty.User.email,
-                phone: phone || faculty.User.phone,
+                name: name !== undefined ? name : faculty.User.name,
+                email: email !== undefined ? email : faculty.User.email,
+                phone: phone !== undefined ? phone : faculty.User.phone,
+                status: status !== undefined ? status : faculty.User.status,
             });
         }
 
         // Update faculty details
         await faculty.update({
-            designation: designation || faculty.designation,
-            salary: salary || faculty.salary,
-            join_date: join_date || faculty.join_date,
+            designation: designation !== undefined ? designation : faculty.designation,
+            salary: salary !== undefined ? salary : faculty.salary,
+            join_date: join_date !== undefined ? join_date : faculty.join_date,
         });
 
         res.status(200).json({
@@ -493,6 +495,52 @@ exports.resendFacultyCredentials = async (req, res) => {
         });
 
     } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+/**
+ * Get dashboard stats for faculty
+ * @route GET /api/faculty/dashboard-stats
+ * @access Faculty
+ */
+exports.getDashboardStats = async (req, res) => {
+    try {
+        const institute_id = req.user.institute_id;
+        const user_id = req.user.id;
+
+        const faculty = await Faculty.findOne({ where: { user_id, institute_id } });
+        if (!faculty) {
+            return res.status(404).json({ success: false, message: "Faculty not found" });
+        }
+
+        const subjects = await Subject.findAll({
+            where: { faculty_id: faculty.id, institute_id }
+        });
+
+        const teachingSubjectsCount = subjects.length;
+        const classIds = [...new Set(subjects.map(s => s.class_id).filter(Boolean))];
+        const classesAssignedCount = classIds.length;
+
+        let totalStudentsCount = 0;
+        if (classIds.length > 0) {
+            totalStudentsCount = await StudentClass.count({
+                where: { class_id: { [Op.in]: classIds } },
+                distinct: true,
+                col: 'student_id'
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            data: {
+                teachingSubjectsCount,
+                classesAssignedCount,
+                totalStudentsCount
+            }
+        });
+    } catch (error) {
+        console.error("Dashboard stats error:", error);
         res.status(500).json({ success: false, message: error.message });
     }
 };

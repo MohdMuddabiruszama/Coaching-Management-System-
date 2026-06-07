@@ -18,6 +18,7 @@ exports.getDashboardStats = async (req, res) => {
             totalFaculty,
             totalClasses,
             totalAdmins,
+            totalManagers,
             activeStudents,
             studentFees,
             unreadChatCount,
@@ -30,6 +31,7 @@ exports.getDashboardStats = async (req, res) => {
             Faculty.count({ where: { institute_id } }),
             Class.count({ where: { institute_id } }),
             User.count({ where: { institute_id, role: 'admin' } }),
+            User.count({ where: { institute_id, role: 'manager' } }),
             Student.count({
                 include: [{ model: User, where: { status: "active" } }],
                 where: { institute_id }
@@ -83,6 +85,7 @@ exports.getDashboardStats = async (req, res) => {
                 totalFaculty,
                 totalClasses,
                 totalAdmins,
+                totalManagers,
                 activeStudents,
                 totalDiscount,
                 totalDue,

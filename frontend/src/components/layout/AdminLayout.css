@@ -194,7 +194,11 @@ button.al-nav-link.dropdown-open .al-nav-arrow {
 .al-nav-arrow {
     font-size: 1.2rem;
     color: inherit;
-    opacity: 0.5;
+    opacity: 0.6;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.3s ease;
 }
 
 .al-nav-link.active .al-nav-arrow {

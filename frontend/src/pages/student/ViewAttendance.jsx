@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { AuthContext } from "../../context/AuthContext";
 import api from "../../services/api";
 import "./StudentAttendance.css";
+import "../admin/Students.css";
 
 function ViewAttendance() {
     const { user } = useContext(AuthContext);
@@ -130,22 +131,20 @@ function ViewAttendance() {
     return (
         <div className="att-container">
             {/* Header */}
-            <div className="att-header">
-                <div className="att-header-left">
-                    <h1>📅 My Attendance</h1>
-                    <p>Track your daily attendance. Working days exclude holidays.</p>
-                </div>
-                <div className="att-header-right">
-                    <div className="att-bell">
-                        🔔
-                        <span className="att-bell-badge">2</span>
+            <div className="st-header">
+                <div className="st-header-top-row">
+                    <div className="st-header-left">
+                        <h1>📅 My Attendance</h1>
+                        <p>Track your daily attendance. Working days exclude holidays.</p>
                     </div>
-                    <div className="att-user-profile">
-                        <div className="att-avatar">{user?.name?.charAt(0) || "S"}</div>
-                        <div className="att-user-info">
-                            <span className="att-user-name">{user?.name || "Student"}</span>
-                            <span className="att-user-role">{studentData?.Classes?.[0]?.name || "Student"}</span>
-                        </div>
+                </div>
+                <div className="st-header-bottom-row">
+                    <div className="st-breadcrumbs">
+                        <span>Dashboard</span>
+                        <span>›</span>
+                        <span className="active">My Attendance</span>
+                    </div>
+                    <div className="st-header-actions">
                     </div>
                 </div>
             </div>

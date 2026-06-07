@@ -103,7 +103,7 @@ function StatCard({ icon, label, value, colorClass, sub }) {
 
 function SkeletonLoader() {
     return (
-        <div className="dashboard-container" style={{ animation: 'pulse-glow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite' }}>
+        <div className="students-container" style={{ animation: 'pulse-glow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite' }}>
             <div className="dashboard-header" style={{ border: 'none', paddingBottom: 0 }}>
                 <div>
                     <div style={{ height: '36px', width: '300px', backgroundColor: 'var(--border-color, #e5e7eb)', borderRadius: '8px', marginBottom: '10px' }}></div>
@@ -296,51 +296,49 @@ export default function AdminAssignments() {
     }
 
     return (
-        <div className="dashboard-container admin-assignments-wrapper">
+        <div className="students-container admin-assignments-wrapper">
             {msg && <div className={`fa-flash ${msg.type}`} style={{ position: 'fixed', top: 20, right: 20, zIndex: 9999, background: 'white', padding: '16px 24px', borderRadius: '8px', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)' }}>{msg.type === 'success' ? '✅' : '❌'} {msg.text}</div>}
 
-            <div className="aa-header-container">
-                <div>
-                    <div className="aa-header-title">
-                        {view === 'list' ? (
-                            <>
-                                <DocumentIcon />
-                                <h1 style={{ margin: 0, padding: 0 }}>Assignments Overview</h1>
-                            </>
-                        ) : (
-                            <>
-                                <DocumentIcon />
-                                <h1 style={{ margin: 0, padding: 0 }}>{selected?.title || 'Assignment Details'}</h1>
-                            </>
-                        )}
+            <div className="aa-header-container" style={{ flexDirection: 'column', alignItems: 'stretch' }}>
+                <div style={{ display: 'flex', justifyContent: 'flex-start', marginBottom: '1rem' }}>
+                    <div>
+                            {view === 'list' ? (
+                                <h1>Assignments Overview</h1>
+                            ) : (
+                                <h1>{selected?.title || 'Assignment Details'}</h1>
+                            )}
+                        <p className="aa-header-subtitle">
+                            {view === 'list' ? 'Monitor all assignments across the institute' : 'Detailed performance tracking and assignment review'}
+                        </p>
                     </div>
-                    <p className="aa-header-subtitle">
-                        {view === 'list' ? 'Monitor all assignments across the institute' : 'Detailed performance tracking and assignment review'}
-                    </p>
                 </div>
                 
-                {view === 'list' ? (
-                    <div className="aa-header-actions">
-                        <button className="aa-btn-primary" onClick={() => window.location.href = '/admin/assignments/create'}>
-                            + Add Assignment
-                        </button>
-                        <button className="aa-btn-outline" onClick={handleExport} disabled={exporting}>
-                            <DownloadIcon /> {exporting ? 'Exporting...' : 'Export CSV'}
-                        </button>
-                        <button className="aa-btn-outline" onClick={() => window.location.href = '/admin'}>
-                            ← Back to Dashboard
-                        </button>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div className="st-breadcrumbs" style={{ fontSize: '0.8rem', color: '#94a3b8', display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                        <span>Dashboard</span>
+                        <span>›</span>
+                        <span style={{ color: '#0f172a', fontWeight: '500' }}>{view === 'list' ? 'Assignments Overview' : 'Assignment Details'}</span>
                     </div>
-                ) : (
-                    <div className="aa-header-actions">
-                        <button className="aa-btn-outline" onClick={handleExport}>
-                            <DownloadIcon /> Export CSV
-                        </button>
-                        <button className="aa-btn-outline" onClick={() => setView('list')}>
-                            ← Back to Overview
-                        </button>
-                    </div>
-                )}
+                    {view === 'list' ? (
+                        <div className="aa-header-actions">
+                            <button className="aa-btn-outline" onClick={handleExport} disabled={exporting}>
+                                <DownloadIcon /> {exporting ? 'Exporting...' : 'Export CSV'}
+                            </button>
+                            <button className="aa-btn-primary" onClick={() => window.location.href = '/admin/assignments/create'}>
+                                + Add Assignment
+                            </button>
+                        </div>
+                    ) : (
+                        <div className="aa-header-actions">
+                            <button className="aa-btn-outline" onClick={handleExport}>
+                                <DownloadIcon /> Export CSV
+                            </button>
+                            <button className="aa-btn-outline" onClick={() => setView('list')}>
+                                ← Back to Overview
+                            </button>
+                        </div>
+                    )}
+                </div>
             </div>
 
             {/* Stats Row */}

@@ -5,6 +5,7 @@ import api from "../../services/api";
 import { AuthContext } from "../../context/AuthContext";
 import BackButton from "../../components/common/BackButton";
 import "../admin/Dashboard.css";
+import "../admin/Students.css";
 import { savePdfNative } from "../../utils/capacitorPermissions";
 
 function ScanAttendance() {
@@ -244,12 +245,22 @@ function ScanAttendance() {
 
     return (
         <div className="dashboard-container">
-            <div className="dashboard-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div>
-                    <h1>🤳 My Attendance QR Code</h1>
-                    <p>Show this static QR code to your faculty to mark attendance.</p>
+            <div className="st-header">
+                <div className="st-header-top-row">
+                    <div className="st-header-left">
+                        <h1>🤳 My Attendance QR Code</h1>
+                        <p>Show this static QR code to your faculty to mark attendance.</p>
+                    </div>
                 </div>
-                <BackButton to="/student/dashboard" />
+                <div className="st-header-bottom-row">
+                    <div className="st-breadcrumbs">
+                        <span>Dashboard</span>
+                        <span>›</span>
+                        <span className="active">My QR Code</span>
+                    </div>
+                    <div className="st-header-actions">
+                    </div>
+                </div>
             </div>
 
             <div className="card" style={{ padding: "3rem", maxWidth: "540px", margin: "0 auto", textAlign: "center" }}>

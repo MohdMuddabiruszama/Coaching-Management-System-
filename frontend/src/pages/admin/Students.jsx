@@ -29,6 +29,7 @@ function Students() {
     const [classFilter, setClassFilter] = useState("all");
     const [sectionFilter, setSectionFilter] = useState("all");
     const [statusFilter, setStatusFilter] = useState("all");
+    const [assignmentFilter, setAssignmentFilter] = useState("all");
     const [availableSubjects, setAvailableSubjects] = useState([]); // Add specific subjects based on class
 
     // QR Modal state
@@ -512,6 +513,22 @@ function Students() {
         }
     };
 
+    const handleToggleStatus = async (student) => {
+        const currentStatus = student.User?.status || "active";
+        const newStatus = currentStatus === "active" ? "blocked" : "active";
+        const actionText = newStatus === "active" ? "activate" : "block";
+
+        if (!window.confirm(`Are you sure you want to ${actionText} this student?`)) return;
+
+        try {
+            await api.put(`/students/${student.id}`, { status: newStatus });
+            alert(`Student ${actionText}d successfully`);
+            fetchStudents();
+        } catch (error) {
+            alert(`Error: ` + (error.response?.data?.message || "Something went wrong"));
+        }
+    };
+
     const resetForm = () => {
         setFormData({
             name: "",
@@ -591,7 +608,12 @@ function Students() {
         const matchesStatus = 
             statusFilter === "all" || s.User?.status === statusFilter;
 
-        return matchesSearch && matchesClass && matchesSection && matchesStatus;
+        const matchesAssignment = 
+            assignmentFilter === "all" || 
+            (assignmentFilter === "assigned" && s.Classes && s.Classes.length > 0) ||
+            (assignmentFilter === "unassigned" && (!s.Classes || s.Classes.length === 0));
+
+        return matchesSearch && matchesClass && matchesSection && matchesStatus && matchesAssignment;
     });
 
     // Pagination Logic
@@ -695,6 +717,15 @@ function Students() {
                     <option value="active">Active</option>
                     <option value="inactive">Inactive</option>
                 </select>
+                <select 
+                    className="st-select" 
+                    value={assignmentFilter}
+                    onChange={(e) => setAssignmentFilter(e.target.value)}
+                >
+                    <option value="all">Assigned or Unassigned</option>
+                    <option value="assigned">Assigned</option>
+                    <option value="unassigned">Unassigned</option>
+                </select>
                 <button 
                     className="st-filter-btn"
                     onClick={() => {
@@ -702,11 +733,12 @@ function Students() {
                         setClassFilter("all");
                         setSectionFilter("all");
                         setStatusFilter("all");
+                        setAssignmentFilter("all");
                     }}
-                    style={{ color: (search || classFilter !== "all" || sectionFilter !== "all" || statusFilter !== "all") ? '#ef4444' : '' }}
+                    style={{ color: (search || classFilter !== "all" || sectionFilter !== "all" || statusFilter !== "all" || assignmentFilter !== "all") ? '#ef4444' : '' }}
                 >
                     <span style={{ fontSize: '1.1rem' }}>⚲</span> 
-                    {(search || classFilter !== "all" || sectionFilter !== "all" || statusFilter !== "all") ? 'Clear Filters' : 'Filters'}
+                    {(search || classFilter !== "all" || sectionFilter !== "all" || statusFilter !== "all" || assignmentFilter !== "all") ? 'Clear Filters' : 'Filters'}
                 </button>
             </div>
 
@@ -802,9 +834,6 @@ function Students() {
                     <div className="st-table-actions">
                         <button className="st-btn st-btn-outline" onClick={handleExport}>
                             <span style={{ fontSize: '1.1rem' }}>📥</span> Export
-                        </button>
-                        <button className="st-btn st-btn-outline" style={{ padding: '0.5rem' }} onClick={() => alert("Table settings coming soon!")}>
-                            <span style={{ fontSize: '1.2rem' }}>⚙</span>
                         </button>
                     </div>
                 </div>
@@ -928,9 +957,14 @@ function Students() {
                                                         {actionMenuOpen === student.id && (
                                                             <div className="st-dropdown-menu">
                                                                 {canUpdate && (
-                                                                    <button className="st-dropdown-item" onClick={() => { setActionMenuOpen(null); handleEdit(student); }}>
-                                                                        ✏️ Edit Student
-                                                                    </button>
+                                                                    <>
+                                                                        <button className="st-dropdown-item" onClick={() => { setActionMenuOpen(null); handleEdit(student); }}>
+                                                                            ✏️ Edit Student
+                                                                        </button>
+                                                                        <button className="st-dropdown-item" onClick={() => { setActionMenuOpen(null); handleToggleStatus(student); }}>
+                                                                            {student.User?.status === 'active' ? '🚫 Block Student' : '✅ Activate Student'}
+                                                                        </button>
+                                                                    </>
                                                                 )}
                                                                 {canDelete && (
                                                                     <button className="st-dropdown-item danger" onClick={() => { setActionMenuOpen(null); handleDelete(student.id); }}>
@@ -1391,201 +1425,135 @@ function Students() {
 
             {/* Add/Edit Student Modal */}
             {showModal && (
-                <div className="modal-overlay" onClick={() => setShowModal(false)}>
-                    <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: "700px" }}>
-                        <div className="modal-header">
-                            <h3>{editMode ? "Edit Student" : "Add New Student"}</h3>
-                            <button onClick={() => setShowModal(false)} className="btn btn-sm">
-                                ×
+                <div className="modal-overlay" style={{ backdropFilter: 'blur(4px)', backgroundColor: 'rgba(15, 23, 42, 0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'fixed', inset: 0, zIndex: 1000 }} onClick={() => setShowModal(false)}>
+                    <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '800px', width: '90%', maxHeight: '90vh', display: 'flex', flexDirection: 'column', borderRadius: '16px', overflow: 'hidden', padding: 0, border: 'none', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)', backgroundColor: '#fff', animation: 'modalSlideIn 0.3s ease-out' }}>
+                        {/* Header */}
+                        <div className="modal-header" style={{ padding: '1.5rem 2rem 1rem 2rem', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#fff' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                                <div style={{ backgroundColor: '#ede9fe', color: '#6366f1', width: '48px', height: '48px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><line x1="20" y1="8" x2="20" y2="14"></line><line x1="23" y1="11" x2="17" y2="11"></line></svg>
+                                </div>
+                                <div>
+                                    <h2 style={{ margin: 0, fontSize: '1.25rem', color: '#0f172a', fontWeight: 700 }}>{editMode ? "Edit Student" : "Add New Student"}</h2>
+                                    <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.85rem', color: '#64748b' }}>Enter student details to {editMode ? "update the" : "create a new"} record</p>
+                                </div>
+                            </div>
+                            <button onClick={() => setShowModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', display: 'flex', padding: '0.5rem', borderRadius: '8px', transition: 'all 0.2s' }} onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#f1f5f9'} onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
                             </button>
                         </div>
-                        <div className="modal-body">
-                            <form onSubmit={handleSubmit}>
-                                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }} className="responsive-form-grid">
-                                    <div className="form-group">
-                                        <label className="form-label">Full Name *</label>
-                                        <input
-                                            type="text"
-                                            name="name"
-                                            className="form-input"
-                                            value={formData.name}
-                                            onChange={handleChange}
-                                            required
-                                        />
-                                    </div>
-
-                                    <div className="form-group">
-                                        <label className="form-label">Email *</label>
-                                        <input
-                                            type="email"
-                                            name="email"
-                                            className="form-input"
-                                            value={formData.email}
-                                            onChange={handleChange}
-                                            required
-                                            disabled={editMode}
-                                        />
+                        
+                        {/* Body */}
+                        <div className="modal-body" style={{ padding: '1.5rem 2rem', backgroundColor: '#fff', overflowY: 'auto', flex: 1 }}>
+                            <form id="student-form" onSubmit={handleSubmit}>
+                                {/* Personal Information */}
+                                <div style={{ marginBottom: '1.5rem' }}>
+                                    <h4 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#334155', fontSize: '1rem', fontWeight: 600, margin: '0 0 1rem 0' }}>
+                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6366f1" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                                        Personal Information
+                                    </h4>
+                                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
+                                        <div className="form-group">
+                                            <label className="form-label" style={{ fontSize: '0.85rem', fontWeight: 600, color: '#475569', marginBottom: '0.4rem' }}>Full Name <span style={{color:'#ef4444'}}>*</span></label>
+                                            <input type="text" name="name" className="form-input" placeholder="Enter full name" value={formData.name} onChange={handleChange} required />
+                                        </div>
+                                        <div className="form-group">
+                                            <label className="form-label" style={{ fontSize: '0.85rem', fontWeight: 600, color: '#475569', marginBottom: '0.4rem' }}>Email <span style={{color:'#ef4444'}}>*</span></label>
+                                            <input type="email" name="email" className="form-input" placeholder="Enter email address" value={formData.email} onChange={handleChange} required disabled={editMode} />
+                                        </div>
+                                        <div className="form-group">
+                                            <label className="form-label" style={{ fontSize: '0.85rem', fontWeight: 600, color: '#475569', marginBottom: '0.4rem' }}>Phone</label>
+                                            <input type="tel" name="phone" className="form-input" placeholder="Enter phone number" value={formData.phone} onChange={handleChange} />
+                                        </div>
+                                        <div className="form-group">
+                                            <label className="form-label" style={{ fontSize: '0.85rem', fontWeight: 600, color: '#475569', marginBottom: '0.4rem' }}>Roll Number <span style={{color:'#ef4444'}}>*</span></label>
+                                            <input type="text" name="roll_number" className="form-input" placeholder="Enter roll number" value={formData.roll_number} onChange={handleChange} required />
+                                        </div>
+                                        {!editMode && (
+                                            <div className="form-group">
+                                                <label className="form-label" style={{ fontSize: '0.85rem', fontWeight: 600, color: '#475569', marginBottom: '0.4rem' }}>Password <span style={{color:'#ef4444'}}>*</span></label>
+                                                <div style={{ position: 'relative' }}>
+                                                    <input type="password" name="password" className="form-input" placeholder="Min 6 characters" value={formData.password} onChange={handleChange} required={!editMode} minLength={6} style={{ width: '100%' }} />
+                                                </div>
+                                            </div>
+                                        )}
+                                        <div className="form-group">
+                                            <label className="form-label" style={{ fontSize: '0.85rem', fontWeight: 600, color: '#475569', marginBottom: '0.4rem' }}>Gender</label>
+                                            <select name="gender" className="form-select" value={formData.gender} onChange={handleChange}>
+                                                <option value="" disabled>Select gender</option>
+                                                <option value="male">Male</option>
+                                                <option value="female">Female</option>
+                                                <option value="other">Other</option>
+                                            </select>
+                                        </div>
+                                        <div className="form-group">
+                                            <label className="form-label" style={{ fontSize: '0.85rem', fontWeight: 600, color: '#475569', marginBottom: '0.4rem' }}>Date of Birth <span style={{color:'#ef4444'}}>*</span></label>
+                                            <input type="date" name="date_of_birth" className="form-input" value={formData.date_of_birth} onChange={handleChange} required max={new Date().toISOString().split('T')[0]} />
+                                        </div>
+                                        <div className="form-group">
+                                            <label className="form-label" style={{ fontSize: '0.85rem', fontWeight: 600, color: '#475569', marginBottom: '0.4rem' }}>Admission Date <span style={{color:'#ef4444'}}>*</span></label>
+                                            <input type="date" name="admission_date" className="form-input" value={formData.admission_date} onChange={handleChange} required max={new Date().toISOString().split('T')[0]} />
+                                        </div>
                                     </div>
                                 </div>
 
-                                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
+                                {/* Academic Information */}
+                                <div style={{ marginBottom: '1.5rem' }}>
+                                    <h4 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#334155', fontSize: '1rem', fontWeight: 600, margin: '0 0 1rem 0' }}>
+                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6366f1" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"></path><path d="M6 12v5c3 3 9 3 12 0v-5"></path></svg>
+                                        Academic Information
+                                    </h4>
                                     <div className="form-group">
-                                        <label className="form-label">Phone</label>
-                                        <input
-                                            type="tel"
-                                            name="phone"
-                                            className="form-input"
-                                            value={formData.phone}
-                                            onChange={handleChange}
-                                        />
-                                    </div>
-
-                                    <div className="form-group">
-                                        <label className="form-label">Roll Number *</label>
-                                        <input
-                                            type="text"
-                                            name="roll_number"
-                                            className="form-input"
-                                            value={formData.roll_number}
-                                            onChange={handleChange}
-                                            required
-                                        />
-                                    </div>
-                                </div>
-
-                                {!editMode && (
-                                    <div className="form-group">
-                                        <label className="form-label">
-                                            Password * <small>(Min 6 chars)</small>
-                                        </label>
-                                        <input
-                                            type="password"
-                                            name="password"
-                                            className="form-input"
-                                            value={formData.password}
-                                            onChange={handleChange}
-                                            required={!editMode}
-                                            minLength={6}
-                                        />
-                                    </div>
-                                )}
-
-                                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
-                                    <div className="form-group" style={{ gridColumn: "1 / -1", marginTop: "1rem" }}>
-                                        <label className="form-label">Classes (Multiple selection allowed)</label>
-                                        <select
-                                            name="class_ids"
-                                            className="form-select"
-                                            multiple
-                                            value={formData.class_ids}
-                                            onChange={handleClassChange}
-                                            style={{ height: "100px" }}
-                                        >
+                                        <label className="form-label" style={{ fontSize: '0.85rem', fontWeight: 600, color: '#475569', marginBottom: '0.4rem' }}>Classes <span style={{color:'#ef4444'}}>*</span></label>
+                                        <select name="class_ids" className="form-select" multiple value={formData.class_ids} onChange={handleClassChange} style={{ height: "100px" }}>
                                             {classes.map((c) => (
-                                                <option key={c.id} value={c.id}>
-                                                    {c.name} {c.section && `- ${c.section}`}
-                                                </option>
+                                                <option key={c.id} value={c.id}>{c.name} {c.section && `- ${c.section}`}</option>
                                             ))}
                                         </select>
-                                        <small style={{ color: "#6b7280" }}>Hold Ctrl (Windows) or Cmd (Mac) to select multiple classes</small>
+                                        <small style={{ color: "#94a3b8", display: 'block', marginTop: '0.3rem' }}>Hold Ctrl (Windows) or Cmd (Mac) to select multiple classes</small>
                                     </div>
+                                    {formData.class_ids && formData.class_ids.length > 0 && (
+                                        <div className="form-group" style={{ marginTop: "1rem" }}>
+                                            <label className="form-label" style={{ fontSize: '0.85rem', fontWeight: 600, color: '#475569', marginBottom: '0.4rem' }}>Subjects</label>
+                                            <select name="subject_ids" className="form-select" multiple value={formData.subject_ids} onChange={handleSubjectChange} style={{ height: "100px" }}>
+                                                {availableSubjects.map((sub) => (
+                                                    <option key={sub.id} value={sub.id}>{sub.name}</option>
+                                                ))}
+                                            </select>
+                                            <small style={{ color: "#94a3b8", display: 'block', marginTop: '0.3rem' }}>Hold Ctrl (Windows) or Cmd (Mac) to select multiple subjects</small>
+                                        </div>
+                                    )}
                                 </div>
 
-                                {formData.class_ids && formData.class_ids.length > 0 && (
-                                    <div className="form-group" style={{ marginTop: "1rem" }}>
-                                        <label className="form-label">Subjects (Multiple selection allowed)</label>
-                                        <select
-                                            name="subject_ids"
-                                            className="form-select"
-                                            multiple
-                                            value={formData.subject_ids}
-                                            onChange={handleSubjectChange}
-                                            style={{ height: "100px" }}
-                                        >
-                                            {availableSubjects.map((sub) => (
-                                                <option key={sub.id} value={sub.id}>
-                                                    {sub.name}
-                                                </option>
-                                            ))}
-                                        </select>
-                                        <small style={{ color: "#6b7280" }}>Hold Ctrl (Windows) or Cmd (Mac) to select multiple subjects</small>
-                                    </div>
-                                )}
-
-                                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem", marginTop: "1rem" }}>
+                                {/* Address */}
+                                <div style={{ marginBottom: editMode ? '1.5rem' : '0' }}>
+                                    <h4 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#334155', fontSize: '1rem', fontWeight: 600, margin: '0 0 1rem 0' }}>
+                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6366f1" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+                                        Address
+                                    </h4>
                                     <div className="form-group">
-                                        <label className="form-label">Gender</label>
-                                        <select
-                                            name="gender"
-                                            className="form-select"
-                                            value={formData.gender}
-                                            onChange={handleChange}
-                                        >
-                                            <option value="male">Male</option>
-                                            <option value="female">Female</option>
-                                            <option value="other">Other</option>
-                                        </select>
+                                        <label className="form-label" style={{ fontSize: '0.85rem', fontWeight: 600, color: '#475569', marginBottom: '0.4rem' }}>Full Address</label>
+                                        <textarea name="address" className="form-input" rows="2" placeholder="Enter full address" value={formData.address} onChange={handleChange}></textarea>
                                     </div>
-
-                                    <div className="form-group">
-                                        <label className="form-label">Date of Birth <span style={{ color: 'red' }}>*</span></label>
-                                        <input
-                                            type="date"
-                                            name="date_of_birth"
-                                            className="form-input"
-                                            value={formData.date_of_birth}
-                                            onChange={handleChange}
-                                            required
-                                            max={new Date().toISOString().split('T')[0]}
-                                        />
-                                    </div>
-
-                                    <div className="form-group">
-                                        <label className="form-label">Admission Date <span style={{ color: 'red' }}>*</span></label>
-                                        <input
-                                            type="date"
-                                            name="admission_date"
-                                            className="form-input"
-                                            value={formData.admission_date}
-                                            onChange={handleChange}
-                                            required
-                                            max={new Date().toISOString().split('T')[0]}
-                                        />
-                                    </div>
-                                </div>
-
-                                <div className="form-group">
-                                    <label className="form-label">Address</label>
-                                    <textarea
-                                        name="address"
-                                        className="form-input"
-                                        rows="2"
-                                        value={formData.address}
-                                        onChange={handleChange}
-                                    ></textarea>
                                 </div>
 
                                 {editMode && (
-                                    <div className="form-group" style={{ gridColumn: "1 / -1", marginTop: "1rem" }}>
-                                        <label className="form-label" style={{ fontWeight: '700' }}>Account Status</label>
-                                        <div style={{ display: 'flex', gap: '0.75rem', marginTop: "0.5rem", flexWrap: "wrap" }}>
+                                    <div>
+                                        <h4 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#334155', fontSize: '1rem', fontWeight: 600, margin: '0 0 1rem 0' }}>
+                                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6366f1" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+                                            Account Status
+                                        </h4>
+                                        <div style={{ display: 'flex', gap: '0.75rem', flexWrap: "wrap" }}>
                                             {['active', 'blocked'].map(s => (
                                                 <label key={s} style={{
                                                     display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer',
                                                     padding: '0.5rem 1.2rem', borderRadius: '8px',
-                                                    border: `1.5px solid ${formData.status === s ? (s === 'active' ? '#10b981' : '#ef4444') : 'var(--border-color)'}`,
+                                                    border: `1.5px solid ${formData.status === s ? (s === 'active' ? '#10b981' : '#ef4444') : '#e2e8f0'}`,
                                                     background: formData.status === s ? (s === 'active' ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)') : 'transparent',
                                                     fontWeight: '600',
-                                                    color: formData.status === s ? (s === 'active' ? '#10b981' : '#ef4444') : 'var(--text-secondary)'
+                                                    color: formData.status === s ? (s === 'active' ? '#10b981' : '#ef4444') : '#64748b'
                                                 }}>
-                                                    <input
-                                                        type="radio"
-                                                        name="status"
-                                                        value={s}
-                                                        checked={formData.status === s}
-                                                        onChange={handleChange}
-                                                        style={{ accentColor: s === 'active' ? '#10b981' : '#ef4444' }}
-                                                    />
+                                                    <input type="radio" name="status" value={s} checked={formData.status === s} onChange={handleChange} style={{ accentColor: s === 'active' ? '#10b981' : '#ef4444' }} />
                                                     {s === 'active' ? '● Active' : '🚫 Blocked'}
                                                 </label>
                                             ))}
@@ -1597,16 +1565,22 @@ function Students() {
                                         )}
                                     </div>
                                 )}
-
-                                <div className="modal-footer">
-                                    <button type="button" onClick={() => setShowModal(false)} className="btn btn-secondary">
-                                        Cancel
-                                    </button>
-                                    <button type="submit" className="btn btn-primary">
-                                        {editMode ? "Update Student" : "Add Student"}
-                                    </button>
-                                </div>
                             </form>
+                        </div>
+                        
+                        {/* Footer */}
+                        <div className="modal-footer" style={{ padding: '1.25rem 2rem', backgroundColor: '#fff', borderTop: '1px solid #f1f5f9', display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
+                            <button type="button" onClick={() => setShowModal(false)} style={{ padding: '0.6rem 1.2rem', borderRadius: '8px', border: '1px solid #cbd5e1', backgroundColor: '#f8fafc', color: '#475569', fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s' }} onMouseOver={(e) => {e.currentTarget.style.backgroundColor='#f1f5f9'; e.currentTarget.style.transform='translateY(-1px)'}} onMouseOut={(e) => {e.currentTarget.style.backgroundColor='#f8fafc'; e.currentTarget.style.transform='none'}}>
+                                Cancel
+                            </button>
+                            <button type="submit" form="student-form" className="st-btn st-btn-primary" style={{ padding: '0.6rem 1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem', borderRadius: '8px', border: 'none', backgroundColor: '#6366f1', color: '#fff', fontWeight: 600, cursor: 'pointer', boxShadow: '0 4px 6px -1px rgba(99, 102, 241, 0.3)', transition: 'all 0.2s' }}>
+                                {editMode ? (
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+                                ) : (
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><line x1="20" y1="8" x2="20" y2="14"></line><line x1="23" y1="11" x2="17" y2="11"></line></svg>
+                                )}
+                                {editMode ? "Update Student" : "Add Student"}
+                            </button>
                         </div>
                     </div>
                 </div>

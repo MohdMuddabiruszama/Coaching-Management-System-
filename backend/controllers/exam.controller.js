@@ -5,7 +5,7 @@
  *    → For logged-in student: join marks → exams via students.user_id = req.user.id
  */
 
-const { Exam, Mark, Student, Subject, User, Faculty, StudentParent } = require('../models');
+const { Exam, Mark, Student, Subject, User, Faculty, StudentParent, Class } = require('../models');
 const { Op } = require('sequelize');
 const { sequelize } = require('../models');
 const { QueryTypes } = require('sequelize');
@@ -77,6 +77,9 @@ exports.getAllExams = async (req, res) => {
                 attributes: ['id', 'name'],
                 where: Object.keys(subjectWhereClause).length ? subjectWhereClause : undefined,
                 required: Object.keys(subjectWhereClause).length > 0,
+            }, {
+                model: Class,
+                attributes: ['id', 'name', 'section'],
             }],
         });
 
@@ -133,6 +136,50 @@ exports.enterMarks = async (req, res) => {
         }
 
         res.status(201).json({ success: true, message: 'Marks saved successfully', data: mark });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+// ═══════════════════════════════════════════════════════════════
+// NEW: bulkEnterMarks — bulk upsert for imported CSV
+// ═══════════════════════════════════════════════════════════════
+exports.bulkEnterMarks = async (req, res) => {
+    try {
+        const { exam_id, marksData } = req.body;
+        const institute_id = req.user.institute_id;
+
+        const exam = await Exam.findByPk(exam_id);
+        if (!exam) return res.status(404).json({ success: false, message: 'Exam not found' });
+        if (exam.marks_locked) {
+            return res.status(403).json({ success: false, message: 'Marks are locked for this exam' });
+        }
+
+        let importedCount = 0;
+        for (const md of marksData) {
+            let mark = await Mark.findOne({ where: { institute_id, exam_id, student_id: md.student_id } });
+
+            const data = {
+                marks_obtained: md.is_absent ? null : parseFloat(md.marks_obtained),
+                is_absent: md.is_absent || false,
+                remarks: md.remarks || null,
+            };
+
+            if (mark) {
+                await mark.update(data);
+            } else {
+                await Mark.create({
+                    institute_id,
+                    exam_id,
+                    student_id: md.student_id,
+                    subject_id: exam.subject_id,
+                    ...data,
+                });
+            }
+            importedCount++;
+        }
+
+        res.status(200).json({ success: true, message: `${importedCount} marks imported successfully` });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
     }

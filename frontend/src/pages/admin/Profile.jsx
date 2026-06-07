@@ -186,9 +186,6 @@ function Profile() {
                         <p>Manage your personal information and account settings</p>
                     </div>
                 </div>
-                <button className="profile-back-btn" onClick={handleBack}>
-                    ← Back to Dashboard
-                </button>
             </div>
 
             {message.text && (
@@ -222,6 +219,15 @@ function Profile() {
                                 </div>
                             </div>
                         )}
+                        {user?.role === "faculty" && (
+                            <div className="profile-detail-item">
+                                <span className="profile-detail-icon">🏢</span>
+                                <div className="profile-detail-content">
+                                    <h5>Emp No</h5>
+                                    <p>{profile?.emp_no || (profile?.id ? `EMP-${String(profile.id).padStart(4, '0')}` : 'N/A')}</p>
+                                </div>
+                            </div>
+                        )}
                         <div className="profile-detail-item">
                             <span className="profile-detail-icon">✉️</span>
                             <div className="profile-detail-content">
@@ -238,7 +244,7 @@ function Profile() {
                                 </div>
                             </div>
                         )}
-                        {user?.role === "student" && (
+                        {(user?.role === "student" || user?.role === "faculty") && (
                             <div className="profile-detail-item">
                                 <span className="profile-detail-icon">🏠</span>
                                 <div className="profile-detail-content">
@@ -256,9 +262,13 @@ function Profile() {
                                         ? profile?.admission_date
                                             ? new Date(profile.admission_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
                                             : 'N/A'
-                                        : baseUser?.createdAt
-                                            ? new Date(baseUser.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
-                                            : 'N/A'
+                                        : user?.role === "faculty"
+                                            ? (profile?.join_date || profile?.created_at || baseUser?.created_at)
+                                                ? new Date(profile.join_date || profile.created_at || baseUser.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
+                                                : 'N/A'
+                                            : (baseUser?.createdAt || baseUser?.created_at)
+                                                ? new Date(baseUser.createdAt || baseUser.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
+                                                : 'N/A'
                                     }
                                 </p>
                             </div>

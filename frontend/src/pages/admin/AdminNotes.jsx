@@ -199,23 +199,29 @@ function AdminNotes() {
     if (loading) return <div style={{ display: 'flex', justifyContent: 'center', padding: '4rem' }}><LoadingSpinner /></div>;
 
     return (
-        <div className="dashboard-container an-wrapper">
+        <div className="students-container an-wrapper">
             {/* ── Page Header ── */}
-            <div className="an-header-container">
-                <div>
-                    <div className="an-header-title">
-                        <BookOpenIcon />
+            <div className="an-header-container" style={{ flexDirection: 'column', alignItems: 'stretch' }}>
+                <div style={{ display: 'flex', justifyContent: 'flex-start', marginBottom: '1rem' }}>
+                    <div>
                         <h1>Manage Study Materials</h1>
+                        <p className="an-header-subtitle">Monitor and manage all study materials uploaded by faculty members across your institute.</p>
                     </div>
-                    <p className="an-header-subtitle">Monitor and manage all study materials uploaded by faculty members across your institute.</p>
                 </div>
-                <div className="an-header-actions">
-                    <button className="an-btn-outline" onClick={handleExport}>
-                        <DownloadIcon /> Export CSV
-                    </button>
-                    <button className="an-btn-primary" onClick={() => window.location.href='/admin/notes/create'}>
-                        <UploadCloudIcon /> Upload Material
-                    </button>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div className="st-breadcrumbs" style={{ fontSize: '0.8rem', color: '#94a3b8', display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                        <span>Dashboard</span>
+                        <span>›</span>
+                        <span style={{ color: '#0f172a', fontWeight: '500' }}>Manage Study Materials</span>
+                    </div>
+                    <div className="an-header-actions">
+                        <button className="an-btn-outline" onClick={handleExport}>
+                            <DownloadIcon /> Export CSV
+                        </button>
+                        <button className="an-btn-primary" onClick={() => window.location.href='/admin/notes/create'}>
+                            <UploadCloudIcon /> Upload Material
+                        </button>
+                    </div>
                 </div>
             </div>
 

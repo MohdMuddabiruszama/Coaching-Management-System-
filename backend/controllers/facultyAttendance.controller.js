@@ -1,4 +1,4 @@
-const { FacultyAttendance, Faculty, User, Institute } = require("../models");
+const { FacultyAttendance, Faculty, User, Institute, Subject } = require("../models");
 const { Op } = require("sequelize");
 const crypto = require("crypto");
 
@@ -153,7 +153,10 @@ exports.getGrid = async (req, res) => {
 
         const facultyList = await Faculty.findAll({
             where: { institute_id },
-            include: [{ model: User, attributes: ['name', 'email'] }]
+            include: [
+                { model: User, attributes: ['name', 'email'] },
+                { model: Subject, attributes: ['name'] }
+            ]
         });
 
         const attendanceRecords = await FacultyAttendance.findAll({
@@ -178,7 +181,9 @@ exports.getGrid = async (req, res) => {
             return {
                 faculty_id: faculty.id,
                 name: faculty.User?.name,
-                department: faculty.department || 'Unassigned',
+                subjects: faculty.Subjects && faculty.Subjects.length > 0 
+                    ? faculty.Subjects.map(s => s.name).join(', ') 
+                    : 'Unassigned',
                 designation: faculty.designation || 'Unassigned',
                 total_days: total,
                 working_days: workingDays,

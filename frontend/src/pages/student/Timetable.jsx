@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import api from "../../services/api";
 import { AuthContext } from "../../context/AuthContext";
 import "./StudentTimetableV2.css";
+import "../admin/Students.css";
 
 const DAYS_OF_WEEK = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
@@ -131,17 +132,22 @@ function StudentTimetable() {
     return (
         <div className="tt-v2-container">
             {/* ── Header ── */}
-            <div className="tt-v2-header">
-                <div className="tt-v2-header-left">
-                    <div className="tt-v2-header-icon">📅</div>
-                    <div className="tt-v2-header-titles">
+            <div className="st-header">
+                <div className="st-header-top-row">
+                    <div className="st-header-left">
                         <h1>My Class Timetable</h1>
                         <p>Your weekly class schedule for enrolled subjects.</p>
                     </div>
                 </div>
-                <Link to="/student/dashboard" className="tt-v2-back-btn">
-                    ← Back to Dashboard
-                </Link>
+                <div className="st-header-bottom-row">
+                    <div className="st-breadcrumbs">
+                        <span>Dashboard</span>
+                        <span>›</span>
+                        <span className="active">My Class Timetable</span>
+                    </div>
+                    <div className="st-header-actions">
+                    </div>
+                </div>
             </div>
 
             {/* ── Top Banner ── */}

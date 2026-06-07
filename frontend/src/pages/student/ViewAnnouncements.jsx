@@ -124,9 +124,6 @@ function ViewAnnouncements() {
                         <p className="ann-v2-header-sub">Important updates and notifications from the institute and faculty.</p>
                     </div>
                 </div>
-                <button className="ann-v2-btn-outline" onClick={() => navigate(`/${user?.role}/dashboard`)}>
-                    ← Back to Dashboard
-                </button>
             </div>
 
             {/* Stats Row */}

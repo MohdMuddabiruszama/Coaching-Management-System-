@@ -174,7 +174,7 @@ function FinanceDashboard() {
   // ── Guard: Manager cannot see this page unless permitted ───────────────
   if (!hasFinancePermission) {
     return (
-      <div className="dashboard-container">
+      <div className="students-container">
         <div style={{
           textAlign: "center", padding: "4rem 2rem",
           background: "rgba(239,68,68,0.06)", border: "2px dashed rgba(239,68,68,0.4)",
@@ -196,7 +196,7 @@ function FinanceDashboard() {
 
   if (loading) {
     return (
-      <div className="dashboard-container">
+      <div className="students-container">
         <div className="dashboard-loading" style={{ textAlign: "center", padding: "3rem" }}>
           <div style={{ fontSize: "2rem", marginBottom: "0.5rem" }}>📊</div>
           Loading Finance Dashboard...
@@ -207,7 +207,7 @@ function FinanceDashboard() {
 
   if (error) {
     return (
-      <div className="dashboard-container">
+      <div className="students-container">
         <div style={{
           background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.4)",
           borderRadius: 12, padding: "1.5rem", marginTop: "1rem", color: "#ef4444"
@@ -235,29 +235,39 @@ function FinanceDashboard() {
   return (
     <div className="dashboard-container">
       {/* ── Header ── */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "2rem", flexWrap: "wrap", gap: "1rem" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
-          <div style={{ background: "#fff", border: "1px solid #e5e7eb", color: "#374151", width: "40px", height: "40px", borderRadius: "8px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.2rem", flexShrink: 0 }}>
-            <span style={{ transform: "rotate(90deg)" }}>|||</span>
-          </div>
-          <div>
-            <h1 style={{ margin: 0, fontSize: "1.8rem", color: "#111827", fontWeight: "800" }}>Finance Dashboard</h1>
-            <p style={{ margin: 0, color: "#6b7280", fontSize: "0.95rem", marginTop: "2px" }}>Comprehensive overview of your institution's financial performance.</p>
+      <div style={{ display: "flex", flexDirection: "column", gap: "1rem", marginBottom: "2rem" }}>
+        <div style={{ display: "flex", justifyContent: "flex-start", alignItems: "center", flexWrap: "wrap", gap: "1rem" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
+            <div style={{ background: "#fff", border: "1px solid #e5e7eb", color: "#374151", width: "40px", height: "40px", borderRadius: "8px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.2rem", flexShrink: 0 }}>
+              <span style={{ transform: "rotate(90deg)" }}>|||</span>
+            </div>
+            <div>
+              <h1 style={{ margin: 0, fontSize: "1.8rem", color: "#111827", fontWeight: "800" }}>Finance Dashboard</h1>
+              <p style={{ margin: 0, color: "#6b7280", fontSize: "0.95rem", marginTop: "2px" }}>Comprehensive overview of your institution's financial performance.</p>
+            </div>
           </div>
         </div>
-        <div style={{ display: "flex", gap: "0.75rem", alignItems: "center", flexWrap: "wrap" }}>
-          <div style={{ position: "relative" }}>
-            <span style={{ position: "absolute", right: "12px", top: "50%", transform: "translateY(-50%)", color: "#9ca3af", pointerEvents: "none" }}>📅</span>
-            <input
-              type="month"
-              value={monthFilter}
-              onChange={e => setMonthFilter(e.target.value)}
-              style={{ padding: "0.6rem 2.5rem 0.6rem 1rem", fontSize: "0.95rem", borderRadius: "8px", border: "1px solid #e5e7eb", outline: "none", color: "#374151", background: "#fff" }}
-            />
+        
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "1rem" }}>
+          <div className="st-breadcrumbs" style={{ fontSize: '0.8rem', color: '#94a3b8', display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+              <span>Dashboard</span>
+              <span>›</span>
+              <span style={{ color: '#0f172a', fontWeight: '500' }}>Finance Dashboard</span>
           </div>
-          <button style={{ padding: "0.6rem 1.25rem", borderRadius: "8px", border: "none", background: "#7e22ce", color: "#fff", fontWeight: "600", cursor: "pointer", display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.9rem", boxShadow: "0 4px 6px rgba(126,34,206,0.2)" }}>
-            📥 Download Report
-          </button>
+          <div style={{ display: "flex", gap: "0.75rem", alignItems: "center", flexWrap: "wrap" }}>
+            <div style={{ position: "relative" }}>
+              <span style={{ position: "absolute", right: "12px", top: "50%", transform: "translateY(-50%)", color: "#9ca3af", pointerEvents: "none" }}>📅</span>
+              <input
+                type="month"
+                value={monthFilter}
+                onChange={e => setMonthFilter(e.target.value)}
+                style={{ padding: "0.6rem 2.5rem 0.6rem 1rem", fontSize: "0.95rem", borderRadius: "8px", border: "1px solid #e5e7eb", outline: "none", color: "#374151", background: "#fff" }}
+              />
+            </div>
+            <button style={{ padding: "0.6rem 1.25rem", borderRadius: "8px", border: "none", background: "#7e22ce", color: "#fff", fontWeight: "600", cursor: "pointer", display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.9rem", boxShadow: "0 4px 6px rgba(126,34,206,0.2)" }}>
+              📥 Download Report
+            </button>
+          </div>
         </div>
       </div>
 

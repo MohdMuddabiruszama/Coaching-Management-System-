@@ -28,6 +28,9 @@ function ViewAttendance() {
     const [selectedMonth, setSelectedMonth] = useState(`${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`);
 
     const [gridData, setGridData] = useState([]);
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 10;
+
     const [stats, setStats] = useState({
         overallRate: 0,
         totalStudents: 0,
@@ -62,6 +65,7 @@ function ViewAttendance() {
     // Clear grid when filters change so old data isn't shown incorrectly
     useEffect(() => {
         setGridData([]);
+        setCurrentPage(1);
         setStats({
             overallRate: 0,
             totalStudents: 0,
@@ -236,6 +240,9 @@ function ViewAttendance() {
         return <span style={{ color: '#9ca3af', backgroundColor: '#f3f4f6', padding: '2px 6px', borderRadius: '4px', fontSize: '10px', fontWeight: 'bold' }}>-</span>;
     };
 
+    const totalPages = Math.ceil(gridData.length / itemsPerPage);
+    const currentStudents = gridData.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
     return (
         <div className="students-container">
             {/* ── Header ── */}
@@ -311,13 +318,26 @@ function ViewAttendance() {
                         onChange={(e) => setSelectedMonth(e.target.value)}
                     />
                 </div>
-                <div style={{display: 'flex', alignItems: 'flex-end', paddingBottom: '2px'}}>
+                <div style={{display: 'flex', flexDirection: 'column'}}>
+                    <label style={{display: 'block', fontSize: '0.8rem', color: 'transparent', marginBottom: '0.4rem', userSelect: 'none'}}>&nbsp;</label>
                     <button 
                         onClick={fetchGridData}
-                        className="st-btn st-btn-outline" 
-                        style={{ color: "#6366f1", borderColor: "#c7d2fe", background: "#eef2ff", height: '42px' }}
+                        className="st-btn st-btn-primary" 
+                        style={{ 
+                            height: '42px', 
+                            padding: '0 1.5rem', 
+                            display: 'flex', 
+                            alignItems: 'center', 
+                            gap: '8px', 
+                            boxShadow: '0 4px 6px -1px rgba(79, 70, 229, 0.2), 0 2px 4px -1px rgba(79, 70, 229, 0.1)',
+                            transition: 'all 0.2s ease',
+                            fontWeight: '600'
+                        }}
                     >
-                        Y Apply Filters
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                            <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
+                        </svg>
+                        Apply Filters
                     </button>
                 </div>
             </div>
@@ -435,11 +455,11 @@ function ViewAttendance() {
                                     <td colSpan={daysInMonth + 1} style={{ textAlign: "center", padding: "4rem", color: '#64748b' }}>
                                         <div style={{ fontSize: "2rem", marginBottom: "0.5rem" }}>👇</div>
                                         <h3 style={{ margin: "0 0 0.5rem 0", color: "#334155", fontSize: "1.1rem" }}>Ready to View Attendance</h3>
-                                        <p style={{ margin: 0, fontSize: "0.9rem" }}>Please select Class, Subject, and Month, then click <strong>Y Apply Filters</strong>.</p>
+                                        <p style={{ margin: 0, fontSize: "0.9rem" }}>Please select Class, Subject, and Month, then click <strong>Apply Filters</strong>.</p>
                                     </td>
                                 </tr>
                             ) : (
-                                gridData.map(student => (
+                                currentStudents.map(student => (
                                     <tr key={student.student_id}>
                                         <td style={{
                                             position: 'sticky',
@@ -474,6 +494,45 @@ function ViewAttendance() {
                         </tbody>
                     </table>
                 </div>
+                {gridData.length > itemsPerPage && (
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "1.5rem 1rem", borderBottom: "1px solid #e2e8f0" }}>
+                        <span style={{ fontSize: "0.875rem", color: "#64748b" }}>
+                            Showing {(currentPage - 1) * itemsPerPage + 1} to {Math.min(currentPage * itemsPerPage, gridData.length)} of {gridData.length} students
+                        </span>
+                        <div style={{ display: "flex", gap: "0.5rem" }}>
+                            <button 
+                                className="st-page-btn" 
+                                disabled={currentPage === 1}
+                                onClick={() => setCurrentPage(prev => prev - 1)}
+                            >
+                                Prev
+                            </button>
+                            {[...Array(totalPages)].map((_, i) => {
+                                const page = i + 1;
+                                if (totalPages > 7 && page !== 1 && page !== totalPages && Math.abs(page - currentPage) > 1) {
+                                    if (page === 2 || page === totalPages - 1) return <span key={page} style={{ color: "#94a3b8", padding: "0.4rem" }}>...</span>;
+                                    return null;
+                                }
+                                return (
+                                    <button 
+                                        key={page}
+                                        className={`st-page-btn ${currentPage === page ? 'active' : ''}`}
+                                        onClick={() => setCurrentPage(page)}
+                                    >
+                                        {page}
+                                    </button>
+                                );
+                            })}
+                            <button 
+                                className="st-page-btn"
+                                disabled={currentPage === totalPages}
+                                onClick={() => setCurrentPage(prev => prev + 1)}
+                            >
+                                Next
+                            </button>
+                        </div>
+                    </div>
+                )}
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '1.5rem', padding: '0 1rem', paddingBottom: '1rem' }}>
                     <div style={{ color: '#64748b', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '5px' }}>
                         <span>ℹ️</span> Note: Click on any status cell to edit attendance
@@ -483,34 +542,104 @@ function ViewAttendance() {
 
             {/* Export Selection Modal */}
             {showExportModal && (
-                <div className="modal-overlay">
-                    <div className="modal-content" style={{ maxWidth: '400px' }}>
-                        <div className="modal-header">
-                            <h2>Export {exportType}</h2>
-                            <button onClick={() => setShowExportModal(false)} className="close-btn">&times;</button>
-                        </div>
-                        <div className="modal-body">
-                            <p style={{ marginBottom: "1rem" }}>Which records would you like to export?</p>
-
-                            <div className="form-group">
-                                <label className="form-label">Select Group</label>
-                                <select
-                                    className="form-input"
-                                    value={exportFilter}
-                                    onChange={(e) => setExportFilter(e.target.value)}
-                                >
-                                    <option value="all">All Students (In Selected Month)</option>
-                                    <option value="present">Students Present (≥ 1 day)</option>
-                                    <option value="absent">Students Absent (≥ 1 day)</option>
-                                    <option value="late">Students Late (≥ 1 day)</option>
-                                    <option value="holiday">Students On Holiday (≥ 1 day)</option>
-                                </select>
+                <div className="modal-overlay" style={{ backdropFilter: 'blur(4px)', backgroundColor: 'rgba(15, 23, 42, 0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'fixed', inset: 0, zIndex: 1000 }}>
+                    <div className="modal-content" style={{ maxWidth: '550px', width: '90%', maxHeight: '90vh', display: 'flex', flexDirection: 'column', borderRadius: '16px', overflow: 'hidden', padding: 0, border: 'none', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)', backgroundColor: '#fff', animation: 'modalSlideIn 0.3s ease-out' }}>
+                        <div className="modal-header" style={{ padding: '1.5rem 1.5rem 1rem 1.5rem', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#fff' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                                <div style={{ 
+                                    backgroundColor: exportType === 'PDF' ? '#ede9fe' : '#dcfce7', 
+                                    color: exportType === 'PDF' ? '#6366f1' : '#16a34a', 
+                                    width: '48px', height: '48px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' 
+                                }}>
+                                    {exportType === 'PDF' ? (
+                                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                                    ) : (
+                                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="8" y1="13" x2="16" y2="17"></line><line x1="8" y1="17" x2="16" y2="13"></line></svg>
+                                    )}
+                                </div>
+                                <div>
+                                    <h2 style={{ margin: 0, fontSize: '1.25rem', color: '#0f172a', fontWeight: 700 }}>Export {exportType}</h2>
+                                    <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.85rem', color: '#64748b' }}>Download attendance report as {exportType}</p>
+                                </div>
                             </div>
-
+                            <button onClick={() => setShowExportModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', display: 'flex', padding: '0.5rem', borderRadius: '8px', transition: 'all 0.2s' }} onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#f1f5f9'} onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                            </button>
                         </div>
-                        <div className="modal-footer">
-                            <button onClick={() => setShowExportModal(false)} className="btn btn-secondary">Cancel</button>
-                            <button onClick={confirmExport} className="btn btn-primary">Download {exportType}</button>
+                        
+                        <div className="modal-body" style={{ padding: '1.5rem', backgroundColor: '#fff', overflowY: 'auto', flex: 1 }}>
+                            <p style={{ margin: '0 0 1rem 0', fontWeight: 600, color: '#334155', fontSize: '0.9rem' }}>Which records would you like to export?</p>
+                            <label style={{ display: 'block', fontSize: '0.85rem', color: '#0f172a', marginBottom: '0.75rem', fontWeight: 600 }}>Select Group</label>
+                            
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', paddingRight: '0.25rem' }}>
+                                {[
+                                    { id: 'all', title: 'All Students (In Selected Month)', desc: 'Export attendance of all students for the selected month', color: '#6366f1', icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg> },
+                                    { id: 'present', title: 'Students Present (≥ 1 day)', desc: 'Export students who were present at least 1 day', color: '#10b981', icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><polyline points="17 11 19 13 23 9"></polyline></svg> },
+                                    { id: 'absent', title: 'Students Absent (≥ 1 day)', desc: 'Export students who were absent at least 1 day', color: '#ef4444', icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><line x1="18" y1="8" x2="23" y2="13"></line><line x1="23" y1="8" x2="18" y2="13"></line></svg> },
+                                    { id: 'late', title: 'Students Late (≥ 1 day)', desc: 'Export students who were late at least 1 day', color: '#f59e0b', icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg> },
+                                    { id: 'holiday', title: 'Students On Holiday (≥ 1 day)', desc: 'Export students who were on holiday at least 1 day', color: '#3b82f6', icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg> }
+                                ].map(opt => {
+                                    const isSelected = exportFilter === opt.id;
+                                    return (
+                                        <div 
+                                            key={opt.id}
+                                            onClick={() => setExportFilter(opt.id)}
+                                            style={{
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                padding: '1rem',
+                                                border: isSelected ? `2px solid ${opt.color}` : '1px solid #e2e8f0',
+                                                borderRadius: '12px',
+                                                cursor: 'pointer',
+                                                backgroundColor: isSelected ? `${opt.color}10` : '#fff',
+                                                transition: 'all 0.2s ease',
+                                                gap: '1rem'
+                                            }}
+                                        >
+                                            {/* Custom Radio */}
+                                            <div style={{
+                                                minWidth: '18px',
+                                                height: '18px',
+                                                borderRadius: '50%',
+                                                border: isSelected ? `5px solid ${opt.color}` : '2px solid #cbd5e1',
+                                                backgroundColor: '#fff',
+                                                transition: 'all 0.2s ease'
+                                            }}></div>
+
+                                            {/* Icon */}
+                                            <div style={{ color: opt.color, display: 'flex' }}>
+                                                {opt.icon}
+                                            </div>
+                                            
+                                            {/* Text */}
+                                            <div style={{ flex: 1 }}>
+                                                <h4 style={{ margin: 0, color: isSelected ? opt.color : '#334155', fontSize: '0.95rem', fontWeight: 600 }}>{opt.title}</h4>
+                                                <p style={{ margin: '0.2rem 0 0 0', color: '#64748b', fontSize: '0.8rem' }}>{opt.desc}</p>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+
+                        <div className="modal-footer" style={{ padding: '1.25rem 1.5rem', backgroundColor: '#fff', borderTop: '1px solid #f1f5f9', display: 'flex', justifyContent: 'center', gap: '1rem' }}>
+                            <button 
+                                onClick={() => setShowExportModal(false)} 
+                                style={{ padding: '0.75rem 1.5rem', borderRadius: '8px', border: '1px solid #cbd5e1', backgroundColor: '#fff', color: '#475569', fontWeight: 600, cursor: 'pointer', flex: 1, transition: 'all 0.2s' }}
+                            >
+                                Cancel
+                            </button>
+                            <button 
+                                onClick={confirmExport} 
+                                style={{ padding: '0.75rem 1.5rem', borderRadius: '8px', border: 'none', backgroundColor: exportType === 'PDF' ? '#6366f1' : '#16a34a', color: '#fff', fontWeight: 600, cursor: 'pointer', flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', boxShadow: `0 4px 6px -1px ${exportType === 'PDF' ? 'rgba(99, 102, 241, 0.3)' : 'rgba(22, 163, 74, 0.3)'}`, transition: 'all 0.2s' }}
+                            >
+                                {exportType === 'PDF' ? (
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                                ) : (
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                                )}
+                                Download {exportType}
+                            </button>
                         </div>
                     </div>
                 </div>

@@ -414,7 +414,7 @@ function Fees() {
         }
     };
 
-    if (loading) return <div className="dashboard-container"><div className="dashboard-loading">Loading fees...</div></div>;
+    if (loading) return <div className="students-container"><div className="dashboard-loading">Loading fees...</div></div>;
 
     const tabs = [
         ...(isAdmin || user.permissions?.includes('collect_fees') || hasPerm('fees', 'create') || hasPerm('fees', 'read') ? [{ id: 'collect', label: '💰 Collect Fees', icon: '💰' }] : []),
@@ -466,25 +466,35 @@ function Fees() {
     };
 
     return (
-        <div className="dashboard-container">
+        <div className="students-container">
             {/* Header */}
-            <div className="dashboard-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '15px', marginTop: '40px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-                    <div style={{ fontSize: '1.8rem', background: 'rgba(245,158,11,0.1)', padding: '10px 14px', borderRadius: '12px' }}>👛</div>
-                    <div>
-                        <h1 style={{ margin: 0, fontSize: '1.5rem', color: 'var(--text-primary)' }}>Fee Management</h1>
-                        <p style={{ margin: '4px 0 0', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Collect fees, view payment history{isAdmin ? ', and manage fee structures' : ''}.</p>
+            <div className="dashboard-header" style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginTop: '40px', marginBottom: '1.5rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'flex-start', alignItems: 'center', flexWrap: 'wrap', gap: '15px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                        <div style={{ fontSize: '1.8rem', background: 'rgba(245,158,11,0.1)', padding: '10px 14px', borderRadius: '12px' }}>👛</div>
+                        <div>
+                            <h1 style={{ margin: 0, fontSize: '1.5rem', color: 'var(--text-primary)' }}>Fee Management</h1>
+                            <p style={{ margin: '4px 0 0', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Collect fees, view payment history{isAdmin ? ', and manage fee structures' : ''}.</p>
+                        </div>
                     </div>
                 </div>
-                <div style={{ display: 'flex', gap: '10px' }}>
-                    {(isAdmin || hasPerm('fees', 'read')) && (
-                        <button className="btn btn-secondary" onClick={() => setTab('structure')} style={{ background: '#fff', border: '1px solid #e5e7eb', color: '#374151', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                            📐 Fee Structures
+                
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '15px' }}>
+                    <div className="st-breadcrumbs" style={{ fontSize: '0.8rem', color: '#94a3b8', display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                        <span>Dashboard</span>
+                        <span>›</span>
+                        <span style={{ color: '#0f172a', fontWeight: '500' }}>Fee Management</span>
+                    </div>
+                    <div style={{ display: 'flex', gap: '10px' }}>
+                        {(isAdmin || hasPerm('fees', 'read')) && (
+                            <button className="btn btn-secondary" onClick={() => setTab('structure')} style={{ background: '#fff', border: '1px solid #e5e7eb', color: '#374151', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                📐 Fee Structures
+                            </button>
+                        )}
+                        <button className="btn btn-primary" onClick={exportToCSV} style={{ background: '#4f46e5', border: 'none', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            📥 Export Report
                         </button>
-                    )}
-                    <button className="btn btn-primary" onClick={exportToCSV} style={{ background: '#4f46e5', border: 'none', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        📥 Export Report
-                    </button>
+                    </div>
                 </div>
             </div>
 

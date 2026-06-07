@@ -33,14 +33,12 @@ function AdminFacultyViewAttendance() {
     // Active Filters (Applied)
     const [month, setMonth] = useState(today.getMonth() + 1);
     const [year, setYear] = useState(today.getFullYear());
-    const [departmentFilter, setDepartmentFilter] = useState("all");
-    const [designationFilter, setDesignationFilter] = useState("all");
+    const [subjectFilter, setSubjectFilter] = useState("all");
 
     // Local Filters (Dropdown selections)
     const [localMonth, setLocalMonth] = useState(today.getMonth() + 1);
     const [localYear, setLocalYear] = useState(today.getFullYear());
-    const [localDepartment, setLocalDepartment] = useState("all");
-    const [localDesignation, setLocalDesignation] = useState("all");
+    const [localSubject, setLocalSubject] = useState("all");
     
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
@@ -107,23 +105,21 @@ function AdminFacultyViewAttendance() {
     };
 
     // Filter Logic
-    const uniqueDepartments = useMemo(() => {
-        const deps = new Set(attendanceData.map(f => f.department));
-        return Array.from(deps).filter(d => d && d !== "Unassigned");
-    }, [attendanceData]);
-
-    const uniqueDesignations = useMemo(() => {
-        const des = new Set(attendanceData.map(f => f.designation));
-        return Array.from(des).filter(d => d && d !== "Unassigned");
+    const uniqueSubjects = useMemo(() => {
+        const subs = new Set();
+        attendanceData.forEach(f => {
+            if (f.subjects && f.subjects !== "Unassigned") {
+                f.subjects.split(', ').forEach(s => subs.add(s.trim()));
+            }
+        });
+        return Array.from(subs);
     }, [attendanceData]);
 
     const filteredData = useMemo(() => {
         return attendanceData.filter(f => {
-            const matchDept = departmentFilter === "all" || f.department === departmentFilter;
-            const matchDesig = designationFilter === "all" || f.designation === designationFilter;
-            return matchDept && matchDesig;
+            return subjectFilter === "all" || (f.subjects && f.subjects.includes(subjectFilter));
         });
-    }, [attendanceData, departmentFilter, designationFilter]);
+    }, [attendanceData, subjectFilter]);
 
     // Calculate overall stats dynamically from effective data
     let totalPossibleDays = 0;
@@ -217,25 +213,17 @@ function AdminFacultyViewAttendance() {
                         </select>
                     </div>
                     <div style={{ flex: 1, minWidth: "150px" }}>
-                        <label style={{ display: "block", fontSize: "0.8rem", color: "#64748b", marginBottom: "6px", fontWeight: "600" }}>Department</label>
-                        <select className="st-select" value={localDepartment} onChange={e => setLocalDepartment(e.target.value)} style={{ width: "100%", padding: "0.6rem", borderRadius: "8px", border: "1px solid #e2e8f0" }}>
-                            <option value="all">All Departments</option>
-                            {uniqueDepartments.map(d => <option key={d} value={d}>{d}</option>)}
-                        </select>
-                    </div>
-                    <div style={{ flex: 1, minWidth: "150px" }}>
-                        <label style={{ display: "block", fontSize: "0.8rem", color: "#64748b", marginBottom: "6px", fontWeight: "600" }}>Designation</label>
-                        <select className="st-select" value={localDesignation} onChange={e => setLocalDesignation(e.target.value)} style={{ width: "100%", padding: "0.6rem", borderRadius: "8px", border: "1px solid #e2e8f0" }}>
-                            <option value="all">All Designations</option>
-                            {uniqueDesignations.map(d => <option key={d} value={d}>{d}</option>)}
+                        <label style={{ display: "block", fontSize: "0.8rem", color: "#64748b", marginBottom: "6px", fontWeight: "600" }}>Subject</label>
+                        <select className="st-select" value={localSubject} onChange={e => setLocalSubject(e.target.value)} style={{ width: "100%", padding: "0.6rem", borderRadius: "8px", border: "1px solid #e2e8f0" }}>
+                            <option value="all">All Subjects</option>
+                            {uniqueSubjects.map(s => <option key={s} value={s}>{s}</option>)}
                         </select>
                     </div>
                     <div style={{ display: "flex", gap: "10px" }}>
                         <button className="st-btn st-btn-primary" style={{ height: "42px" }} onClick={() => { 
                             setMonth(localMonth); 
                             setYear(localYear); 
-                            setDepartmentFilter(localDepartment); 
-                            setDesignationFilter(localDesignation); 
+                            setSubjectFilter(localSubject); 
                             setCurrentPage(1); // Reset to page 1 on filter
                         }}>
                             <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" /></svg>
@@ -244,12 +232,10 @@ function AdminFacultyViewAttendance() {
                         <button className="st-btn st-btn-outline" style={{ height: "42px" }} onClick={() => { 
                             setLocalMonth(today.getMonth() + 1); 
                             setLocalYear(today.getFullYear()); 
-                            setLocalDepartment("all"); 
-                            setLocalDesignation("all"); 
+                            setLocalSubject("all"); 
                             setMonth(today.getMonth() + 1); 
                             setYear(today.getFullYear()); 
-                            setDepartmentFilter("all"); 
-                            setDesignationFilter("all"); 
+                            setSubjectFilter("all"); 
                             setCurrentPage(1);
                         }}>
                             Reset

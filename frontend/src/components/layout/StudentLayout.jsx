@@ -26,7 +26,8 @@ const StudentLayout = () => {
     }, [user]);
 
     const navLinkClass = (path) => {
-        return location.pathname.startsWith(path) ? "sl-nav-link active" : "sl-nav-link";
+        const isMatch = location.pathname === path || location.pathname.startsWith(path + '/');
+        return isMatch ? "sl-nav-link active" : "sl-nav-link";
     };
 
     const handleNavClick = () => {

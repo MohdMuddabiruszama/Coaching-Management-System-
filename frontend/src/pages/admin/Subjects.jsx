@@ -224,28 +224,25 @@ function Subjects() {
     };
 
     if (loading) {
-        return <div className="dashboard-container">Loading...</div>;
+        return <div className="students-container">Loading...</div>;
     }
 
     return (
-        <div className="dashboard-container" style={{ backgroundColor: "#f8fafc", minHeight: "100vh" }}>
+        <div className="students-container" style={{ backgroundColor: "#f8fafc", minHeight: "100vh" }}>
             
             {/* ── Header ── */}
             <div className="st-header">
                 <div className="st-header-top-row">
                     <div className="st-header-left">
-                        <h1 style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                            <span style={{ fontSize: "1.8rem", color: "#6366f1" }}>
-                                <svg width="28" height="28" fill="currentColor" viewBox="0 0 24 24"><path d="M12 3L1 9l4 2.18v6L12 21l7-3.82v-6l2-1.09V17h2V9L12 3zm6.82 6L12 12.72 5.18 9 12 5.28 18.82 9zM17 15.99l-5 2.73-5-2.73v-3.72L12 15l5-2.73v3.72z"/></svg>
-                            </span> 
-                            Subjects Management
-                        </h1>
+                        <h1>Subjects Management</h1>
                         <p>Manage subjects and assign faculty to classes</p>
                     </div>
                 </div>
                 <div className="st-header-bottom-row">
                     <div className="st-breadcrumbs">
-                        {/* No breadcrumbs in this design */}
+                        <span>Dashboard</span>
+                        <span>›</span>
+                        <span className="active">Subjects Management</span>
                     </div>
                     <div className="st-header-actions">
                         <button className="st-btn st-btn-outline" style={{ display: "flex", alignItems: "center", gap: "8px" }} onClick={handleExport}>
@@ -422,9 +419,10 @@ function Subjects() {
                         <thead>
                             <tr style={{ backgroundColor: "#f8fafc", color: "#64748b", fontSize: "0.75rem", letterSpacing: "0.05em", textTransform: "uppercase" }}>
                                 <th style={{ padding: "1rem 1.5rem", fontWeight: "600", width: "5%" }}>#</th>
-                                <th style={{ padding: "1rem", fontWeight: "600", width: "25%" }}>Subject Name</th>
-                                <th style={{ padding: "1rem", fontWeight: "600", width: "20%" }}>Class</th>
-                                <th style={{ padding: "1rem", fontWeight: "600", width: "25%" }}>Assigned Faculty</th>
+                                <th style={{ padding: "1rem", fontWeight: "600", width: "20%" }}>Subject Name</th>
+                                <th style={{ padding: "1rem", fontWeight: "600", width: "15%" }}>Students</th>
+                                <th style={{ padding: "1rem", fontWeight: "600", width: "15%" }}>Class</th>
+                                <th style={{ padding: "1rem", fontWeight: "600", width: "20%" }}>Assigned Faculty</th>
                                 <th style={{ padding: "1rem", fontWeight: "600", width: "15%" }}>Created On</th>
                                 <th style={{ padding: "1rem 1.5rem", fontWeight: "600", width: "10%", textAlign: "center" }}>Actions</th>
                             </tr>
@@ -461,10 +459,21 @@ function Subjects() {
                                                 </div>
                                             </td>
                                             <td style={{ padding: "1rem" }}>
+                                                <div style={{ display: "inline-flex", alignItems: "center", gap: "6px", backgroundColor: "#f0fdf4", color: "#16a34a", padding: "4px 10px", borderRadius: "20px", fontSize: "0.8rem", fontWeight: "600" }}>
+                                                    <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
+                                                    {subject.enrolled_students_count || 0}
+                                                </div>
+                                            </td>
+                                            <td style={{ padding: "1rem" }}>
                                                 {subject.Class ? (
-                                                    <span style={{ backgroundColor: "#f3e8ff", color: "#9333ea", padding: "4px 10px", borderRadius: "20px", fontSize: "0.75rem", fontWeight: "600" }}>
-                                                        {subject.Class.name} {subject.Class.section && `(Section ${subject.Class.section})`}
-                                                    </span>
+                                                    <div>
+                                                        <div style={{ color: "#0f172a", fontWeight: "600", fontSize: "0.9rem" }}>{subject.Class.name}</div>
+                                                        {subject.Class.section && (
+                                                            <div style={{ fontSize: "0.75rem", color: "#64748b" }}>
+                                                                {subject.Class.section.toLowerCase().includes('section') ? subject.Class.section : `Section ${subject.Class.section}`}
+                                                            </div>
+                                                        )}
+                                                    </div>
                                                 ) : (
                                                     <span style={{ color: "#94a3b8", fontSize: "0.85rem" }}>-</span>
                                                 )}
@@ -557,11 +566,24 @@ function Subjects() {
                                 </div>
                                 
                                 <div style={{ borderTop: "1px solid #f1f5f9", paddingTop: "1rem", marginTop: "1rem" }}>
+                                    <div style={{ fontSize: "0.75rem", color: "#64748b", marginBottom: "8px" }}>Enrolled Students</div>
+                                    <div style={{ display: "inline-flex", alignItems: "center", gap: "6px", backgroundColor: "#f0fdf4", color: "#16a34a", padding: "4px 10px", borderRadius: "20px", fontSize: "0.8rem", fontWeight: "600" }}>
+                                        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
+                                        {subject.enrolled_students_count || 0}
+                                    </div>
+                                </div>
+                                
+                                <div style={{ borderTop: "1px solid #f1f5f9", paddingTop: "1rem", marginTop: "1rem" }}>
                                     <div style={{ fontSize: "0.75rem", color: "#64748b", marginBottom: "8px" }}>Assigned Class</div>
                                     {subject.Class ? (
-                                        <span style={{ backgroundColor: "#f3e8ff", color: "#9333ea", padding: "4px 10px", borderRadius: "20px", fontSize: "0.75rem", fontWeight: "600", display: "inline-block" }}>
-                                            {subject.Class.name} {subject.Class.section && `(Section ${subject.Class.section})`}
-                                        </span>
+                                        <div>
+                                            <div style={{ color: "#0f172a", fontWeight: "600", fontSize: "0.9rem" }}>{subject.Class.name}</div>
+                                            {subject.Class.section && (
+                                                <div style={{ fontSize: "0.75rem", color: "#64748b" }}>
+                                                    {subject.Class.section.toLowerCase().includes('section') ? subject.Class.section : `Section ${subject.Class.section}`}
+                                                </div>
+                                            )}
+                                        </div>
                                     ) : (
                                         <span style={{ color: "#94a3b8", fontSize: "0.85rem" }}>-</span>
                                     )}

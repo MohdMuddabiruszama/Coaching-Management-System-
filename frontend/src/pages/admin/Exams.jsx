@@ -423,23 +423,29 @@ function Exams() {
     return (
         <div className="exams-page-container">
             {/* Header Area */}
-            <div className="exams-header-area">
-                <div className="exams-header-title">
-                    <div className="exams-header-icon">
-                        <FileTextIcon />
-                    </div>
-                    <div className="exams-header-text">
-                        <h1>Manage Exams</h1>
-                        <p>Schedule, manage, and publish exam results for your institute.</p>
+            <div className="exams-header-area" style={{ flexDirection: 'column', alignItems: 'stretch' }}>
+                <div style={{ display: 'flex', justifyContent: 'flex-start', marginBottom: '1rem' }}>
+                    <div className="exams-header-title">
+                        <div className="exams-header-text">
+                            <h1>Manage Exams</h1>
+                            <p>Schedule, manage, and publish exam results for your institute.</p>
+                        </div>
                     </div>
                 </div>
-                <div className="exams-header-actions">
-                    <button className="exams-btn-export" onClick={handleExport}>
-                        <UploadIcon /> Export
-                    </button>
-                    <button onClick={openCreateModal} className="exams-btn-add">
-                        <PlusIcon /> Add Exam
-                    </button>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div className="st-breadcrumbs" style={{ fontSize: '0.8rem', color: '#94a3b8', display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                        <span>Dashboard</span>
+                        <span>›</span>
+                        <span style={{ color: '#0f172a', fontWeight: '500' }}>Manage Exams</span>
+                    </div>
+                    <div className="exams-header-actions">
+                        <button className="exams-btn-export" onClick={handleExport}>
+                            <UploadIcon /> Export
+                        </button>
+                        <button onClick={openCreateModal} className="exams-btn-add">
+                            <PlusIcon /> Add Exam
+                        </button>
+                    </div>
                 </div>
             </div>
 

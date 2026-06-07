@@ -1,9 +1,9 @@
 /* AdminParents.css - Refined UI for Parent Management */
 
 .ap-wrapper {
-    background: #F7FAFC;
+    background: #f8fafc;
     min-height: 100vh;
-    padding: 32px;
+    padding: 1.5rem;
     padding-top: 48px;
     font-family: 'Inter', sans-serif;
 }
@@ -101,9 +101,9 @@
     background: white;
     border: 1px solid #EDF2F7;
     border-radius: 12px;
-    padding: 24px;
+    padding: 1.5rem;
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     gap: 16px;
     box-shadow: 0 2px 4px rgba(0,0,0,0.02);
     transition: transform 0.2s, box-shadow 0.2s;

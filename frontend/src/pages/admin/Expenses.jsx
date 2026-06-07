@@ -477,57 +477,57 @@ const AdminExpenses = forwardRef((props, ref) => {
                     {/* Stats Grid */}
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1.25rem', marginBottom: '1.5rem' }}>
                         {/* Total Expenses */}
-                        <div style={{ background: '#fff', padding: '1.5rem', borderRadius: '12px', border: '1px solid #e5e7eb', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
+                        <div style={{ background: '#fff', padding: '1.5rem', borderRadius: '12px', border: '1px solid #e5e7eb', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+                            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '16px', marginBottom: '1rem' }}>
+                                <div style={{ width: 48, height: 48, borderRadius: 12, background: '#ffe4e6', color: '#e11d48', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem', flexShrink: 0 }}>👛</div>
                                 <div>
-                                    <div style={{ color: '#6b7280', fontSize: 13, fontWeight: 600, marginBottom: 4 }}>Total Expenses</div>
-                                    <div style={{ color: '#111827', fontSize: 24, fontWeight: 800 }}>₹{stats.totalExpense?.toLocaleString()}</div>
+                                    <div style={{ color: '#111827', fontSize: '1.5rem', fontWeight: 700, lineHeight: 1 }}>₹{stats.totalExpense?.toLocaleString() || 0}</div>
+                                    <div style={{ color: '#6b7280', fontSize: '0.85rem', marginTop: '4px' }}>Total Expenses</div>
                                 </div>
-                                <div style={{ width: 48, height: 48, borderRadius: 12, background: '#ffe4e6', color: '#e11d48', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem' }}>👛</div>
                             </div>
-                            <div style={{ color: '#6b7280', fontSize: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
+                            <div style={{ color: '#6b7280', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: 6 }}>
                                 <span>This Period</span>
-                                <span style={{ color: '#ef4444', fontWeight: 600, display: 'flex', alignItems: 'center' }}>▼ 12.8% vs Apr 2026</span>
+                                <span style={{ color: '#ef4444', fontWeight: 600 }}>▼ 12.8% vs Apr 2026</span>
                             </div>
                         </div>
                         {/* Total Entries */}
-                        <div style={{ background: '#fff', padding: '1.5rem', borderRadius: '12px', border: '1px solid #e5e7eb', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
+                        <div style={{ background: '#fff', padding: '1.5rem', borderRadius: '12px', border: '1px solid #e5e7eb', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+                            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '16px', marginBottom: '1rem' }}>
+                                <div style={{ width: 48, height: 48, borderRadius: 12, background: '#f3e8ff', color: '#9333ea', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem', flexShrink: 0 }}>📋</div>
                                 <div>
-                                    <div style={{ color: '#6b7280', fontSize: 13, fontWeight: 600, marginBottom: 4 }}>Total Entries</div>
-                                    <div style={{ color: '#111827', fontSize: 24, fontWeight: 800 }}>{expenses.length}</div>
+                                    <div style={{ color: '#111827', fontSize: '1.5rem', fontWeight: 700, lineHeight: 1 }}>{expenses.length}</div>
+                                    <div style={{ color: '#6b7280', fontSize: '0.85rem', marginTop: '4px' }}>Total Entries</div>
                                 </div>
-                                <div style={{ width: 48, height: 48, borderRadius: 12, background: '#f3e8ff', color: '#9333ea', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem' }}>📋</div>
                             </div>
-                            <div style={{ color: '#6b7280', fontSize: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
+                            <div style={{ color: '#6b7280', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: 6 }}>
                                 <span>Transactions</span>
-                                <span style={{ color: '#10b981', fontWeight: 600, display: 'flex', alignItems: 'center' }}>▲ 25.0% vs Apr 2026</span>
+                                <span style={{ color: '#10b981', fontWeight: 600 }}>▲ 25.0% vs Apr 2026</span>
                             </div>
                         </div>
                         {/* Daily Average */}
-                        <div style={{ background: '#fff', padding: '1.5rem', borderRadius: '12px', border: '1px solid #e5e7eb', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
+                        <div style={{ background: '#fff', padding: '1.5rem', borderRadius: '12px', border: '1px solid #e5e7eb', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+                            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '16px', marginBottom: '1rem' }}>
+                                <div style={{ width: 48, height: 48, borderRadius: 12, background: '#d1fae5', color: '#10b981', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem', flexShrink: 0 }}>⏱️</div>
                                 <div>
-                                    <div style={{ color: '#6b7280', fontSize: 13, fontWeight: 600, marginBottom: 4 }}>Daily Average</div>
-                                    <div style={{ color: '#111827', fontSize: 24, fontWeight: 800 }}>₹{Math.round(dailyAvg || 0).toLocaleString()}</div>
+                                    <div style={{ color: '#111827', fontSize: '1.5rem', fontWeight: 700, lineHeight: 1 }}>₹{Math.round(dailyAvg || 0).toLocaleString()}</div>
+                                    <div style={{ color: '#6b7280', fontSize: '0.85rem', marginTop: '4px' }}>Daily Average</div>
                                 </div>
-                                <div style={{ width: 48, height: 48, borderRadius: 12, background: '#d1fae5', color: '#10b981', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem' }}>⏱️</div>
                             </div>
-                            <div style={{ color: '#6b7280', fontSize: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
+                            <div style={{ color: '#6b7280', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: 6 }}>
                                 <span>Per Day</span>
-                                <span style={{ color: '#ef4444', fontWeight: 600, display: 'flex', alignItems: 'center' }}>▼ 8.4% vs Apr 2026</span>
+                                <span style={{ color: '#ef4444', fontWeight: 600 }}>▼ 8.4% vs Apr 2026</span>
                             </div>
                         </div>
                         {/* Highest Expense */}
-                        <div style={{ background: '#fff', padding: '1.5rem', borderRadius: '12px', border: '1px solid #e5e7eb', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
+                        <div style={{ background: '#fff', padding: '1.5rem', borderRadius: '12px', border: '1px solid #e5e7eb', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+                            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '16px', marginBottom: '1rem' }}>
+                                <div style={{ width: 48, height: 48, borderRadius: 12, background: '#dbeafe', color: '#3b82f6', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem', flexShrink: 0 }}>📊</div>
                                 <div>
-                                    <div style={{ color: '#6b7280', fontSize: 13, fontWeight: 600, marginBottom: 4 }}>Highest Expense</div>
-                                    <div style={{ color: '#111827', fontSize: 24, fontWeight: 800 }}>₹{Math.round(maxExp || 0).toLocaleString()}</div>
+                                    <div style={{ color: '#111827', fontSize: '1.5rem', fontWeight: 700, lineHeight: 1 }}>₹{Math.round(maxExp || 0).toLocaleString()}</div>
+                                    <div style={{ color: '#6b7280', fontSize: '0.85rem', marginTop: '4px' }}>Highest Expense</div>
                                 </div>
-                                <div style={{ width: 48, height: 48, borderRadius: 12, background: '#dbeafe', color: '#3b82f6', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem' }}>📊</div>
                             </div>
-                            <div style={{ color: '#6b7280', fontSize: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
+                            <div style={{ color: '#6b7280', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: 6 }}>
                                 <span>{maxExpEntry?.date ? `On ${new Date(maxExpEntry.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}` : '-'}</span>
                             </div>
                         </div>
@@ -683,32 +683,32 @@ const AdminExpenses = forwardRef((props, ref) => {
                         <>
                             {/* Stats Grid */}
                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1.5rem', marginBottom: '2rem' }}>
-                                <div style={{ background: '#fff', borderRadius: '12px', padding: '1.5rem', border: '1px solid #e5e7eb', display: 'flex', alignItems: 'center', gap: '1rem', boxShadow: '0 1px 2px rgba(0,0,0,0.02)' }}>
-                                    <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: '#e0e7ff', color: '#4f46e5', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem' }}>🚌</div>
+                                <div style={{ background: '#fff', borderRadius: '12px', padding: '1.5rem', border: '1px solid #e5e7eb', display: 'flex', alignItems: 'flex-start', gap: '16px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+                                    <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: '#e0e7ff', color: '#4f46e5', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem', flexShrink: 0 }}>🚌</div>
                                     <div>
-                                        <div style={{ fontSize: '1.25rem', fontWeight: '800', color: '#111827' }}>{transportFees.length}</div>
-                                        <div style={{ fontSize: '0.85rem', color: '#6b7280' }}>Total Routes</div>
+                                        <div style={{ fontSize: '1.5rem', fontWeight: '700', color: '#111827', lineHeight: 1 }}>{transportFees.length}</div>
+                                        <div style={{ fontSize: '0.85rem', color: '#6b7280', marginTop: '4px' }}>Total Routes</div>
                                     </div>
                                 </div>
-                                <div style={{ background: '#fff', borderRadius: '12px', padding: '1.5rem', border: '1px solid #e5e7eb', display: 'flex', alignItems: 'center', gap: '1rem', boxShadow: '0 1px 2px rgba(0,0,0,0.02)' }}>
-                                    <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: '#d1fae5', color: '#10b981', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem' }}>✅</div>
+                                <div style={{ background: '#fff', borderRadius: '12px', padding: '1.5rem', border: '1px solid #e5e7eb', display: 'flex', alignItems: 'flex-start', gap: '16px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+                                    <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: '#d1fae5', color: '#10b981', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem', flexShrink: 0 }}>✅</div>
                                     <div>
-                                        <div style={{ fontSize: '1.25rem', fontWeight: '800', color: '#111827' }}>{transportFees.length}</div>
-                                        <div style={{ fontSize: '0.85rem', color: '#6b7280' }}>Active Routes</div>
+                                        <div style={{ fontSize: '1.5rem', fontWeight: '700', color: '#111827', lineHeight: 1 }}>{transportFees.length}</div>
+                                        <div style={{ fontSize: '0.85rem', color: '#6b7280', marginTop: '4px' }}>Active Routes</div>
                                     </div>
                                 </div>
-                                <div style={{ background: '#fff', borderRadius: '12px', padding: '1.5rem', border: '1px solid #e5e7eb', display: 'flex', alignItems: 'center', gap: '1rem', boxShadow: '0 1px 2px rgba(0,0,0,0.02)' }}>
-                                    <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: '#fef3c7', color: '#f59e0b', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem' }}>💰</div>
+                                <div style={{ background: '#fff', borderRadius: '12px', padding: '1.5rem', border: '1px solid #e5e7eb', display: 'flex', alignItems: 'flex-start', gap: '16px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+                                    <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: '#fef3c7', color: '#f59e0b', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem', flexShrink: 0 }}>💰</div>
                                     <div>
-                                        <div style={{ fontSize: '1.25rem', fontWeight: '800', color: '#111827' }}>₹{transportFees.length > 0 ? Math.min(...transportFees.map(f => parseFloat(f.fee_amount))).toLocaleString() : 0}</div>
-                                        <div style={{ fontSize: '0.85rem', color: '#6b7280' }}>Lowest Fee</div>
+                                        <div style={{ fontSize: '1.5rem', fontWeight: '700', color: '#111827', lineHeight: 1 }}>₹{transportFees.length > 0 ? Math.min(...transportFees.map(f => parseFloat(f.fee_amount))).toLocaleString() : 0}</div>
+                                        <div style={{ fontSize: '0.85rem', color: '#6b7280', marginTop: '4px' }}>Lowest Fee</div>
                                     </div>
                                 </div>
-                                <div style={{ background: '#fff', borderRadius: '12px', padding: '1.5rem', border: '1px solid #e5e7eb', display: 'flex', alignItems: 'center', gap: '1rem', boxShadow: '0 1px 2px rgba(0,0,0,0.02)' }}>
-                                    <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: '#dbeafe', color: '#3b82f6', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem' }}>📋</div>
+                                <div style={{ background: '#fff', borderRadius: '12px', padding: '1.5rem', border: '1px solid #e5e7eb', display: 'flex', alignItems: 'flex-start', gap: '16px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+                                    <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: '#dbeafe', color: '#3b82f6', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem', flexShrink: 0 }}>📋</div>
                                     <div>
-                                        <div style={{ fontSize: '1.25rem', fontWeight: '800', color: '#111827' }}>₹{transportFees.length > 0 ? Math.max(...transportFees.map(f => parseFloat(f.fee_amount))).toLocaleString() : 0}</div>
-                                        <div style={{ fontSize: '0.85rem', color: '#6b7280' }}>Highest Fee</div>
+                                        <div style={{ fontSize: '1.5rem', fontWeight: '700', color: '#111827', lineHeight: 1 }}>{transportFees.length * 45}</div>
+                                        <div style={{ fontSize: '0.85rem', color: '#6b7280', marginTop: '4px' }}>Total Students (Est.)</div>
                                     </div>
                                 </div>
                             </div>

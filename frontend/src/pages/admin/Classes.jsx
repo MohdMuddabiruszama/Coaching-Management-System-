@@ -225,16 +225,13 @@ function Classes() {
     };
 
     return (
-        <div className="dashboard-container" style={{ backgroundColor: "#f8fafc", minHeight: "100vh" }}>
+        <div className="students-container">
             
             {/* ── Header ── */}
             <div className="st-header">
                 <div className="st-header-top-row">
                     <div className="st-header-left">
-                        <h1 style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                            <span style={{ fontSize: "1.8rem" }}>🎓</span> 
-                            Classes Management
-                        </h1>
+                        <h1>Classes Management</h1>
                         <p>Manage all classes and their sections</p>
                     </div>
                 </div>
