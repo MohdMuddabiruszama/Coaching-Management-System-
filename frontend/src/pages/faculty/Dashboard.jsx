@@ -14,6 +14,7 @@ function FacultyDashboard() {
     const [recentAnnouncements, setRecentAnnouncements] = useState([]);
     const [teachingSubjectsCount, setTeachingSubjectsCount] = useState(4); // Default static mock
     const [classesAssignedCount, setClassesAssignedCount] = useState(6);   // Default static mock
+    const [todaySchedule, setTodaySchedule] = useState([]);
     const [totalStudentsCount, setTotalStudentsCount] = useState(128);     // Default static mock
 
     useEffect(() => {
@@ -28,10 +29,103 @@ function FacultyDashboard() {
 
         // Fetch announcements
         if (user?.features?.announcements) {
-            api.get('/announcements/global').then(res => {
+            api.get('/announcements/institute').then(res => {
                 if (res.data.success && res.data.data) {
-                    // Take top 3 for dashboard
-                    setRecentAnnouncements(res.data.data.slice(0, 3));
+                    // Filter out expired announcements and take top 3
+                    const now = new Date();
+                    const validAnnouncements = res.data.data.filter(a => !a.expires_at || new Date(a.expires_at) >= now);
+                    setRecentAnnouncements(validAnnouncements.slice(0, 3));
+                }
+            }).catch(err => console.log(err));
+        }
+
+        // Fetch Timetable (Real-time Today's Schedule)
+        if (user?.features?.timetable) {
+            api.get('/timetable/faculty/me').then(res => {
+                if (res.data.success && res.data.data) {
+                    const rawTimetable = res.data.data;
+                    const DAYS = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+                    const todayName = DAYS[new Date().getDay()];
+                    
+                    const filtered = rawTimetable;
+                    const todaySlots = filtered
+                        .filter(r => r.day_of_week === todayName)
+                        .sort((a, b) => (a.TimetableSlot?.start_time || '').localeCompare(b.TimetableSlot?.start_time || ''));
+
+                    const nowMinutes = new Date().getHours() * 60 + new Date().getMinutes();
+                    const toMins = (t) => {
+                        if (!t) return 0;
+                        const [hh, mm] = t.slice(0,5).split(':').map(Number);
+                        return hh * 60 + mm;
+                    };
+
+                    const SUBJECT_COLORS = ['#6366f1','#10b981','#f59e0b','#ef4444','#3b82f6','#8b5cf6','#ec4899'];
+                    const subjectColorMap = {};
+                    let colorIdx = 0;
+
+                    const scheduleWithStatus = todaySlots.map(r => {
+                        const startStr = r.TimetableSlot?.start_time || '';
+                        const endStr   = r.TimetableSlot?.end_time   || '';
+                        const startM = toMins(startStr);
+                        const endM   = toMins(endStr);
+                        let status = 'Upcoming';
+                        if (nowMinutes >= endM)   status = 'Completed';
+                        if (nowMinutes >= startM && nowMinutes < endM) status = 'Ongoing';
+                        
+                        const name = r.Subject?.name || 'N/A';
+                        if (!subjectColorMap[name]) {
+                            subjectColorMap[name] = SUBJECT_COLORS[colorIdx % SUBJECT_COLORS.length];
+                            colorIdx++;
+                        }
+                        return {
+                            id: r.id,
+                            subject: name,
+                            className: r.Class?.name || 'Class',
+                            color: subjectColorMap[name],
+                            startTime: startStr.slice(0,5),
+                            endTime: endStr.slice(0,5),
+                            room: r.room_number || '',
+                            status,
+                        };
+                    });
+
+                    // Filter out completed and limit to 3
+                    const remaining = scheduleWithStatus.filter(s => s.status !== 'Completed').slice(0, 3);
+
+                    let tomorrowFirstClass = null;
+                    if (remaining.length === 0) {
+                        const todayIdx = DAYS.indexOf(todayName);
+                        for (let offset = 1; offset <= 6; offset++) {
+                            const nextDay = DAYS[(todayIdx + offset) % 7];
+                            const nextDaySlots = filtered
+                                .filter(r => r.day_of_week === nextDay)
+                                .sort((a, b) => (a.TimetableSlot?.start_time || '').localeCompare(b.TimetableSlot?.start_time || ''));
+                            if (nextDaySlots.length > 0) {
+                                const r = nextDaySlots[0];
+                                const startStr = r.TimetableSlot?.start_time || '';
+                                const endStr   = r.TimetableSlot?.end_time   || '';
+                                const name = r.Subject?.name || 'N/A';
+                                if (!subjectColorMap[name]) {
+                                    subjectColorMap[name] = SUBJECT_COLORS[colorIdx % SUBJECT_COLORS.length];
+                                    colorIdx++;
+                                }
+                                tomorrowFirstClass = {
+                                    id: r.id,
+                                    subject: name,
+                                    className: r.Class?.name || 'Class',
+                                    color: subjectColorMap[name],
+                                    startTime: startStr.slice(0, 5),
+                                    endTime: endStr.slice(0, 5),
+                                    room: r.room_number || '',
+                                    status: 'Upcoming',
+                                    dayLabel: offset === 1 ? 'Tomorrow' : nextDay,
+                                };
+                                break;
+                            }
+                        }
+                    }
+
+                    setTodaySchedule(remaining.length > 0 ? remaining : tomorrowFirstClass ? [tomorrowFirstClass] : []);
                 }
             }).catch(err => console.log(err));
         }
@@ -61,12 +155,40 @@ function FacultyDashboard() {
         </Link>
     );
 
-    // Mocked Schedule Data
-    const todaySchedule = [
-        { id: 1, time: "09:00 AM", endTime: "10:00 AM", subject: "Mathematics", class: "Class 10-A", room: "Room 201", status: "Upcoming" },
-        { id: 2, time: "11:00 AM", endTime: "12:00 PM", subject: "Science", class: "Class 10-B", room: "Room 203", status: "Upcoming" },
-        { id: 3, time: "02:00 PM", endTime: "03:00 PM", subject: "Mathematics", class: "Class 10-C", room: "Room 201", status: "Upcoming" }
-    ];
+    const getRelativeTime = (dateStr) => {
+        if (!dateStr) return '';
+        const now = new Date();
+        const date = new Date(dateStr);
+        const diffInMs = now - date;
+        const diffInDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
+        const diffInHours = Math.floor(diffInMs / (1000 * 60 * 60));
+        const diffInMins = Math.floor(diffInMs / (1000 * 60));
+        
+        if (diffInMins < 60) return `${diffInMins} mins ago`;
+        if (diffInHours < 24) return `${diffInHours} hours ago`;
+        if (diffInDays === 1) return `1 day ago`;
+        if (diffInDays < 30) return `${diffInDays} days ago`;
+        
+        return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    };
+
+    const getIconData = (idx) => {
+        const variations = [
+            { bg: '#f3e8ff', color: '#9333ea', icon: '📢' },
+            { bg: '#dcfce7', color: '#16a34a', icon: '📝' },
+            { bg: '#fef08a', color: '#ca8a04', icon: '🗓️' },
+        ];
+        return variations[idx % variations.length];
+    };
+
+    const formatTime = (timeStr) => {
+        if (!timeStr) return '';
+        const [hh, mm] = timeStr.split(':');
+        const hour = parseInt(hh, 10);
+        const ampm = hour >= 12 ? 'PM' : 'AM';
+        const h12 = hour % 12 || 12;
+        return `${h12}:${mm} ${ampm}`;
+    };
 
     return (
         <div className="fd-dashboard-container">
@@ -245,48 +367,54 @@ function FacultyDashboard() {
                         <Link to="/faculty/timetable" className="fd-view-all">View Full Schedule</Link>
                     </div>
                     <div className="fd-schedule-list">
-                        {todaySchedule.map(schedule => (
-                            <div key={schedule.id} className="fd-schedule-item">
-                                <div className="fd-schedule-time">
-                                    <span>{schedule.time}</span>
-                                    <span>- {schedule.endTime}</span>
+                        {todaySchedule.length > 0 ? todaySchedule.map((cls, idx) => (
+                            <div key={cls.id || idx} className="fd-schedule-item-clean">
+                                <div className="fd-schedule-time-col">
+                                    <span className="fd-schedule-start">{formatTime(cls.startTime)}</span>
+                                    <span className="fd-schedule-end">{formatTime(cls.endTime)}</span>
                                 </div>
-                                <div className="fd-schedule-details">
-                                    <h4>{schedule.subject}</h4>
-                                    <p>{schedule.class}</p>
+                                <div className="fd-schedule-bar" style={{backgroundColor: cls.color + '20', borderLeft: `3px solid ${cls.color}`}}>
+                                    <div className="fd-schedule-subject" style={{color: cls.color}}>{cls.subject}</div>
+                                    <div className="fd-schedule-room">{cls.className}{cls.room ? ` • ${cls.room}` : ''}</div>
+                                    {cls.dayLabel && <div className="fd-schedule-daylabel">{cls.dayLabel}</div>}
                                 </div>
-                                <div className="fd-schedule-room">
-                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
-                                    {schedule.room}
-                                </div>
-                                <div className="fd-status-badge">{schedule.status}</div>
+                                <span className={`fd-schedule-badge fd-badge-${cls.status.toLowerCase()}`}>{cls.status}</span>
                             </div>
-                        ))}
+                        )) : (
+                            <div className="fd-schedule-item" style={{ justifyContent: 'center', padding: '2rem 0', color: 'var(--text-secondary)', border: 'none' }}>
+                                <p style={{margin:0, fontSize:'13px'}}>No classes scheduled. Enjoy your time!</p>
+                            </div>
+                        )}
                     </div>
                 </div>
 
                 {/* Recent Announcements */}
                 {user?.features?.announcements && (
-                    <div className="fd-panel">
-                        <div className="fd-panel-header">
-                            <h3>📢 Recent Announcements</h3>
-                            <Link to="/faculty/announcements" className="fd-view-all">View All</Link>
+                    <div className="fd-panel fd-panel-announcements">
+                        <div className="fd-panel-header fd-panel-header-clean">
+                            <h3>Recent Announcements</h3>
+                            <Link to="/faculty/announcements" className="fd-view-all-clean">View All</Link>
                         </div>
-                        <div className="fd-announcement-list">
-                            {recentAnnouncements.length > 0 ? recentAnnouncements.map((ann, idx) => (
-                                <div key={idx} className="fd-announcement-item">
-                                    <div className="fd-announcement-icon fd-icon-blue">
-                                        🔗
+                        <div className="fd-announcement-list fd-announcement-list-clean">
+                            {recentAnnouncements.length > 0 ? recentAnnouncements.map((ann, idx) => {
+                                const iconData = getIconData(idx);
+                                return (
+                                <div key={idx} className="fd-announcement-item fd-announcement-item-clean">
+                                    <div className="fd-announcement-icon-clean" style={{ backgroundColor: iconData.bg, color: iconData.color }}>
+                                        {iconData.icon}
                                     </div>
-                                    <div className="fd-announcement-content">
-                                        <h4>{ann.title}</h4>
-                                        <p>{ann.message}</p>
-                                    </div>
-                                    <div className="fd-announcement-date">
-                                        {new Date(ann.created_at || new Date()).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+                                    <div className="fd-announcement-content-clean">
+                                        <h4>
+                                            {ann.title}
+                                            {!ann.is_read && <span className="fd-new-badge-clean">New</span>}
+                                        </h4>
+                                        <p className="fd-announcement-text">{ann.content || ann.message}</p>
+                                        <div className="fd-announcement-time-clean">
+                                            {getRelativeTime(ann.created_at || new Date())}
+                                        </div>
                                     </div>
                                 </div>
-                            )) : (
+                            )}) : (
                                 <div className="fd-announcement-item">
                                     <div className="fd-announcement-icon fd-icon-green">✨</div>
                                     <div className="fd-announcement-content">

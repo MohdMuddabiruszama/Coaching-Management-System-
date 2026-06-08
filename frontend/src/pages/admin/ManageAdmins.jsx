@@ -13,6 +13,7 @@ const CRUD_MODULES = [
     { val: 'faculty', label: 'Manage Faculty', icon: '👩‍🏫', desc: 'Faculty records management' },
     { val: 'classes', label: 'Manage Classes', icon: '📚', desc: 'Class records management' },
     { val: 'subjects', label: 'Manage Subjects', icon: '📖', desc: 'Subject records management' },
+    { val: 'timetable', label: 'Batches & Timetable', icon: '📅', desc: 'Create & manage timetables' },
     { val: 'fees', label: 'Fee Structure', icon: '💰', desc: 'Fee structures & collections' },
     { val: 'expenses', label: 'Record Expenses', icon: '💸', desc: 'Add & delete expenses' },
     { val: 'salary', label: 'Faculty Salary Management', icon: '💼', desc: 'Manage faculty salaries' },

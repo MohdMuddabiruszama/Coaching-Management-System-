@@ -69,6 +69,7 @@ function StudentDashboard() {
     const [announcements, setAnnouncements] = useState([]);
     const [upcomingTasks, setUpcomingTasks] = useState([]);
     const [timetable, setTimetable] = useState([]);
+    const [todaySchedule, setTodaySchedule] = useState([]);
     const [widgetsLoading, setWidgetsLoading] = useState(true);
     const [assignmentsStats, setAssignmentsStats] = useState({ total: 0, completed: 0 });
     const [outstandingFees, setOutstandingFees] = useState(0);
@@ -105,7 +106,7 @@ function StudentDashboard() {
                 setAnnouncements(
                     allAnns
                         .sort((a, b) => new Date(b.created_at || b.createdAt) - new Date(a.created_at || a.createdAt))
-                        .slice(0, 7)
+                        .slice(0, 3)
                 );
             }
 
@@ -265,6 +266,81 @@ function StudentDashboard() {
                             return acc;
                         }, []);
                         setTimetable(grouped.slice(0, 5));
+
+                        // ── Today's Schedule (real-time filtered) ─────────────
+                        const DAYS = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+                        const todayName = DAYS[new Date().getDay()];
+                        const todaySlots = filtered
+                            .filter(r => r.day_of_week === todayName)
+                            .sort((a, b) => (a.TimetableSlot?.start_time || a.start_time || '').localeCompare(b.TimetableSlot?.start_time || b.start_time || ''));
+
+                        const nowMinutes = new Date().getHours() * 60 + new Date().getMinutes();
+                        const toMins = (t) => {
+                            if (!t) return 0;
+                            const [hh, mm] = t.slice(0,5).split(':').map(Number);
+                            return hh * 60 + mm;
+                        };
+
+                        const scheduleWithStatus = todaySlots.map(r => {
+                            const startStr = r.TimetableSlot?.start_time || r.start_time || '';
+                            const endStr   = r.TimetableSlot?.end_time   || r.end_time   || '';
+                            const startM = toMins(startStr);
+                            const endM   = toMins(endStr);
+                            let status = 'Upcoming';
+                            if (nowMinutes >= endM)   status = 'Completed';
+                            if (nowMinutes >= startM && nowMinutes < endM) status = 'Ongoing';
+                            const name = r.Subject?.name || r.subject_name || r.subject || 'N/A';
+                            if (!subjectColorMap[name]) {
+                                subjectColorMap[name] = SUBJECT_COLORS[colorIdx % SUBJECT_COLORS.length];
+                                colorIdx++;
+                            }
+                            return {
+                                id: r.id,
+                                subject: name,
+                                color: subjectColorMap[name],
+                                startTime: startStr.slice(0,5),
+                                endTime: endStr.slice(0,5),
+                                room: r.room || r.TimetableSlot?.room || '',
+                                status,
+                            };
+                        });
+                        // Only show upcoming and ongoing (filter out completed), limit to 3
+                        const remaining = scheduleWithStatus.filter(s => s.status !== 'Completed').slice(0, 3);
+
+                        // If no classes remain today, find the next day with classes (tomorrow first)
+                        let tomorrowFirstClass = null;
+                        if (remaining.length === 0) {
+                            const todayIdx = DAYS.indexOf(todayName);
+                            for (let offset = 1; offset <= 6; offset++) {
+                                const nextDay = DAYS[(todayIdx + offset) % 7];
+                                const nextDaySlots = filtered
+                                    .filter(r => r.day_of_week === nextDay)
+                                    .sort((a, b) => (a.TimetableSlot?.start_time || a.start_time || '').localeCompare(b.TimetableSlot?.start_time || b.start_time || ''));
+                                if (nextDaySlots.length > 0) {
+                                    const r = nextDaySlots[0];
+                                    const startStr = r.TimetableSlot?.start_time || r.start_time || '';
+                                    const endStr   = r.TimetableSlot?.end_time   || r.end_time   || '';
+                                    const name = r.Subject?.name || r.subject_name || r.subject || 'N/A';
+                                    if (!subjectColorMap[name]) {
+                                        subjectColorMap[name] = SUBJECT_COLORS[colorIdx % SUBJECT_COLORS.length];
+                                        colorIdx++;
+                                    }
+                                    tomorrowFirstClass = {
+                                        id: r.id,
+                                        subject: name,
+                                        color: subjectColorMap[name],
+                                        startTime: startStr.slice(0, 5),
+                                        endTime: endStr.slice(0, 5),
+                                        room: r.room || r.TimetableSlot?.room || '',
+                                        status: 'Upcoming',
+                                        dayLabel: offset === 1 ? 'Tomorrow' : nextDay,
+                                    };
+                                    break;
+                                }
+                            }
+                        }
+
+                        setTodaySchedule(remaining.length > 0 ? remaining : tomorrowFirstClass ? [tomorrowFirstClass] : []);
                     } catch {
                         setTimetable([]);
                     }
@@ -793,17 +869,17 @@ function StudentDashboard() {
                             {widgetsLoading ? <SkeletonList /> : announcements.length > 0 ? (
                                 announcements.map((ann, idx) => {
                                     const { icon, color } = getAnnouncementStyle(idx);
-                                    const isNew = ann.isRead === false || ann.read_at === null;
+                                    const isNew = !ann.is_read;
                                     return (
                                         <div className="sd-list-item" key={ann.id || idx}>
                                             <div className={`sd-list-icon ${color}`}>{icon}</div>
                                             <div className="sd-list-content">
                                                 <div className="sd-list-title">
                                                     {ann.title}
-                                                    {isNew && <span className="sd-tag">New</span>}
+                                                    {isNew && <span className="sd-tag" style={{background: '#ede9fe', color: '#8b5cf6', textTransform: 'uppercase', letterSpacing: '0.3px'}}>New</span>}
                                                 </div>
                                                 <div className="sd-list-desc">{ann.message || ann.content}</div>
-                                                <div className="sd-list-time">{formatTimeAgo(ann.createdAt)}</div>
+                                                <div className="sd-list-time">{formatTimeAgo(ann.created_at || ann.createdAt)}</div>
                                             </div>
                                         </div>
                                     );
@@ -854,31 +930,32 @@ function StudentDashboard() {
                     </div>
                 </div>
 
-                {/* Weekly Timetable */}
+                {/* Today's Schedule */}
                 <div className="sd-widget">
                     <div className="sd-widget-header">
-                        <h3>Weekly Timetable</h3>
+                        <h3>📅 Today's Schedule</h3>
                         <Link to="/student/timetable" className="sd-view-all">View Full Timetable</Link>
                     </div>
                     <div className="sd-list">
-                        {widgetsLoading ? <SkeletonList /> : timetable.length > 0 ? (
-                            timetable.map((row, idx) => (
-                                <div className="sd-tt-row" key={row.id || idx}>
-                                    <span className="sd-tt-day">{getDayAbbr(row.day_of_week)}</span>
-                                    <div className="sd-tt-pills">
-                                        {(Array.isArray(row.subjects) ? row.subjects : []).map((subj, si) => (
-                                            <span key={si} className="sd-tt-pill" style={{ background: subj.color + '18', color: subj.color, borderColor: subj.color + '40' }}>
-                                                {subj.name}
-                                                {subj.time && <span className="sd-tt-pill-time">{subj.time}</span>}
-                                            </span>
-                                        ))}
+                        {widgetsLoading ? <SkeletonList /> : todaySchedule.length > 0 ? (
+                            todaySchedule.map((cls, idx) => (
+                                <div key={cls.id || idx} className="sd-schedule-item">
+                                    <div className="sd-schedule-time-col">
+                                        <span className="sd-schedule-start">{formatTime(cls.startTime)}</span>
+                                        <span className="sd-schedule-end">{formatTime(cls.endTime)}</span>
                                     </div>
+                                    <div className="sd-schedule-bar" style={{backgroundColor: cls.color + '20', borderLeft: `3px solid ${cls.color}`}}>
+                                        <div className="sd-schedule-subject" style={{color: cls.color}}>{cls.subject}</div>
+                                        {cls.room && <div className="sd-schedule-room">📍 {cls.room}</div>}
+                                        {cls.dayLabel && <div className="sd-schedule-daylabel">{cls.dayLabel}</div>}
+                                    </div>
+                                    <span className={`sd-schedule-badge sd-badge-${cls.status.toLowerCase()}`}>{cls.status}</span>
                                 </div>
                             ))
                         ) : (
                             <div className="sd-empty-state">
-                                <span>📅</span>
-                                <p>No timetable available for your class.</p>
+                                <span>🎉</span>
+                                <p>No classes scheduled. Enjoy your time!</p>
                             </div>
                         )}
                     </div>

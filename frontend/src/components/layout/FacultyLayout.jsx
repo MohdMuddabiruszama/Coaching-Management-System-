@@ -13,7 +13,7 @@ const FacultyLayout = () => {
     const [desktopCollapsed, setDesktopCollapsed] = useState(false);
     
     const [chatUnreadCount, setChatUnreadCount] = useState(0);
-    const [announcementsUnread, setAnnouncementsUnread] = useState(false);
+    const [announcementsUnreadCount, setAnnouncementsUnreadCount] = useState(0);
 
     useEffect(() => {
         // Fetch chat unread count for sidebar badge
@@ -24,8 +24,14 @@ const FacultyLayout = () => {
                 }
             }).catch(err => console.log(err));
         }
-        // Fetch announcements info if needed or just use a boolean for demonstration
-        setAnnouncementsUnread(true); // From the image, there is a red dot.
+        // Fetch announcements unread count
+        if (user?.features?.announcements) {
+            api.get('/announcements/unread-count').then(res => {
+                if (res.data.success) {
+                    setAnnouncementsUnreadCount(res.data.count || 0);
+                }
+            }).catch(err => console.log(err));
+        }
     }, [user]);
 
     const navLinkClass = (path) => {
@@ -125,7 +131,7 @@ const FacultyLayout = () => {
                         <Link to="/faculty/announcements" className={navLinkClass('/faculty/announcements')} onClick={handleNavClick}>
                             <span className="fl-nav-icon">📢</span>
                             Announcements
-                            {announcementsUnread && <span style={{width: 6, height: 6, borderRadius: '50%', background: '#ef4444', marginLeft: 'auto', marginRight: '8px'}}></span>}
+                            {announcementsUnreadCount > 0 && <span className="fl-nav-badge" style={{background: '#fee2e2', color: '#ef4444'}}>{announcementsUnreadCount}</span>}
                         </Link>
                     )}
 

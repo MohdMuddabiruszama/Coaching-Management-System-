@@ -595,6 +595,7 @@ function AdminDashboard() {
                 </div>
 
                 {/* STUDENT MANAGEMENT */}
+                {(hasPermission('students') || hasPermission('attendance')) && (
                 <div className="da-section">
                     <div className="da-section-header">
                         <h3>Student Management</h3>
@@ -618,8 +619,10 @@ function AdminDashboard() {
                         )}
                     </div>
                 </div>
+                )}
 
                 {/* FACULTY MANAGEMENT */}
+                {(hasPermission('faculty') || hasPermission('attendance') || hasPermission('salary')) && (
                 <div className="da-section">
                     <div className="da-section-header">
                         <h3>Faculty Management</h3>
@@ -643,8 +646,10 @@ function AdminDashboard() {
                         )}
                     </div>
                 </div>
+                )}
 
                 {/* ACADEMIC MANAGEMENT */}
+                {(hasPermission('classes') || hasPermission('subjects') || hasPermission('timetable') || hasPermission('exams') || hasPermission('assignments') || hasPermission('notes')) && (
                 <div className="da-section">
                     <div className="da-section-header">
                         <h3>Academic Management</h3>
@@ -657,7 +662,7 @@ function AdminDashboard() {
                         {hasPermission('subjects') && (
                             <DACard icon="📖" bg="#f3e8ff" title="Manage Subjects" desc="Subjects & topics" path={`${basePath}/subjects`} featureKey="subjects" />
                         )}
-                        {hasPermission('classes') && (
+                        {hasPermission('timetable') && (
                             <DACard icon="📅" bg="#ffedd5" title="Master Timetable" desc="Create and manage timetable" path={`${basePath}/timetable`} featureKey="timetable" />
                         )}
                         {hasPermission('exams') && (
@@ -671,8 +676,10 @@ function AdminDashboard() {
                         )}
                     </div>
                 </div>
+                )}
 
                 {/* FINANCE & ACCOUNTS */}
+                {(hasPermission('fees') || hasPermission('collect_fees') || hasPermission('expenses') || hasPermission('finance') || hasPermission('reports') || hasPermission('performance_hub')) && (
                 <div className="da-section">
                     <div className="da-section-header">
                         <h3>Finance & Accounts</h3>
@@ -696,8 +703,10 @@ function AdminDashboard() {
                         )}
                     </div>
                 </div>
+                )}
 
                 {/* SYSTEM & COMMUNICATION */}
+                {(isAdmin || hasPermission('announcements') || hasPermission('chat') || hasPermission('biometric')) && (
                 <div className="da-section">
                     <div className="da-section-header">
                         <h3>System & Communication</h3>
@@ -755,6 +764,7 @@ function AdminDashboard() {
                         )}
                     </div>
                 </div>
+                )}
             </div>
 
             {/* ══════════════ MANAGER: RECENT PAYMENTS ══════════════ */}

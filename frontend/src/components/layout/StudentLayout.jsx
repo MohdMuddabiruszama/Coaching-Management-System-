@@ -6,13 +6,14 @@ import "./StudentLayout.css";
 import api from "../../services/api";
 
 const StudentLayout = () => {
-    const { user } = useContext(AuthContext);
+    const { user, logout } = useContext(AuthContext);
     const location = useLocation();
     const navigate = useNavigate();
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [desktopCollapsed, setDesktopCollapsed] = useState(false);
     
     const [chatUnreadCount, setChatUnreadCount] = useState(0);
+    const [announcementsUnreadCount, setAnnouncementsUnreadCount] = useState(0);
 
     useEffect(() => {
         // Fetch chat unread count for sidebar badge
@@ -20,6 +21,14 @@ const StudentLayout = () => {
             api.get('/chat/unread-count').then(res => {
                 if (res.data.success) {
                     setChatUnreadCount(res.data.count);
+                }
+            }).catch(err => console.log(err));
+        }
+        // Fetch announcements unread count
+        if (user?.features?.announcements) {
+            api.get('/announcements/unread-count').then(res => {
+                if (res.data.success) {
+                    setAnnouncementsUnreadCount(res.data.count || 0);
                 }
             }).catch(err => console.log(err));
         }
@@ -107,6 +116,7 @@ const StudentLayout = () => {
                         <Link to="/student/announcements" className={navLinkClass('/student/announcements')} onClick={handleNavClick}>
                             <span className="sl-nav-icon">📢</span>
                             Announcements
+                            {announcementsUnreadCount > 0 && <span className="sl-nav-badge" style={{background: '#fee2e2', color: '#ef4444'}}>{announcementsUnreadCount}</span>}
                         </Link>
                     )}
                     {user?.features?.chat && (
@@ -136,6 +146,9 @@ const StudentLayout = () => {
                         <p>Have questions or need support?</p>
                         <button className="sl-help-btn" onClick={() => navigate('/student/profile')}>Contact Support</button>
                     </div>
+                    <button className="sl-logout-btn" onClick={logout}>
+                        <span className="sl-nav-icon">🚪</span> Logout
+                    </button>
                 </div>
                 <div className="sl-sidebar-bottom">
                     <span>© {new Date().getFullYear()} {user?.institute_name || "IT Hub"}. All rights reserved.</span>

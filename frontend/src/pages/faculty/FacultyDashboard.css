@@ -1,13 +1,13 @@
 /* FacultyDashboard.css */
 
 .fd-dashboard-container {
-    padding: 32px;
+    padding: 24px;
     background-color: var(--faculty-bg-main, #f8fafc);
     min-height: 100vh;
     font-family: 'Inter', sans-serif;
     color: #1e293b;
-    max-width: 1400px;
-    margin: 0 auto;
+    box-sizing: border-box;
+    width: 100%;
 }
 
 .fd-header {
@@ -66,7 +66,7 @@
 /* Quick Actions Grid */
 .fd-quick-actions-grid {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
     gap: 20px;
     margin-bottom: 32px;
 }
@@ -114,6 +114,7 @@
 
 .fd-action-info {
     flex: 1;
+    min-width: 0;
 }
 
 .fd-action-info h4 {
@@ -162,7 +163,7 @@
 /* Stats Row */
 .fd-stats-row {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
     gap: 24px;
     margin-bottom: 32px;
 }
@@ -214,7 +215,7 @@
 /* Split View (Schedule & Announcements) */
 .fd-split-view {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
     gap: 24px;
     margin-bottom: 32px;
 }
@@ -258,12 +259,7 @@
     background: #c7d2fe;
 }
 
-/* Schedule List */
-.fd-schedule-list {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-}
+/* Schedule List (see bottom of file for fd-schedule-item-clean styles) */
 
 .fd-schedule-item {
     display: flex;
@@ -544,3 +540,238 @@ html.dark-mode .fd-banner-btn {
 html.dark-mode .fd-banner-btn:hover {
     background: #475569;
 }
+
+/* Clean Announcements UI */
+.fd-panel-announcements {
+    padding: 24px 32px;
+}
+
+.fd-panel-header-clean {
+    border-bottom: 1px solid #e2e8f0;
+    padding-bottom: 16px;
+    margin-bottom: 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.fd-panel-header-clean h3 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+    color: #0f172a;
+}
+
+.fd-view-all-clean {
+    color: #6366f1;
+    font-size: 14px;
+    font-weight: 500;
+    text-decoration: none;
+}
+
+.fd-view-all-clean:hover {
+    text-decoration: underline;
+}
+
+.fd-announcement-list-clean {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+.fd-announcement-item-clean {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    border-bottom: none;
+    padding-bottom: 0;
+}
+
+.fd-announcement-icon-clean {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    flex-shrink: 0;
+}
+
+.fd-announcement-content-clean {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.fd-announcement-content-clean h4 {
+    margin: 0 0 6px 0;
+    font-size: 15px;
+    font-weight: 600;
+    color: #1e293b;
+    display: flex;
+    align-items: center;
+}
+
+.fd-new-badge-clean {
+    margin-left: 10px;
+    background: #ede9fe;
+    color: #8b5cf6;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 4px;
+    letter-spacing: 0.3px;
+    text-transform: uppercase;
+}
+
+.fd-announcement-text {
+    margin: 0 0 6px 0 !important;
+    font-size: 14px !important;
+    color: #64748b !important;
+    line-height: 1.5 !important;
+}
+
+.fd-announcement-time-clean {
+    font-size: 13px;
+    color: #94a3b8;
+    font-weight: 500;
+}
+
+/* Dark mode overrides for clean announcements */
+html.dark-mode .fd-panel-header-clean {
+    border-bottom-color: #334155;
+}
+html.dark-mode .fd-panel-header-clean h3 {
+    color: #f8fafc;
+}
+html.dark-mode .fd-announcement-content-clean h4 {
+    color: #f1f5f9;
+}
+html.dark-mode .fd-new-badge-clean {
+    background: rgba(139, 92, 246, 0.2);
+    color: #a78bfa;
+}
+
+
+/* ================================================
+   Today's Schedule — Premium Professional Styles
+   ================================================ */
+
+.fd-schedule-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+
+.fd-schedule-item-clean {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid #f1f5f9;
+    transition: background 0.15s;
+}
+
+.fd-schedule-item-clean:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+}
+
+.fd-schedule-time-col {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    min-width: 72px;
+    flex-shrink: 0;
+    gap: 1px;
+}
+
+.fd-schedule-start {
+    font-size: 13px;
+    font-weight: 700;
+    color: #1e293b;
+    line-height: 1.2;
+    white-space: nowrap;
+}
+
+.fd-schedule-end {
+    font-size: 11px;
+    color: #94a3b8;
+    line-height: 1.2;
+    white-space: nowrap;
+}
+
+.fd-schedule-bar {
+    flex: 1;
+    padding: 8px 12px;
+    border-radius: 8px;
+    min-width: 0;
+}
+
+.fd-schedule-subject {
+    font-size: 13px;
+    font-weight: 700;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 1.3;
+}
+
+.fd-schedule-room {
+    font-size: 11px;
+    color: #64748b;
+    margin-top: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.fd-schedule-daylabel {
+    font-size: 10px;
+    font-weight: 700;
+    color: #f97316;
+    margin-top: 3px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.fd-schedule-badge {
+    font-size: 10px;
+    font-weight: 700;
+    padding: 3px 9px;
+    border-radius: 20px;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    flex-shrink: 0;
+    white-space: nowrap;
+}
+
+.fd-badge-upcoming {
+    background: #ede9fe;
+    color: #6d28d9;
+}
+
+.fd-badge-ongoing {
+    background: #dcfce7;
+    color: #15803d;
+    animation: fd-pulse-badge 2s ease-in-out infinite;
+}
+
+.fd-badge-completed {
+    background: #f1f5f9;
+    color: #94a3b8;
+}
+
+@keyframes fd-pulse-badge {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(21, 128, 61, 0.25); }
+    50%       { box-shadow: 0 0 0 4px rgba(21, 128, 61, 0); }
+}
+
+/* Dark mode */
+html.dark-mode .fd-schedule-item-clean { border-color: #1e293b; }
+html.dark-mode .fd-schedule-start { color: #f1f5f9; }
+html.dark-mode .fd-schedule-end, html.dark-mode .fd-schedule-room { color: #64748b; }
+html.dark-mode .fd-badge-upcoming { background: rgba(109, 40, 217, 0.15); color: #a78bfa; }
+html.dark-mode .fd-badge-ongoing  { background: rgba(21, 128, 61, 0.15);  color: #4ade80; }
+html.dark-mode .fd-badge-completed { background: #1e293b; color: #475569; }

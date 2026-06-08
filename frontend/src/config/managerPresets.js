@@ -125,6 +125,7 @@ export const MANAGER_PRESETS = {
         crudPerms: [
             'students.read',                                            // read only
             'classes.read',                                             // read only
+            'timetable.create',   'timetable.read',   'timetable.update',  'timetable.delete',
             'exams.create',       'exams.read',       'exams.update',  'exams.delete',
             'assignments.create', 'assignments.read', 'assignments.update', 'assignments.delete',
             'announcements.create','announcements.read','announcements.update','announcements.delete',
