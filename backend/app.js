@@ -32,7 +32,19 @@ app.use(helmet({
       styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
       fontSrc: ["'self'", "https://fonts.gstatic.com"],
       imgSrc: ["'self'", "data:", "https://res.cloudinary.com", "https://*.cloudinary.com", "blob:"],
-      connectSrc: ["'self'", "https://api.razorpay.com", "https://lumberjack.razorpay.com", process.env.FRONTEND_URL].filter(Boolean),
+      connectSrc: [
+        "'self'",
+        "https://api.razorpay.com",
+        "https://lumberjack.razorpay.com",
+        process.env.FRONTEND_URL,
+        // Custom domain variants
+        "https://zenithflows.in",
+        "https://www.zenithflows.in",
+        // All allowed origins from env
+        ...(process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(",").map(o => o.trim()) : []),
+        // Backend itself (Render)
+        "https://coaching-management-system-24xn.onrender.com",
+      ].filter(Boolean),
       frameSrc: ["https://api.razorpay.com", "https://checkout.razorpay.com"],
       objectSrc: ["'none'"],
       upgradeInsecureRequests: process.env.NODE_ENV === "production" ? [] : null,
@@ -133,9 +145,11 @@ app.use("/api/auth/resend-otp", otpLimiter);
  * ✅ Phase 7: Environment-Aware CORS Configuration
  * Production: only allow origins from ALLOWED_ORIGINS env var
  * Development: allow localhost variants + Vercel preview branches
+ *
+ * IMPORTANT: ALLOWED_ORIGINS must be set on Render with ALL allowed domains:
+ *   ALLOWED_ORIGINS=https://coaching-management-system-lemon.vercel.app,https://zenithflows.in,https://www.zenithflows.in
  */
 const buildAllowedOrigins = () => {
-  // If ALLOWED_ORIGINS is set (production), use ONLY those origins
   if (process.env.ALLOWED_ORIGINS) {
     return process.env.ALLOWED_ORIGINS.split(",").map(o => o.trim()).filter(Boolean);
   }
@@ -154,24 +168,46 @@ const buildAllowedOrigins = () => {
 const allowedOrigins = buildAllowedOrigins();
 const isProduction = !!process.env.ALLOWED_ORIGINS;
 
+// Custom-domain root: allow any origin that ends with our root domain
+// e.g. zenithflows.in AND www.zenithflows.in AND any future subdomain
+const CUSTOM_DOMAIN = process.env.CUSTOM_DOMAIN || "zenithflows.in";
+
 app.use(cors({
   origin: (origin, callback) => {
     // Allow requests with no origin (mobile apps, Postman, server-to-server)
     if (!origin) return callback(null, true);
-    // Exact match
+
+    // Exact match against whitelist
     if (allowedOrigins.includes(origin)) return callback(null, true);
-    // In dev only: allow Vercel preview URLs
+
+    // Always allow the custom domain and all its subdomains (www, app, student, etc.)
+    // This is safe because the CUSTOM_DOMAIN is our own controlled domain
+    if (
+      origin === `https://${CUSTOM_DOMAIN}` ||
+      origin === `http://${CUSTOM_DOMAIN}` ||
+      origin.endsWith(`.${CUSTOM_DOMAIN}`)
+    ) {
+      return callback(null, true);
+    }
+
+    // In dev only: allow Vercel preview URLs and capacitor
     if (!isProduction && origin.endsWith(".vercel.app")) return callback(null, true);
-    // In dev only: allow capacitor origins
     if (!isProduction && origin.startsWith("capacitor://")) return callback(null, true);
+
     // Blocked
+    console.warn(`[CORS] Blocked origin: ${origin}`);
     callback(new Error(`Not allowed by CORS: ${origin}`));
   },
   credentials: true,
-  methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
-  allowedHeaders: ["Content-Type", "Authorization", "sentry-trace", "baggage"],
+  methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization", "sentry-trace", "baggage", "X-Requested-With"],
+  exposedHeaders: ["Content-Range", "X-Content-Range"],
   maxAge: 86400, // Cache preflight for 24 hours
 }));
+
+// Handle OPTIONS preflight for all routes explicitly (belt-and-suspenders)
+app.options("*", cors());
+
 
 
 /**
