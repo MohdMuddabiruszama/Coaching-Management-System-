@@ -8,6 +8,8 @@ import { resolveFileUrl } from '../../utils/resolveUrl';
 import '../faculty/Assignments.css';
 import './AdminAssignments.css';
 import './AdminAssignmentsDetail.css';
+import './Dashboard.css';
+import './Students.css';
 
 const DocumentIcon = () => (
   <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
@@ -299,41 +301,41 @@ export default function AdminAssignments() {
         <div className="students-container admin-assignments-wrapper">
             {msg && <div className={`fa-flash ${msg.type}`} style={{ position: 'fixed', top: 20, right: 20, zIndex: 9999, background: 'white', padding: '16px 24px', borderRadius: '8px', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)' }}>{msg.type === 'success' ? '✅' : '❌'} {msg.text}</div>}
 
-            <div className="aa-header-container" style={{ flexDirection: 'column', alignItems: 'stretch' }}>
-                <div style={{ display: 'flex', justifyContent: 'flex-start', marginBottom: '1rem' }}>
-                    <div>
-                            {view === 'list' ? (
-                                <h1>Assignments Overview</h1>
-                            ) : (
-                                <h1>{selected?.title || 'Assignment Details'}</h1>
-                            )}
-                        <p className="aa-header-subtitle">
+            <div className="st-header">
+                <div className="st-header-top-row">
+                    <div className="st-header-left">
+                        {view === 'list' ? (
+                            <h1>Assignments Overview</h1>
+                        ) : (
+                            <h1>{selected?.title || 'Assignment Details'}</h1>
+                        )}
+                        <p>
                             {view === 'list' ? 'Monitor all assignments across the institute' : 'Detailed performance tracking and assignment review'}
                         </p>
                     </div>
                 </div>
                 
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div className="st-breadcrumbs" style={{ fontSize: '0.8rem', color: '#94a3b8', display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                <div className="st-header-bottom-row">
+                    <div className="st-breadcrumbs">
                         <span>Dashboard</span>
                         <span>›</span>
-                        <span style={{ color: '#0f172a', fontWeight: '500' }}>{view === 'list' ? 'Assignments Overview' : 'Assignment Details'}</span>
+                        <span className="active">{view === 'list' ? 'Assignments Overview' : 'Assignment Details'}</span>
                     </div>
                     {view === 'list' ? (
-                        <div className="aa-header-actions">
-                            <button className="aa-btn-outline" onClick={handleExport} disabled={exporting}>
+                        <div className="st-header-actions">
+                            <button className="st-btn st-btn-outline" onClick={handleExport} disabled={exporting} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                                 <DownloadIcon /> {exporting ? 'Exporting...' : 'Export CSV'}
                             </button>
-                            <button className="aa-btn-primary" onClick={() => window.location.href = '/admin/assignments/create'}>
+                            <button className="st-btn st-btn-primary" onClick={() => window.location.href = '/admin/assignments/create'} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                                 + Add Assignment
                             </button>
                         </div>
                     ) : (
-                        <div className="aa-header-actions">
-                            <button className="aa-btn-outline" onClick={handleExport}>
+                        <div className="st-header-actions">
+                            <button className="st-btn st-btn-outline" onClick={handleExport} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                                 <DownloadIcon /> Export CSV
                             </button>
-                            <button className="aa-btn-outline" onClick={() => setView('list')}>
+                            <button className="st-btn st-btn-outline" onClick={() => setView('list')}>
                                 ← Back to Overview
                             </button>
                         </div>

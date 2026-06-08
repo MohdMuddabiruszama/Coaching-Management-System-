@@ -2,11 +2,10 @@ import React, { useState, useEffect, useContext, Fragment } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import api from "../../services/api";
 import { AuthContext } from "../../context/AuthContext";
-import ThemeSelector from "../../components/ThemeSelector";
 import { MANAGER_TYPES, buildPermissionsFromPreset } from "../../config/managerPresets";
-import managerAvatarImg from "../../assets/manager_avatar.png";
 import "./Dashboard.css";
 import "./ManageAdmins.css";
+import "./Students.css";
 
 // ─── Modules that support granular CRUD ───
 const CRUD_MODULES = [
@@ -479,28 +478,33 @@ function ManageAdmins() {
     return (
         <div className="dashboard-container manage-admins-container">
             {/* Header */}
-            <header className="dashboard-header" style={{ marginBottom: '2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                    <img src={managerAvatarImg} alt="Manager" className="ma-header-avatar" />
-                    <div>
-                        <h1 style={{ fontSize: '1.8rem', fontWeight: '800', marginBottom: '4px' }}>Manager System</h1>
-                        <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', margin: 0 }}>Create operational managers with fine-grained CRUD permission control.</p>
+            <header className="st-header" style={{ marginBottom: '1.5rem' }}>
+                <div className="st-header-top-row">
+                    <div className="st-header-left" style={{ flexDirection: 'row', alignItems: 'center', gap: '1rem' }}>
+                        <div>
+                            <h1>Manager System</h1>
+                            <p>Create operational managers with fine-grained CRUD permission control.</p>
+                        </div>
                     </div>
                 </div>
-                <div className="dashboard-header-right" style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                    <ThemeSelector />
-                    <button className="ma-btn-outline" onClick={() => navigate('/admin/dashboard')}>
-                        ← Back
-                    </button>
-                    {user?.role === 'admin' && (
-                        <button
-                            className="btn btn-primary"
-                            onClick={() => { setShowModal(true); setWizardStep(1); setSelectedType('custom'); setTypeConfirmPending(null); setFormErrors({}); }}
-                            style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', border: 'none', padding: '0.6rem 1.2rem', borderRadius: '8px', fontWeight: '600' }}
-                        >
-                            + Create Manager
-                        </button>
-                    )}
+                
+                <div className="st-header-bottom-row">
+                    <div className="st-breadcrumbs">
+                        <span>Dashboard</span>
+                        <span>›</span>
+                        <span className="active">Managers</span>
+                    </div>
+                    <div className="st-header-actions" style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                        {user?.role === 'admin' && (
+                            <button
+                                className="st-btn st-btn-primary"
+                                onClick={() => { setShowModal(true); setWizardStep(1); setSelectedType('custom'); setTypeConfirmPending(null); setFormErrors({}); }}
+                                style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+                            >
+                                + Create Manager
+                            </button>
+                        )}
+                    </div>
                 </div>
             </header>
 

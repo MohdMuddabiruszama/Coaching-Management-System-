@@ -154,7 +154,8 @@ exports.getClassAttendanceByDate = async (req, res) => {
 
         // Get attendance records for this date
         const attendanceRecords = await Attendance.findAll({
-            where: { class_id, subject_id, date, institute_id }
+            where: { class_id, subject_id, date, institute_id },
+            include: [{ model: User, as: 'marker', attributes: ['name', 'role'] }]
         });
 
         // Map attendance to students

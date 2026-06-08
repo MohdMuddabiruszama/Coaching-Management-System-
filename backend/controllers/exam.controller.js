@@ -117,8 +117,11 @@ exports.enterMarks = async (req, res) => {
 
         let mark = await Mark.findOne({ where: { institute_id, exam_id, student_id } });
 
+        let parsedMarks = parseFloat(marks_obtained);
+        if (isNaN(parsedMarks)) parsedMarks = null;
+
         const markData = {
-            marks_obtained: is_absent ? null : parseFloat(marks_obtained),
+            marks_obtained: is_absent ? null : parsedMarks,
             is_absent: is_absent || false,
             remarks: remarks || null,
         };
@@ -159,8 +162,11 @@ exports.bulkEnterMarks = async (req, res) => {
         for (const md of marksData) {
             let mark = await Mark.findOne({ where: { institute_id, exam_id, student_id: md.student_id } });
 
+            let parsedMarks = parseFloat(md.marks_obtained);
+            if (isNaN(parsedMarks)) parsedMarks = null;
+
             const data = {
-                marks_obtained: md.is_absent ? null : parseFloat(md.marks_obtained),
+                marks_obtained: md.is_absent ? null : parsedMarks,
                 is_absent: md.is_absent || false,
                 remarks: md.remarks || null,
             };

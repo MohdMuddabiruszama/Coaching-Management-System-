@@ -9,6 +9,7 @@ import { Link } from "react-router-dom";
 import api from "../../services/api";
 import { AuthContext } from "../../context/AuthContext";
 import "./Dashboard.css";
+import "./Students.css";
 
 const TODAY = new Date().toISOString().split('T')[0];
 
@@ -46,6 +47,7 @@ function Fees() {
     const [success, setSuccess] = useState('');
     const [showMoreFilters, setShowMoreFilters] = useState(false);
     const [filterFeeType, setFilterFeeType] = useState('');
+    const [filterAssigned, setFilterAssigned] = useState('all');
     const [historySearch, setHistorySearch] = useState('');
     const [historyClass, setHistoryClass] = useState('');
     const [historyMethod, setHistoryMethod] = useState('');
@@ -67,10 +69,10 @@ function Fees() {
             alert('No data to export');
             return;
         }
-        
+
         const headers = ['Student Name', 'Roll No', 'Class', 'Fee Type', 'Due Date', 'Final Amount', 'Paid Amount', 'Due Amount', 'Status'];
         const csvRows = [headers.join(',')];
-        
+
         filteredFees.forEach(sf => {
             const row = [
                 `"${sf.Student?.User?.name || ''}"`,
@@ -85,7 +87,7 @@ function Fees() {
             ];
             csvRows.push(row.join(','));
         });
-        
+
         const csvContent = "data:text/csv;charset=utf-8," + csvRows.join("\n");
         const encodedUri = encodeURI(csvContent);
         const link = document.createElement("a");
@@ -172,7 +174,10 @@ function Fees() {
         const matchSearch = !search || name.includes(search.toLowerCase()) || roll.includes(search.toLowerCase());
         const matchClass = !filterClass || String(sf.class_id) === String(filterClass);
         const matchStatus = filterStatus === 'all' ? true : sf.status === filterStatus;
-        return matchSearch && matchClass && matchStatus;
+        const isAssigned = !String(sf.id).startsWith('dummy_');
+        const matchAssigned = filterAssigned === 'all' ? true : (filterAssigned === 'assigned' ? isAssigned : !isAssigned);
+        const matchFeeType = !filterFeeType || sf.FeesStructure?.fee_type === filterFeeType;
+        return matchSearch && matchClass && matchStatus && matchAssigned && matchFeeType;
     });
 
     const totalPages = Math.ceil(filteredFees.length / itemsPerPage) || 1;
@@ -184,7 +189,7 @@ function Fees() {
         const matchSearch = !historySearch || name.includes(historySearch.toLowerCase()) || roll.includes(historySearch.toLowerCase());
         const matchClass = !historyClass || String(p.Student?.class_id) === String(historyClass);
         const matchMethod = !historyMethod || p.payment_method === historyMethod;
-        
+
         let matchDate = true;
         const pDate = new Date(p.payment_date);
         pDate.setHours(0, 0, 0, 0); // Normalize to start of day for comparison
@@ -198,7 +203,7 @@ function Fees() {
             eDate.setHours(0, 0, 0, 0);
             if (pDate > eDate) matchDate = false;
         }
-        
+
         return matchSearch && matchClass && matchMethod && matchDate;
     }).sort((a, b) => {
         if (historySort === 'latest') return new Date(b.payment_date) - new Date(a.payment_date);
@@ -206,7 +211,7 @@ function Fees() {
         if (historySort === 'highest') return parseFloat(b.amount_paid) - parseFloat(a.amount_paid);
         return 0;
     });
-    
+
     const historyTotalPages = Math.ceil(filteredPayments.length / historyItemsPerPage) || 1;
     const paginatedPayments = filteredPayments.slice((historyPage - 1) * historyItemsPerPage, historyPage * historyItemsPerPage);
 
@@ -228,7 +233,7 @@ function Fees() {
 
     useEffect(() => {
         setCurrentPage(1);
-    }, [search, filterClass, filterStatus]);
+    }, [search, filterClass, filterStatus, filterAssigned, filterFeeType]);
 
     // Open collect modal pre-filled
     const openCollect = (stuFee) => {
@@ -457,7 +462,7 @@ function Fees() {
         // Show at exactly 8 days, exactly 4 days, 2 days or less (continuous), and on/past date
         return daysLeft === 8 || daysLeft === 4 || daysLeft <= 2;
     };
-    
+
     // Get urgency level: 'red' = overdue/today, 'orange' = approaching
     const getReminderUrgency = (reminderDate) => {
         const daysLeft = getDaysUntilReminder(reminderDate);
@@ -468,30 +473,27 @@ function Fees() {
     return (
         <div className="students-container">
             {/* Header */}
-            <div className="dashboard-header" style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginTop: '40px', marginBottom: '1.5rem' }}>
-                <div style={{ display: 'flex', justifyContent: 'flex-start', alignItems: 'center', flexWrap: 'wrap', gap: '15px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-                        <div style={{ fontSize: '1.8rem', background: 'rgba(245,158,11,0.1)', padding: '10px 14px', borderRadius: '12px' }}>👛</div>
-                        <div>
-                            <h1 style={{ margin: 0, fontSize: '1.5rem', color: 'var(--text-primary)' }}>Fee Management</h1>
-                            <p style={{ margin: '4px 0 0', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Collect fees, view payment history{isAdmin ? ', and manage fee structures' : ''}.</p>
-                        </div>
+            <div className="st-header">
+                <div className="st-header-top-row">
+                    <div className="st-header-left">
+                        <h1>Fee Management</h1>
+                        <p>Collect fees, view payment history{isAdmin ? ', and manage fee structures' : ''}.</p>
                     </div>
                 </div>
-                
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '15px' }}>
-                    <div className="st-breadcrumbs" style={{ fontSize: '0.8rem', color: '#94a3b8', display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+
+                <div className="st-header-bottom-row">
+                    <div className="st-breadcrumbs">
                         <span>Dashboard</span>
                         <span>›</span>
-                        <span style={{ color: '#0f172a', fontWeight: '500' }}>Fee Management</span>
+                        <span className="active">Fee Management</span>
                     </div>
-                    <div style={{ display: 'flex', gap: '10px' }}>
+                    <div className="st-header-actions">
                         {(isAdmin || hasPerm('fees', 'read')) && (
-                            <button className="btn btn-secondary" onClick={() => setTab('structure')} style={{ background: '#fff', border: '1px solid #e5e7eb', color: '#374151', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <button className="st-btn st-btn-outline" onClick={() => setTab('structure')} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                                 📐 Fee Structures
                             </button>
                         )}
-                        <button className="btn btn-primary" onClick={exportToCSV} style={{ background: '#4f46e5', border: 'none', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <button className="st-btn st-btn-primary" onClick={exportToCSV} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                             📥 Export Report
                         </button>
                     </div>
@@ -547,10 +549,10 @@ function Fees() {
                                 : 'linear-gradient(135deg,rgba(245,158,11,0.12),rgba(245,158,11,0.05))';
                             const textColor = isRed ? '#dc2626' : '#d97706';
                             const icon = isRed ? '🚨' : '⚠️';
-                            const daysText = daysLeft > 0 
-                                ? `${daysLeft} day${daysLeft !== 1 ? 's' : ''} remaining` 
-                                : daysLeft === 0 
-                                    ? 'Due today!' 
+                            const daysText = daysLeft > 0
+                                ? `${daysLeft} day${daysLeft !== 1 ? 's' : ''} remaining`
+                                : daysLeft === 0
+                                    ? 'Due today!'
                                     : `Overdue by ${Math.abs(daysLeft)} day${Math.abs(daysLeft) !== 1 ? 's' : ''}`;
                             return (
                                 <div key={`rem-${rem.id}`} style={{
@@ -670,6 +672,12 @@ function Fees() {
                             <option value="partial">⚠️ Partial</option>
                             <option value="paid">✅ Paid</option>
                         </select>
+                        <select className="form-select" value={filterAssigned} onChange={e => setFilterAssigned(e.target.value)}
+                            style={{ minWidth: '160px', flex: 1, maxWidth: '200px', margin: 0, height: '40px' }}>
+                            <option value="all">📋 All Assigned </option>
+                            <option value="assigned">✅ Assigned Fees</option>
+                            <option value="unassigned">❌ Not Assigned</option>
+                        </select>
                         <button className="btn" onClick={() => setShowMoreFilters(!showMoreFilters)} style={{ background: showMoreFilters ? '#e9d5ff' : '#f3e8ff', color: '#7e22ce', border: 'none', fontWeight: '600', padding: '0 1.2rem', height: '40px', display: 'flex', alignItems: 'center', gap: '6px', borderRadius: '8px', cursor: 'pointer', transition: '0.2s' }}>
                             <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" /></svg>
                             More Filters
@@ -781,11 +789,11 @@ function Fees() {
                                                     <div style={{ fontSize: '0.85rem', color: '#4b5563', display: 'flex', alignItems: 'center', gap: '4px' }}>
                                                         ⏰ {sf.reminder_date ? new Date(sf.reminder_date).toLocaleDateString('en-GB') : '—'}
                                                         {sf.status !== 'paid' && hasPerm('fees', 'create') && (
-                                                            <button 
-                                                                onClick={() => { 
-                                                                    setEditingReminderFee(sf); 
-                                                                    setReminderDateInput(sf.reminder_date ? sf.reminder_date.substring(0, 10) : ''); 
-                                                                }} 
+                                                            <button
+                                                                onClick={() => {
+                                                                    setEditingReminderFee(sf);
+                                                                    setReminderDateInput(sf.reminder_date ? sf.reminder_date.substring(0, 10) : '');
+                                                                }}
                                                                 style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '12px', padding: '2px 4px', borderRadius: '4px', marginLeft: '4px' }}
                                                                 title="Set Reminder"
                                                                 onMouseOver={e => e.currentTarget.style.background = '#e5e7eb'}
@@ -839,7 +847,7 @@ function Fees() {
                             </table>
                         </div>
                     )}
-                    
+
                     {/* Pagination */}
                     {totalPages > 0 && (
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '1.5rem', borderTop: '1px solid #e5e7eb', paddingTop: '1rem' }}>
@@ -865,7 +873,7 @@ function Fees() {
                                     } else {
                                         pageNum = currentPage - 2 + i;
                                     }
-                                    
+
                                     return (
                                         <button
                                             key={pageNum}
@@ -995,9 +1003,9 @@ function Fees() {
                                         const textColors = ['#db2777', '#c2410c', '#059669', '#4338ca'];
                                         const charCode = (p.Student?.User?.name || 'A').charCodeAt(0);
                                         const colorIdx = charCode % 4;
-                                        
+
                                         const pDate = new Date(p.payment_date);
-                                        
+
                                         return (
                                             <tr key={p.id} style={{ borderBottom: '1px solid #e5e7eb', transition: 'background 0.2s' }} onMouseOver={e => e.currentTarget.style.background = '#f9fafb'} onMouseOut={e => e.currentTarget.style.background = 'transparent'}>
                                                 <td style={{ padding: historyDense ? '0.5rem 1.25rem' : '1rem 1.25rem' }}>
@@ -1143,7 +1151,7 @@ function Fees() {
                             <option value="">🟢 Status: All</option>
                             <option value="active">🟢 Status: Active</option>
                         </select>
-                        
+
                         {(hasPerm('fees', 'create')) && (
                             <button onClick={() => {
                                 setStructureForm({ class_id: '', subject_id: '', fee_type: 'Tuition Fee', custom_fee_type: '', amount: '', due_date: '', description: '', student_target: 'all', individual_student_ids: [] });
@@ -1595,9 +1603,9 @@ function Fees() {
                                     <div style={{ border: '1px solid #e5e7eb', borderRadius: '12px', background: '#fff', overflow: 'hidden' }}>
                                         <div style={{ padding: '0.75rem 1rem', borderBottom: '1px solid #e5e7eb', background: '#f9fafb', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                                             <span style={{ color: '#9ca3af' }}>🔍</span>
-                                            <input 
-                                                type="text" 
-                                                placeholder="Search students by name or roll number..." 
+                                            <input
+                                                type="text"
+                                                placeholder="Search students by name or roll number..."
                                                 onChange={e => {
                                                     const val = e.target.value.toLowerCase();
                                                     const items = document.querySelectorAll('.student-option-item');
@@ -1620,8 +1628,8 @@ function Fees() {
                                                     const isSelected = structureForm.individual_student_ids.includes(s.id);
                                                     const initials = (s.User?.name || s.name || '?').substring(0, 2).toUpperCase();
                                                     return (
-                                                        <div 
-                                                            key={s.id} 
+                                                        <div
+                                                            key={s.id}
                                                             className="student-option-item"
                                                             onClick={() => {
                                                                 const ids = [...structureForm.individual_student_ids];
@@ -1641,23 +1649,23 @@ function Fees() {
                                                                 background: isSelected ? '#faf5ff' : '#fff',
                                                                 transition: 'background 0.2s'
                                                             }}
-                                                            onMouseOver={e => { if(!isSelected) e.currentTarget.style.background = '#f9fafb'; }}
-                                                            onMouseOut={e => { if(!isSelected) e.currentTarget.style.background = '#fff'; }}
+                                                            onMouseOver={e => { if (!isSelected) e.currentTarget.style.background = '#f9fafb'; }}
+                                                            onMouseOut={e => { if (!isSelected) e.currentTarget.style.background = '#fff'; }}
                                                         >
-                                                            <div style={{ 
-                                                                width: '18px', height: '18px', borderRadius: '4px', 
-                                                                border: `2px solid ${isSelected ? '#7e22ce' : '#d1d5db'}`, 
+                                                            <div style={{
+                                                                width: '18px', height: '18px', borderRadius: '4px',
+                                                                border: `2px solid ${isSelected ? '#7e22ce' : '#d1d5db'}`,
                                                                 background: isSelected ? '#7e22ce' : '#fff',
                                                                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                                                                 flexShrink: 0
                                                             }}>
                                                                 {isSelected && <span style={{ color: '#fff', fontSize: '10px' }}>✓</span>}
                                                             </div>
-                                                            <div style={{ 
-                                                                width: '36px', height: '36px', borderRadius: '50%', 
-                                                                background: '#fee2e2', color: '#ef4444', 
-                                                                display: 'flex', alignItems: 'center', justifyContent: 'center', 
-                                                                fontSize: '0.85rem', fontWeight: 'bold', flexShrink: 0 
+                                                            <div style={{
+                                                                width: '36px', height: '36px', borderRadius: '50%',
+                                                                background: '#fee2e2', color: '#ef4444',
+                                                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                                                fontSize: '0.85rem', fontWeight: 'bold', flexShrink: 0
                                                             }}>
                                                                 {initials}
                                                             </div>
@@ -1702,7 +1710,7 @@ function Fees() {
                                         onChange={e => setStructureForm({ ...structureForm, amount: e.target.value })} style={{ height: '46px', borderRadius: '8px', border: '1px solid #d1d5db' }} />
                                 </div>
                             </div>
-                            
+
                             {structureForm.fee_type === 'Other' && (
                                 <div className="form-group" style={{ marginBottom: '1.25rem' }}>
                                     <label className="form-label" style={{ fontWeight: '600', color: '#374151', fontSize: '0.9rem' }}>Custom Fee Type Name <span style={{ color: '#ef4444' }}>*</span></label>
@@ -1808,106 +1816,106 @@ function Fees() {
                 return (
                     <div className="modal-overlay" style={{ background: 'rgba(15, 23, 42, 0.7)', backdropFilter: 'blur(6px)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem', position: 'fixed', inset: 0 }}>
                         <div className="modal-content" style={{ maxWidth: '850px', width: '100%', padding: 0, overflow: 'hidden', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.1)', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)', maxHeight: '90vh', display: 'flex', flexDirection: 'column' }}>
-                        <div style={{ padding: '1rem 1.5rem', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f8fafc' }}>
-                            <h3 style={{ margin: 0, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                <span style={{ fontSize: '1.25rem' }}>📄</span> Receipt Preview
-                            </h3>
-                            <button onClick={() => setViewingReceipt(null)} style={{ background: 'none', border: 'none', fontSize: '1.5rem', cursor: 'pointer', color: '#64748b', transition: 'color 0.2s' }} onMouseOver={e => e.target.style.color = '#ef4444'} onMouseOut={e => e.target.style.color = '#64748b'}>×</button>
-                        </div>
-                        
-                        <div style={{ overflowY: 'auto', flex: 1, padding: '2rem', background: '#e2e8f0' }}>
-                            {/* Printable Area Container */}
-                            <div id="printable-receipt" style={{ padding: '3rem', background: '#ffffff', color: '#0f172a', fontFamily: "'Inter', sans-serif", borderRadius: '8px', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)' }}>
-                                
-                                <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
-                                    {receiptLogoUrl ? (
-                                        <img src={receiptLogoUrl} alt="Institute Logo" style={{ width: '90px', height: '90px', margin: '0 auto 1rem', borderRadius: '50%', objectFit: 'contain', display: 'block', border: '2px solid #e2e8f0', background: '#fff' }} />
-                                    ) : (
-                                        <div style={{ width: '90px', height: '90px', margin: '0 auto 1rem', background: '#f8fafc', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid #e2e8f0' }}>
-                                            <span style={{ fontSize: '3rem' }}>🏫</span>
-                                        </div>
-                                    )}
-                                    <h1 style={{ margin: 0, fontSize: '2.2rem', fontWeight: '800', letterSpacing: '0.05em', color: '#0f172a', textTransform: 'uppercase' }}>
-                                        {user?.Institute?.name || "Excel Public School"}
-                                    </h1>
-                                </div>
+                            <div style={{ padding: '1rem 1.5rem', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f8fafc' }}>
+                                <h3 style={{ margin: 0, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                    <span style={{ fontSize: '1.25rem' }}>📄</span> Receipt Preview
+                                </h3>
+                                <button onClick={() => setViewingReceipt(null)} style={{ background: 'none', border: 'none', fontSize: '1.5rem', cursor: 'pointer', color: '#64748b', transition: 'color 0.2s' }} onMouseOver={e => e.target.style.color = '#ef4444'} onMouseOut={e => e.target.style.color = '#64748b'}>×</button>
+                            </div>
 
-                                <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '2px solid #cbd5e1', paddingBottom: '2rem', marginBottom: '2rem' }}>
-                                    <div style={{ flex: 1, fontSize: '1rem', color: '#334155', lineHeight: '1.7' }}>
-                                        <p style={{ margin: 0 }}><strong>Address:</strong> {user?.Institute?.address || "123 Education Lane"}{user?.Institute?.city ? `, ${user.Institute.city}` : ''}{user?.Institute?.zip_code ? ` - ${user.Institute.zip_code}` : ''}</p>
-                                        <p style={{ margin: 0 }}><strong>Phone No:</strong> {user?.Institute?.phone || "+91 98765 43210"}</p>
-                                        <p style={{ margin: 0 }}><strong>Email Id:</strong> {user?.Institute?.email || "info@excelpublicschool.edu"}</p>
+                            <div style={{ overflowY: 'auto', flex: 1, padding: '2rem', background: '#e2e8f0' }}>
+                                {/* Printable Area Container */}
+                                <div id="printable-receipt" style={{ padding: '3rem', background: '#ffffff', color: '#0f172a', fontFamily: "'Inter', sans-serif", borderRadius: '8px', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)' }}>
+
+                                    <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
+                                        {receiptLogoUrl ? (
+                                            <img src={receiptLogoUrl} alt="Institute Logo" style={{ width: '90px', height: '90px', margin: '0 auto 1rem', borderRadius: '50%', objectFit: 'contain', display: 'block', border: '2px solid #e2e8f0', background: '#fff' }} />
+                                        ) : (
+                                            <div style={{ width: '90px', height: '90px', margin: '0 auto 1rem', background: '#f8fafc', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid #e2e8f0' }}>
+                                                <span style={{ fontSize: '3rem' }}>🏫</span>
+                                            </div>
+                                        )}
+                                        <h1 style={{ margin: 0, fontSize: '2.2rem', fontWeight: '800', letterSpacing: '0.05em', color: '#0f172a', textTransform: 'uppercase' }}>
+                                            {user?.Institute?.name || "Excel Public School"}
+                                        </h1>
                                     </div>
-                                    <div style={{ flex: 1, textAlign: 'right', fontSize: '1.1rem', fontWeight: '600', color: '#0f172a', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', alignItems: 'flex-end' }}>
+
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '2px solid #cbd5e1', paddingBottom: '2rem', marginBottom: '2rem' }}>
+                                        <div style={{ flex: 1, fontSize: '1rem', color: '#334155', lineHeight: '1.7' }}>
+                                            <p style={{ margin: 0 }}><strong>Address:</strong> {user?.Institute?.address || "123 Education Lane"}{user?.Institute?.city ? `, ${user.Institute.city}` : ''}{user?.Institute?.zip_code ? ` - ${user.Institute.zip_code}` : ''}</p>
+                                            <p style={{ margin: 0 }}><strong>Phone No:</strong> {user?.Institute?.phone || "+91 98765 43210"}</p>
+                                            <p style={{ margin: 0 }}><strong>Email Id:</strong> {user?.Institute?.email || "info@excelpublicschool.edu"}</p>
+                                        </div>
+                                        <div style={{ flex: 1, textAlign: 'right', fontSize: '1.1rem', fontWeight: '600', color: '#0f172a', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', alignItems: 'flex-end' }}>
                                             <div style={{ display: 'flex', alignItems: 'flex-end', gap: '0.75rem' }}>
                                                 <span style={{ paddingBottom: '2px' }}>Date:</span>
                                                 <span style={{ display: 'inline-block', width: '180px', borderBottom: '1.5px solid #0f172a' }}></span>
                                             </div>
+                                        </div>
                                     </div>
-                                </div>
 
-                                <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
-                                    <span style={{ display: 'inline-block', padding: '0.5rem 2rem', background: '#f1f5f9', border: '1px solid #cbd5e1', borderRadius: '20px', fontSize: '1.4rem', fontWeight: '700', color: '#0f172a', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
-                                        Fee Receipt
-                                    </span>
-                                </div>
+                                    <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
+                                        <span style={{ display: 'inline-block', padding: '0.5rem 2rem', background: '#f1f5f9', border: '1px solid #cbd5e1', borderRadius: '20px', fontSize: '1.4rem', fontWeight: '700', color: '#0f172a', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+                                            Fee Receipt
+                                        </span>
+                                    </div>
 
-                                <div style={{ marginBottom: '2.5rem', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', background: '#f8fafc', padding: '2rem', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
-                                    <div>
-                                        <p style={{ margin: '0 0 0.5rem 0', fontSize: '0.95rem', color: '#64748b', textTransform: 'uppercase', fontWeight: '600', letterSpacing: '0.05em' }}>Transaction ID</p>
-                                        <p style={{ margin: 0, fontWeight: '700', fontSize: '1.15rem', color: '#0f172a' }}>{viewingReceipt.transaction_id}</p>
+                                    <div style={{ marginBottom: '2.5rem', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', background: '#f8fafc', padding: '2rem', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+                                        <div>
+                                            <p style={{ margin: '0 0 0.5rem 0', fontSize: '0.95rem', color: '#64748b', textTransform: 'uppercase', fontWeight: '600', letterSpacing: '0.05em' }}>Transaction ID</p>
+                                            <p style={{ margin: 0, fontWeight: '700', fontSize: '1.15rem', color: '#0f172a' }}>{viewingReceipt.transaction_id}</p>
+                                        </div>
+                                        <div>
+                                            <p style={{ margin: '0 0 0.5rem 0', fontSize: '0.95rem', color: '#64748b', textTransform: 'uppercase', fontWeight: '600', letterSpacing: '0.05em' }}>Receipt Date</p>
+                                            <p style={{ margin: 0, fontWeight: '700', fontSize: '1.15rem', color: '#0f172a' }}>{new Date(viewingReceipt.payment_date).toLocaleDateString('en-GB')}</p>
+                                        </div>
+                                        <div>
+                                            <p style={{ margin: '0 0 0.5rem 0', fontSize: '0.95rem', color: '#64748b', textTransform: 'uppercase', fontWeight: '600', letterSpacing: '0.05em' }}>Student Name</p>
+                                            <p style={{ margin: 0, fontWeight: '700', fontSize: '1.15rem', color: '#0f172a' }}>{viewingReceipt.Student?.User?.name}</p>
+                                        </div>
+                                        <div>
+                                            <p style={{ margin: '0 0 0.5rem 0', fontSize: '0.95rem', color: '#64748b', textTransform: 'uppercase', fontWeight: '600', letterSpacing: '0.05em' }}>Roll Number</p>
+                                            <p style={{ margin: 0, fontWeight: '700', fontSize: '1.15rem', color: '#0f172a' }}>{viewingReceipt.Student?.roll_number}</p>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <p style={{ margin: '0 0 0.5rem 0', fontSize: '0.95rem', color: '#64748b', textTransform: 'uppercase', fontWeight: '600', letterSpacing: '0.05em' }}>Receipt Date</p>
-                                        <p style={{ margin: 0, fontWeight: '700', fontSize: '1.15rem', color: '#0f172a' }}>{new Date(viewingReceipt.payment_date).toLocaleDateString('en-GB')}</p>
-                                    </div>
-                                    <div>
-                                        <p style={{ margin: '0 0 0.5rem 0', fontSize: '0.95rem', color: '#64748b', textTransform: 'uppercase', fontWeight: '600', letterSpacing: '0.05em' }}>Student Name</p>
-                                        <p style={{ margin: 0, fontWeight: '700', fontSize: '1.15rem', color: '#0f172a' }}>{viewingReceipt.Student?.User?.name}</p>
-                                    </div>
-                                    <div>
-                                        <p style={{ margin: '0 0 0.5rem 0', fontSize: '0.95rem', color: '#64748b', textTransform: 'uppercase', fontWeight: '600', letterSpacing: '0.05em' }}>Roll Number</p>
-                                        <p style={{ margin: 0, fontWeight: '700', fontSize: '1.15rem', color: '#0f172a' }}>{viewingReceipt.Student?.roll_number}</p>
-                                    </div>
-                                </div>
 
-                                <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '3rem' }}>
-                                    <thead>
-                                        <tr style={{ background: '#f1f5f9' }}>
-                                            <th style={{ padding: '1rem', textAlign: 'left', borderBottom: '2px solid #cbd5e1', color: '#475569', fontWeight: '700', fontSize: '1.05rem' }}>Description</th>
-                                            <th style={{ padding: '1rem', textAlign: 'center', borderBottom: '2px solid #cbd5e1', color: '#475569', fontWeight: '700', fontSize: '1.05rem' }}>Payment Mode</th>
-                                            <th style={{ padding: '1rem', textAlign: 'right', borderBottom: '2px solid #cbd5e1', color: '#475569', fontWeight: '700', fontSize: '1.05rem' }}>Amount Paid</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <tr>
-                                            <td style={{ padding: '1.25rem 1rem', borderBottom: '1px solid #e2e8f0', color: '#0f172a', fontWeight: '600', fontSize: '1.1rem' }}>Academic Fee Collection</td>
-                                            <td style={{ padding: '1.25rem 1rem', borderBottom: '1px solid #e2e8f0', textAlign: 'center', color: '#334155', textTransform: 'capitalize', fontWeight: '500', fontSize: '1.1rem' }}>{viewingReceipt.payment_method}</td>
-                                            <td style={{ padding: '1.25rem 1rem', borderBottom: '1px solid #e2e8f0', textAlign: 'right', color: '#10b981', fontWeight: '800', fontSize: '1.3rem' }}>₹{parseFloat(viewingReceipt.amount_paid).toLocaleString()}</td>
-                                        </tr>
-                                    </tbody>
-                                </table>
+                                    <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '3rem' }}>
+                                        <thead>
+                                            <tr style={{ background: '#f1f5f9' }}>
+                                                <th style={{ padding: '1rem', textAlign: 'left', borderBottom: '2px solid #cbd5e1', color: '#475569', fontWeight: '700', fontSize: '1.05rem' }}>Description</th>
+                                                <th style={{ padding: '1rem', textAlign: 'center', borderBottom: '2px solid #cbd5e1', color: '#475569', fontWeight: '700', fontSize: '1.05rem' }}>Payment Mode</th>
+                                                <th style={{ padding: '1rem', textAlign: 'right', borderBottom: '2px solid #cbd5e1', color: '#475569', fontWeight: '700', fontSize: '1.05rem' }}>Amount Paid</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr>
+                                                <td style={{ padding: '1.25rem 1rem', borderBottom: '1px solid #e2e8f0', color: '#0f172a', fontWeight: '600', fontSize: '1.1rem' }}>Academic Fee Collection</td>
+                                                <td style={{ padding: '1.25rem 1rem', borderBottom: '1px solid #e2e8f0', textAlign: 'center', color: '#334155', textTransform: 'capitalize', fontWeight: '500', fontSize: '1.1rem' }}>{viewingReceipt.payment_method}</td>
+                                                <td style={{ padding: '1.25rem 1rem', borderBottom: '1px solid #e2e8f0', textAlign: 'right', color: '#10b981', fontWeight: '800', fontSize: '1.3rem' }}>₹{parseFloat(viewingReceipt.amount_paid).toLocaleString()}</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
 
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginTop: '4rem', paddingTop: '2rem', borderTop: '2px dashed #e2e8f0' }}>
-                                    <div style={{ fontStyle: 'italic', color: '#64748b', fontSize: '0.95rem' }}>
-                                        <p style={{ margin: '0 0 0.25rem 0' }}>* This is a computer-generated receipt.</p>
-                                        <p style={{ margin: 0 }}>* No physical signature is required.</p>
-                                    </div>
-                                    <div style={{ textAlign: 'center', paddingRight: '1rem' }}>
-                                        <div style={{ borderBottom: '1.5px solid #0f172a', width: '220px', marginBottom: '0.75rem' }}></div>
-                                        <span style={{ color: '#0f172a', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em', fontSize: '0.9rem' }}>Authorized Signatory</span>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginTop: '4rem', paddingTop: '2rem', borderTop: '2px dashed #e2e8f0' }}>
+                                        <div style={{ fontStyle: 'italic', color: '#64748b', fontSize: '0.95rem' }}>
+                                            <p style={{ margin: '0 0 0.25rem 0' }}>* This is a computer-generated receipt.</p>
+                                            <p style={{ margin: 0 }}>* No physical signature is required.</p>
+                                        </div>
+                                        <div style={{ textAlign: 'center', paddingRight: '1rem' }}>
+                                            <div style={{ borderBottom: '1.5px solid #0f172a', width: '220px', marginBottom: '0.75rem' }}></div>
+                                            <span style={{ color: '#0f172a', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em', fontSize: '0.9rem' }}>Authorized Signatory</span>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
-                        </div>
 
-                        <div style={{ padding: '1.25rem 1.5rem', background: '#f8fafc', borderTop: '1px solid #e2e8f0', display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
-                            <button onClick={() => setViewingReceipt(null)} className="btn btn-secondary" style={{ padding: '0.75rem 1.5rem', fontWeight: '600', background: '#fff', border: '1px solid #cbd5e1' }}>Close</button>
-                            <button 
-                                onClick={() => {
-                                    const printWindow = window.open('', '_blank', 'width=900,height=900');
-                                    const printContents = document.getElementById('printable-receipt').innerHTML;
-                                    printWindow.document.write(`
+                            <div style={{ padding: '1.25rem 1.5rem', background: '#f8fafc', borderTop: '1px solid #e2e8f0', display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
+                                <button onClick={() => setViewingReceipt(null)} className="btn btn-secondary" style={{ padding: '0.75rem 1.5rem', fontWeight: '600', background: '#fff', border: '1px solid #cbd5e1' }}>Close</button>
+                                <button
+                                    onClick={() => {
+                                        const printWindow = window.open('', '_blank', 'width=900,height=900');
+                                        const printContents = document.getElementById('printable-receipt').innerHTML;
+                                        printWindow.document.write(`
                                         <html>
                                         <head>
                                             <title>Receipt_${viewingReceipt.transaction_id}</title>
@@ -1926,20 +1934,20 @@ function Fees() {
                                         </body>
                                         </html>
                                     `);
-                                    printWindow.document.close();
-                                }} 
-                                className="btn btn-primary" 
-                                style={{ background: 'linear-gradient(135deg, #4f46e5, #3b82f6)', color: 'white', border: 'none', padding: '0.75rem 1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: '600', boxShadow: '0 4px 6px -1px rgba(79, 70, 229, 0.2)' }}
-                                onMouseOver={e => e.target.style.boxShadow = '0 10px 15px -3px rgba(79, 70, 229, 0.3)'}
-                                onMouseOut={e => e.target.style.boxShadow = '0 4px 6px -1px rgba(79, 70, 229, 0.2)'}
-                            >
-                                <span style={{ fontSize: '1.2rem' }}>🖨️</span> Print Receipt
-                            </button>
+                                        printWindow.document.close();
+                                    }}
+                                    className="btn btn-primary"
+                                    style={{ background: 'linear-gradient(135deg, #4f46e5, #3b82f6)', color: 'white', border: 'none', padding: '0.75rem 1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: '600', boxShadow: '0 4px 6px -1px rgba(79, 70, 229, 0.2)' }}
+                                    onMouseOver={e => e.target.style.boxShadow = '0 10px 15px -3px rgba(79, 70, 229, 0.3)'}
+                                    onMouseOut={e => e.target.style.boxShadow = '0 4px 6px -1px rgba(79, 70, 229, 0.2)'}
+                                >
+                                    <span style={{ fontSize: '1.2rem' }}>🖨️</span> Print Receipt
+                                </button>
+                            </div>
                         </div>
                     </div>
-                </div>
-            );
-        })()}
+                );
+            })()}
         </div>
     );
 }

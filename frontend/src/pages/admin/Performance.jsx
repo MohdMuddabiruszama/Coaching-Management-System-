@@ -9,6 +9,9 @@ import * as XLSX from 'xlsx';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import '../student/Performance.css';
+import './Dashboard.css';
+import '../../components/common/Buttons.css';
+import './Students.css';
 
 function AdminPerformance() {
     const navigate = useNavigate();
@@ -580,22 +583,29 @@ function AdminPerformance() {
 
     return (
         <div className="dashboard-container perf-page">
-            <div className="dashboard-header" style={{ marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                    <div style={{ width: 40, height: 40, background: '#fce7f3', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.4rem' }}>
-                        🎯
-                    </div>
-                    <div>
-                        <h1 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 800, color: '#111827' }}>Performance Hub</h1>
-                        <p style={{ margin: 0, color: '#6b7280', fontSize: '0.85rem' }}>Track performance, analyze trends and take action</p>
+            <header className="st-header" style={{ marginBottom: '1.5rem' }}>
+                <div className="st-header-top-row">
+                    <div className="st-header-left">
+                        <div>
+                            <h1 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>🎯 Performance Hub</h1>
+                            <p>Track performance, analyze trends and take action</p>
+                        </div>
                     </div>
                 </div>
-                <div style={{ marginRight: '180px' }}>
-                    <button onClick={exportToPDF} style={{ padding: '8px 16px', background: '#fff', border: '1px solid #e5e7eb', borderRadius: '8px', cursor: 'pointer', fontWeight: 600, color: '#374151', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '8px', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
-                        📥 Export Report
-                    </button>
+                
+                <div className="st-header-bottom-row">
+                    <div className="st-breadcrumbs">
+                        <span>Dashboard</span>
+                        <span>›</span>
+                        <span className="active">Performance</span>
+                    </div>
+                    <div className="st-header-actions" style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                        <button className="st-btn st-btn-outline" onClick={exportToPDF} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            📥 Export Report
+                        </button>
+                    </div>
                 </div>
-            </div>
+            </header>
 
             {/* ── Toggle Buttons & Filters ── */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>

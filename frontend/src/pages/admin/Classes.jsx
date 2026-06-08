@@ -9,6 +9,7 @@ import api from "../../services/api";
 import { AuthContext } from "../../context/AuthContext";
 import * as XLSX from "xlsx";
 import "./Dashboard.css";
+import "./Students.css";
 
 function Classes() {
     const { user } = useContext(AuthContext);

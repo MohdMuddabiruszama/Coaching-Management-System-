@@ -418,211 +418,273 @@ function AdminManageFacultyAttendance() {
                 </button>
             </div>
 
-            {/* TWO COLUMN LAYOUT */}
-            <div style={{ display: "grid", gridTemplateColumns: "1.8fr 1fr", gap: "1.5rem" }}>
-                
-                {/* LEFT COLUMN: Pending Faculty */}
-                <div style={{ backgroundColor: "#fff", borderRadius: "16px", boxShadow: "0 2px 10px rgba(0,0,0,0.02)", border: "1px solid #f1f5f9", overflow: "hidden", display: "flex", flexDirection: "column" }}>
-                    {/* Header */}
-                    <div style={{ padding: "1.2rem 1.5rem", borderBottom: "1px solid #f1f5f9", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                        <h3 style={{ margin: 0, fontSize: "1.1rem", color: "#0f172a", display: "flex", alignItems: "center", gap: "8px" }}>
-                            <svg width="18" height="18" fill="none" stroke="#6366f1" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                            Pending Faculty ({pendingFaculty.length})
-                        </h3>
+            {/* Pending Attendance Section */}
+            <div className="st-table-container" style={{ marginBottom: "2rem" }}>
+                <div className="st-table-header" style={{ marginBottom: "1rem" }}>
+                    <div>
+                        <h2 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#0f172a' }}>📄 Mark Attendance</h2>
+                        <p style={{ margin: '0.25rem 0 0 0', color: '#64748b', fontSize: '0.85rem' }}>Select status for each faculty</p>
+                    </div>
+                    {pendingFaculty.length > 0 && (
+                        <div className="st-table-actions">
+                            <button onClick={markAllPresent} type="button" className="st-btn" style={{background: '#10b981', color: 'white'}}>✓ All Present</button>
+                            <button onClick={markAllAbsent} type="button" className="st-btn" style={{background: '#ef4444', color: 'white'}}>× All Absent</button>
+                            <button onClick={markAllLate} type="button" className="st-btn" style={{background: '#f59e0b', color: 'white'}}>⏱ All Late</button>
+                            <button onClick={markAllHoliday} type="button" className="st-btn" style={{background: '#3b82f6', color: 'white'}}>🏖️ Mark Holiday</button>
+                            <button onClick={clearAllPending} type="button" className="st-btn" style={{background: '#f8fafc', color: '#64748b', border: '1px solid #e2e8f0'}}>↺ Clear Select</button>
+                        </div>
+                    )}
+                </div>
+
+                {loading ? (
+                    <div style={{ padding: "2rem", textAlign: "center", color: "var(--text-muted)" }}>Loading...</div>
+                ) : (
+                    <div>
+                        <div style={{ overflowX: "auto" }}>
+                            <table className="st-table">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>FACULTY NAME</th>
+                                        <th>STATUS</th>
+                                        <th>REMARKS</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {currentPendingFaculty.length === 0 ? (
+                                        <tr>
+                                            <td colSpan="4" style={{ textAlign: "center", padding: "3rem", color: "#10b981", fontWeight: "bold" }}>
+                                                Attendance already submitted for all faculty today. ✅
+                                            </td>
+                                        </tr>
+                                    ) : (
+                                        currentPendingFaculty.map((faculty) => (
+                                            <tr key={faculty.faculty_id}>
+                                                <td style={{ fontWeight: "600", fontSize: "0.85rem", color: "#64748b" }}>
+                                                    FAC-{faculty.faculty_id}
+                                                </td>
+                                                <td>
+                                                    <div className="st-profile-col">
+                                                        <div className="st-avatar">{getAvatarInitials(faculty.name)}</div>
+                                                        <div className="st-profile-info">
+                                                            <strong>{faculty.name}</strong>
+                                                            <span>{faculty.email}</span>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td>
+                                                    <div style={{ display: "flex", gap: "15px" }}>
+                                                        <label style={{ display: "flex", alignItems: "center", gap: "5px", cursor: "pointer", fontSize: "0.85rem" }}>
+                                                            <input
+                                                                type="radio"
+                                                                name={`status-${faculty.faculty_id}`}
+                                                                value="present"
+                                                                checked={attendanceData[faculty.faculty_id]?.status === "present"}
+                                                                onChange={() => handleStatusChange(faculty.faculty_id, "present")}
+                                                                style={{accentColor: '#10b981'}}
+                                                            />
+                                                            <span style={{ color: "#10b981", fontWeight: "600" }}>Present</span>
+                                                        </label>
+                                                        <label style={{ display: "flex", alignItems: "center", gap: "5px", cursor: "pointer", fontSize: "0.85rem" }}>
+                                                            <input
+                                                                type="radio"
+                                                                name={`status-${faculty.faculty_id}`}
+                                                                value="absent"
+                                                                checked={attendanceData[faculty.faculty_id]?.status === "absent"}
+                                                                onChange={() => handleStatusChange(faculty.faculty_id, "absent")}
+                                                                style={{accentColor: '#ef4444'}}
+                                                            />
+                                                            <span style={{ color: "#ef4444", fontWeight: "600" }}>Absent</span>
+                                                        </label>
+                                                        <label style={{ display: "flex", alignItems: "center", gap: "5px", cursor: "pointer", fontSize: "0.85rem" }}>
+                                                            <input
+                                                                type="radio"
+                                                                name={`status-${faculty.faculty_id}`}
+                                                                value="late"
+                                                                checked={attendanceData[faculty.faculty_id]?.status === "late"}
+                                                                onChange={() => handleStatusChange(faculty.faculty_id, "late")}
+                                                                style={{accentColor: '#f59e0b'}}
+                                                            />
+                                                            <span style={{ color: "#f59e0b", fontWeight: "600" }}>Late</span>
+                                                        </label>
+                                                        <label style={{ display: "flex", alignItems: "center", gap: "5px", cursor: "pointer", fontSize: "0.85rem" }}>
+                                                            <input
+                                                                type="radio"
+                                                                name={`status-${faculty.faculty_id}`}
+                                                                value="holiday"
+                                                                checked={attendanceData[faculty.faculty_id]?.status === "holiday"}
+                                                                onChange={() => handleStatusChange(faculty.faculty_id, "holiday")}
+                                                                style={{accentColor: '#3b82f6'}}
+                                                            />
+                                                            <span style={{ color: "#3b82f6", fontWeight: "600" }}>Holiday</span>
+                                                        </label>
+                                                    </div>
+                                                </td>
+                                                <td>
+                                                    <input
+                                                        type="text"
+                                                        placeholder="Optional remarks"
+                                                        value={attendanceData[faculty.faculty_id]?.remarks || ""}
+                                                        onChange={(e) => handleRemarksChange(faculty.faculty_id, e.target.value)}
+                                                        style={{ width: "100%", padding: "0.5rem 0.75rem", border: "1px solid #e2e8f0", borderRadius: "6px", outline: "none", fontSize: "0.85rem" }}
+                                                    />
+                                                </td>
+                                            </tr>
+                                        ))
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        {pendingFaculty.length > itemsPerPage && (
+                            <div className="st-pagination-row">
+                                <div className="st-pagination-info">
+                                    Showing {indexOfFirstItem + 1} to {Math.min(indexOfLastItem, pendingFaculty.length)} of {pendingFaculty.length} entries
+                                </div>
+                                <div className="st-pagination-controls">
+                                    <button 
+                                        type="button"
+                                        className="st-page-btn" 
+                                        disabled={currentPage === 1}
+                                        onClick={() => setCurrentPage(prev => prev - 1)}
+                                    >
+                                        Prev
+                                    </button>
+                                    {[...Array(totalPages)].map((_, i) => (
+                                        <button 
+                                            type="button"
+                                            key={i + 1}
+                                            className={`st-page-btn ${currentPage === i + 1 ? 'active' : ''}`}
+                                            onClick={() => setCurrentPage(i + 1)}
+                                        >
+                                            {i + 1}
+                                        </button>
+                                    ))}
+                                    <button 
+                                        type="button"
+                                        className="st-page-btn"
+                                        disabled={currentPage === totalPages}
+                                        onClick={() => setCurrentPage(prev => prev + 1)}
+                                    >
+                                        Next
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+                        
                         {pendingFaculty.length > 0 && (
-                            <div style={{ display: "flex", gap: "8px" }}>
-                                <button onClick={markAllPresent} style={{ padding: "0.4rem 0.8rem", backgroundColor: "#10b981", color: "#fff", border: "none", borderRadius: "6px", fontSize: "0.8rem", fontWeight: "600", cursor: "pointer" }}>✓ All Present</button>
-                                <button onClick={markAllAbsent} style={{ padding: "0.4rem 0.8rem", backgroundColor: "#ef4444", color: "#fff", border: "none", borderRadius: "6px", fontSize: "0.8rem", fontWeight: "600", cursor: "pointer" }}>× All Absent</button>
-                                <button onClick={markAllLate} style={{ padding: "0.4rem 0.8rem", backgroundColor: "#f59e0b", color: "#fff", border: "none", borderRadius: "6px", fontSize: "0.8rem", fontWeight: "600", cursor: "pointer" }}>🕒 Late</button>
-                                <button onClick={markAllHoliday} style={{ padding: "0.4rem 0.8rem", backgroundColor: "#3b82f6", color: "#fff", border: "none", borderRadius: "6px", fontSize: "0.8rem", fontWeight: "600", cursor: "pointer" }}>🏖️ Holiday</button>
-                                <button onClick={clearAllPending} style={{ padding: "0.4rem 0.8rem", backgroundColor: "#f8fafc", color: "#64748b", border: "1px solid #e2e8f0", borderRadius: "6px", fontSize: "0.8rem", fontWeight: "600", cursor: "pointer" }}>↺ Clear Select</button>
+                            <div style={{ padding: "1.5rem", borderTop: "1px solid #f1f5f9", display: "flex", justifyContent: "flex-end" }}>
+                                <button onClick={handleSubmit} className="st-btn st-btn-primary" style={{ padding: "0.8rem 2rem", fontSize: "1rem" }}>
+                                    ✓ Submit Attendance
+                                </button>
                             </div>
                         )}
                     </div>
+                )}
+            </div>
 
-                    {/* Table */}
-                    <div style={{ overflowX: "auto", flex: 1 }}>
-                        <table style={{ width: "100%", borderCollapse: "collapse" }}>
+            {/* Marked Attendance Section */}
+            {markedFaculty.length > 0 && (
+                <div className="st-table-container">
+                    <div className="st-table-header" style={{ marginBottom: "1rem" }}>
+                        <h2 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#10b981' }}>
+                            ✅ Marked Attendance ({markedFaculty.length} faculty)
+                        </h2>
+                    </div>
+
+                    <div style={{ overflowX: "auto" }}>
+                        <table className="st-table">
                             <thead>
                                 <tr>
-                                    <th style={{ padding: "1rem 1.5rem", textAlign: "left", fontSize: "0.75rem", color: "#64748b", textTransform: "uppercase", fontWeight: "600" }}>ID</th>
-                                    <th style={{ padding: "1rem 1.5rem", textAlign: "left", fontSize: "0.75rem", color: "#64748b", textTransform: "uppercase", fontWeight: "600" }}>Faculty Name</th>
-                                    <th style={{ padding: "1rem 1.5rem", textAlign: "left", fontSize: "0.75rem", color: "#64748b", textTransform: "uppercase", fontWeight: "600" }}>Status</th>
-                                    <th style={{ padding: "1rem 1.5rem", textAlign: "left", fontSize: "0.75rem", color: "#64748b", textTransform: "uppercase", fontWeight: "600" }}>Remarks</th>
+                                    <th>ID</th>
+                                    <th>FACULTY NAME</th>
+                                    <th>STATUS</th>
+                                    <th>TIME MARKED</th>
+                                    <th>MARKED BY</th>
+                                    <th>REMARKS</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                {loading ? (
-                                    <tr><td colSpan="4" style={{ textAlign: "center", padding: "3rem", color: "#64748b" }}>Loading...</td></tr>
-                                ) : currentPendingFaculty.length === 0 ? (
-                                    <tr><td colSpan="4" style={{ textAlign: "center", padding: "3rem", color: "#64748b" }}>No pending faculty. ✅</td></tr>
-                                ) : (
-                                    currentPendingFaculty.map(faculty => (
-                                        <tr key={faculty.faculty_id} style={{ borderTop: "1px solid #f1f5f9" }}>
-                                            <td style={{ padding: "1rem 1.5rem", fontSize: "0.85rem", color: "#334155", fontWeight: "500" }}>
-                                                FAC-{faculty.faculty_id}
-                                            </td>
-                                            <td style={{ padding: "1rem 1.5rem" }}>
-                                                <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                                                    <div style={{ width: "36px", height: "36px", borderRadius: "50%", backgroundColor: "var(--primary-color)", color: "white", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: "bold", fontSize: "0.9rem", flexShrink: 0 }}>
-                                                        {getAvatarInitials(faculty.name)}
-                                                    </div>
-                                                    <div>
-                                                        <div style={{ fontWeight: "600", color: "#0f172a", fontSize: "0.9rem" }}>{faculty.name}</div>
-                                                        <div style={{ color: "#64748b", fontSize: "0.75rem" }}>{faculty.email}</div>
-                                                    </div>
+                                {currentMarkedFaculty.map((faculty) => (
+                                    <tr key={faculty.faculty_id} style={{ backgroundColor: "rgba(16, 185, 129, 0.02)" }}>
+                                        <td style={{ fontWeight: "600", fontSize: "0.85rem", color: "#64748b" }}>
+                                            FAC-{faculty.faculty_id}
+                                        </td>
+                                        <td>
+                                            <div className="st-profile-col">
+                                                <div className="st-avatar">{getAvatarInitials(faculty.name)}</div>
+                                                <div className="st-profile-info">
+                                                    <strong>{faculty.name}</strong>
+                                                    <span>{faculty.email}</span>
                                                 </div>
-                                            </td>
-                                            <td style={{ padding: "1rem 1.5rem" }}>
-                                                <div style={{ display: "flex", gap: "12px" }}>
-                                                    <label style={{ display: "flex", alignItems: "center", gap: "4px", cursor: "pointer", fontSize: "0.8rem", color: attendanceData[faculty.faculty_id]?.status === 'present' ? '#10b981' : '#64748b' }}>
-                                                        <input type="radio" name={`st-${faculty.faculty_id}`} checked={attendanceData[faculty.faculty_id]?.status === 'present'} onChange={() => handleStatusChange(faculty.faculty_id, 'present')} style={{ accentColor: "#10b981" }} />
-                                                        Present
-                                                    </label>
-                                                    <label style={{ display: "flex", alignItems: "center", gap: "4px", cursor: "pointer", fontSize: "0.8rem", color: attendanceData[faculty.faculty_id]?.status === 'absent' ? '#ef4444' : '#64748b' }}>
-                                                        <input type="radio" name={`st-${faculty.faculty_id}`} checked={attendanceData[faculty.faculty_id]?.status === 'absent'} onChange={() => handleStatusChange(faculty.faculty_id, 'absent')} style={{ accentColor: "#ef4444" }} />
-                                                        Absent
-                                                    </label>
-                                                    <label style={{ display: "flex", alignItems: "center", gap: "4px", cursor: "pointer", fontSize: "0.8rem", color: attendanceData[faculty.faculty_id]?.status === 'late' ? '#f59e0b' : '#64748b' }}>
-                                                        <input type="radio" name={`st-${faculty.faculty_id}`} checked={attendanceData[faculty.faculty_id]?.status === 'late'} onChange={() => handleStatusChange(faculty.faculty_id, 'late')} style={{ accentColor: "#f59e0b" }} />
-                                                        Late
-                                                    </label>
-                                                    <label style={{ display: "flex", alignItems: "center", gap: "4px", cursor: "pointer", fontSize: "0.8rem", color: attendanceData[faculty.faculty_id]?.status === 'holiday' ? '#3b82f6' : '#64748b' }}>
-                                                        <input type="radio" name={`st-${faculty.faculty_id}`} checked={attendanceData[faculty.faculty_id]?.status === 'holiday'} onChange={() => handleStatusChange(faculty.faculty_id, 'holiday')} style={{ accentColor: "#3b82f6" }} />
-                                                        Holiday
-                                                    </label>
-                                                </div>
-                                            </td>
-                                            <td style={{ padding: "1rem 1.5rem" }}>
-                                                <input 
-                                                    type="text" 
-                                                    placeholder="Optional remarks" 
-                                                    value={attendanceData[faculty.faculty_id]?.remarks || ""}
-                                                    onChange={(e) => handleRemarksChange(faculty.faculty_id, e.target.value)}
-                                                    style={{ width: "100%", padding: "0.5rem 0.8rem", border: "1px solid #e2e8f0", borderRadius: "6px", outline: "none", fontSize: "0.8rem", color: "#334155" }}
-                                                />
-                                            </td>
-                                        </tr>
-                                    ))
-                                )}
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <span style={{ 
+                                                padding: '4px 10px', 
+                                                borderRadius: '20px', 
+                                                fontSize: '0.75rem', 
+                                                fontWeight: '600',
+                                                background: faculty.attendance.status === 'present' ? '#dcfce7' : faculty.attendance.status === 'absent' ? '#fee2e2' : faculty.attendance.status === 'holiday' ? '#e0f2fe' : '#fef3c7',
+                                                color: faculty.attendance.status === 'present' ? '#16a34a' : faculty.attendance.status === 'absent' ? '#dc2626' : faculty.attendance.status === 'holiday' ? '#0284c7' : '#d97706'
+                                            }}>
+                                                {faculty.attendance.status.charAt(0).toUpperCase() + faculty.attendance.status.slice(1)}
+                                            </span>
+                                        </td>
+                                        <td style={{ fontSize: '0.85rem', color: '#64748b' }}>
+                                            {selectedDate}, 10:30 AM
+                                        </td>
+                                        <td style={{ fontSize: '0.85rem', color: '#64748b' }}>
+                                            {faculty.attendance?.marker?.role === 'admin' 
+                                                ? 'IT Hub (Administrator)' 
+                                                : (faculty.attendance?.marker?.name || 'System')}
+                                        </td>
+                                        <td style={{ fontSize: '0.85rem', color: '#64748b' }}>
+                                            {faculty.attendance.remarks || "Smart Attendance (Web)"}
+                                        </td>
+                                    </tr>
+                                ))}
                             </tbody>
                         </table>
                     </div>
 
-                    {/* Pagination Footer */}
-                    <div style={{ padding: "1rem 1.5rem", borderTop: "1px solid #f1f5f9", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                        <div style={{ fontSize: "0.85rem", color: "#64748b" }}>
-                            Showing {pendingFaculty.length === 0 ? 0 : indexOfFirstItem + 1} to {Math.min(indexOfLastItem, pendingFaculty.length)} of {pendingFaculty.length} entries
-                        </div>
-                        <div style={{ display: "flex", gap: "4px" }}>
-                            <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} style={{ width: "32px", height: "32px", display: "flex", alignItems: "center", justifyContent: "center", border: "1px solid #e2e8f0", borderRadius: "6px", backgroundColor: "#fff", cursor: currentPage === 1 ? "not-allowed" : "pointer", color: "#64748b" }}>&lt;</button>
-                            
-                            {/* Page numbers logic simplified for the mock */}
-                            {Array.from({ length: totalPages }, (_, i) => i + 1).map(pageNum => (
-                                <button key={pageNum} onClick={() => setCurrentPage(pageNum)} style={{ width: "32px", height: "32px", display: "flex", alignItems: "center", justifyContent: "center", border: "none", borderRadius: "6px", backgroundColor: currentPage === pageNum ? "#6366f1" : "transparent", color: currentPage === pageNum ? "#fff" : "#64748b", cursor: "pointer", fontWeight: currentPage === pageNum ? "bold" : "normal" }}>
-                                    {pageNum}
+                    {markedFaculty.length > markedItemsPerPage && (
+                        <div className="st-pagination-row">
+                            <div className="st-pagination-info">
+                                Showing {indexOfFirstMarkedItem + 1} to {Math.min(indexOfLastMarkedItem, markedFaculty.length)} of {markedFaculty.length} entries
+                            </div>
+                            <div className="st-pagination-controls">
+                                <button 
+                                    type="button"
+                                    className="st-page-btn" 
+                                    disabled={markedCurrentPage === 1}
+                                    onClick={() => setMarkedCurrentPage(prev => prev - 1)}
+                                >
+                                    Prev
                                 </button>
-                            ))}
-
-                            <button onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages || totalPages === 0} style={{ width: "32px", height: "32px", display: "flex", alignItems: "center", justifyContent: "center", border: "1px solid #e2e8f0", borderRadius: "6px", backgroundColor: "#fff", cursor: (currentPage === totalPages || totalPages === 0) ? "not-allowed" : "pointer", color: "#64748b" }}>&gt;</button>
-                        </div>
-                    </div>
-                </div>
-
-                {/* RIGHT COLUMN: Marked Attendance */}
-                <div style={{ backgroundColor: "#fff", borderRadius: "16px", boxShadow: "0 2px 10px rgba(0,0,0,0.02)", border: "1px solid #f1f5f9", display: "flex", flexDirection: "column", height: "100%", minHeight: "500px" }}>
-                    {/* Header */}
-                    <div style={{ padding: "1.2rem 1.5rem", borderBottom: "1px solid #f1f5f9", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                        <h3 style={{ margin: 0, fontSize: "1.1rem", color: "#10b981", display: "flex", alignItems: "center", gap: "8px" }}>
-                            <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-                            Marked Attendance ({markedFaculty.length})
-                        </h3>
-                        <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-                            <span style={{ fontSize: "0.8rem", color: "#10b981", backgroundColor: "#ecfdf5", padding: "4px 8px", borderRadius: "12px", fontWeight: "600" }}>Present: {presentCount}</span>
-                        </div>
-                    </div>
-
-                    {/* Content area */}
-                    <div style={{ flex: 1, overflowY: "auto", padding: "1.5rem", display: "flex", flexDirection: "column" }}>
-                        {markedFaculty.length === 0 ? (
-                            <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center" }}>
-                                {/* Beautiful SVG placeholder matching the mock's vibe */}
-                                <svg width="160" height="160" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ marginBottom: "1.5rem", opacity: 0.8 }}>
-                                    <rect x="50" y="40" width="100" height="120" rx="12" fill="#e2e8f0"/>
-                                    <path d="M50 70H150" stroke="#cbd5e1" strokeWidth="4"/>
-                                    <circle cx="80" cy="90" r="10" fill="#a7f3d0"/>
-                                    <circle cx="120" cy="90" r="10" fill="#10b981"/>
-                                    <circle cx="80" cy="120" r="10" fill="#a7f3d0"/>
-                                    <circle cx="120" cy="120" r="10" fill="#a7f3d0"/>
-                                    <path d="M40 160H160" stroke="#94a3b8" strokeWidth="4" strokeLinecap="round"/>
-                                    {/* Small plant illustration */}
-                                    <path d="M160 140Q150 120 170 110Q175 130 160 140Z" fill="#10b981"/>
-                                    <path d="M160 140Q140 130 150 115Q165 120 160 140Z" fill="#34d399"/>
-                                    <rect x="155" y="140" width="10" height="20" fill="#cbd5e1" rx="2"/>
-                                </svg>
-                                <h4 style={{ margin: "0 0 0.5rem 0", color: "#0f172a", fontSize: "1.1rem" }}>No attendance marked yet</h4>
-                                <p style={{ margin: 0, color: "#64748b", fontSize: "0.9rem", maxWidth: "250px" }}>Select faculty status and mark attendance to see the results here.</p>
-                            </div>
-                        ) : (
-                            <div style={{ display: "flex", flexDirection: "column", gap: "10px", flex: 1 }}>
-                                {currentMarkedFaculty.map(faculty => (
-                                    <div key={faculty.faculty_id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px", border: "1px solid #f1f5f9", borderRadius: "10px", backgroundColor: "#fafafa" }}>
-                                        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                                            <div style={{ width: "32px", height: "32px", borderRadius: "50%", backgroundColor: "#e2e8f0", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "0.8rem", fontWeight: "bold", color: "#64748b" }}>
-                                                {getAvatarInitials(faculty.name)}
-                                            </div>
-                                            <div>
-                                                <div style={{ fontWeight: "600", color: "#0f172a", fontSize: "0.85rem" }}>{faculty.name}</div>
-                                                <div style={{ color: "#64748b", fontSize: "0.7rem" }}>{faculty.email}</div>
-                                            </div>
-                                        </div>
-                                        <div>
-                                            <span style={{ 
-                                                fontSize: "0.75rem", 
-                                                padding: "4px 8px", 
-                                                borderRadius: "4px", 
-                                                fontWeight: "600",
-                                                color: faculty.attendance.status === 'present' ? '#10b981' : faculty.attendance.status === 'absent' ? '#ef4444' : faculty.attendance.status === 'late' ? '#f59e0b' : '#3b82f6',
-                                                backgroundColor: faculty.attendance.status === 'present' ? '#ecfdf5' : faculty.attendance.status === 'absent' ? '#fef2f2' : faculty.attendance.status === 'late' ? '#fffbeb' : '#eff6ff',
-                                            }}>
-                                                {faculty.attendance.status.toUpperCase()}
-                                            </span>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-                    </div>
-                    
-                    {/* Pagination Footer for Marked Faculty */}
-                    {markedFaculty.length > 0 && (
-                        <div style={{ padding: "0.8rem 1.5rem", borderTop: "1px solid #f1f5f9", display: "flex", justifyContent: "space-between", alignItems: "center", backgroundColor: "#fafafa" }}>
-                            <div style={{ fontSize: "0.75rem", color: "#64748b" }}>
-                                {indexOfFirstMarkedItem + 1}-{Math.min(indexOfLastMarkedItem, markedFaculty.length)} of {markedFaculty.length}
-                            </div>
-                            <div style={{ display: "flex", gap: "4px" }}>
-                                <button onClick={() => setMarkedCurrentPage(p => Math.max(1, p - 1))} disabled={markedCurrentPage === 1} style={{ width: "24px", height: "24px", display: "flex", alignItems: "center", justifyContent: "center", border: "1px solid #e2e8f0", borderRadius: "4px", backgroundColor: "#fff", cursor: markedCurrentPage === 1 ? "not-allowed" : "pointer", color: "#64748b", fontSize: "12px" }}>&lt;</button>
-                                
-                                {Array.from({ length: totalMarkedPages }, (_, i) => i + 1).map(pageNum => (
-                                    <button key={pageNum} onClick={() => setMarkedCurrentPage(pageNum)} style={{ width: "24px", height: "24px", display: "flex", alignItems: "center", justifyContent: "center", border: "none", borderRadius: "4px", backgroundColor: markedCurrentPage === pageNum ? "#10b981" : "transparent", color: markedCurrentPage === pageNum ? "#fff" : "#64748b", cursor: "pointer", fontWeight: markedCurrentPage === pageNum ? "bold" : "normal", fontSize: "12px" }}>
-                                        {pageNum}
+                                {[...Array(totalMarkedPages)].map((_, i) => (
+                                    <button 
+                                        type="button"
+                                        key={i + 1}
+                                        className={`st-page-btn ${markedCurrentPage === i + 1 ? 'active' : ''}`}
+                                        onClick={() => setMarkedCurrentPage(i + 1)}
+                                    >
+                                        {i + 1}
                                     </button>
                                 ))}
-
-                                <button onClick={() => setMarkedCurrentPage(p => Math.min(totalMarkedPages, p + 1))} disabled={markedCurrentPage === totalMarkedPages || totalMarkedPages === 0} style={{ width: "24px", height: "24px", display: "flex", alignItems: "center", justifyContent: "center", border: "1px solid #e2e8f0", borderRadius: "4px", backgroundColor: "#fff", cursor: (markedCurrentPage === totalMarkedPages || totalMarkedPages === 0) ? "not-allowed" : "pointer", color: "#64748b", fontSize: "12px" }}>&gt;</button>
+                                <button 
+                                    type="button"
+                                    className="st-page-btn"
+                                    disabled={markedCurrentPage === totalMarkedPages}
+                                    onClick={() => setMarkedCurrentPage(prev => prev + 1)}
+                                >
+                                    Next
+                                </button>
                             </div>
                         </div>
                     )}
-
-                    {/* Footer Submit Button */}
-                    <div style={{ padding: "1.5rem", borderTop: "1px solid #f1f5f9" }}>
-                        <button onClick={handleSubmit} style={{ width: "100%", padding: "0.8rem", backgroundColor: "#6366f1", color: "#fff", border: "none", borderRadius: "10px", fontWeight: "700", fontSize: "1rem", display: "flex", justifyContent: "center", alignItems: "center", gap: "8px", cursor: "pointer", boxShadow: "0 4px 12px rgba(99, 102, 241, 0.3)" }}>
-                            <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-                            Submit Attendance
-                        </button>
-                    </div>
                 </div>
-            </div>
+            )}
 
             {/* ═══ Phase 3: SUNDAY DETECTION POPUP ═══ */}
             {sundayPopup && (

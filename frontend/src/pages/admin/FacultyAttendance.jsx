@@ -4,6 +4,7 @@ import api from "../../services/api";
 import { AuthContext } from "../../context/AuthContext";
 import { Html5Qrcode } from "html5-qrcode";
 import "./Dashboard.css";
+import "./Students.css";
 import { useScanSound } from "../../hooks/useScanSound";
 
 function FacultyAttendance() {

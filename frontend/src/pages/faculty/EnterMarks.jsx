@@ -237,8 +237,15 @@ function EnterMarks() {
             const initialData = {};
             fetchedStudents.forEach(st => {
                 const em = existingMarks.find(m => m.student_id === st.id);
+                let mo = em ? em.marks_obtained : '';
+                
+                // Sanitize in case previous invalid imports saved 'NaN' or other text
+                if (mo !== '' && mo !== null && isNaN(parseFloat(mo))) {
+                    mo = '';
+                }
+
                 initialData[st.id] = {
-                    marks_obtained: em ? em.marks_obtained : '',
+                    marks_obtained: mo,
                     is_absent: em ? em.is_absent : false,
                     isSaved: !!em,
                     isEditing: false,
@@ -376,9 +383,20 @@ function EnterMarks() {
                 const absentStr = columns[4] ? columns[4].toUpperCase() : 'N';
                 const isAbsent = absentStr === 'Y' || absentStr === 'YES';
 
+                let parsedMarks = null;
+                if (!isAbsent) {
+                    if (marksStr === undefined || marksStr.trim() === '') {
+                        continue; // Skip rows where marks are completely empty and not absent
+                    }
+                    parsedMarks = parseFloat(marksStr);
+                    if (isNaN(parsedMarks)) {
+                        throw new Error(`Invalid marks '${marksStr}' for Student ID ${studentId}. Marks must be a valid number.`);
+                    }
+                }
+
                 dataToImport.push({
                     student_id: studentId,
-                    marks_obtained: marksStr,
+                    marks_obtained: isAbsent ? null : parsedMarks,
                     is_absent: isAbsent,
                     remarks: isAbsent ? 'Absent' : null,
                 });
@@ -397,7 +415,7 @@ function EnterMarks() {
             }
         } catch (error) {
             console.error(error);
-            alert('❌ Failed to parse or import the file.');
+            alert(error.message ? `❌ ${error.message}` : '❌ Failed to parse or import the file.');
         } finally {
             e.target.value = ''; // Reset input
             setLoading(false);

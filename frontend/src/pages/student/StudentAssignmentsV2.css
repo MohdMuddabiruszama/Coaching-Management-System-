@@ -1,9 +1,7 @@
 /* ── Assignments V3 (Two-Column Layout Redesign) ──────────────────────────────── */
 .asg-v2-container {
-    max-width: 1400px;
-    margin: 0 auto;
+    padding: 1.5rem;
     font-family: 'Inter', system-ui, sans-serif;
-    padding-bottom: 2rem;
 }
 
 /* Two Column Layout Wrapper */

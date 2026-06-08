@@ -5,6 +5,7 @@ import { resolveFileUrl } from "../../utils/resolveUrl";
 import { toast } from "react-hot-toast";
 
 import './AdminNotes.css';
+import './Students.css';
 
 const BookOpenIcon = () => (
   <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg>
@@ -200,25 +201,25 @@ function AdminNotes() {
 
     return (
         <div className="students-container an-wrapper">
-            {/* ── Page Header ── */}
-            <div className="an-header-container" style={{ flexDirection: 'column', alignItems: 'stretch' }}>
-                <div style={{ display: 'flex', justifyContent: 'flex-start', marginBottom: '1rem' }}>
-                    <div>
+            {/* ── Header ── */}
+            <div className="st-header">
+                <div className="st-header-top-row">
+                    <div className="st-header-left">
                         <h1>Manage Study Materials</h1>
-                        <p className="an-header-subtitle">Monitor and manage all study materials uploaded by faculty members across your institute.</p>
+                        <p>Monitor and manage all study materials uploaded by faculty members across your institute.</p>
                     </div>
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div className="st-breadcrumbs" style={{ fontSize: '0.8rem', color: '#94a3b8', display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                <div className="st-header-bottom-row">
+                    <div className="st-breadcrumbs">
                         <span>Dashboard</span>
                         <span>›</span>
-                        <span style={{ color: '#0f172a', fontWeight: '500' }}>Manage Study Materials</span>
+                        <span className="active">Manage Study Materials</span>
                     </div>
-                    <div className="an-header-actions">
-                        <button className="an-btn-outline" onClick={handleExport}>
+                    <div className="st-header-actions">
+                        <button className="st-btn st-btn-outline" onClick={handleExport} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                             <DownloadIcon /> Export CSV
                         </button>
-                        <button className="an-btn-primary" onClick={() => window.location.href='/admin/notes/create'}>
+                        <button className="st-btn st-btn-primary" onClick={() => window.location.href='/admin/notes/create'} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                             <UploadCloudIcon /> Upload Material
                         </button>
                     </div>

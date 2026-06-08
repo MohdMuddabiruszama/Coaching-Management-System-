@@ -63,7 +63,7 @@ async function getExamResults(examId, instituteId) {
 // ─── FUNCTION 2: computeStats ─────────────────────────────────
 // Zero extra DB calls — computed from already-fetched results array
 function computeStats(results, passingMarks) {
-    const appeared = results.filter(r => !r.is_absent && r.marks_obtained !== null);
+    const appeared = results.filter(r => !r.is_absent && r.marks_obtained !== null && !isNaN(parseFloat(r.marks_obtained)));
     const passed   = appeared.filter(r => parseFloat(r.marks_obtained) >= parseFloat(passingMarks));
     const marks    = appeared.map(r => parseFloat(r.marks_obtained));
 

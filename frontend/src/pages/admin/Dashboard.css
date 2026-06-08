@@ -12,9 +12,7 @@
 }
 
 .dashboard-container {
-    padding: var(--spacing-xl);
-    max-width: 1400px;
-    margin: 0 auto;
+    padding: 1.5rem;
 }
 
 .dashboard-header {

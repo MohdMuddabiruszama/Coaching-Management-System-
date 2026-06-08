@@ -1,13 +1,11 @@
 /* ViewStudents.css */
 
 .fvs-container {
-    padding: 32px;
+    padding: 1.5rem;
     background-color: var(--faculty-bg-main, #f8fafc);
     min-height: 100vh;
     font-family: 'Inter', sans-serif;
     color: #1e293b;
-    max-width: 1400px;
-    margin: 0 auto;
 }
 
 /* Header */

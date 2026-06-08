@@ -7,7 +7,6 @@ import { useState, useEffect, useContext } from "react";
 import { Link } from "react-router-dom";
 import announcementService from "../../services/announcement.service";
 import { AuthContext } from "../../context/AuthContext";
-import ThemeSelector from "../../components/ThemeSelector";
 import PriorityBadge from "../../components/PriorityBadge";
 import "./Dashboard.css";
 
@@ -137,10 +136,6 @@ function Announcements() {
                         <span style={{ color: '#0f172a', fontWeight: '500' }}>Announcements</span>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
-                        <ThemeSelector />
-                        <Link to="/admin/dashboard" className="btn btn-secondary" style={{ background: '#fff', border: '1px solid #e5e7eb', color: '#374151', padding: '0.5rem 1rem', borderRadius: 8, textDecoration: 'none', fontWeight: 600, fontSize: 13, display: 'flex', alignItems: 'center', gap: 6 }}>
-                            ← Back
-                        </Link>
                         {['admin', 'faculty', 'manager'].includes(user?.role) && (
                             <button onClick={() => handleOpenModal()} style={{ background: '#7e22ce', color: '#fff', border: 'none', padding: '0.5rem 1rem', borderRadius: 8, cursor: 'pointer', fontWeight: 600, fontSize: 13, display: 'flex', alignItems: 'center', gap: 6 }}>
                                 + New Announcement

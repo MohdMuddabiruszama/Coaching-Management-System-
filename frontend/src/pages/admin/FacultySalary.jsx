@@ -14,6 +14,7 @@ import { Link } from "react-router-dom";
 import api from "../../services/api";
 import { AuthContext } from "../../context/AuthContext";
 import "./Dashboard.css";
+import "./Students.css";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 const formatRupee = (n) =>

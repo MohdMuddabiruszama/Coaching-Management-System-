@@ -732,7 +732,9 @@ function Attendance() {
                                             {selectedDate}, 10:30 AM
                                         </td>
                                         <td style={{ fontSize: '0.85rem', color: '#64748b' }}>
-                                            IT Hub (Administrator)
+                                            {student.attendance?.marker?.role === 'admin' 
+                                                ? 'IT Hub (Administrator)' 
+                                                : (student.attendance?.marker?.name || 'System')}
                                         </td>
                                         <td style={{ fontSize: '0.85rem', color: '#64748b' }}>
                                             {student.attendance.remarks || "Smart Attendance (Web)"}

@@ -3,9 +3,7 @@
    ========================================================================== */
 
 .ann-v2-container {
-    padding: 24px 32px;
-    max-width: 1400px;
-    margin: 0 auto;
+    padding: 1.5rem;
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
     color: #0f172a;
 }

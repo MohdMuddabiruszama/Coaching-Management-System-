@@ -5,6 +5,7 @@ import api from "../../services/api";
 import { AuthContext } from "../../context/AuthContext";
 import "./Dashboard.css";
 import "../../components/common/Buttons.css";
+import "./Students.css";
 import { Line, Doughnut } from 'react-chartjs-2';
 import {
     Chart as ChartJS, CategoryScale, LinearScale, PointElement,
@@ -349,43 +350,48 @@ const AdminExpenses = forwardRef((props, ref) => {
         <div className={props.isReportMode ? "" : "dashboard-container"} style={{ background: '#f9fafb', minHeight: '100vh', padding: '2rem' }}>
             {/* Header */}
             {!props.isReportMode && (
-                <div style={{ marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                        <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: activeTab === 'expenses' ? '#f3f4f6' : '#fff7ed', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem', boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.05)' }}>
-                            {activeTab === 'expenses' ? '📊' : '🚌'}
-                        </div>
-                        <div>
-                            <h1 style={{ margin: 0, fontSize: '1.8rem', color: '#111827', fontWeight: '800' }}>{activeTab === 'expenses' ? 'Expenses' : 'Transport Fees'}</h1>
-                            <p style={{ margin: 0, color: '#6b7280', fontSize: '0.95rem' }}>{activeTab === 'expenses' ? 'Track and manage all expenses of the institution.' : 'Manage bus routes and their monthly fee amounts. Students can be assigned to routes.'}</p>
+                <div className="st-header" style={{ marginBottom: '1.5rem' }}>
+                    <div className="st-header-top-row">
+                        <div className="st-header-left">
+                            <h1>{activeTab === 'expenses' ? 'Expenses' : 'Transport Fees'}</h1>
+                            <p>{activeTab === 'expenses' ? 'Track and manage all expenses of the institution.' : 'Manage bus routes and their monthly fee amounts. Students can be assigned to routes.'}</p>
                         </div>
                     </div>
-                    <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
-                        {activeTab === "expenses" ? (
-                            <>
-                                <button onClick={handleExportPDF} style={{ padding: '0.6rem 1rem', borderRadius: '8px', border: '1px solid #e5e7eb', background: '#fff', color: '#374151', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', transition: 'all 0.2s', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
-                                    <span style={{ color: '#ef4444' }}>📄</span> Export PDF
-                                </button>
-                                <button onClick={handleExportExcel} style={{ padding: '0.6rem 1rem', borderRadius: '8px', border: '1px solid #e5e7eb', background: '#fff', color: '#374151', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', transition: 'all 0.2s', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
-                                    <span style={{ color: '#10b981' }}>📊</span> Export Excel
-                                </button>
-                                {canCreate && (
-                                    <button onClick={() => setShowAddModal(true)} style={{ padding: '0.6rem 1.2rem', borderRadius: '8px', border: 'none', background: '#7e22ce', color: '#fff', fontWeight: '600', cursor: 'pointer', transition: 'all 0.2s', boxShadow: '0 4px 6px rgba(126,34,206,0.2)' }}>
-                                        + Add Expense
+                    
+                    <div className="st-header-bottom-row">
+                        <div className="st-breadcrumbs">
+                            <span>Dashboard</span>
+                            <span>›</span>
+                            <span className="active">{activeTab === 'expenses' ? 'Expenses' : 'Transport Fees'}</span>
+                        </div>
+                        <div className="st-header-actions">
+                            {activeTab === "expenses" ? (
+                                <>
+                                    <button className="st-btn st-btn-outline" onClick={handleExportPDF} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                        <span style={{ color: '#ef4444' }}>📄</span> Export PDF
                                     </button>
-                                )}
-                            </>
-                        ) : (
-                            <>
-                                <button style={{ padding: '0.6rem 1rem', borderRadius: '8px', border: '1px solid #e5e7eb', background: '#fff', color: '#374151', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', transition: 'all 0.2s', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
-                                    <span style={{ color: '#10b981' }}>📊</span> Export Excel
-                                </button>
-                                {hasTransportPerm && (
-                                    <button onClick={() => { setEditingTransport(null); setTransportForm({ route_name: "", fee_amount: "" }); setTransportError(""); setShowTransportModal(true); }} style={{ padding: '0.6rem 1.2rem', borderRadius: '8px', border: 'none', background: '#7e22ce', color: '#fff', fontWeight: '600', cursor: 'pointer', transition: 'all 0.2s', boxShadow: '0 4px 6px rgba(126,34,206,0.2)' }}>
-                                        + Add Route
+                                    <button className="st-btn st-btn-outline" onClick={handleExportExcel} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                        <span style={{ color: '#10b981' }}>📊</span> Export Excel
                                     </button>
-                                )}
-                            </>
-                        )}
+                                    {canCreate && (
+                                        <button className="st-btn st-btn-primary" onClick={() => setShowAddModal(true)} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                            + Add Expense
+                                        </button>
+                                    )}
+                                </>
+                            ) : (
+                                <>
+                                    <button className="st-btn st-btn-outline" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                        <span style={{ color: '#10b981' }}>📊</span> Export Excel
+                                    </button>
+                                    {hasTransportPerm && (
+                                        <button className="st-btn st-btn-primary" onClick={() => { setEditingTransport(null); setTransportForm({ route_name: "", fee_amount: "" }); setTransportError(""); setShowTransportModal(true); }} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                            + Add Route
+                                        </button>
+                                    )}
+                                </>
+                            )}
+                        </div>
                     </div>
                 </div>
             )}

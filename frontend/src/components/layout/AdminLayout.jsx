@@ -177,7 +177,7 @@ const AdminLayout = () => {
             {/* Left Sidebar */}
             <aside className="al-sidebar">
                 <div className="al-sidebar-header">
-                    <div className="al-logo">
+                    <div className="al-logo" onClick={() => window.location.reload()} style={{ cursor: 'pointer' }} title="Reload Page">
                         <InstituteLogo size="sm" />
                         <div className="al-logo-text">
                             <h3>{user?.institute_name || "Institute"}</h3>

@@ -6,6 +6,7 @@ import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
 import '../student/Performance.css';
+import './ViewStudents.css';
 
 function FacultyClassPerformance() {
     const navigate = useNavigate();
@@ -149,40 +150,33 @@ function FacultyClassPerformance() {
     const highestStudent = data?.students?.length > 0 ? data.students[0].student_name : 'N/A';
 
     return (
-        <div style={{ padding: '1.5rem 2rem', background: '#f8fafc', minHeight: '100vh', fontFamily: "'Inter', sans-serif", boxSizing: 'border-box' }}>
-            {/* Breadcrumbs & Header */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '2rem' }}>
-                <div>
-                    <div style={{ fontSize: '0.85rem', color: '#64748b', marginBottom: '0.5rem', display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                        <span>Performance</span>
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
-                        <span style={{ color: '#3b82f6', fontWeight: '500' }}>Class Performance</span>
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                        <div style={{ background: '#eff6ff', padding: '0.75rem', borderRadius: '12px', color: '#3b82f6' }}>
-                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
-                        </div>
-                        <div>
-                            <h1 style={{ margin: 0, fontSize: '1.75rem', color: '#0f172a', fontWeight: '700' }}>Class Performance</h1>
-                            <p style={{ margin: 0, color: '#64748b', fontSize: '0.95rem', marginTop: '0.2rem' }}>Monitor and identify at-risk students to take timely action.</p>
-                        </div>
+        <div className="fvs-container">
+            {/* Header */}
+            <div className="fvs-header">
+                <div className="fvs-title-area">
+                    <div className="fvs-title-icon">📊</div>
+                    <div className="fvs-title-text">
+                        <h1>Class Performance</h1>
+                        <p>Monitor and identify at-risk students to take timely action.</p>
                     </div>
                 </div>
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '1rem' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', background: 'white', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '0.5rem 1rem', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '0.5rem' }}><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
-                        <select
-                            value={selectedClassId}
-                            onChange={(e) => setSelectedClassId(e.target.value)}
-                            style={{ border: 'none', background: 'transparent', outline: 'none', fontWeight: '600', color: '#1e293b', fontSize: '0.95rem', cursor: 'pointer', appearance: 'none', paddingRight: '1.5rem' }}
-                        >
-                            {classes.map(c => (
-                                <option key={c.id} value={c.id}>{c.name}{c.section ? ` - ${c.section}` : ''}</option>
-                            ))}
-                        </select>
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginLeft: '-1rem', pointerEvents: 'none' }}><polyline points="6 9 12 15 18 9"></polyline></svg>
-                    </div>
+            </div>
+
+            {/* Filter Bar */}
+            <div className="fvs-filters-card">
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#475569', fontWeight: '600' }}>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+                    Select Class:
                 </div>
+                <select
+                    className="fvs-filter-select"
+                    value={selectedClassId}
+                    onChange={(e) => setSelectedClassId(e.target.value)}
+                >
+                    {classes.map(c => (
+                        <option key={c.id} value={c.id}>{c.name}{c.section ? ` - ${c.section}` : ''}</option>
+                    ))}
+                </select>
             </div>
 
             {data && (

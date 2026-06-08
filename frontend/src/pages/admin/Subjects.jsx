@@ -10,6 +10,7 @@ import { AuthContext } from "../../context/AuthContext";
 import * as XLSX from "xlsx";
 import ThemeSelector from "../../components/ThemeSelector";
 import "./Dashboard.css";
+import "./Students.css";
 
 function Subjects() {
     const { user } = useContext(AuthContext);

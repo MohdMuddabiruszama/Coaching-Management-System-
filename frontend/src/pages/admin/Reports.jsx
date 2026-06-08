@@ -8,6 +8,7 @@ import { Link } from "react-router-dom";
 import api from "../../services/api";
 import { AuthContext } from "../../context/AuthContext";
 import "./Dashboard.css";
+import "./Students.css";
 import {
     Chart as ChartJS,
     CategoryScale,
@@ -373,22 +374,33 @@ function Reports() {
 
     return (
         <div className="dashboard-container">
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.5rem", flexWrap: "wrap", gap: "1rem" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
-                  <div style={{ background: "#fff", border: "1px solid #e5e7eb", color: "#374151", width: "40px", height: "40px", borderRadius: "8px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.5rem", flexShrink: 0 }}>
-                    📊
-                  </div>
-                  <div>
-                    <h1 style={{ margin: 0, fontSize: "1.8rem", color: "#111827", fontWeight: "800", display: "flex", alignItems: "center", gap: 8 }}>
-                       Reports & Analytics {isPro ? <span style={{ fontSize: 10, background: '#f3e8ff', color: '#7e22ce', padding: '3px 8px', borderRadius: 12, verticalAlign: 'middle', fontWeight: 800 }}>PRO</span> : <span style={{ fontSize: 10, background: '#f3f4f6', color: '#6b7280', padding: '3px 8px', borderRadius: 12, verticalAlign: 'middle', fontWeight: 800 }}>BASIC</span>}
-                    </h1>
-                    <p style={{ margin: 0, color: "#6b7280", fontSize: "0.95rem", marginTop: "2px" }}>Comprehensive insights and performance metrics</p>
-                  </div>
+            <div className="st-header" style={{ marginBottom: '1.5rem' }}>
+                <div className="st-header-top-row">
+                    <div className="st-header-left">
+                        <h1 style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                            Reports & Analytics {isPro ? <span style={{ fontSize: 10, background: '#f3e8ff', color: '#7e22ce', padding: '3px 8px', borderRadius: 12, verticalAlign: 'middle', fontWeight: 800, lineHeight: 1 }}>PRO</span> : <span style={{ fontSize: 10, background: '#f3f4f6', color: '#6b7280', padding: '3px 8px', borderRadius: 12, verticalAlign: 'middle', fontWeight: 800, lineHeight: 1 }}>BASIC</span>}
+                        </h1>
+                        <p>Comprehensive insights and performance metrics</p>
+                    </div>
                 </div>
-                <div style={{ display: "flex", gap: "10px" }}>
-                    <button onClick={() => handleExport("PDF")} className="btn btn-secondary" style={{ color: "#ef4444", borderColor: "#e5e7eb", display: "flex", gap: 6, alignItems: "center", background: "#fff" }}>📄 Export PDF {isPro ? "" : "🔒"}</button>
-                    <button onClick={() => handleExport("Excel")} className="btn btn-secondary" style={{ color: "#10b981", borderColor: "#e5e7eb", display: "flex", gap: 6, alignItems: "center", background: "#fff" }}>📊 Export Excel {isPro ? "" : "🔒"}</button>
-                    <button className="btn btn-primary" style={{ background: "#7e22ce", borderColor: "#7e22ce", display: "flex", gap: 6, alignItems: "center" }}>⚡ Custom Report</button>
+                
+                <div className="st-header-bottom-row">
+                    <div className="st-breadcrumbs">
+                        <span>Dashboard</span>
+                        <span>›</span>
+                        <span className="active">Reports & Analytics</span>
+                    </div>
+                    <div className="st-header-actions">
+                        <button className="st-btn st-btn-outline" onClick={() => handleExport("PDF")} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            <span style={{ color: '#ef4444' }}>📄</span> Export PDF {isPro ? "" : "🔒"}
+                        </button>
+                        <button className="st-btn st-btn-outline" onClick={() => handleExport("Excel")} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            <span style={{ color: '#10b981' }}>📊</span> Export Excel {isPro ? "" : "🔒"}
+                        </button>
+                        <button className="st-btn st-btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            ⚡ Custom Report
+                        </button>
+                    </div>
                 </div>
             </div>
 

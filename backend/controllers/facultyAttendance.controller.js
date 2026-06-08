@@ -338,7 +338,8 @@ exports.getFacultyAttendanceByDate = async (req, res) => {
         });
 
         const attendances = await FacultyAttendance.findAll({
-            where: { institute_id, date }
+            where: { institute_id, date },
+            include: [{ model: User, as: 'marker', attributes: ['name', 'role'] }]
         });
 
         const attendanceMap = {};
@@ -356,7 +357,8 @@ exports.getFacultyAttendanceByDate = async (req, res) => {
             attendance: attendanceMap[f.id] ? {
                 status: attendanceMap[f.id].status,
                 remarks: attendanceMap[f.id].remarks,
-                marked_at: attendanceMap[f.id].createdAt
+                marked_at: attendanceMap[f.id].createdAt,
+                marker: attendanceMap[f.id].marker
             } : null
         }));
 
