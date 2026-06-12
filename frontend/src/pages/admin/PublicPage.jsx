@@ -33,6 +33,29 @@ export default function PublicPage() {
 
   const BASE_URL = window.location.origin;
 
+  const getSubdomainUrl = (slug) => {
+    if (!slug) return "";
+    const protocol = window.location.protocol;
+    const hostname = window.location.hostname;
+    const port = window.location.port ? `:${window.location.port}` : "";
+
+    // Localhost handling
+    if (hostname === "localhost" || hostname === "127.0.0.1") {
+      return `${protocol}//${slug}.localhost${port}`;
+    }
+
+    // Production handling
+    // If current hostname is like 'admin.zenithflows.in', we replace 'admin' with the slug
+    // If it's just 'zenithflows.in', we prepend the slug
+    const parts = hostname.split(".");
+    if (parts.length > 2) {
+      parts[0] = slug; // Replace subdomain
+      return `${protocol}//${parts.join(".")}${port}`;
+    } else {
+      return `${protocol}//${slug}.${hostname}${port}`; // Prepend subdomain
+    }
+  };
+
   useEffect(() => {
     fetchAll();
   }, []);
@@ -86,7 +109,7 @@ export default function PublicPage() {
   };
 
   const copyURL = () => {
-    const url = `${BASE_URL}/i/${profile?.slug}`;
+    const url = getSubdomainUrl(profile?.slug);
     navigator.clipboard.writeText(url);
     setActionMsg("URL copied to clipboard!");
     setTimeout(() => setActionMsg(""), 3000);
@@ -161,7 +184,7 @@ export default function PublicPage() {
     </div>
   );
 
-  const pageUrl = `${BASE_URL}/i/${profile?.slug || ""}`;
+  const pageUrl = getSubdomainUrl(profile?.slug);
 
   return (
     <div className="pub-page-container">

@@ -95,3 +95,23 @@ cron.schedule("0 23 * * *", async () => {
         console.error("❌ Absent detection cron error:", err.message);
     }
 });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// MONTHLY SALARY AUTO-GENERATE (Faculty Salary.md — Phase 4)
+// Runs on the 1st of every month at 00:01 AM IST.
+// Creates pending salary records for all active faculty from their settings.
+// Admin only needs to review & click Pay — no manual record creation needed.
+// ─────────────────────────────────────────────────────────────────────────────
+cron.schedule("1 0 1 * *", async () => {
+    console.log("[Salary Cron] 🕛 Running monthly salary auto-generate (1st of month)...");
+    try {
+        const { generateMonthlySalaries } = require("../services/salaryAutoGenerate.service");
+        const result = await generateMonthlySalaries();
+        console.log(`[Salary Cron] ✅ Complete: ${JSON.stringify(result)}`);
+    } catch (err) {
+        console.error("[Salary Cron] ❌ Failed:", err.message);
+        // In production: alert via email/Sentry here
+    }
+}, {
+    timezone: "Asia/Kolkata",  // IST timezone for Indian institutes
+});

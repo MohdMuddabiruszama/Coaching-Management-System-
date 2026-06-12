@@ -47,6 +47,7 @@ const Invoice = require("./invoice");
 const StudentFeePayment = require("./studentFeePayment");
 const OtpVerification = require("./otpVerification");
 const FacultySalary = require("./facultySalary");
+const FacultySalarySettings = require("./facultySalarySettings");
 const AuditLog = require("./auditLog");
 const SlowRequestLog = require("./slowRequestLog");
 const BulkImportLog = require("./BulkImportLog")(require("../config/database"));
@@ -451,6 +452,16 @@ Faculty.hasMany(FacultySalary, { foreignKey: "faculty_id" });
 FacultySalary.belongsTo(User, { as: "paidBy", foreignKey: "paid_by" });
 User.hasMany(FacultySalary, { foreignKey: "paid_by" });
 
+// FacultySalary ↔ User direct association (for getAllSalaries JOIN)
+FacultySalary.belongsTo(User, { as: "facultyUser", foreignKey: "faculty_id" });
+
+// FacultySalarySettings Associations
+FacultySalarySettings.belongsTo(Institute, { foreignKey: "institute_id" });
+Institute.hasMany(FacultySalarySettings, { foreignKey: "institute_id" });
+
+FacultySalarySettings.belongsTo(User, { as: "faculty", foreignKey: "faculty_id" });
+User.hasMany(FacultySalarySettings, { foreignKey: "faculty_id" });
+
 // Operational Monitoring Associations
 AuditLog.belongsTo(Institute, { foreignKey: "institute_id" });
 Institute.hasMany(AuditLog, { foreignKey: "institute_id" });
@@ -529,6 +540,7 @@ module.exports = {
     StudentFeePayment,
     OtpVerification,
     FacultySalary,
+    FacultySalarySettings,
     LandingPageView,
     AuditLog,
     SlowRequestLog,

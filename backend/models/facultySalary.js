@@ -72,7 +72,23 @@ const FacultySalary = sequelize.define("FacultySalary", {
     paid_by: {
         type: DataTypes.INTEGER,
         allowNull: true
-    }
+    },
+    // ── Phase 1: New fields ───────────────────────────────────────────────────
+    payment_due_date: {
+        type: DataTypes.DATEONLY,
+        allowNull: true,
+        comment: 'Specific date salary should be disbursed (e.g. 2026-06-05)'
+    },
+    salary_slip_url: {
+        type: DataTypes.STRING(500),
+        allowNull: true,
+        comment: 'Path to generated PDF salary slip'
+    },
+    auto_generated: {
+        type: DataTypes.BOOLEAN,
+        defaultValue: false,
+        comment: 'TRUE if created by cron job automatically'
+    },
 }, {
     tableName: "faculty_salaries",
     timestamps: true

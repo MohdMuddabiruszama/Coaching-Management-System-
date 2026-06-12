@@ -210,8 +210,10 @@ exports.login = async (req, res) => {
             }
         }
 
-        // ✅ Phase 7: Dual-token auth — short access token + long refresh token
-        const accessToken = generateAccessToken(user);
+        // ✅ Phase A + Phase 7: Enriched JWT — embeds name, email, institute_name, permissions
+        // This eliminates 2 extra DB lookups per request in auth middleware.
+        const instituteData = user.Institute ? { name: user.Institute.name } : null;
+        const accessToken = generateAccessToken(user, instituteData);
         const refresh = generateRefreshToken();
 
         // Store refresh token hash in DB (enables revocation & session management)
@@ -514,8 +516,8 @@ exports.verifyRegistrationOtp = async (req, res) => {
         // Mark OTP used
         await invalidateOtp(record);
 
-        // Generate JWT
-        const token = generateAccessToken(result.adminUser);
+        // \u2705 Phase A: Enriched JWT \u2014 embed institute name at registration time
+        const token = generateAccessToken(result.adminUser, { name: result.institute.name });
 
         res.status(201).json({
             success: true,
@@ -725,7 +727,12 @@ exports.refreshAccessToken = async (req, res) => {
         const tokenHash = hashRefreshToken(refreshToken);
         const stored = await RefreshToken.findOne({
             where: { token_hash: tokenHash, is_revoked: false },
-            include: [{ model: require("../models").User, attributes: ["id", "role", "institute_id", "status"] }],
+            include: [{
+                model: require("../models").User,
+                // ✅ Phase A: Include all fields needed for enriched JWT generation
+                attributes: ["id", "role", "institute_id", "status", "name", "email"],
+                include: [{ model: require("../models").Institute, attributes: ["name"] }]
+            }],
         });
 
         if (!stored) {
@@ -745,8 +752,9 @@ exports.refreshAccessToken = async (req, res) => {
             return res.status(401).json({ success: false, message: "Account is blocked or not found.", code: "ACCOUNT_BLOCKED" });
         }
 
-        // Issue new access token
-        const newAccessToken = generateAccessToken(user);
+        // ✅ Phase A: Issue enriched access token — embeds name, email, institute_name
+        const instituteData = user.Institute ? { name: user.Institute.name } : null;
+        const newAccessToken = generateAccessToken(user, instituteData);
 
         res.json({
             success: true,

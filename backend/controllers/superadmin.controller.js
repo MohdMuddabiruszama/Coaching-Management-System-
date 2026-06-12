@@ -25,70 +25,79 @@ const { Op, fn, col, literal } = require("sequelize");
 // ─────────────────────────────────────────────────────────────
 exports.getDashboardStats = async (req, res) => {
     try {
-        const totalInstitutes = await Institute.count();
-        const activeInstitutes = await Institute.count({ where: { status: "active" } });
-        const expiredInstitutes = await Institute.count({ where: { status: "expired" } });
-        const totalStudents = await Student.count();
-        const totalFaculty = await Faculty.count();
-
-        // Total Managers (users with role = manager)
-        const totalManagers = await User.count({ where: { role: "manager" } });
-
-        // Total Parents
-        const totalParents = await User.count({ where: { role: "parent" } });
-
-        // Total Revenue: Sum of all paid subscription amount_paid
-        const revenueResult = await Subscription.findAll({
-            attributes: [[fn("SUM", col("amount_paid")), "total"]],
-            where: { payment_status: "paid" }
-        });
-        const totalRevenue = parseFloat(revenueResult[0]?.dataValues?.total || 0);
-
-        // Monthly Revenue: Current month revenue
         const now = new Date();
         const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-        const monthRevenueResult = await Subscription.findAll({
-            attributes: [[fn("SUM", col("amount_paid")), "total"]],
-            where: {
-                payment_status: "paid",
-                createdAt: { [Op.gte]: monthStart }
-            }
-        });
+
+        // ✅ Phase A Bonus: Run all independent queries in parallel
+        // Group 1: Core counts — 7 queries fired simultaneously
+        const [
+            totalInstitutes,
+            activeInstitutes,
+            expiredInstitutes,
+            totalStudents,
+            totalFaculty,
+            totalManagers,
+            totalParents,
+        ] = await Promise.all([
+            Institute.count(),
+            Institute.count({ where: { status: "active" } }),
+            Institute.count({ where: { status: "expired" } }),
+            Student.count(),
+            Faculty.count(),
+            User.count({ where: { role: "manager" } }),
+            User.count({ where: { role: "parent" } }),
+        ]);
+
+        // Group 2: Revenue + plan data — fired simultaneously
+        const [revenueResult, monthRevenueResult, totalPlans, freePlan] = await Promise.all([
+            Subscription.findAll({
+                attributes: [[fn("SUM", col("amount_paid")), "total"]],
+                where: { payment_status: "paid" }
+            }),
+            Subscription.findAll({
+                attributes: [[fn("SUM", col("amount_paid")), "total"]],
+                where: {
+                    payment_status: "paid",
+                    createdAt: { [Op.gte]: monthStart }
+                }
+            }),
+            Plan.count({ where: { status: "active" } }),
+            Plan.findOne({ where: { price: 0 } }),
+        ]);
+
+        const totalRevenue = parseFloat(revenueResult[0]?.dataValues?.total || 0);
         const monthlyRevenue = parseFloat(monthRevenueResult[0]?.dataValues?.total || 0);
 
-        // Total Features = number of unique feature flags = count of plans with active=status
-        const totalPlans = await Plan.count({ where: { status: "active" } });
-
-        // Total Private Schools = institutes that have subscription (i.e., active/paying)
-        const totalPrivateSchools = await Institute.count({
-            where: { status: { [Op.in]: ["active", "expired"] } }
-        });
-
-        // Total "Start Free Trial" users = subscriptions with payment_status='free_trial' OR institutes on plan id=1 (Starter, price=0)
-        const freePlan = await Plan.findOne({ where: { price: 0 } });
-        let totalFreeTrialUsers = 0;
-        if (freePlan) {
-            totalFreeTrialUsers = await Subscription.count({
-                where: { plan_id: freePlan.id }
-            });
-        }
-
-        // Phase 3: Total Platform Discounts (Student Fees + Institute Subscriptions)
+        // Group 3: Derived queries (need freePlan result first)
         const { StudentFee, Subscription: SubModel, LandingPageView } = require("../models");
-        const [studentDiscountRes, subDiscountRes] = await Promise.all([
-            StudentFee.sum("discount_amount") || 0,
-            SubModel.sum("discount_amount") || 0
+        const freePlanId = freePlan?.id;
+
+        const [
+            totalPrivateSchools,
+            totalFreeTrialUsers,
+            studentDiscountRes,
+            subDiscountRes,
+            totalLandingPageViews,
+            totalLifetimeInstitutes,
+            totalFoundingMembers,
+            lifetimePlan,
+            unreadEnquiriesCount,
+        ] = await Promise.all([
+            Institute.count({ where: { status: { [Op.in]: ["active", "expired"] } } }),
+            freePlanId
+                ? Subscription.count({ where: { plan_id: freePlanId } })
+                : Promise.resolve(0),
+            StudentFee.sum("discount_amount"),
+            SubModel.sum("discount_amount"),
+            LandingPageView.count(),
+            Institute.count({ where: { is_lifetime_member: true } }),
+            Institute.count({ where: { founding_member: true } }),
+            Plan.findOne({ where: { is_lifetime: true } }),
+            Lead.count({ where: { is_read: false } }),
         ]);
-        const totalDiscount = parseFloat(studentDiscountRes) + parseFloat(subDiscountRes);
 
-        const totalLandingPageViews = await LandingPageView.count();
-
-        // === Lifetime Member Stats ===
-        const totalLifetimeInstitutes = await Institute.count({ where: { is_lifetime_member: true } });
-        const totalFoundingMembers = await Institute.count({ where: { founding_member: true } });
-        const lifetimePlan = await Plan.findOne({ where: { is_lifetime: true } });
-
-        const unreadEnquiriesCount = await Lead.count({ where: { is_read: false } });
+        const totalDiscount =
+            parseFloat(studentDiscountRes || 0) + parseFloat(subDiscountRes || 0);
 
         res.json({
             totalInstitutes,
@@ -113,15 +122,20 @@ exports.getDashboardStats = async (req, res) => {
                 standard_lifetime: totalLifetimeInstitutes - totalFoundingMembers,
                 slots_used: lifetimePlan?.lifetime_slots_used || 0,
                 slots_total: lifetimePlan?.lifetime_slots_total || 100,
-                slots_remaining: (lifetimePlan?.lifetime_slots_total || 100) - (lifetimePlan?.lifetime_slots_used || 0),
-                total_lifetime_revenue: totalFoundingMembers * 19999 + (totalLifetimeInstitutes - totalFoundingMembers) * 24999
-            }
+                slots_remaining:
+                    (lifetimePlan?.lifetime_slots_total || 100) -
+                    (lifetimePlan?.lifetime_slots_used || 0),
+                total_lifetime_revenue:
+                    totalFoundingMembers * 19999 +
+                    (totalLifetimeInstitutes - totalFoundingMembers) * 24999,
+            },
         });
     } catch (error) {
         console.error("getDashboardStats error:", error);
         res.status(500).json({ error: error.message });
     }
 };
+
 
 // ─────────────────────────────────────────────────────────────
 // PHASE 2: ENHANCED ANALYTICS (with managers)

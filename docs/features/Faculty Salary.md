@@ -97,6 +97,7 @@ salary_due_day = 5 means:
   June salary → payment_due_date = 2026-06-05
   July salary → payment_due_date = 2026-07-05
 
+
 The cron job on the 1st of every month automatically:
   1. Reads faculty_salary_settings for all active faculty
   2. Creates a pending salary record for the new month

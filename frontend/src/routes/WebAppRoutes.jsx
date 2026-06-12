@@ -78,6 +78,7 @@ const FacultyNotes = lazy(() => import("../pages/faculty/FacultyNotes"));
 const FacultyAssignments = lazy(() => import("../pages/faculty/Assignments"));
 const ChatApp = lazy(() => import("../pages/chat/ChatApp"));
 const FacultyClassPerformance = lazy(() => import("../pages/faculty/ClassPerformance"));
+const MySalarySlips = lazy(() => import("../pages/faculty/MySalarySlips"));
 
 const StudentDashboard = lazy(() => import("../pages/student/Dashboard"));
 const ViewAttendance = lazy(() => import("../pages/student/ViewAttendance"));
@@ -251,6 +252,7 @@ export default function WebAppRoutes() {
           <Route path="chat" element={<ChatApp />} />
           <Route path="profile" element={<Profile />} />
           <Route path="class-performance" element={<FacultyClassPerformance />} />
+          <Route path="salary-slips" element={<MySalarySlips />} />
           <Route path="*" element={<Navigate to="/faculty/dashboard" />} />
         </Route>
 

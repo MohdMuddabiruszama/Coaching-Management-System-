@@ -28,6 +28,15 @@ export function useSubdomain() {
             return { subdomain, isInstitutePage: true, isMainDomain: false };
         }
 
+        // Localhost Subdomain Support (Development)
+        if (hostname.endsWith('.localhost')) {
+            const subdomain = hostname.slice(0, -'.localhost'.length);
+            if (RESERVED.includes(subdomain.toLowerCase())) {
+                return { subdomain: null, isInstitutePage: false, isMainDomain: false };
+            }
+            return { subdomain, isInstitutePage: true, isMainDomain: false };
+        }
+
         // Fallback for localhost without query param, or unknown domains
         return { subdomain: null, isInstitutePage: false, isMainDomain: true };
     }, [window.location.hostname, window.location.search]);

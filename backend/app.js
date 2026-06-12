@@ -190,9 +190,13 @@ app.use(cors({
       return callback(null, true);
     }
 
-    // In dev only: allow Vercel preview URLs and capacitor
-    if (!isProduction && origin.endsWith(".vercel.app")) return callback(null, true);
-    if (!isProduction && origin.startsWith("capacitor://")) return callback(null, true);
+    // In dev only: allow Vercel preview URLs, capacitor, and localhost subdomains
+    if (!isProduction) {
+      if (origin.endsWith(".vercel.app")) return callback(null, true);
+      if (origin.startsWith("capacitor://")) return callback(null, true);
+      // Allow local subdomains for multi-tenant dev (e.g., http://it-hub.localhost:5173)
+      if (origin.includes(".localhost:")) return callback(null, true);
+    }
 
     // Blocked
     console.warn(`[CORS] Blocked origin: ${origin}`);
@@ -208,6 +212,18 @@ app.use(cors({
 // Handle OPTIONS preflight for all routes explicitly (belt-and-suspenders)
 app.options("*", cors());
 
+// ============================================
+// ✅ PHASE A — STEP A4: SUBDOMAIN MIDDLEWARE
+// ============================================
+// Extracts the institute subdomain from every request hostname.
+// Production: iitcoaching.zenithflows.in → req.subdomain = 'iitcoaching'
+// Local dev:  localhost → req.subdomain = null (no subdomain in dev)
+// This enables future subdomain-based routing without changing existing routes.
+const { extractSubdomain } = require("./utils/subdomain");
+app.use((req, res, next) => {
+    req.subdomain = extractSubdomain(req.hostname);
+    next();
+});
 
 
 /**
@@ -644,6 +660,37 @@ const syncDatabase = async () => {
     try { await sequelize.query(`ALTER TABLE institutes ADD COLUMN IF NOT EXISTS current_limit_chat_messages INTEGER DEFAULT 500;`); } catch (e) { }
     try { await sequelize.query(`ALTER TABLE institutes ADD COLUMN IF NOT EXISTS current_feature_chat BOOLEAN DEFAULT FALSE;`); } catch (e) { }
     console.log('✅ Chat message limit columns ensured');
+
+    // ── Faculty Salary Management — Phase 1 DB (Faculty Salary.md) ──────────
+    // Add new columns to faculty_salaries (payment_due_date, salary_slip_url, auto_generated)
+    try { await sequelize.query(`ALTER TABLE faculty_salaries ADD COLUMN IF NOT EXISTS payment_due_date DATE NULL;`); } catch (e) { }
+    try { await sequelize.query(`ALTER TABLE faculty_salaries ADD COLUMN IF NOT EXISTS salary_slip_url VARCHAR(500) NULL;`); } catch (e) { }
+    try { await sequelize.query(`ALTER TABLE faculty_salaries ADD COLUMN IF NOT EXISTS auto_generated BOOLEAN NOT NULL DEFAULT FALSE;`); } catch (e) { }
+    // Performance indexes for faculty_salaries
+    try { await sequelize.query(`CREATE INDEX IF NOT EXISTS idx_fs_institute_month ON faculty_salaries(institute_id, month_year);`); } catch (e) { }
+    try { await sequelize.query(`CREATE INDEX IF NOT EXISTS idx_fs_faculty_month ON faculty_salaries(faculty_id, month_year);`); } catch (e) { }
+    try { await sequelize.query(`CREATE INDEX IF NOT EXISTS idx_fs_status ON faculty_salaries(institute_id, status);`); } catch (e) { }
+    try { await sequelize.query(`CREATE INDEX IF NOT EXISTS idx_fs_due_date ON faculty_salaries(payment_due_date);`); } catch (e) { }
+    // Create faculty_salary_settings table (base salary per faculty, used by auto-generate cron)
+    try {
+      await sequelize.query(`
+        CREATE TABLE IF NOT EXISTS faculty_salary_settings (
+          id                    SERIAL PRIMARY KEY,
+          institute_id          INT NOT NULL REFERENCES institutes(id) ON DELETE CASCADE,
+          faculty_id            INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+          basic_salary          DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+          allowances            DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+          salary_due_day        SMALLINT NOT NULL DEFAULT 5,
+          working_days_default  SMALLINT NOT NULL DEFAULT 26,
+          is_active             BOOLEAN NOT NULL DEFAULT TRUE,
+          created_at            TIMESTAMPTZ DEFAULT NOW(),
+          updated_at            TIMESTAMPTZ DEFAULT NOW(),
+          UNIQUE (faculty_id, institute_id)
+        );
+      `);
+    } catch (e) { /* table already exists */ }
+    try { await sequelize.query(`CREATE INDEX IF NOT EXISTS idx_fss_institute ON faculty_salary_settings(institute_id);`); } catch (e) { }
+    console.log('✅ Faculty Salary Management schema ensured (payment_due_date, settings table, indexes)');
 
     // Auto-sync other schema changes using alter for the explicit models to make sure everything matches
     try {
