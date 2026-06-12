@@ -198,6 +198,18 @@ exports.login = async (req, res) => {
 
         const user = await authService.loginUser(email, password);
 
+        // Check if user's institute is suspended
+        if (user.role !== 'super_admin' && user.Institute) {
+            const instituteStatus = user.Institute.status;
+            if (instituteStatus === 'suspended' || instituteStatus === 'blocked') {
+                return res.status(403).json({
+                    success: false,
+                    message: "Your institute account has been suspended by the administrator. Please contact support to regain access.",
+                    code: "INSTITUTE_SUSPENDED"
+                });
+            }
+        }
+
         // ✅ Phase 7: Dual-token auth — short access token + long refresh token
         const accessToken = generateAccessToken(user);
         const refresh = generateRefreshToken();

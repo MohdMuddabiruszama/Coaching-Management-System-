@@ -1,15 +1,20 @@
-﻿const { Timetable, TimetableSlot, Class, Subject, Faculty, User } = require("../models");
+const { Timetable, TimetableSlot, Class, Subject, Faculty, User } = require("../models");
 const { Op } = require("sequelize");
 
 // --- SLOT MANAGEMENT ---
 
 exports.createSlot = async (req, res) => {
     try {
-        const { start_time, end_time } = req.body;
+        const { start_time, end_time, class_id } = req.body;
         const institute_id = req.user.institute_id;
+
+        if (!class_id) {
+            return res.status(400).json({ success: false, message: "class_id is required" });
+        }
 
         const slot = await TimetableSlot.create({
             institute_id,
+            class_id,
             start_time,
             end_time
         });
@@ -24,8 +29,15 @@ exports.createSlot = async (req, res) => {
 exports.getSlots = async (req, res) => {
     try {
         const institute_id = req.user.institute_id;
+        const { class_id } = req.query;
+        
+        let whereClause = { institute_id };
+        if (class_id) {
+            whereClause.class_id = class_id;
+        }
+
         const slots = await TimetableSlot.findAll({
-            where: { institute_id },
+            where: whereClause,
             order: [['start_time', 'ASC']]
         });
         res.status(200).json({ success: true, data: slots });
@@ -62,33 +74,59 @@ exports.deleteSlot = async (req, res) => {
 
 exports.createTimetableEntry = async (req, res) => {
     try {
-        const { class_id, subject_id, faculty_id, slot_id, day_of_week, room_number } = req.body;
+        const { class_id, subject_id, faculty_id, slot_id, day_of_week, room_number, is_break, break_label } = req.body;
         const institute_id = req.user.institute_id;
+        const isBreak = is_break === true || is_break === 'true';
 
-        // Validation 1: No Double Class Booking
-        const classConflict = await Timetable.findOne({
-            where: { institute_id, class_id, slot_id, day_of_week }
-        });
-        if (classConflict) {
-            return res.status(400).json({ success: false, message: "Conflicts: This class already has a subject assigned at this time slot on this day." });
+        const newSlot = await TimetableSlot.findOne({ where: { id: slot_id, institute_id } });
+        if (!newSlot) {
+            return res.status(404).json({ success: false, message: "Selected time slot not found." });
         }
 
-        // Validation 2: No Faculty Double Booking
-        const facultyConflict = await Timetable.findOne({
-            where: { institute_id, faculty_id, slot_id, day_of_week }
+        // Validation 1: No Double Class Booking (Time Overlap) — applies to all types including breaks
+        const classConflict = await Timetable.findOne({
+            where: { institute_id, class_id, day_of_week },
+            include: [{
+                model: TimetableSlot,
+                required: true,
+                where: {
+                    start_time: { [Op.lt]: newSlot.end_time },
+                    end_time: { [Op.gt]: newSlot.start_time }
+                }
+            }]
         });
-        if (facultyConflict) {
-            return res.status(400).json({ success: false, message: "Conflicts: This faculty is already assigned to another class at this time slot on this day." });
+        if (classConflict) {
+            return res.status(400).json({ success: false, message: "Conflicts: This class already has an entry during this time period." });
+        }
+
+        // Validation 2: No Faculty Double Booking — only for non-break entries
+        if (!isBreak && faculty_id) {
+            const facultyConflict = await Timetable.findOne({
+                where: { institute_id, faculty_id, day_of_week, is_break: false },
+                include: [{
+                    model: TimetableSlot,
+                    required: true,
+                    where: {
+                        start_time: { [Op.lt]: newSlot.end_time },
+                        end_time: { [Op.gt]: newSlot.start_time }
+                    }
+                }]
+            });
+            if (facultyConflict) {
+                return res.status(400).json({ success: false, message: "Conflicts: This faculty is already assigned to another class during this time period." });
+            }
         }
 
         const timetable = await Timetable.create({
             institute_id,
             class_id,
-            subject_id,
-            faculty_id,
+            subject_id: isBreak ? null : subject_id,
+            faculty_id: isBreak ? null : faculty_id,
             slot_id,
             day_of_week,
-            room_number,
+            room_number: isBreak ? null : room_number,
+            is_break: isBreak,
+            break_label: isBreak ? (break_label || 'Break') : null,
             created_by: req.user.id
         });
 
@@ -177,20 +215,43 @@ exports.updateTimetableEntry = async (req, res) => {
             return res.status(404).json({ success: false, message: "Timetable entry not found" });
         }
 
-        // Validation 1: No Double Class Booking (exclude current entry)
-        const classConflict = await Timetable.findOne({
-            where: { institute_id, class_id, slot_id, day_of_week, id: { [Op.ne]: id } }
-        });
-        if (classConflict) {
-            return res.status(400).json({ success: false, message: "Conflicts: This class already has a subject assigned at this time slot on this day." });
+        const newSlot = await TimetableSlot.findOne({ where: { id: slot_id, institute_id } });
+        if (!newSlot) {
+            return res.status(404).json({ success: false, message: "Selected time slot not found." });
         }
 
-        // Validation 2: No Faculty Double Booking (exclude current entry)
-        const facultyConflict = await Timetable.findOne({
-            where: { institute_id, faculty_id, slot_id, day_of_week, id: { [Op.ne]: id } }
+        // Validation 1: No Double Class Booking (exclude current entry, Time Overlap)
+        const classConflict = await Timetable.findOne({
+            where: { institute_id, class_id, day_of_week, id: { [Op.ne]: id } },
+            include: [{
+                model: TimetableSlot,
+                required: true,
+                where: {
+                    start_time: { [Op.lt]: newSlot.end_time },
+                    end_time: { [Op.gt]: newSlot.start_time }
+                }
+            }]
         });
-        if (facultyConflict) {
-            return res.status(400).json({ success: false, message: "Conflicts: This faculty is already assigned to another class at this time slot on this day." });
+        if (classConflict) {
+            return res.status(400).json({ success: false, message: "Conflicts: This class already has a subject assigned during this time period." });
+        }
+
+        // Validation 2: No Faculty Double Booking (exclude current entry, Time Overlap)
+        if (faculty_id) {
+            const facultyConflict = await Timetable.findOne({
+                where: { institute_id, faculty_id, day_of_week, id: { [Op.ne]: id } },
+                include: [{
+                    model: TimetableSlot,
+                    required: true,
+                    where: {
+                        start_time: { [Op.lt]: newSlot.end_time },
+                        end_time: { [Op.gt]: newSlot.start_time }
+                    }
+                }]
+            });
+            if (facultyConflict) {
+                return res.status(400).json({ success: false, message: "Conflicts: This faculty is already assigned to another class during this time period." });
+            }
         }
 
         await entry.update({

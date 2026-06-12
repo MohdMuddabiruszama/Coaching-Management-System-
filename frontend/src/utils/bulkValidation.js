@@ -18,6 +18,12 @@ function validateStudentRow(row, seenEmails, seenRolls) {
   else if (seenRolls.has(row.roll_number.trim()))           e.push('duplicate roll_number in file');
   else                                                      seenRolls.add(row.roll_number.trim());
   if (!row.class_name?.trim())                              e.push('class_name required');
+  if (!row.section?.trim())                                 e.push('section required (use N/A if none)');
+  
+  const isFull = row.is_full_course?.toString().toLowerCase().trim();
+  if (isFull && !['yes', 'no', 'true', 'false', '1', '0'].includes(isFull)) e.push('is_full_course must be Yes or No');
+  if (isFull && ['no', 'false', '0'].includes(isFull) && !row.subjects?.trim()) e.push('subjects required if not full course');
+
   const g = row.gender?.toLowerCase();
   if (!['male', 'female', 'other'].includes(g))             e.push('gender: male, female, or other');
   

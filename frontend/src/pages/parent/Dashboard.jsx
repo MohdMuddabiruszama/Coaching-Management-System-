@@ -1271,10 +1271,22 @@ function ParentDashboard() {
                             {activeTab === 'timetable' && (() => {
                                 const { slots = [], timetable = [] } = timetableData;
                                 
-                                // Only show time slots that actually have classes in the student's timetable
-                                const activeSlots = slots.filter(slot => 
+                                // Deduplicate time slots and find relevant ones
+                                const activeSlotsRaw = slots.filter(slot => 
                                     timetable.some(t => t.slot_id === slot.id)
                                 );
+
+                                const timeSet = new Set();
+                                const activeSlots = [];
+                                activeSlotsRaw.forEach(slot => {
+                                    if (!slot.start_time || !slot.end_time) return;
+                                    const timeKey = `${slot.start_time.slice(0, 5)}-${slot.end_time.slice(0, 5)}`;
+                                    if (!timeSet.has(timeKey)) {
+                                        timeSet.add(timeKey);
+                                        activeSlots.push(slot);
+                                    }
+                                });
+                                activeSlots.sort((a, b) => a.start_time.localeCompare(b.start_time));
                                 
                                 // Parent doesn't have student.Subjects so we infer enrolled subjects from timetable directly
                                 const enrolledSubjectNames = Array.from(new Set(timetable.map(t => t.Subject?.name).filter(Boolean)));
@@ -1413,12 +1425,23 @@ function ParentDashboard() {
                                                                         {slot.start_time.slice(0, 5)} - {slot.end_time.slice(0, 5)}
                                                                     </td>
                                                                     {DAYS_OF_WEEK.map(day => {
-                                                                        const entry = timetable.find(t => t.slot_id === slot.id && t.day_of_week === day);
+                                                                        const entry = timetable.find(t => t.TimetableSlot?.start_time === slot.start_time && t.TimetableSlot?.end_time === slot.end_time && t.day_of_week === day);
 
                                                                         if (entry) {
+                                                                            if (entry.is_break) {
+                                                                                return (
+                                                                                    <td key={`${slot.start_time}-${day}`} style={{ padding: '0.5rem', borderBottom: '1px solid #f1f5f9' }}>
+                                                                                        <div style={{ background: 'linear-gradient(135deg, #FFF8E1, #FFF3CD)', border: '1.5px dashed #F59E0B', borderRadius: '10px', padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.4rem', alignItems: 'center', justifyContent: 'center', minHeight: '80px', height: '100%' }}>
+                                                                                            <span style={{ fontSize: '1.2rem' }}>☕</span>
+                                                                                            <strong style={{ color: '#92400E', fontSize: '0.85rem' }}>{entry.break_label || 'Break'}</strong>
+                                                                                        </div>
+                                                                                    </td>
+                                                                                );
+                                                                            }
+
                                                                             const theme = getSubjectColorTheme(entry.Subject?.name || '');
                                                                             return (
-                                                                                <td key={`${slot.id}-${day}`}>
+                                                                                <td key={`${slot.start_time}-${day}`}>
                                                                                     <div className={`tt-v2-cell-card ${theme.bg}`}>
                                                                                         <div className={`tt-v2-cell-subject ${theme.text}`}>
                                                                                             {entry.Subject?.name}
@@ -1437,7 +1460,7 @@ function ParentDashboard() {
                                                                         }
 
                                                                         return (
-                                                                            <td key={`${slot.id}-${day}`}>
+                                                                            <td key={`${slot.start_time}-${day}`}>
                                                                                 <div className="tt-v2-cell-empty">-</div>
                                                                             </td>
                                                                         );

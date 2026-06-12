@@ -2,17 +2,17 @@ const { Lead } = require('../models');
 
 exports.submitLead = async (req, res) => {
     try {
-        const { name, phone, email, institute, studentCount, plan, message } = req.body;
+        const { name, phone, email, institute, studentCount, plan, message, type } = req.body;
         
         const newLead = await Lead.create({
             name,
             phone,
             email,
-            institute,
+            institute: institute || 'N/A',
             studentCount,
             plan,
             message,
-            source: 'landing-page-contact',
+            source: type || 'contact_form',
             status: 'new'
         });
 
@@ -59,6 +59,7 @@ exports.getLeads = async (req, res) => {
                 students: l.studentCount,
                 plan: l.plan,
                 message: l.message,
+                source: l.source,
                 date: l.createdAt,
                 status: l.status
             }))
@@ -88,5 +89,14 @@ exports.updateLeadStatus = async (req, res) => {
         });
     } catch (error) {
         res.status(500).json({ success: false, message: 'Failed to update lead status', error: error.message });
+    }
+};
+
+exports.clearUnreadLeads = async (req, res) => {
+    try {
+        await Lead.update({ is_read: true }, { where: { is_read: false } });
+        res.status(200).json({ success: true, message: 'Cleared unread enquiries count' });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Failed to clear unread count', error: error.message });
     }
 };

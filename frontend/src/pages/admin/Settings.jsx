@@ -126,7 +126,7 @@ function Settings() {
     };
 
     return (
-        <div style={{ padding: '24px', maxWidth: '1200px', margin: '0 auto' }}>
+        <div style={{ padding: '24px' }}>
             {/* Header */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
@@ -137,12 +137,6 @@ function Settings() {
                         <h1 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 800, color: '#111827' }}>Settings</h1>
                         <p style={{ margin: 0, color: '#6b7280', fontSize: '0.9rem' }}>Manage your institute preferences and configuration</p>
                     </div>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    <ThemeSelector />
-                    <Link to="/admin/dashboard" style={{ background: '#fff', border: '1px solid #e5e7eb', color: '#374151', padding: '8px 16px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: 600, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <span>←</span> Back to Dashboard
-                    </Link>
                 </div>
             </div>
 

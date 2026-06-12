@@ -5,6 +5,8 @@ import ThemeSelector from "../ThemeSelector";
 import InstituteLogo from "../../components/common/InstituteLogo";
 import api from "../../services/api";
 import "./AdminLayout.css";
+import HelpGuideDrawer from "../../components/common/HelpGuide/HelpGuideDrawer";
+import { FiHelpCircle } from "react-icons/fi";
 
 const AdminLayout = () => {
     const { user, logout } = useContext(AuthContext);
@@ -13,6 +15,13 @@ const AdminLayout = () => {
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
     const [openMenus, setOpenMenus] = useState({});
+    const [isHelpGuideOpen, setIsHelpGuideOpen] = useState(false);
+    
+    // Plan Access States
+    const [planDetails, setPlanDetails] = useState(null);
+    const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+    const [blockedFeature, setBlockedFeature] = useState("");
+    const [lastValidPath, setLastValidPath] = useState(location.pathname);
 
     const toggleMenu = (key) => {
         setOpenMenus(prev => ({ ...prev, [key]: !prev[key] }));
@@ -56,8 +65,89 @@ const AdminLayout = () => {
 
         if (user) {
             fetchSidebarStats();
+            
+            api.get("/admin/usage").then(res => {
+                setPlanDetails(res.data.data);
+            }).catch(err => console.error("Error fetching usage stats:", err));
         }
     }, [user, isAdmin]);
+
+    const getTrialDaysLeft = () => {
+        if (!planDetails || !planDetails.plan.is_free_trial) return 0;
+        const start = new Date(planDetails.start_date);
+        const end = new Date(start);
+        end.setDate(end.getDate() + (planDetails.plan.duration_days || 14));
+        const diff = end - new Date();
+        return Math.ceil(diff / (1000 * 60 * 60 * 24));
+    };
+
+    const checkFeatureAccess = (featureKey) => {
+        if (!planDetails) return { hasAccess: true, featureName: "" };
+        const features = planDetails.features;
+        let hasAccess = true;
+        let featureName = "";
+
+        switch (featureKey) {
+            case 'finance': if (!features.finance) { hasAccess = false; featureName = "Finance Dashboard"; } break;
+            case 'salary': if (!features.salary) { hasAccess = false; featureName = "Faculty Salary Management"; } break;
+            case 'attendance': if (features.attendance === 'none') { hasAccess = false; featureName = "Attendance Management"; } break;
+            case 'reports': if (features.reports === 'none') { hasAccess = false; featureName = "Reports & Analytics"; } break;
+            case 'fees': if (!features.fees) { hasAccess = false; featureName = "Fee Management"; } break;
+            case 'announcements': if (!features.announcements) { hasAccess = false; featureName = "Announcements"; } break;
+            case 'auto_attendance': if (!features.auto_attendance) { hasAccess = false; featureName = "Smart Attendance (QR)"; } break;
+            case 'timetable': if (!features.timetable) { hasAccess = false; featureName = "Master Timetable"; } break;
+            case 'exams': if (!features.exams) { hasAccess = false; featureName = "Examinations"; } break;
+            case 'performance_hub': if (!features.performance_hub) { hasAccess = false; featureName = "Performance Hub"; } break;
+            case 'notes': if (!features.notes) { hasAccess = false; featureName = "Notes Management"; } break;
+            case 'chat': if (!features.chat) { hasAccess = false; featureName = "Academic Chat"; } break;
+            case 'assignments': if (!features.assignment) { hasAccess = false; featureName = "Assignments"; } break;
+            case 'expenses': if (!features.expenses) { hasAccess = false; featureName = "Expense Management"; } break;
+            case 'biometric': if (!features.biometric) { hasAccess = false; featureName = "Biometric Attendance"; } break;
+            case 'id_cards': if (!features.id_cards) { hasAccess = false; featureName = "ID Card Generator"; } break;
+            case 'certificate_generator': if (!features.certificate_generator) { hasAccess = false; featureName = "Certificate Generator"; } break;
+        }
+        return { hasAccess, featureName };
+    };
+
+    useEffect(() => {
+        if (!planDetails) return;
+        
+        const path = location.pathname;
+        let featureKey = null;
+
+        if (path.startsWith('/admin/finance')) featureKey = 'finance';
+        else if (path.startsWith('/admin/salary')) featureKey = 'salary';
+        else if (path.startsWith('/admin/attendance') || path.startsWith('/admin/view-attendance')) featureKey = 'attendance';
+        else if (path.startsWith('/admin/reports')) featureKey = 'reports';
+        else if (path.startsWith('/admin/fees')) featureKey = 'fees';
+        else if (path.startsWith('/admin/announcements')) featureKey = 'announcements';
+        else if (path.startsWith('/admin/smart-attendance') || path.startsWith('/admin/scan-faculty-qr')) featureKey = 'auto_attendance';
+        else if (path.startsWith('/admin/timetable')) featureKey = 'timetable';
+        else if (path.startsWith('/admin/exams')) featureKey = 'exams';
+        else if (path.startsWith('/admin/performance')) featureKey = 'performance_hub';
+        else if (path.startsWith('/admin/notes')) featureKey = 'notes';
+        else if (path.startsWith('/admin/chat-monitor')) featureKey = 'chat';
+        else if (path.startsWith('/admin/assignments')) featureKey = 'assignments';
+        else if (path.startsWith('/admin/expenses')) featureKey = 'expenses';
+        else if (path.startsWith('/admin/biometric')) featureKey = 'biometric';
+
+        if (featureKey) {
+            const isTrialLocked = planDetails.plan.is_free_trial && getTrialDaysLeft() <= 0;
+            const isPlanExpiredLocally = user?.isPlanExpired || isTrialLocked;
+            
+            if (!isPlanExpiredLocally) {
+                const { hasAccess, featureName } = checkFeatureAccess(featureKey);
+                if (!hasAccess) {
+                    setBlockedFeature(featureName);
+                    setShowUpgradeModal(true);
+                    navigate(lastValidPath, { replace: true });
+                    return;
+                }
+            }
+        }
+        
+        setLastValidPath(path);
+    }, [location.pathname, planDetails]);
 
     const handleMenuClick = async (type) => {
         setSidebarOpen(false);
@@ -160,6 +250,22 @@ const AdminLayout = () => {
         setShowSearch(false);
         setSearchQuery("");
     };
+
+    const renderLockIcon = (featureKey) => {
+        if (!planDetails) return null;
+        const isTrialLocked = planDetails.plan.is_free_trial && getTrialDaysLeft() <= 0;
+        if (user?.isPlanExpired || isTrialLocked) return null;
+        
+        const { hasAccess } = checkFeatureAccess(featureKey);
+        if (!hasAccess) {
+            return (
+                <span className="al-sidebar-lock" style={{ marginLeft: 'auto', fontSize: '0.85rem', filter: 'grayscale(1)', opacity: 0.7 }} title="Locked Feature">
+                    🔒
+                </span>
+            );
+        }
+        return null;
+    };
     // -----------------------------
 
     const navLinkClass = (path) => {
@@ -212,12 +318,15 @@ const AdminLayout = () => {
                                     </Link>
                                     <Link to="/admin/attendance" className={navLinkClass('/admin/attendance')} onClick={() => setSidebarOpen(false)}>
                                         <span className="al-nav-icon">📋</span> Student Attendance
+                                        {renderLockIcon('attendance')}
                                     </Link>
                                     <Link to="/admin/view-attendance" className={navLinkClass('/admin/view-attendance')} onClick={() => setSidebarOpen(false)}>
                                         <span className="al-nav-icon">👀</span> View Attendance
+                                        {renderLockIcon('attendance')}
                                     </Link>
                                     <Link to="/admin/smart-attendance" className={navLinkClass('/admin/smart-attendance')} onClick={() => setSidebarOpen(false)}>
                                         <span className="al-nav-icon">📷</span> Scan Student QR
+                                        {renderLockIcon('auto_attendance')}
                                     </Link>
                                 </div>
                             )}
@@ -241,12 +350,15 @@ const AdminLayout = () => {
                                     </Link>
                                     <Link to="/admin/faculty-attendance" className={navLinkClass('/admin/faculty-attendance')} onClick={() => setSidebarOpen(false)}>
                                         <span className="al-nav-icon">📋</span> Manage Attendance
+                                        {renderLockIcon('attendance')}
                                     </Link>
                                     <Link to="/admin/view-faculty-attendance" className={navLinkClass('/admin/view-faculty-attendance')} onClick={() => setSidebarOpen(false)}>
                                         <span className="al-nav-icon">👀</span> View Attendance
+                                        {renderLockIcon('attendance')}
                                     </Link>
                                     <Link to="/admin/scan-faculty-qr" className={navLinkClass('/admin/scan-faculty-qr')} onClick={() => setSidebarOpen(false)}>
                                         <span className="al-nav-icon">📷</span> Scan Faculty QR
+                                        {renderLockIcon('auto_attendance')}
                                     </Link>
                                 </div>
                             )}
@@ -278,11 +390,13 @@ const AdminLayout = () => {
                                     {hasPermission('exams') && (
                                         <Link to="/admin/exams" className={navLinkClass('/admin/exams')} onClick={() => setSidebarOpen(false)}>
                                             <span className="al-nav-icon">📝</span> Exams
+                                            {renderLockIcon('exams')}
                                         </Link>
                                     )}
                                     {hasPermission('assignments') && (
                                         <Link to="/admin/assignments" className={navLinkClass('/admin/assignments')} onClick={() => handleMenuClick('assignments')}>
                                             <span className="al-nav-icon">📄</span> Assignments
+                                            {renderLockIcon('assignments')}
                                             {sidebarStats.unreadAssignmentCount > 0 && (
                                                 <span className="al-sidebar-badge" style={{background: '#ef4444', color: '#fff', borderRadius: '12px', padding: '2px 8px', fontSize: '0.75rem', marginLeft: 'auto', fontWeight: '600'}}>
                                                     {sidebarStats.unreadAssignmentCount > 99 ? '99+' : sidebarStats.unreadAssignmentCount}
@@ -293,6 +407,7 @@ const AdminLayout = () => {
                                     {hasPermission('notes') && (
                                         <Link to="/admin/notes" className={navLinkClass('/admin/notes')} onClick={() => handleMenuClick('notes')}>
                                             <span className="al-nav-icon">📓</span> Notes
+                                            {renderLockIcon('notes')}
                                             {sidebarStats.unreadNotesCount > 0 && (
                                                 <span className="al-sidebar-badge" style={{background: '#ef4444', color: '#fff', borderRadius: '12px', padding: '2px 8px', fontSize: '0.75rem', marginLeft: 'auto', fontWeight: '600'}}>
                                                     {sidebarStats.unreadNotesCount > 99 ? '99+' : sidebarStats.unreadNotesCount}
@@ -313,6 +428,7 @@ const AdminLayout = () => {
                     <Link to="/admin/timetable" className={navLinkClass('/admin/timetable')} onClick={() => setSidebarOpen(false)}>
                         <span className="al-nav-icon">📅</span>
                         <span className="al-nav-text">Batches & Timetable</span>
+                        {renderLockIcon('timetable')}
                     </Link>
 
                     <div className="al-nav-section">FINANCE</div>
@@ -320,30 +436,35 @@ const AdminLayout = () => {
                         <Link to="/admin/fees" className={navLinkClass('/admin/fees')} onClick={() => setSidebarOpen(false)}>
                             <span className="al-nav-icon">💰</span>
                             <span className="al-nav-text">Fees & Payments</span>
+                            {renderLockIcon('fees')}
                         </Link>
                     )}
                     {hasPermission('expenses') && (
                         <Link to="/admin/expenses" className={navLinkClass('/admin/expenses')} onClick={() => setSidebarOpen(false)}>
                             <span className="al-nav-icon">💸</span>
                             <span className="al-nav-text">Expenses</span>
+                            {renderLockIcon('expenses')}
                         </Link>
                     )}
                     {hasPermission('salary') && (
                         <Link to="/admin/salary" className={navLinkClass('/admin/salary')} onClick={() => setSidebarOpen(false)}>
                             <span className="al-nav-icon">💼</span>
                             <span className="al-nav-text">Faculty Salary</span>
+                            {renderLockIcon('salary')}
                         </Link>
                     )}
                     {(isAdmin || hasPermission('finance')) && (
                         <Link to="/admin/finance" className={navLinkClass('/admin/finance')} onClick={() => setSidebarOpen(false)}>
                             <span className="al-nav-icon">📊</span>
                             <span className="al-nav-text">Finance Dashboard</span>
+                            {renderLockIcon('finance')}
                         </Link>
                     )}
                     {hasPermission('reports') && (
                         <Link to="/admin/reports" className={navLinkClass('/admin/reports')} onClick={() => setSidebarOpen(false)}>
                             <span className="al-nav-icon">📉</span>
                             <span className="al-nav-text">Reports</span>
+                            {renderLockIcon('reports')}
                         </Link>
                     )}
 
@@ -358,6 +479,7 @@ const AdminLayout = () => {
                         <Link to="/admin/announcements" className={navLinkClass('/admin/announcements')} onClick={() => handleMenuClick('announcements')}>
                             <span className="al-nav-icon">📢</span>
                             <span className="al-nav-text">Announcements</span>
+                            {renderLockIcon('announcements')}
                             {sidebarStats.unreadAnnouncementCount > 0 && (
                                 <span className="al-sidebar-badge" style={{background: '#ef4444', color: '#fff', borderRadius: '12px', padding: '2px 8px', fontSize: '0.75rem', marginLeft: 'auto', fontWeight: '600'}}>
                                     {sidebarStats.unreadAnnouncementCount > 99 ? '99+' : sidebarStats.unreadAnnouncementCount}
@@ -369,6 +491,7 @@ const AdminLayout = () => {
                         <Link to="/admin/chat-monitor" className={navLinkClass('/admin/chat-monitor')} onClick={() => handleMenuClick('chat')}>
                             <span className="al-nav-icon">💬</span>
                             <span className="al-nav-text">Chat Monitor</span>
+                            {renderLockIcon('chat')}
                             {sidebarStats.unreadChatCount > 0 && (
                                 <span className="al-sidebar-badge" style={{background: '#ef4444', color: '#fff', borderRadius: '12px', padding: '2px 8px', fontSize: '0.75rem', marginLeft: 'auto', fontWeight: '600'}}>
                                     {sidebarStats.unreadChatCount > 99 ? '99+' : sidebarStats.unreadChatCount}
@@ -380,12 +503,14 @@ const AdminLayout = () => {
                         <Link to="/admin/performance" className={navLinkClass('/admin/performance')} onClick={() => setSidebarOpen(false)}>
                             <span className="al-nav-icon">📈</span>
                             <span className="al-nav-text">Performance Hub</span>
+                            {renderLockIcon('performance_hub')}
                         </Link>
                     )}
                     {(isAdmin || hasPermission('biometric')) && (
                         <Link to="/admin/biometric" className={navLinkClass('/admin/biometric')} onClick={() => setSidebarOpen(false)}>
                             <span className="al-nav-icon">🔐</span>
                             <span className="al-nav-text">Biometric Attendance</span>
+                            {renderLockIcon('biometric')}
                         </Link>
                     )}
                     {isAdmin && (
@@ -441,11 +566,29 @@ const AdminLayout = () => {
                         <button className="al-mobile-toggle" onClick={() => setSidebarOpen(true)}>☰</button>
                     </div>
                     <div className="al-topbar-right">
-                        <ThemeSelector />
-                        <button className="al-icon-btn">
-                            🔔
-                            <span className="al-badge">5</span>
+                        <button 
+                            className="al-icon-btn" 
+                            onClick={() => setIsHelpGuideOpen(true)} 
+                            title="Help & Setup Guide"
+                            style={{ 
+                                background: 'linear-gradient(135deg, #6366f1, #a855f7)', 
+                                color: '#ffffff',
+                                boxShadow: '0 4px 12px rgba(99, 102, 241, 0.35)',
+                                border: 'none',
+                                transform: 'scale(1.05)'
+                            }}
+                            onMouseOver={(e) => {
+                                e.currentTarget.style.transform = 'scale(1.1) translateY(-2px)';
+                                e.currentTarget.style.boxShadow = '0 6px 16px rgba(99, 102, 241, 0.5)';
+                            }}
+                            onMouseOut={(e) => {
+                                e.currentTarget.style.transform = 'scale(1.05)';
+                                e.currentTarget.style.boxShadow = '0 4px 12px rgba(99, 102, 241, 0.35)';
+                            }}
+                        >
+                            <FiHelpCircle style={{ fontSize: '1.4rem', strokeWidth: '2.5', color: '#ffffff' }} />
                         </button>
+                        <ThemeSelector />
                         <div className="al-profile-container" ref={profileRef} style={{ position: 'relative' }}>
                             <div className="al-profile" onClick={() => setProfileOpen(!profileOpen)}>
                                 <div className="al-avatar">
@@ -521,6 +664,34 @@ const AdminLayout = () => {
                     <Outlet />
                 </main>
             </div>
+
+            {/* ── Upgrade Modal ── */}
+            {showUpgradeModal && (
+                <div className="modal-overlay" style={{ backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 1000 }}>
+                    <div className="modal-content" style={{
+                        maxWidth: '400px', width: '90%', textAlign: 'center',
+                        backgroundColor: 'white', padding: '2rem', borderRadius: '12px',
+                        boxShadow: '0 10px 25px rgba(0,0,0,0.2)'
+                    }}>
+                        <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>⭐</div>
+                        <h2 style={{ color: '#1f2937', marginBottom: '0.5rem' }}>Upgrade Required</h2>
+                        <p style={{ margin: '1rem 0', color: '#4b5563', lineHeight: '1.5' }}>
+                            {getTrialDaysLeft() <= 0 && planDetails?.plan?.is_free_trial 
+                                ? "Your free trial has expired. You need a regular subscription to access features." 
+                                : `The ${blockedFeature} feature is not available in your current plan (${planDetails?.plan?.name}).`}
+                        </p>
+                        <p style={{ color: '#6b7280', marginBottom: '1.5rem', fontSize: '0.9rem' }}>
+                            Please upgrade your subscription to gain access.
+                        </p>
+                        <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
+                            <button className="btn btn-secondary" onClick={() => setShowUpgradeModal(false)} style={{ padding: '0.5rem 1rem', borderRadius: '8px', border: '1px solid #e5e7eb', background: 'white', cursor: 'pointer', fontWeight: '500' }}>Close</button>
+                            <button className="btn btn-primary" onClick={() => { setShowUpgradeModal(false); navigate("/pricing"); }} style={{ padding: '0.5rem 1rem', borderRadius: '8px', border: 'none', background: '#4f46e5', color: 'white', cursor: 'pointer', fontWeight: '600' }}>Upgrade Now</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+            
+            <HelpGuideDrawer isOpen={isHelpGuideOpen} onClose={() => setIsHelpGuideOpen(false)} />
         </div>
     );
 };

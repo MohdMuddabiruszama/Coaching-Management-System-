@@ -31,6 +31,7 @@ function Faculty() {
     const [subjectFilter, setSubjectFilter] = useState("all");
     const [designationFilter, setDesignationFilter] = useState("all");
     const [statusFilter, setStatusFilter] = useState("all");
+    const [assignmentFilter, setAssignmentFilter] = useState("all");
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage, setItemsPerPage] = useState(10);
     const [actionMenuOpen, setActionMenuOpen] = useState(null);
@@ -274,6 +275,20 @@ function Faculty() {
         }
     };
 
+    const handleBulkDelete = async () => {
+        if (!window.confirm(`Are you sure you want to delete ${selectedFaculty.length} faculty members? This action cannot be undone.`)) return;
+
+        try {
+            await api.post('/faculty/bulk-delete', { faculty_ids: selectedFaculty });
+            alert(`Successfully deleted ${selectedFaculty.length} faculty members`);
+            setSelectedFaculty([]);
+            fetchFaculty();
+        } catch (error) {
+            console.error('Error deleting faculty:', error);
+            alert('Error deleting faculty: ' + (error.response?.data?.message || error.message));
+        }
+    };
+
     const [formData, setFormData] = useState({
         name: "",
         email: "",
@@ -456,8 +471,12 @@ function Faculty() {
             const matchesStatus = statusFilter === "all" || 
                 (statusFilter === "active" && f.User?.status === "active") || 
                 (statusFilter === "inactive" && f.User?.status !== "active");
+                
+            const matchesAssignment = assignmentFilter === "all" ||
+                (assignmentFilter === "assigned" && f.Subjects && f.Subjects.length > 0) ||
+                (assignmentFilter === "unassigned" && (!f.Subjects || f.Subjects.length === 0));
 
-            return matchesSearch && matchesSubject && matchesDesignation && matchesStatus;
+            return matchesSearch && matchesSubject && matchesDesignation && matchesStatus && matchesAssignment;
         }
     );
 
@@ -587,15 +606,32 @@ function Faculty() {
                             <option value="inactive">Inactive / Blocked</option>
                         </select>
                     </div>
+                    <div style={{ flex: 1, minWidth: '200px' }}>
+                        <label style={{ fontSize: '0.75rem', fontWeight: 600, color: '#64748b', marginBottom: '4px', display: 'block' }}>Assignment</label>
+                        <select 
+                            className="st-select"
+                            style={{ width: '100%' }}
+                            value={assignmentFilter}
+                            onChange={(e) => {
+                                setAssignmentFilter(e.target.value);
+                                setCurrentPage(1);
+                            }}
+                        >
+                            <option value="all">All Assignments</option>
+                            <option value="assigned">Assigned Subject</option>
+                            <option value="unassigned">Not Assigned</option>
+                        </select>
+                    </div>
                     <div style={{ display: 'flex', alignItems: 'flex-end' }}>
                         <button 
                             className="st-filter-btn"
-                            style={{ height: '42px', color: (search || subjectFilter !== "all" || designationFilter !== "all" || statusFilter !== "all") ? '#ef4444' : '' }}
+                            style={{ height: '42px', color: (search || subjectFilter !== "all" || designationFilter !== "all" || statusFilter !== "all" || assignmentFilter !== "all") ? '#ef4444' : '' }}
                             onClick={() => {
                                 setSearch("");
                                 setSubjectFilter("all");
                                 setDesignationFilter("all");
                                 setStatusFilter("all");
+                                setAssignmentFilter("all");
                                 setCurrentPage(1);
                             }}
                         >
@@ -710,6 +746,15 @@ function Faculty() {
                         <button className="st-btn st-btn-primary" onClick={handleBulkDownloadCards} disabled={bulkDownloading}>
                             {bulkDownloading ? '⏳ Generating...' : '⬇ Download Cards'}
                         </button>
+                        {canDelete && (
+                            <button 
+                                className="st-btn" 
+                                style={{ background: '#ef4444', color: 'white', border: 'none', marginLeft: 'auto' }} 
+                                onClick={handleBulkDelete}
+                            >
+                                🗑️ Delete Selected
+                            </button>
+                        )}
                     </div>
                 )}
 

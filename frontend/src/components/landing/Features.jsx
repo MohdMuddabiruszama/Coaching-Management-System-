@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { FEATURES, ROLES } from '../../data/features';
+import { FEATURES } from '../../data/features';
 import { useScrollReveal } from '../../hooks/useScrollReveal';
 
 function FeatureCard({ icon, title, desc, plan, color }) {
@@ -16,24 +16,44 @@ function FeatureCard({ icon, title, desc, plan, color }) {
   );
 }
 
-const INITIAL_COUNT = 6; // Phase 2: Show 6 features initially
+const INITIAL_COUNT = 6;
+const PLANS = ['All Features', 'Starter Plan', 'Basic Plan', 'Professional Plan'];
 
 export default function Features() {
   useScrollReveal('reveal', 0.1);
-  const [activeRole, setActiveRole] = useState('all');
-  const [showAll, setShowAll] = useState(false); // Phase 2: toggle state
+  const [activePlan, setActivePlan] = useState('All Features');
+  const [showAll, setShowAll] = useState(false);
 
-  const filtered = activeRole === 'all'
-    ? FEATURES
-    : FEATURES.filter(f => f.roles.includes(activeRole));
+  const getFeaturesForPlan = (planName) => {
+    let filtered = [];
+    switch (planName) {
+      case 'Starter Plan':
+        filtered = FEATURES.filter(f => f.plan === 'Starter+');
+        break;
+      case 'Basic Plan':
+        filtered = FEATURES.filter(f => ['Starter+', 'Basic+'].includes(f.plan));
+        filtered.sort((a, b) => (a.plan === 'Basic+' ? -1 : (b.plan === 'Basic+' ? 1 : 0)));
+        break;
+      case 'Professional Plan':
+        filtered = FEATURES.filter(f => ['Starter+', 'Basic+', 'Professional+'].includes(f.plan));
+        const order = { 'Professional+': 1, 'Basic+': 2, 'Starter+': 3 };
+        filtered.sort((a, b) => order[a.plan] - order[b.plan]);
+        break;
+      case 'All Features':
+      default:
+        filtered = FEATURES;
+        break;
+    }
+    return filtered;
+  };
 
-  // Phase 2: Reset showAll when tab changes so it always starts with 6
-  const handleRoleChange = (role) => {
-    setActiveRole(role);
+  const filtered = getFeaturesForPlan(activePlan);
+
+  const handlePlanChange = (plan) => {
+    setActivePlan(plan);
     setShowAll(false);
   };
 
-  // Phase 2: Slice to INITIAL_COUNT unless showAll is true
   const visibleFeatures = showAll ? filtered : filtered.slice(0, INITIAL_COUNT);
   const hasMore = filtered.length > INITIAL_COUNT;
 
@@ -48,13 +68,13 @@ export default function Features() {
       </div>
 
       <div className='lp-feat-tabs reveal'>
-        {ROLES.map(role => (
+        {PLANS.map(plan => (
           <button
-            key={role}
-            className={`lp-feat-tab ${activeRole === role ? 'active' : ''}`}
-            onClick={() => handleRoleChange(role)}
+            key={plan}
+            className={`lp-feat-tab ${activePlan === plan ? 'active' : ''}`}
+            onClick={() => handlePlanChange(plan)}
           >
-            {role.charAt(0).toUpperCase() + role.slice(1)} Features
+            {plan}
           </button>
         ))}
       </div>
@@ -65,7 +85,6 @@ export default function Features() {
         ))}
       </div>
 
-      {/* Phase 2: Show More / Show Less button */}
       {hasMore && (
         <div style={{ textAlign: 'center', marginTop: '32px' }}>
           {!showAll ? (

@@ -57,6 +57,9 @@ router.delete("/:id", verifyToken, checkSubscription, allowRoles("admin", "manag
 router.post("/credentials", verifyToken, allowRoles("admin", "manager"), facultyController.getFacultyCredentials);
 router.post("/:id/resend-credentials", verifyToken, allowRoles("admin", "manager"), facultyController.resendFacultyCredentials);
 
+// Bulk delete route
+router.post("/bulk-delete", verifyToken, checkSubscription, allowRoles("admin", "manager"), checkManagerPermission("faculty.delete"), facultyController.bulkDeleteFaculty);
+
 // Bulk import route
 router.post("/bulk-import", verifyToken, checkSubscription, allowRoles("admin", "manager"), checkManagerPermission("faculty.create"), bulkImportFaculty);
 

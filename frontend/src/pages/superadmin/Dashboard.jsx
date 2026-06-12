@@ -77,7 +77,7 @@ function SuperAdminDashboard() {
     const safeRevenue = Number(stats.totalRevenue) || 0;
     const safeMonthly = Number(stats.monthlyRevenue) || 0;
     const safeDiscount = Number(stats.totalDiscount) || 0;
-
+
     return (
         <div className="dashboard-container">
             <div className="dashboard-header">
@@ -236,6 +236,20 @@ function SuperAdminDashboard() {
                         <div className="action-icon">🔧</div>
                         <h3>Institute Limits</h3>
                         <p>Customize per-institute features & limits</p>
+                    </Link>
+                    <Link to="/superadmin/enquiries" className="action-card" style={{ textDecoration: 'none', position: 'relative' }}>
+                        {stats.unreadEnquiriesCount > 0 && (
+                            <span style={{
+                                position: 'absolute', top: '12px', right: '12px', background: '#ef4444', color: '#fff',
+                                borderRadius: '50%', width: '24px', height: '24px', display: 'flex', alignItems: 'center',
+                                justifyContent: 'center', fontSize: '12px', fontWeight: 'bold', boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
+                            }}>
+                                {stats.unreadEnquiriesCount}
+                            </span>
+                        )}
+                        <div className="action-icon">📬</div>
+                        <h3>Enquiries</h3>
+                        <p>View contact & demo requests</p>
                     </Link>
                 </div>
             </div>

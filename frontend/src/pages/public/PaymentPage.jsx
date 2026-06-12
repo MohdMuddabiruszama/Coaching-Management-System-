@@ -124,6 +124,18 @@ function PaymentPage() {
                     } catch (verifyError) {
                         alert("Payment Verification Failed: " + verifyError.response?.data?.message);
                     }
+                } else {
+                    try {
+                        await api.post("/payment/verify-failure", {
+                            razorpay_order_id: order.id,
+                            error_description: "User cancelled mock payment",
+                            planId: plan.id,
+                            billingCycle
+                        });
+                    } catch (e) {
+                        console.error("Failed to record mock payment failure", e);
+                    }
+                    alert("Payment Failed: User cancelled mock payment");
                 }
                 setProcessing(false);
             } else {
@@ -159,7 +171,17 @@ function PaymentPage() {
                             alert("Payment Verification Failed: " + verifyError.response?.data?.message);
                         }
                     },
-                    onFailure: (errDesc) => {
+                    onFailure: async (errDesc) => {
+                        try {
+                            await api.post("/payment/verify-failure", {
+                                razorpay_order_id: order.id,
+                                error_description: errDesc,
+                                planId: plan.id,
+                                billingCycle
+                            });
+                        } catch (e) {
+                            console.error("Failed to record payment failure", e);
+                        }
                         alert(`Payment Failed: ${errDesc}`);
                     }
                 });

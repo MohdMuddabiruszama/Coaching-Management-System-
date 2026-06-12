@@ -17,11 +17,11 @@ const Timetable = sequelize.define("Timetable", {
     },
     subject_id: {
         type: DataTypes.INTEGER,
-        allowNull: false,
+        allowNull: true, // null for break periods
     },
     faculty_id: {
         type: DataTypes.INTEGER,
-        allowNull: false,
+        allowNull: true, // null for break periods
     },
     slot_id: {
         type: DataTypes.INTEGER,
@@ -35,6 +35,16 @@ const Timetable = sequelize.define("Timetable", {
     room_number: {
         type: DataTypes.STRING,
         allowNull: true,
+    },
+    is_break: {
+        type: DataTypes.BOOLEAN,
+        defaultValue: false,
+        allowNull: false,
+    },
+    break_label: {
+        type: DataTypes.STRING(100),
+        allowNull: true,
+        defaultValue: 'Break',
     },
     created_by: {
         type: DataTypes.INTEGER,

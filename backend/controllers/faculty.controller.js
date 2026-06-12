@@ -133,6 +133,8 @@ exports.createFaculty = async (req, res) => {
         res.status(201).json({
             success: true,
             message: "Faculty created successfully",
+            showPasswordOnScreen: true,
+            initial_password: tempPassword,
             data: {
                 faculty,
                 user: {
@@ -542,6 +544,74 @@ exports.getDashboardStats = async (req, res) => {
     } catch (error) {
         console.error("Dashboard stats error:", error);
         res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+/**
+ * Bulk delete faculty
+ * @route POST /api/faculty/bulk-delete
+ * @access Admin only
+ */
+exports.bulkDeleteFaculty = async (req, res) => {
+    try {
+        const { faculty_ids } = req.body;
+        const institute_id = req.user.institute_id;
+
+        if (!faculty_ids || !Array.isArray(faculty_ids) || faculty_ids.length === 0) {
+            return res.status(400).json({
+                success: false,
+                message: "Please provide an array of faculty IDs to delete",
+            });
+        }
+
+        const faculties = await Faculty.findAll({
+            where: {
+                id: {
+                    [Op.in]: faculty_ids,
+                },
+                institute_id,
+            },
+        });
+
+        if (faculties.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: "No matching faculty found to delete",
+            });
+        }
+
+        const userIds = faculties.map(f => f.user_id);
+
+        // Delete faculty records
+        await Faculty.destroy({
+            where: {
+                id: {
+                    [Op.in]: faculties.map(f => f.id),
+                },
+                institute_id,
+            },
+        });
+
+        // Delete associated user accounts
+        await User.destroy({
+            where: {
+                id: {
+                    [Op.in]: userIds,
+                },
+                institute_id,
+            },
+        });
+
+        res.status(200).json({
+            success: true,
+            message: `Successfully deleted ${faculties.length} faculty members`,
+        });
+    } catch (error) {
+        console.error("Bulk delete faculty error:", error);
+        res.status(500).json({
+            success: false,
+            message: error.message,
+        });
     }
 };
 

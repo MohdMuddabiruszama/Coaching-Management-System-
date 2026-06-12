@@ -197,7 +197,11 @@ exports.updateInstitute = async (req, res) => {
         
         let newLogoPath = null;
         if (req.file) {
-            newLogoPath = `/uploads/logos/${req.file.filename}`;
+            if (req.file.path && req.file.path.startsWith('http')) {
+                newLogoPath = req.file.path;
+            } else {
+                newLogoPath = `/uploads/logos/${req.file.filename}`;
+            }
         }
 
         // If not super admin, ensure user can only update their own institute

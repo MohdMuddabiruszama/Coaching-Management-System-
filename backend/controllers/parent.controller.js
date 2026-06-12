@@ -99,7 +99,10 @@ exports.getAllParents = async (req, res) => {
                 model: Student,
                 as: "LinkedStudents",
                 attributes: ["id", "roll_number", "institute_id"],
-                include: [{ model: User, attributes: ["name"] }],
+                include: [
+                    { model: User, attributes: ["name"] },
+                    { model: Class, attributes: ["id", "name", "section"], through: { attributes: [] } }
+                ],
                 through: { attributes: ["relationship"] }
             }],
             order: [["id", "DESC"]]
@@ -441,7 +444,10 @@ exports.getParentById = async (req, res) => {
                 model: Student,
                 as: "LinkedStudents",
                 attributes: ["id", "roll_number"],
-                include: [{ model: User, attributes: ["name"] }],
+                include: [
+                    { model: User, attributes: ["name"] },
+                    { model: Class, attributes: ["id", "name", "section"], through: { attributes: [] } }
+                ],
                 through: { attributes: ["relationship"] }
             }]
         });
@@ -513,6 +519,48 @@ exports.deleteParent = async (req, res) => {
 
         res.status(200).json({ success: true, message: "Parent deleted successfully" });
     } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+/**
+ * Delete multiple parents
+ * @route POST /api/parents/bulk-delete
+ * @access Admin
+ */
+exports.bulkDeleteParents = async (req, res) => {
+    let transaction;
+    try {
+        const institute_id = req.user.institute_id;
+        const { parent_ids } = req.body;
+
+        if (!parent_ids || !Array.isArray(parent_ids) || parent_ids.length === 0) {
+            return res.status(400).json({ success: false, message: "No parents selected for deletion" });
+        }
+
+        const { sequelize } = require("../models");
+        transaction = await sequelize.transaction();
+
+        const parents = await User.findAll({
+            where: { id: { [Op.in]: parent_ids }, institute_id, role: "parent" },
+            transaction
+        });
+
+        if (parents.length === 0) {
+            await transaction.rollback();
+            return res.status(404).json({ success: false, message: "No valid parents found to delete" });
+        }
+
+        const userIds = parents.map(p => p.id);
+
+        await StudentParent.destroy({ where: { parent_id: { [Op.in]: userIds } }, transaction });
+        await User.destroy({ where: { id: { [Op.in]: userIds }, institute_id, role: "parent" }, transaction });
+
+        await transaction.commit();
+
+        res.status(200).json({ success: true, message: `${parents.length} parent(s) deleted successfully` });
+    } catch (error) {
+        if (transaction) await transaction.rollback();
         res.status(500).json({ success: false, message: error.message });
     }
 };

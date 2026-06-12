@@ -27,7 +27,6 @@ function Students() {
     const [editMode, setEditMode] = useState(false);
     const [search, setSearch] = useState("");
     const [classFilter, setClassFilter] = useState("all");
-    const [sectionFilter, setSectionFilter] = useState("all");
     const [statusFilter, setStatusFilter] = useState("all");
     const [assignmentFilter, setAssignmentFilter] = useState("all");
     const [availableSubjects, setAvailableSubjects] = useState([]); // Add specific subjects based on class
@@ -42,6 +41,7 @@ function Students() {
     // Bulk selection state
     const [selectedStudents, setSelectedStudents] = useState([]);
     const [bulkDownloading, setBulkDownloading] = useState(false);
+    const [bulkDeleting, setBulkDeleting] = useState(false);
     const [showCredentialsModal, setShowCredentialsModal] = useState(false);
     const [credentialsData, setCredentialsData] = useState([]);
     const [loadingCredentials, setLoadingCredentials] = useState(false);
@@ -256,6 +256,26 @@ function Students() {
             setBulkDownloading(false);
             // Optionally clear selection after download: 
             // setSelectedStudents([]);
+        }
+    };
+
+    const handleBulkDelete = async () => {
+        if (!window.confirm(`Are you sure you want to delete ${selectedStudents.length} students? This action cannot be undone.`)) {
+            return;
+        }
+        setBulkDeleting(true);
+        try {
+            const res = await api.post('/students/bulk-delete', { student_ids: selectedStudents });
+            if (res.data.success) {
+                alert(res.data.message || 'Students deleted successfully');
+                setSelectedStudents([]);
+                fetchStudents();
+            }
+        } catch (error) {
+            console.error('Bulk delete error:', error);
+            alert(error.response?.data?.message || 'Failed to delete students');
+        } finally {
+            setBulkDeleting(false);
         }
     };
 
@@ -602,9 +622,6 @@ function Students() {
         const matchesClass =
             classFilter === "all" || (s.Classes && s.Classes.some(c => c.id === parseInt(classFilter)));
 
-        const matchesSection = 
-            sectionFilter === "all" || (s.Classes && s.Classes.some(c => c.section === sectionFilter));
-
         const matchesStatus = 
             statusFilter === "all" || s.User?.status === statusFilter;
 
@@ -613,7 +630,7 @@ function Students() {
             (assignmentFilter === "assigned" && s.Classes && s.Classes.length > 0) ||
             (assignmentFilter === "unassigned" && (!s.Classes || s.Classes.length === 0));
 
-        return matchesSearch && matchesClass && matchesSection && matchesStatus && matchesAssignment;
+        return matchesSearch && matchesClass && matchesStatus && matchesAssignment;
     });
 
     // Pagination Logic
@@ -682,30 +699,13 @@ function Students() {
                     value={classFilter}
                     onChange={(e) => {
                         setClassFilter(e.target.value);
-                        setSectionFilter("all"); // Reset section when class changes
                     }}
                 >
                     <option value="all">All Classes</option>
                     {classes.map((c) => (
                         <option key={c.id} value={c.id}>
-                            {c.name}
+                            {c.name}{c.section ? ` - ${c.section}` : ""}
                         </option>
-                    ))}
-                </select>
-                <select 
-                    className="st-select" 
-                    value={sectionFilter}
-                    onChange={(e) => setSectionFilter(e.target.value)}
-                >
-                    <option value="all">All Sections</option>
-                    {/* Extract unique sections from the selected class or all classes */}
-                    {Array.from(new Set(
-                        classes
-                            .filter(c => classFilter === "all" || c.id === parseInt(classFilter))
-                            .map(c => c.section)
-                            .filter(Boolean)
-                    )).map(section => (
-                        <option key={section} value={section}>Section {section}</option>
                     ))}
                 </select>
                 <select 
@@ -731,14 +731,13 @@ function Students() {
                     onClick={() => {
                         setSearch("");
                         setClassFilter("all");
-                        setSectionFilter("all");
                         setStatusFilter("all");
                         setAssignmentFilter("all");
                     }}
-                    style={{ color: (search || classFilter !== "all" || sectionFilter !== "all" || statusFilter !== "all" || assignmentFilter !== "all") ? '#ef4444' : '' }}
+                    style={{ color: (search || classFilter !== "all" || statusFilter !== "all" || assignmentFilter !== "all") ? '#ef4444' : '' }}
                 >
                     <span style={{ fontSize: '1.1rem' }}>⚲</span> 
-                    {(search || classFilter !== "all" || sectionFilter !== "all" || statusFilter !== "all" || assignmentFilter !== "all") ? 'Clear Filters' : 'Filters'}
+                    {(search || classFilter !== "all" || statusFilter !== "all" || assignmentFilter !== "all") ? 'Clear Filters' : 'Filters'}
                 </button>
             </div>
 
@@ -847,6 +846,11 @@ function Students() {
                         <button className="st-btn st-btn-primary" onClick={handleBulkDownloadCards} disabled={bulkDownloading}>
                             {bulkDownloading ? '⏳ Generating...' : '⬇ Download Cards'}
                         </button>
+                        {canDelete && (
+                            <button className="st-btn st-btn-danger" onClick={handleBulkDelete} disabled={bulkDeleting} style={{ marginLeft: 'auto', background: '#ef4444', color: 'white', border: 'none', padding: '0.5rem 1rem', borderRadius: '8px', cursor: 'pointer' }}>
+                                {bulkDeleting ? '⏳ Deleting...' : '🗑️ Delete Selected'}
+                            </button>
+                        )}
                     </div>
                 )}
 

@@ -29,6 +29,9 @@ const GripIcon = () => (
 const TrashIcon = () => (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
 );
+const EditIcon = () => (
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+);
 
 const DAYS_OF_WEEK = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
@@ -56,6 +59,17 @@ function AdminTimetable() {
     // Modal States
     const [showSlotModal, setShowSlotModal] = useState(false);
     const [showEntryModal, setShowEntryModal] = useState(false);
+    const [showEditModal, setShowEditModal] = useState(false);
+    const [editingEntry, setEditingEntry] = useState(null);
+    const [editForm, setEditForm] = useState({
+        day_of_week: "Monday",
+        slot_id: "",
+        subject_id: "",
+        faculty_id: "",
+        room_number: "",
+        is_break: false,
+        break_label: "Break"
+    });
 
     // Form States
     const [slotForm, setSlotForm] = useState({ start_time: "", end_time: "" });
@@ -64,7 +78,9 @@ function AdminTimetable() {
         slot_id: "",
         subject_id: "",
         faculty_id: "",
-        room_number: ""
+        room_number: "",
+        is_break: false,
+        break_label: "Break"
     });
 
     useEffect(() => {
@@ -73,26 +89,26 @@ function AdminTimetable() {
 
     useEffect(() => {
         if (selectedClass) {
-            fetchTimetable(selectedClass);
+            fetchTimetableAndSlots(selectedClass);
         } else {
             setTimetable([]);
+            setSlots([]);
         }
     }, [selectedClass]);
 
     const fetchInitialData = async () => {
         setLoading(true);
         try {
-            const [classesRes, subjectsRes, facultyRes, slotsRes] = await Promise.all([
-                api.get("/classes"),
-                api.get("/subjects"), // Requires an endpoint that fetches all subjects
-                api.get("/faculty"),
-                api.get("/timetable/slots")
+            const ts = new Date().getTime();
+            const [classesRes, subjectsRes, facultyRes] = await Promise.all([
+                api.get(`/classes?limit=500&t=${ts}`),
+                api.get(`/subjects?limit=500&t=${ts}`),
+                api.get(`/faculty?limit=500&t=${ts}`)
             ]);
 
             setClasses(classesRes.data.data || []);
             setSubjects(subjectsRes.data.data || []);
             setFaculty(facultyRes.data.data || []);
-            setSlots(slotsRes.data.data || []);
         } catch (error) {
             console.error("Error fetching initial data", error);
         } finally {
@@ -100,12 +116,17 @@ function AdminTimetable() {
         }
     };
 
-    const fetchTimetable = async (classId) => {
+    const fetchTimetableAndSlots = async (classId) => {
         try {
-            const response = await api.get(`/timetable/class/${classId}`);
-            setTimetable(response.data.data || []);
+            const ts = new Date().getTime();
+            const [timetableRes, slotsRes] = await Promise.all([
+                api.get(`/timetable/class/${classId}?t=${ts}`),
+                api.get(`/timetable/slots?class_id=${classId}&t=${ts}`)
+            ]);
+            setTimetable(timetableRes.data.data || []);
+            setSlots(slotsRes.data.data || []);
         } catch (error) {
-            console.error("Error fetching timetable", error);
+            console.error("Error fetching class data", error);
         }
     };
 
@@ -113,7 +134,10 @@ function AdminTimetable() {
     const handleSlotSubmit = async (e) => {
         e.preventDefault();
         try {
-            const res = await api.post("/timetable/slots", slotForm);
+            const res = await api.post("/timetable/slots", {
+                ...slotForm,
+                class_id: selectedClass
+            });
             if (res.data.success) {
                 alert("Time Slot added successfully!");
                 setSlots([...slots, res.data.data]);
@@ -142,15 +166,22 @@ function AdminTimetable() {
     // --- ENTRY LOGIC ---
     const handleEntrySubmit = async (e) => {
         e.preventDefault();
+        // Validate required fields
+        if (!entryForm.is_break && !entryForm.subject_id) {
+            alert("Please select a Subject or mark this as a Break period.");
+            return;
+        }
         try {
-            const res = await api.post("/timetable", {
+            const payload = {
                 ...entryForm,
                 class_id: selectedClass
-            });
+            };
+            const res = await api.post("/timetable", payload);
             if (res.data.success) {
-                alert("Timetable entry added!");
-                fetchTimetable(selectedClass);
+                alert(entryForm.is_break ? "Break period added!" : "Timetable entry added!");
+                fetchTimetableAndSlots(selectedClass);
                 setShowEntryModal(false);
+                setEntryForm({ day_of_week: "Monday", slot_id: "", subject_id: "", faculty_id: "", room_number: "", is_break: false, break_label: "Break" });
             }
         } catch (error) {
             console.error("Error adding entry:", error);
@@ -171,6 +202,41 @@ function AdminTimetable() {
         }
     };
 
+    const handleEditEntry = (entry) => {
+        setEditingEntry(entry);
+        setEditForm({
+            day_of_week: entry.day_of_week,
+            slot_id: entry.slot_id,
+            subject_id: entry.subject_id || "",
+            faculty_id: entry.faculty_id || "",
+            room_number: entry.room_number || "",
+            is_break: entry.is_break || false,
+            break_label: entry.break_label || "Break"
+        });
+        setShowEditModal(true);
+    };
+
+    const handleEditSubmit = async (e) => {
+        e.preventDefault();
+        if (!editForm.is_break && !editForm.subject_id) {
+            alert("Please select a Subject or mark this as a Break period.");
+            return;
+        }
+        try {
+            const payload = { ...editForm, class_id: selectedClass };
+            const res = await api.put(`/timetable/${editingEntry.id}`, payload);
+            if (res.data.success) {
+                alert("Timetable entry updated!");
+                fetchTimetableAndSlots(selectedClass);
+                setShowEditModal(false);
+                setEditingEntry(null);
+            }
+        } catch (error) {
+            console.error("Error updating entry:", error);
+            alert(error.response?.data?.message || "Failed to update timetable entry.");
+        }
+    };
+
     if (loading) {
         return <div className="ap-timetable-wrapper">Loading Timetable...</div>;
     }
@@ -188,7 +254,13 @@ function AdminTimetable() {
                     </div>
                 </div>
                 <div className="ap-tt-actions">
-                    <button className="ap-btn-white" onClick={() => setShowSlotModal(true)}>
+                    <button className="ap-btn-white" onClick={() => {
+                        if (!selectedClass) {
+                            alert("Please select a class first to manage its time slots!");
+                            return;
+                        }
+                        setShowSlotModal(true);
+                    }}>
                         <ClockIcon /> Manage Time Slots
                     </button>
                     <button className="ap-btn-purple" onClick={() => {
@@ -280,6 +352,29 @@ function AdminTimetable() {
                                             return (
                                                 <td key={`${slot.id}-${day}`}>
                                                     {entry ? (
+                                                        entry.is_break ? (
+                                                            <div className="ap-tt-cell tt-break-cell">
+                                                                <div className="ap-tt-subject tt-break-label">
+                                                                    ☕ {entry.break_label || 'Break'}
+                                                                </div>
+                                                                <div className="ap-tt-action-btns">
+                                                                    <button
+                                                                        className="ap-tt-edit-btn"
+                                                                        onClick={() => handleEditEntry(entry)}
+                                                                        title="Edit Break"
+                                                                    >
+                                                                        <EditIcon />
+                                                                    </button>
+                                                                    <button
+                                                                        className="ap-tt-delete-btn"
+                                                                        onClick={() => handleDeleteEntry(entry.id)}
+                                                                        title="Remove Break"
+                                                                    >
+                                                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                                                                    </button>
+                                                                </div>
+                                                            </div>
+                                                        ) : (
                                                         <div className={`ap-tt-cell ${themeClass}`}>
                                                             <div className="ap-tt-subject">{entry.Subject?.name}</div>
                                                             <div className="ap-tt-faculty">
@@ -291,14 +386,24 @@ function AdminTimetable() {
                                                                     Room {entry.room_number}
                                                                 </div>
                                                             )}
-                                                            <button
-                                                                className="ap-tt-delete-btn"
-                                                                onClick={() => handleDeleteEntry(entry.id)}
-                                                                title="Remove Entry"
-                                                            >
-                                                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-                                                            </button>
+                                                            <div className="ap-tt-action-btns">
+                                                                <button
+                                                                    className="ap-tt-edit-btn"
+                                                                    onClick={() => handleEditEntry(entry)}
+                                                                    title="Edit Entry"
+                                                                >
+                                                                    <EditIcon />
+                                                                </button>
+                                                                <button
+                                                                    className="ap-tt-delete-btn"
+                                                                    onClick={() => handleDeleteEntry(entry.id)}
+                                                                    title="Remove Entry"
+                                                                >
+                                                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                                                                </button>
+                                                            </div>
                                                         </div>
+                                                        )
                                                     ) : (
                                                         <div className="ap-tt-cell-empty">
                                                             <CalendarIcon />
@@ -418,39 +523,172 @@ function AdminTimetable() {
                                         {slots.map(s => <option key={s.id} value={s.id}>{formatAMPM(s.start_time)} - {formatAMPM(s.end_time)}</option>)}
                                     </select>
                                 </div>
-                                <div className="tt-form-group">
-                                    <label className="tt-form-label">Subject <span>*</span></label>
-                                    <select className="tt-input" value={entryForm.subject_id} onChange={(e) => {
-                                        const subjectId = e.target.value;
-                                        const selectedSubject = subjects.find(s => s.id.toString() === subjectId);
-                                        let autoFacultyId = entryForm.faculty_id;
-                                        if (selectedSubject && selectedSubject.faculty_id) {
-                                            autoFacultyId = selectedSubject.faculty_id;
-                                        }
-                                        setEntryForm({ ...entryForm, subject_id: subjectId, faculty_id: autoFacultyId });
-                                    }} required>
-                                        <option value="">-- Select Subject --</option>
-                                        {subjects.filter(sub => sub.class_id.toString() === selectedClass.toString()).map(sub => <option key={sub.id} value={sub.id}>{sub.name}</option>)}
-                                    </select>
+
+                                {/* Break Toggle */}
+                                <div className="tt-break-toggle-row">
+                                    <label className="tt-break-toggle-label">
+                                        <input
+                                            type="checkbox"
+                                            checked={entryForm.is_break}
+                                            onChange={(e) => setEntryForm({ ...entryForm, is_break: e.target.checked, subject_id: '', faculty_id: '', room_number: '' })}
+                                            className="tt-break-checkbox"
+                                        />
+                                        <span className="tt-break-toggle-text">☕ Mark as Break Period</span>
+                                    </label>
+                                    <span className="tt-break-toggle-hint">e.g. Lunch Break, Recess</span>
                                 </div>
-                                <div className="tt-form-group">
-                                    <label className="tt-form-label">Faculty <span>*</span></label>
-                                    <select className="tt-input" value={entryForm.faculty_id} onChange={(e) => setEntryForm({ ...entryForm, faculty_id: e.target.value })} required>
-                                        <option value="">-- Select Faculty --</option>
-                                        {faculty.map(f => <option key={f.id} value={f.id}>{f.User?.name}</option>)}
-                                    </select>
-                                </div>
-                                <div className="tt-form-group">
-                                    <label className="tt-form-label">Room Number (Optional)</label>
-                                    <input type="text" className="tt-input" placeholder="e.g. 101" value={entryForm.room_number} onChange={(e) => setEntryForm({ ...entryForm, room_number: e.target.value })} />
-                                </div>
+
+                                {entryForm.is_break ? (
+                                    <div className="tt-form-group">
+                                        <label className="tt-form-label">Break Label</label>
+                                        <input
+                                            type="text"
+                                            className="tt-input"
+                                            placeholder="e.g. Lunch Break, Recess, Short Break"
+                                            value={entryForm.break_label}
+                                            onChange={(e) => setEntryForm({ ...entryForm, break_label: e.target.value })}
+                                        />
+                                    </div>
+                                ) : (
+                                    <>
+                                        <div className="tt-form-group">
+                                            <label className="tt-form-label">Subject <span>*</span></label>
+                                            <select className="tt-input" value={entryForm.subject_id} onChange={(e) => {
+                                                const subjectId = e.target.value;
+                                                const selectedSubject = subjects.find(s => s.id.toString() === subjectId);
+                                                let autoFacultyId = entryForm.faculty_id;
+                                                if (selectedSubject && selectedSubject.faculty_id) {
+                                                    autoFacultyId = selectedSubject.faculty_id;
+                                                }
+                                                setEntryForm({ ...entryForm, subject_id: subjectId, faculty_id: autoFacultyId });
+                                            }} required>
+                                                <option value="">-- Select Subject --</option>
+                                                {subjects.filter(sub => sub.class_id && sub.class_id.toString() === selectedClass.toString()).map(sub => <option key={sub.id} value={sub.id}>{sub.name}</option>)}
+                                            </select>
+                                        </div>
+                                        <div className="tt-form-group">
+                                            <label className="tt-form-label">Faculty <span>*</span></label>
+                                            <select className="tt-input" value={entryForm.faculty_id} onChange={(e) => setEntryForm({ ...entryForm, faculty_id: e.target.value })} required>
+                                                <option value="">-- Select Faculty --</option>
+                                                {faculty.map(f => <option key={f.id} value={f.id}>{f.User?.name}</option>)}
+                                            </select>
+                                        </div>
+                                        <div className="tt-form-group">
+                                            <label className="tt-form-label">Room Number (Optional)</label>
+                                            <input type="text" className="tt-input" placeholder="e.g. 101" value={entryForm.room_number} onChange={(e) => setEntryForm({ ...entryForm, room_number: e.target.value })} />
+                                        </div>
+                                    </>
+                                )}
                             </form>
                         </div>
                         
                         <div className="tt-modal-footer">
                             <button type="button" className="ap-btn-white" onClick={() => setShowEntryModal(false)}>Cancel</button>
-                            <button type="submit" form="entryForm" className="ap-btn-purple">
-                                <PlusIcon /> Assign Class
+                            <button type="submit" form="entryForm" className={entryForm.is_break ? "ap-btn-break" : "ap-btn-purple"}>
+                                {entryForm.is_break ? '☕ Add Break' : <><PlusIcon /> Assign Class</>}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Edit Entry Modal */}
+            {showEditModal && editingEntry && (
+                <div className="tt-modal-overlay">
+                    <div className="tt-modal-content">
+                        <div className="tt-modal-header">
+                            <div className="tt-modal-header-left">
+                                <div className="tt-modal-icon tt-modal-icon-edit">
+                                    <EditIcon />
+                                </div>
+                                <div>
+                                    <h2 className="tt-modal-title">Edit Timetable Entry</h2>
+                                    <p className="tt-modal-subtitle">Update subject, faculty, or room for this slot</p>
+                                </div>
+                            </div>
+                            <button className="tt-modal-close" onClick={() => { setShowEditModal(false); setEditingEntry(null); }}>
+                                <CloseIcon />
+                            </button>
+                        </div>
+
+                        <div className="tt-modal-body">
+                            <form id="editEntryForm" onSubmit={handleEditSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                                <div className="tt-form-group">
+                                    <label className="tt-form-label">Day of Week <span>*</span></label>
+                                    <select className="tt-input" value={editForm.day_of_week} onChange={(e) => setEditForm({ ...editForm, day_of_week: e.target.value })} required>
+                                        {DAYS_OF_WEEK.map(d => <option key={d} value={d}>{d}</option>)}
+                                    </select>
+                                </div>
+                                <div className="tt-form-group">
+                                    <label className="tt-form-label">Time Slot <span>*</span></label>
+                                    <select className="tt-input" value={editForm.slot_id} onChange={(e) => setEditForm({ ...editForm, slot_id: e.target.value })} required>
+                                        <option value="">-- Choose Time --</option>
+                                        {slots.map(s => <option key={s.id} value={s.id}>{formatAMPM(s.start_time)} - {formatAMPM(s.end_time)}</option>)}
+                                    </select>
+                                </div>
+
+                                {/* Break Toggle */}
+                                <div className="tt-break-toggle-row">
+                                    <label className="tt-break-toggle-label">
+                                        <input
+                                            type="checkbox"
+                                            checked={editForm.is_break}
+                                            onChange={(e) => setEditForm({ ...editForm, is_break: e.target.checked, subject_id: '', faculty_id: '', room_number: '' })}
+                                            className="tt-break-checkbox"
+                                        />
+                                        <span className="tt-break-toggle-text">☕ Mark as Break Period</span>
+                                    </label>
+                                    <span className="tt-break-toggle-hint">e.g. Lunch Break, Recess</span>
+                                </div>
+
+                                {editForm.is_break ? (
+                                    <div className="tt-form-group">
+                                        <label className="tt-form-label">Break Label</label>
+                                        <input
+                                            type="text"
+                                            className="tt-input"
+                                            placeholder="e.g. Lunch Break, Recess, Short Break"
+                                            value={editForm.break_label}
+                                            onChange={(e) => setEditForm({ ...editForm, break_label: e.target.value })}
+                                        />
+                                    </div>
+                                ) : (
+                                    <>
+                                        <div className="tt-form-group">
+                                            <label className="tt-form-label">Subject <span>*</span></label>
+                                            <select className="tt-input" value={editForm.subject_id} onChange={(e) => {
+                                                const subjectId = e.target.value;
+                                                const selectedSubject = subjects.find(s => s.id.toString() === subjectId);
+                                                let autoFacultyId = editForm.faculty_id;
+                                                if (selectedSubject && selectedSubject.faculty_id) {
+                                                    autoFacultyId = selectedSubject.faculty_id;
+                                                }
+                                                setEditForm({ ...editForm, subject_id: subjectId, faculty_id: autoFacultyId });
+                                            }} required>
+                                                <option value="">-- Select Subject --</option>
+                                                {subjects.filter(sub => sub.class_id && sub.class_id.toString() === selectedClass.toString()).map(sub => <option key={sub.id} value={sub.id}>{sub.name}</option>)}
+                                            </select>
+                                        </div>
+                                        <div className="tt-form-group">
+                                            <label className="tt-form-label">Faculty <span>*</span></label>
+                                            <select className="tt-input" value={editForm.faculty_id} onChange={(e) => setEditForm({ ...editForm, faculty_id: e.target.value })} required>
+                                                <option value="">-- Select Faculty --</option>
+                                                {faculty.map(f => <option key={f.id} value={f.id}>{f.User?.name}</option>)}
+                                            </select>
+                                        </div>
+                                        <div className="tt-form-group">
+                                            <label className="tt-form-label">Room Number (Optional)</label>
+                                            <input type="text" className="tt-input" placeholder="e.g. 101" value={editForm.room_number} onChange={(e) => setEditForm({ ...editForm, room_number: e.target.value })} />
+                                        </div>
+                                    </>
+                                )}
+                            </form>
+                        </div>
+
+                        <div className="tt-modal-footer">
+                            <button type="button" className="ap-btn-white" onClick={() => { setShowEditModal(false); setEditingEntry(null); }}>Cancel</button>
+                            <button type="submit" form="editEntryForm" className="ap-btn-edit-save">
+                                <EditIcon /> Save Changes
                             </button>
                         </div>
                     </div>

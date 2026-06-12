@@ -120,6 +120,19 @@ function Subscriptions() {
         return <div className="dashboard-container">Loading...</div>;
     }
 
+    // Filter out duplicate dummy pending/failed subscriptions if the institute already has a paid subscription
+    const paidInstituteIds = new Set(
+        subscriptions.filter(s => s.payment_status === 'paid').map(s => s.institute_id)
+    );
+
+    const displaySubscriptions = subscriptions.filter(s => {
+        const isDummy = !s.start_date || new Date(s.start_date).getFullYear() <= 1970;
+        if ((s.payment_status === 'pending' || s.payment_status === 'failed') && isDummy && paidInstituteIds.has(s.institute_id)) {
+            return false;
+        }
+        return true;
+    });
+
     return (
         <div className="dashboard-container">
             <div className="dashboard-header">
@@ -166,14 +179,14 @@ function Subscriptions() {
                             </tr>
                         </thead>
                         <tbody>
-                            {subscriptions.length === 0 ? (
+                            {displaySubscriptions.length === 0 ? (
                                 <tr>
                                     <td colSpan="7" style={{ textAlign: "center", padding: "2rem" }}>
                                         No subscription records found
                                     </td>
                                 </tr>
                             ) : (
-                                subscriptions.map((sub) => (
+                                displaySubscriptions.map((sub) => (
                                     <tr key={sub.id}>
                                         <td>#{sub.id}</td>
                                         <td>
@@ -187,8 +200,14 @@ function Subscriptions() {
                                         <td>{sub.Plan?.name || "Custom Plan"}</td>
                                         <td>₹{sub.amount_paid}</td>
                                         <td>
-                                            {new Date(sub.start_date).toLocaleDateString()} -{" "}
-                                            {new Date(sub.end_date).toLocaleDateString()}
+                                            {sub.start_date && new Date(sub.start_date).getFullYear() > 1970 ? (
+                                                <>
+                                                    {new Date(sub.start_date).toLocaleDateString()} -{" "}
+                                                    {new Date(sub.end_date).toLocaleDateString()}
+                                                </>
+                                            ) : (
+                                                <span style={{ color: "#6b7280", fontStyle: "italic" }}>Pending Activation</span>
+                                            )}
                                         </td>
                                         <td>
                                             <span className={`badge badge-${sub.payment_status === 'paid' ? 'success' :

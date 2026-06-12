@@ -481,7 +481,7 @@ const AdminExpenses = forwardRef((props, ref) => {
                     </div>
 
                     {/* Stats Grid */}
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1.25rem', marginBottom: '1.5rem' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1.25rem', marginBottom: '1.5rem' }}>
                         {/* Total Expenses */}
                         <div style={{ background: '#fff', padding: '1.5rem', borderRadius: '12px', border: '1px solid #e5e7eb', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
                             <div style={{ display: 'flex', alignItems: 'flex-start', gap: '16px', marginBottom: '1rem' }}>
@@ -540,9 +540,9 @@ const AdminExpenses = forwardRef((props, ref) => {
                     </div>
 
                     {/* Charts */}
-                    <div style={{ display: 'grid', gridTemplateColumns: '1.8fr 1fr', gap: '1.5rem', marginBottom: '1.5rem' }}>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1.5rem', marginBottom: '1.5rem' }}>
                         {/* Line Chart */}
-                        <div style={{ background: '#fff', borderRadius: '12px', border: '1px solid #e5e7eb', padding: '1.5rem', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
+                        <div style={{ flex: '1 1 500px', background: '#fff', borderRadius: '12px', border: '1px solid #e5e7eb', padding: '1.5rem', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem' }}>
                                 <h3 style={{ margin: 0, color: '#111827', fontSize: '1.1rem', fontWeight: '700' }}>Expenses Trend</h3>
                                 <div style={{ display: "flex", gap: "1rem", fontSize: 12, fontWeight: 600 }}>
@@ -572,7 +572,7 @@ const AdminExpenses = forwardRef((props, ref) => {
                         </div>
 
                         {/* Donut Chart */}
-                        <div style={{ background: '#fff', borderRadius: '12px', border: '1px solid #e5e7eb', padding: '1.5rem', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
+                        <div style={{ flex: '1 1 300px', background: '#fff', borderRadius: '12px', border: '1px solid #e5e7eb', padding: '1.5rem', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
                             <h3 style={{ margin: 0, marginBottom: '1.5rem', color: '#111827', fontSize: '1.1rem', fontWeight: '700' }}>Expenses by Category</h3>
                             <div style={{ display: 'flex', alignItems: 'center', height: '220px', flexWrap: 'wrap', justifyContent: 'center' }}>
                                 <div style={{ flex: '0 0 160px', position: 'relative', height: '160px' }}>
@@ -688,7 +688,7 @@ const AdminExpenses = forwardRef((props, ref) => {
                     ) : (
                         <>
                             {/* Stats Grid */}
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1.5rem', marginBottom: '2rem' }}>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1.5rem', marginBottom: '2rem' }}>
                                 <div style={{ background: '#fff', borderRadius: '12px', padding: '1.5rem', border: '1px solid #e5e7eb', display: 'flex', alignItems: 'flex-start', gap: '16px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
                                     <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: '#e0e7ff', color: '#4f46e5', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem', flexShrink: 0 }}>🚌</div>
                                     <div>

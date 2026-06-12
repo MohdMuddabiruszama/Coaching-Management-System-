@@ -273,6 +273,9 @@ User.hasMany(ClassSession, { foreignKey: "faculty_id" });
 TimetableSlot.belongsTo(Institute, { foreignKey: "institute_id" });
 Institute.hasMany(TimetableSlot, { foreignKey: "institute_id" });
 
+TimetableSlot.belongsTo(Class, { foreignKey: "class_id" });
+Class.hasMany(TimetableSlot, { foreignKey: "class_id" });
+
 Timetable.belongsTo(Institute, { foreignKey: "institute_id" });
 Institute.hasMany(Timetable, { foreignKey: "institute_id" });
 

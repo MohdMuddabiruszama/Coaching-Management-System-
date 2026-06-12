@@ -137,7 +137,7 @@ function Parents() {
     const [sortOrder, setSortOrder] = useState("Name (A-Z)");
     const [viewMode, setViewMode] = useState("list"); // 'list' or 'grid'
     const [filterStatus, setFilterStatus] = useState("all");
-    const [filterClass, setFilterClass] = useState("all");
+    const [filterStudentQuery, setFilterStudentQuery] = useState("");
     const [filterLink, setFilterLink] = useState("all");
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 10;
@@ -147,6 +147,7 @@ function Parents() {
 
     // Bulk selection and credentials state
     const [selectedParents, setSelectedParents] = useState([]);
+    const [bulkDeleting, setBulkDeleting] = useState(false);
     const [showCredentialsModal, setShowCredentialsModal] = useState(false);
     const [credentialsData, setCredentialsData] = useState([]);
     const [loadingCredentials, setLoadingCredentials] = useState(false);
@@ -176,7 +177,7 @@ function Parents() {
     // Reset page to 1 when filters or sorting change
     useEffect(() => {
         setCurrentPage(1);
-    }, [search, filterStatus, filterClass, filterLink, sortOrder]);
+    }, [search, filterStatus, filterStudentQuery, filterLink, sortOrder]);
 
     const fetchParents = async () => {
         try {
@@ -191,7 +192,7 @@ function Parents() {
 
     const fetchStudents = async () => {
         try {
-            const response = await api.get("/students/lookup?limit=200");
+            const response = await api.get("/students/lookup?limit=5000");
             setStudents(response.data.data || []);
         } catch (error) {
             console.error("Error fetching students:", error);
@@ -305,6 +306,23 @@ function Parents() {
         }
     };
 
+    const handleBulkDelete = async () => {
+        if (!window.confirm(`Are you sure you want to delete ${selectedParents.length} parents? This cannot be undone.`)) return;
+        setBulkDeleting(true);
+        try {
+            const res = await api.post('/parents/bulk-delete', { parent_ids: selectedParents });
+            if (res.data.success) {
+                alert(res.data.message || 'Parents deleted successfully');
+                setSelectedParents([]);
+                fetchParents();
+            }
+        } catch (error) {
+            alert(error.response?.data?.message || 'Failed to delete parents');
+        } finally {
+            setBulkDeleting(false);
+        }
+    };
+
     const resetForm = () => {
         setFormData({
             id: null,
@@ -338,11 +356,6 @@ function Parents() {
         alert(`âœ… ${result.inserted} parent(s) imported and linked to students successfully!${result.failed > 0 ? ` (${result.failed} rows had errors)` : ''}`);
     };
 
-    // Extract unique classes from linked students
-    const uniqueClasses = Array.from(new Set(
-        parents.flatMap(p => p.LinkedStudents?.map(s => s.Class?.name) || [])
-    )).filter(Boolean).sort();
-
     // Client-side filtering
     const filteredParents = parents.filter(p => {
         if (filterStatus !== "all" && p.status !== filterStatus) return false;
@@ -353,9 +366,15 @@ function Parents() {
             if (filterLink === "unlinked" && isLinked) return false;
         }
 
-        if (filterClass !== "all") {
-            const hasClass = p.LinkedStudents?.some(s => s.Class?.name === filterClass);
-            if (!hasClass) return false;
+        if (filterStudentQuery.trim() !== "") {
+            const query = filterStudentQuery.toLowerCase().trim();
+            const hasMatchingStudent = p.LinkedStudents?.some(s => {
+                const studentName = s.User?.name || "";
+                const rollNo = s.roll_number || "";
+                return studentName.toLowerCase().includes(query) || 
+                       rollNo.toString().toLowerCase().includes(query);
+            });
+            if (!hasMatchingStudent) return false;
         }
 
         return true;
@@ -398,13 +417,15 @@ function Parents() {
                         <span style={{ color: '#0f172a', fontWeight: '500' }}>Parent Management</span>
                     </div>
                     <div className="ap-header-actions">
-                        <button className="ap-btn-outline" onClick={() => document.querySelector('.bulk-import-btn')?.click()}>
-                            <UploadIcon /> Import Parents
-                        </button>
-                        {/* Hidden actual bulk import button to trigger it programmatically */}
-                        <div style={{ display: 'none' }}>
-                            <BulkImportButton type="parents" onSuccess={handleBulkSuccess} />
-                        </div>
+                        <BulkImportButton 
+                            type="parents" 
+                            onSuccess={handleBulkSuccess} 
+                            customButton={
+                                <button className="ap-btn-outline">
+                                    <UploadIcon /> Import Parents
+                                </button>
+                            }
+                        />
                         <button onClick={() => { resetForm(); setShowModal(true); }} className="ap-btn-primary">
                             <PlusIcon /> Add Parent
                         </button>
@@ -447,12 +468,15 @@ function Parents() {
                             <option value="active">Active</option>
                             <option value="blocked">Blocked</option>
                         </select>
-                        <select className="ap-select-input" value={filterClass} onChange={(e) => setFilterClass(e.target.value)}>
-                            <option value="all">All Classes</option>
-                            {uniqueClasses.map(c => (
-                                <option key={c} value={c}>{c}</option>
-                            ))}
-                        </select>
+                        <div className="ap-search-input" style={{ minWidth: '240px' }}>
+                            <SearchIcon />
+                            <input
+                                type="text"
+                                placeholder="Search student by name or roll no..."
+                                value={filterStudentQuery}
+                                onChange={(e) => setFilterStudentQuery(e.target.value)}
+                            />
+                        </div>
                         <select className="ap-select-input" value={filterLink} onChange={(e) => setFilterLink(e.target.value)}>
                             <option value="all">All Link Status</option>
                             <option value="linked">Linked</option>
@@ -475,14 +499,24 @@ function Parents() {
                     
                     <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
                         {selectedParents.length > 0 && (
-                            <button 
-                                className="ap-btn-primary" 
-                                style={{ background: '#4F46E5' }}
-                                onClick={handleViewCredentials}
-                                disabled={loadingCredentials}
-                            >
-                                {loadingCredentials ? '⏳ Loading...' : `🔑 View ${selectedParents.length} Credentials`}
-                            </button>
+                            <>
+                                <button 
+                                    className="ap-btn-primary" 
+                                    style={{ background: '#4F46E5' }}
+                                    onClick={handleViewCredentials}
+                                    disabled={loadingCredentials}
+                                >
+                                    {loadingCredentials ? '⏳ Loading...' : `🔑 View ${selectedParents.length} Credentials`}
+                                </button>
+                                <button 
+                                    className="ap-btn-primary" 
+                                    style={{ background: '#ef4444' }}
+                                    onClick={handleBulkDelete}
+                                    disabled={bulkDeleting}
+                                >
+                                    {bulkDeleting ? '⏳ Deleting...' : '🗑️ Delete Selected'}
+                                </button>
+                            </>
                         )}
                         <div className="ap-sort-select">
                             Sort by:
@@ -643,7 +677,7 @@ function Parents() {
                                                     {parent.LinkedStudents && parent.LinkedStudents.length > 0 ? (
                                                         <ul className="ap-linked-students-list" style={{ marginTop: '2px' }}>
                                                             {parent.LinkedStudents.slice(0, 2).map(s => (
-                                                                <li key={s.id}>{s.User?.name} ({s.Class?.name || 'Class'})</li>
+                                                                <li key={s.id}>{s.User?.name} ({s.Classes && s.Classes.length > 0 ? s.Classes[0].name : 'Class'})</li>
                                                             ))}
                                                         </ul>
                                                     ) : (
@@ -821,7 +855,12 @@ function Parents() {
                                             </span>
                                         </div>
                                         <div className="ap-students-list">
-                                            {students.filter(s => (s.User?.name || '').toLowerCase().includes(studentSearch.toLowerCase()) || (s.roll_number || '').toLowerCase().includes(studentSearch.toLowerCase())).map((s) => {
+                                            {students.filter(s => {
+                                                const sName = s.User?.name || "";
+                                                const sRoll = s.roll_number ? String(s.roll_number) : "";
+                                                const q = studentSearch.toLowerCase();
+                                                return sName.toLowerCase().includes(q) || sRoll.toLowerCase().includes(q);
+                                            }).map((s) => {
                                                 const idStr = String(s.id);
                                                 const isSelected = formData.student_ids.includes(idStr);
                                                 const initials = (s.User?.name || '?').split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
@@ -845,9 +884,9 @@ function Parents() {
                                                             <div className="ap-student-meta">
                                                                 <span>Roll: {s.roll_number}</span>
                                                                 <span>•</span>
-                                                                <span>Class: {s.Class?.name || 'N/A'}</span>
+                                                                <span>Class: {s.Classes && s.Classes.length > 0 ? s.Classes[0].name : 'N/A'}</span>
                                                                 <span>•</span>
-                                                                <span>Section: {s.section || 'N/A'}</span>
+                                                                <span>Section: {s.Classes && s.Classes.length > 0 && s.Classes[0].section ? s.Classes[0].section : 'N/A'}</span>
                                                             </div>
                                                         </div>
                                                     </div>

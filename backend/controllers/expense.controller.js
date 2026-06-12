@@ -90,17 +90,19 @@ exports.deleteExpense = async (req, res) => {
 exports.getExpenseStats = async (req, res) => {
     try {
         const { role, institute_id } = req.user;
-
         const { period, dateValue } = req.query;
 
-        // Month calculations (Chart generation context)
         const currentDate = new Date();
         const expWhere = role === "super_admin" ? { institute_id: null } : { institute_id };
 
+        // 1. Determine Date Ranges for Chart & Totals
         let loopStartMonth = currentDate.getMonth();
         let loopStartYear = currentDate.getFullYear();
         let loopCount = 6;
         let isDaily = false;
+
+        let chartStartDate, chartEndDate;
+        let totalDateFilter = null;
 
         if (period === 'month' && dateValue) {
             const [y, m] = dateValue.split('-');
@@ -108,112 +110,128 @@ exports.getExpenseStats = async (req, res) => {
             loopStartMonth = parseInt(m) - 1;
             isDaily = true;
             loopCount = new Date(loopStartYear, loopStartMonth + 1, 0).getDate();
+            
+            chartStartDate = new Date(loopStartYear, loopStartMonth, 1);
+            chartEndDate = new Date(loopStartYear, loopStartMonth + 1, 0, 23, 59, 59);
+            totalDateFilter = { [Op.between]: [chartStartDate, chartEndDate] };
+
         } else if (period === 'year' && dateValue) {
             loopStartYear = parseInt(dateValue);
             loopStartMonth = 11; // December
             loopCount = 12; // Whole year
+            
+            chartStartDate = new Date(loopStartYear, 0, 1);
+            chartEndDate = new Date(loopStartYear, 11, 31, 23, 59, 59);
+            totalDateFilter = { [Op.between]: [chartStartDate, chartEndDate] };
+
         } else if (period === 'all') {
-            loopCount = 12; // Let's show last 12 months for 'all'
+            loopCount = 12; // Last 12 months for chart
+            chartStartDate = new Date(loopStartYear, loopStartMonth - 11, 1);
+            chartEndDate = new Date(loopStartYear, loopStartMonth + 1, 0, 23, 59, 59);
+            totalDateFilter = null; // ALL TIME for totals
+
         } else {
             // Default: current_month
             isDaily = true;
             loopCount = new Date(loopStartYear, loopStartMonth + 1, 0).getDate();
+            
+            chartStartDate = new Date(loopStartYear, loopStartMonth, 1);
+            chartEndDate = new Date(loopStartYear, loopStartMonth + 1, 0, 23, 59, 59);
+            totalDateFilter = { [Op.between]: [chartStartDate, chartEndDate] };
         }
 
-        // Generate historical data array
+        // 2. Fetch Data in Batches (Eliminates N+1 queries)
+        
+        // --- For Chart Data (Bounded by chartStartDate and chartEndDate) ---
+        const chartExpWhere = { ...expWhere, date: { [Op.between]: [chartStartDate, chartEndDate] } };
+        const expensesChartRaw = await Expense.findAll({
+            where: chartExpWhere,
+            attributes: ['amount', 'date']
+        });
+
+        let incomesChartRaw = [];
+        if (role === "super_admin") {
+            incomesChartRaw = await Subscription.findAll({
+                where: { payment_status: "paid", createdAt: { [Op.between]: [chartStartDate, chartEndDate] } },
+                attributes: ['amount_paid', 'createdAt']
+            });
+        } else {
+            incomesChartRaw = await Payment.findAll({
+                where: { institute_id, status: "success", payment_date: { [Op.between]: [chartStartDate, chartEndDate] } },
+                attributes: ['amount_paid', 'payment_date']
+            });
+        }
+
+        // --- For Overall Totals (Uses totalDateFilter) ---
+        let expensesTotal = 0;
+        let incomeTotal = 0;
+
+        if (totalDateFilter) {
+            // If the chart range is the same as the total range, just sum the arrays!
+            expensesTotal = expensesChartRaw.reduce((sum, e) => sum + (parseFloat(e.amount) || 0), 0);
+            incomeTotal = incomesChartRaw.reduce((sum, i) => sum + (parseFloat(i.amount_paid) || 0), 0);
+        } else {
+            // Period === 'all', so we need to fetch the sums across ALL time
+            expensesTotal = await Expense.sum("amount", { where: expWhere }) || 0;
+            if (role === "super_admin") {
+                incomeTotal = await Subscription.sum("amount_paid", { where: { payment_status: "paid" } }) || 0;
+            } else {
+                incomeTotal = await Payment.sum("amount_paid", { where: { institute_id, status: "success" } }) || 0;
+            }
+        }
+
+        // 3. Process into Chart Data Array (In-memory mapping)
         const chartData = [];
 
         if (isDaily) {
+            // Map by day
+            const expMap = {};
+            expensesChartRaw.forEach(e => {
+                const d = new Date(e.date).getDate();
+                expMap[d] = (expMap[d] || 0) + parseFloat(e.amount || 0);
+            });
+            const incMap = {};
+            incomesChartRaw.forEach(i => {
+                const dateVal = i.createdAt || i.payment_date;
+                const d = new Date(dateVal).getDate();
+                incMap[d] = (incMap[d] || 0) + parseFloat(i.amount_paid || 0);
+            });
+
             for (let i = 1; i <= loopCount; i++) {
                 const dayStart = new Date(loopStartYear, loopStartMonth, i);
-                const dayEnd = new Date(loopStartYear, loopStartMonth, i, 23, 59, 59);
                 const dayLabel = dayStart.toLocaleString('default', { day: 'numeric', month: 'short' });
-
-                const mExpWhere = { ...expWhere, date: { [Op.between]: [dayStart, dayEnd] } };
-                const mExpense = await Expense.sum("amount", { where: mExpWhere }) || 0;
-
-                let mIncome = 0;
-                if (role === "super_admin") {
-                    mIncome = await Subscription.sum("amount_paid", {
-                        where: { payment_status: "paid", createdAt: { [Op.between]: [dayStart, dayEnd] } }
-                    }) || 0;
-                } else {
-                    mIncome = await Payment.sum("amount_paid", {
-                        where: {
-                            institute_id,
-                            status: "success",
-                            payment_date: { [Op.between]: [dayStart, dayEnd] }
-                        }
-                    }) || 0;
-                }
-
-                chartData.push({ month: dayLabel, income: mIncome, expense: mExpense });
+                chartData.push({ 
+                    month: dayLabel, 
+                    income: incMap[i] || 0, 
+                    expense: expMap[i] || 0 
+                });
             }
         } else {
+            // Map by year-month
+            const expMap = {};
+            expensesChartRaw.forEach(e => {
+                const d = new Date(e.date);
+                const key = `${d.getFullYear()}-${d.getMonth()}`;
+                expMap[key] = (expMap[key] || 0) + parseFloat(e.amount || 0);
+            });
+            const incMap = {};
+            incomesChartRaw.forEach(i => {
+                const dateVal = i.createdAt || i.payment_date;
+                const d = new Date(dateVal);
+                const key = `${d.getFullYear()}-${d.getMonth()}`;
+                incMap[key] = (incMap[key] || 0) + parseFloat(i.amount_paid || 0);
+            });
+
             for (let i = loopCount - 1; i >= 0; i--) {
                 const d = new Date(loopStartYear, loopStartMonth - i, 1);
-                const monthStart = new Date(d.getFullYear(), d.getMonth(), 1);
-                const monthEnd = new Date(d.getFullYear(), d.getMonth() + 1, 0, 23, 59, 59);
+                const key = `${d.getFullYear()}-${d.getMonth()}`;
                 const monthLabel = period === 'year' ? d.toLocaleString('default', { month: 'short' }) : d.toLocaleString('default', { month: 'short', year: '2-digit' });
-
-                const mExpWhere = { ...expWhere, date: { [Op.between]: [monthStart, monthEnd] } };
-                const mExpense = await Expense.sum("amount", { where: mExpWhere }) || 0;
-
-                let mIncome = 0;
-                if (role === "super_admin") {
-                    mIncome = await Subscription.sum("amount_paid", {
-                        where: { payment_status: "paid", createdAt: { [Op.between]: [monthStart, monthEnd] } }
-                    }) || 0;
-                } else {
-                    mIncome = await Payment.sum("amount_paid", {
-                        where: {
-                            institute_id,
-                            status: "success",
-                            payment_date: { [Op.between]: [monthStart, monthEnd] }
-                        }
-                    }) || 0;
-                }
-
-                chartData.push({ month: monthLabel, income: mIncome, expense: mExpense });
+                chartData.push({ 
+                    month: monthLabel, 
+                    income: incMap[key] || 0, 
+                    expense: expMap[key] || 0 
+                });
             }
-        }
-
-        let dateFilter = null;
-        let subDateFilter = null;
-
-        if (period === 'month' && dateValue) {
-            const [year, month] = dateValue.split('-');
-            dateFilter = { [Op.between]: [new Date(year, month - 1, 1), new Date(year, month, 0, 23, 59, 59)] };
-            subDateFilter = { [Op.between]: [new Date(year, month - 1, 1), new Date(year, month, 0, 23, 59, 59)] };
-        } else if (period === 'year' && dateValue) {
-            dateFilter = { [Op.between]: [new Date(dateValue, 0, 1), new Date(dateValue, 11, 31, 23, 59, 59)] };
-            subDateFilter = { [Op.between]: [new Date(dateValue, 0, 1), new Date(dateValue, 11, 31, 23, 59, 59)] };
-        } else if (period === 'all') {
-            dateFilter = null;
-            subDateFilter = null;
-        } else {
-            // Default to current_month
-            const currentStart = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
-            const currentEnd = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0, 23, 59, 59);
-            dateFilter = { [Op.between]: [currentStart, currentEnd] };
-            subDateFilter = { [Op.between]: [currentStart, currentEnd] };
-        }
-
-        if (dateFilter) expWhere.date = dateFilter;
-
-        // 1. Total Expenses
-        const expensesTotal = await Expense.sum("amount", { where: expWhere }) || 0;
-
-        // 2. Total Income
-        let incomeTotal = 0;
-        if (role === "super_admin") {
-            const subWhere = { payment_status: "paid" };
-            if (subDateFilter) subWhere.createdAt = subDateFilter;
-            incomeTotal = await Subscription.sum("amount_paid", { where: subWhere }) || 0;
-        } else {
-            const payWhere = { institute_id, status: "success" };
-            if (subDateFilter) payWhere.payment_date = subDateFilter;
-            incomeTotal = await Payment.sum("amount_paid", { where: payWhere }) || 0;
         }
 
         const profitLoss = incomeTotal - expensesTotal;

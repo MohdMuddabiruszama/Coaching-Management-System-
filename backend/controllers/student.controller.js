@@ -398,7 +398,7 @@ exports.getStudentLookup = async (req, res) => {
     try {
         const institute_id = req.user.institute_id;
         const { class_id, search = "", limit = 100 } = req.query;
-        const maxLimit = Math.min(parseInt(limit, 10) || 100, 200);
+        const maxLimit = Math.min(parseInt(limit, 10) || 100, 5000);
 
         const userWhereClause = search
             ? {
@@ -701,6 +701,60 @@ exports.deleteStudent = async (req, res) => {
             message: "Student deleted successfully",
         });
     } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: error.message,
+        });
+    }
+};
+
+/**
+ * Delete multiple students
+ * @route POST /api/students/bulk-delete
+ * @access Admin only
+ */
+exports.bulkDeleteStudents = async (req, res) => {
+    let transaction;
+    try {
+        const { student_ids } = req.body;
+        const institute_id = req.user.institute_id;
+
+        if (!student_ids || !Array.isArray(student_ids) || student_ids.length === 0) {
+            return res.status(400).json({ success: false, message: "No students selected for deletion" });
+        }
+
+        transaction = await sequelize.transaction();
+
+        const students = await Student.findAll({
+            where: { id: { [Op.in]: student_ids }, institute_id },
+            include: [{ model: User }],
+            transaction
+        });
+
+        if (students.length === 0) {
+            await transaction.rollback();
+            return res.status(404).json({ success: false, message: "No valid students found to delete" });
+        }
+
+        const userIds = students.map(s => s.user_id).filter(id => id);
+        const studentIdsToDelete = students.map(s => s.id);
+
+        if (userIds.length > 0) {
+            await User.destroy({ where: { id: { [Op.in]: userIds }, institute_id }, transaction });
+        }
+        
+        if (studentIdsToDelete.length > 0) {
+            await Student.destroy({ where: { id: { [Op.in]: studentIdsToDelete }, institute_id }, transaction });
+        }
+
+        await transaction.commit();
+
+        res.status(200).json({
+            success: true,
+            message: `${students.length} student(s) deleted successfully`,
+        });
+    } catch (error) {
+        if (transaction) await transaction.rollback();
         res.status(500).json({
             success: false,
             message: error.message,

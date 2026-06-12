@@ -6,13 +6,14 @@
 
 import { useState, useRef, useEffect, useContext } from "react";
 import { ThemeContext } from "../context/ThemeContext";
+import { FiSun, FiMoon, FiStar, FiAperture } from "react-icons/fi";
 import "./ThemeSelector.css";
 
 const THEMES = [
-    { id: "light-simple", label: "Light", icon: "☀️", isDark: false, style: "simple" },
-    { id: "dark-simple", label: "Dark", icon: "🌙", isDark: true, style: "simple" },
-    { id: "light-pro", label: "Light Pro", icon: "✨", isDark: false, style: "pro" },
-    { id: "dark-pro", label: "Dark Pro", icon: "🔮", isDark: true, style: "pro" },
+    { id: "light-simple", label: "Light", icon: <FiSun size={18} />, isDark: false, style: "simple" },
+    { id: "dark-simple", label: "Dark", icon: <FiMoon size={18} />, isDark: true, style: "simple" },
+    { id: "light-pro", label: "Light Pro", icon: <FiStar size={18} style={{ color: '#f59e0b', fill: 'rgba(245, 158, 11, 0.2)' }} />, isDark: false, style: "pro" },
+    { id: "dark-pro", label: "Dark Pro", icon: <FiAperture size={18} style={{ color: '#a855f7' }} />, isDark: true, style: "pro" },
 ];
 
 function ThemeSelector({ loginMode = false }) {

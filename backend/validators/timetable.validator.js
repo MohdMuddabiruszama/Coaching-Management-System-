@@ -21,6 +21,7 @@ const idField = (required = true) => {
 
 const createSlot = {
     body: Joi.object({
+        class_id: idField(true),
         label: Joi.string().trim().max(50).optional().allow("", null),
         // Browser <input type="time"> sends HH:MM or HH:MM:SS
         start_time: Joi.string().pattern(/^\d{2}:\d{2}(:\d{2})?$/).required()
@@ -36,8 +37,10 @@ const deleteSlot = { params: idParam };
 const createEntry = {
     body: Joi.object({
         class_id: idField(true),
-        subject_id: idField(true),
-        faculty_id: idField(false),     // optional in some setups
+        is_break: Joi.boolean().optional().default(false),
+        break_label: Joi.string().max(100).optional().allow('', null),
+        subject_id: idField(false),     // optional if is_break
+        faculty_id: idField(false),     // optional if is_break
         slot_id: idField(true),
         // Frontend sends day_of_week (NOT "day")
         day_of_week: Joi.string()

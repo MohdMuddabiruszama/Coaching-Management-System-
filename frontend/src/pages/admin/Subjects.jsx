@@ -29,6 +29,7 @@ function Subjects() {
     const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 10;
+    const [facultySearch, setFacultySearch] = useState("");
 
     const [formData, setFormData] = useState({
         name: "",
@@ -746,29 +747,57 @@ function Subjects() {
                                     <small style={{ display: 'block', marginTop: '0.4rem', color: '#64748b', fontSize: '0.75rem' }}>Choose the class for this subject</small>
                                 </div>
 
-                                {/* Assign Faculty */}
+                                {/* Assign Faculty (Searchable List) */}
                                 <div>
                                     <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '600', color: '#334155', marginBottom: '0.5rem' }}>
                                         Assign Faculty (Optional)
                                     </label>
-                                    <div style={{ position: 'relative' }}>
-                                        <select
-                                            name="faculty_id"
-                                            value={formData.faculty_id}
-                                            onChange={handleChange}
-                                            style={{ width: '100%', padding: '0.75rem 2.5rem 0.75rem 1rem', borderRadius: '8px', border: '1px solid #e2e8f0', outline: 'none', fontSize: '0.95rem', color: '#0f172a', appearance: 'none', backgroundColor: '#fff' }}
-                                            className="focus-ring"
-                                        >
-                                            <option value="">Select Faculty</option>
-                                            {faculty.map((f) => (
-                                                <option key={f.id} value={f.id}>
-                                                    {f.User?.name} {f.designation && `(${f.designation})`}
-                                                </option>
-                                            ))}
-                                        </select>
-                                        <div style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8', pointerEvents: 'none', display: 'flex', gap: '4px' }}>
-                                            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-                                            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                                    <div style={{ border: '1px solid #e2e8f0', borderRadius: '8px', overflow: 'hidden' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', padding: '0.5rem 1rem', borderBottom: '1px solid #e2e8f0', backgroundColor: '#f8fafc' }}>
+                                            <svg width="16" height="16" fill="none" stroke="#64748b" viewBox="0 0 24 24" style={{ marginRight: '8px' }}><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                                            <input 
+                                                type="text" 
+                                                placeholder="Search faculty by name..."
+                                                value={facultySearch}
+                                                onChange={(e) => setFacultySearch(e.target.value)}
+                                                style={{ border: 'none', background: 'transparent', outline: 'none', width: '100%', fontSize: '0.9rem', color: '#334155' }}
+                                            />
+                                            {formData.faculty_id && (
+                                                <button type="button" onClick={() => setFormData({...formData, faculty_id: ""})} style={{ background: 'none', border: 'none', color: '#ef4444', fontSize: '0.8rem', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                                                    Clear selection
+                                                </button>
+                                            )}
+                                        </div>
+                                        <div style={{ maxHeight: '200px', overflowY: 'auto', backgroundColor: '#fff' }}>
+                                            {faculty.filter(f => (f.User?.name || '').toLowerCase().includes(facultySearch.toLowerCase())).map((f) => {
+                                                const isSelected = String(formData.faculty_id) === String(f.id);
+                                                const initials = (f.User?.name || '?').split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+                                                const colors = ['#F3E8FF', '#EBF8FF', '#FFF5F5', '#F0FFF4'];
+                                                const textColors = ['#7E22CE', '#3182CE', '#E53E3E', '#38A169'];
+                                                const colorIdx = f.id % colors.length;
+                                                
+                                                return (
+                                                    <div 
+                                                        key={f.id} 
+                                                        onClick={() => setFormData({...formData, faculty_id: f.id})}
+                                                        style={{ display: 'flex', alignItems: 'center', padding: '10px 1rem', borderBottom: '1px solid #f1f5f9', cursor: 'pointer', backgroundColor: isSelected ? '#f5f3ff' : 'transparent', transition: 'background 0.2s' }}
+                                                    >
+                                                        <div style={{ width: '20px', height: '20px', borderRadius: '50%', border: isSelected ? '5px solid #6366f1' : '1px solid #cbd5e1', marginRight: '12px', flexShrink: 0, transition: 'all 0.2s' }}></div>
+                                                        <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: colors[colorIdx], color: textColors[colorIdx], display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem', fontWeight: 'bold', flexShrink: 0, marginRight: '12px' }}>
+                                                            {initials}
+                                                        </div>
+                                                        <div>
+                                                            <div style={{ fontSize: '0.95rem', fontWeight: isSelected ? '600' : '500', color: isSelected ? '#4f46e5' : '#1e293b' }}>{f.User?.name}</div>
+                                                            <div style={{ fontSize: '0.8rem', color: '#64748b' }}>{f.designation || 'Faculty'}</div>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                            {faculty.filter(f => (f.User?.name || '').toLowerCase().includes(facultySearch.toLowerCase())).length === 0 && (
+                                                <div style={{ padding: '1.5rem', textAlign: 'center', color: '#94a3b8', fontSize: '0.9rem' }}>
+                                                    No faculty found
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
                                     <small style={{ display: 'block', marginTop: '0.4rem', color: '#64748b', fontSize: '0.75rem' }}>Assign a faculty member to teach this subject</small>

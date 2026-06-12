@@ -44,6 +44,9 @@ router.get("/:id", allowRoles("super_admin", "admin", "faculty", "student", "man
 router.put("/:id", allowRoles("super_admin", "admin", "faculty", "student", "manager"), checkManagerPermission("students.update"), validate(studentValidator.updateStudent), invalidateCache("cache:/api/students*"), studentController.updateStudent);
 router.delete("/:id", allowRoles("super_admin", "admin", "manager"), checkManagerPermission("students.delete"), validate(studentValidator.deleteStudent), invalidateCache("cache:/api/students*"), studentController.deleteStudent);
 
+// Bulk actions
+router.post("/bulk-delete", allowRoles("super_admin", "admin", "manager"), checkManagerPermission("students.delete"), invalidateCache("cache:/api/students*"), studentController.bulkDeleteStudents);
+
 // Bulk import route
 router.post("/bulk-import", allowRoles("admin", "manager"), checkManagerPermission("students.create"), bulkImportStudents);
 

@@ -1,0 +1,31 @@
+import { useEffect } from 'react';
+import Navbar from '../../components/landing/Navbar';
+import BookDemo from '../../components/landing/BookDemo';
+import Footer from '../../components/landing/Footer';
+import { useCursor } from '../../hooks/useCursor';
+import '../../styles/landing.css';
+
+export default function BookDemoPage() {
+  useCursor(); // Custom lag cursor effect
+
+  useEffect(() => {
+    // Scroll to top when page loads
+    window.scrollTo(0, 0);
+  }, []);
+
+  return (
+    <div className='landing-root'>
+      <div id='cursor' />
+      <div id='cursor-ring' />
+      <div id='mobile-drawer-root' />
+
+      <Navbar />
+
+      <main style={{ paddingTop: '80px', minHeight: '100vh', background: 'var(--lp-bg)' }}>
+        <BookDemo />
+      </main>
+
+      <Footer />
+    </div>
+  );
+}

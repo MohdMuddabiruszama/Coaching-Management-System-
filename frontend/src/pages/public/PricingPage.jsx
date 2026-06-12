@@ -1,52 +1,83 @@
 /**
  * PricingPage — Professional SaaS Pricing Experience
- * Features: Platform tabs, billing toggle, compact cards,
+ * Features: Billing / Platform toggles (image-matched),
+ *           compact cards with icon · name · desc · price · savings · stats,
  *           feature comparison modal, premium lifetime section
  */
 
-import { useState, useEffect, useContext } from "react";
+import { useState, useEffect, useContext, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { AuthContext } from "../../context/AuthContext";
 import api from "../../services/api";
-import PublicNavbar from "../../components/layout/PublicNavbar";
+import Navbar from "../../components/landing/Navbar";
+import Footer from "../../components/landing/Footer";
+import "../../styles/landing.css";
 import "./PricingPage.css";
 
-/* ───────── Feature comparison data ───────── */
+/* ── plan icons ── */
+const PLAN_ICONS = { Starter:'🪴', Basic:'📖', Professional:'🚀', Enterprise:'🏛️' };
+
+/* ── storage label ── */
+function storageLabel(mb) {
+    if (mb === -1 || mb == null) return 'Unlimited';
+    if (mb >= 1024) return `${(mb / 1024).toFixed(0)} GB`;
+    return `${mb} MB`;
+}
+
+/* ───────── Feature comparison data (26 features per spec) ───────── */
 const COMPARISON_FEATURES = [
-    { section: "Core" },
-    { label: "Students", key: "max_students", format: v => v === -1 ? "Unlimited" : `Up to ${v}` },
-    { label: "Faculty", key: "max_faculty", format: v => v === -1 ? "Unlimited" : `${v}` },
-    { label: "Classes", key: "max_classes", format: v => v === -1 ? "Unlimited" : `${v}` },
-    { label: "Admins", key: "max_admin_users", format: v => v === -1 ? "Unlimited" : `${v}` },
-    { label: "Storage", key: "max_storage_mb", format: v => v === -1 ? "Unlimited" : `${(v / 1024).toFixed(0)} GB` },
-    { section: "Features" },
-    { label: "Attendance Tracking", key: "feature_attendance", format: v => v === "advanced" ? "Advanced" : v === "basic" ? "Basic" : "—" },
-    { label: "Fee Management", key: "feature_fees", bool: true },
-    { label: "Exams & Marks", key: "feature_exams", bool: true },
-    { label: "Timetable", key: "feature_timetable", bool: true },
-    { label: "Reports & Analytics", key: "feature_reports", format: v => v === "advanced" ? "Advanced" : v === "basic" ? "Basic" : "—" },
-    { label: "Announcements", key: "feature_announcements", bool: true },
-    { label: "Notes", key: "feature_notes", bool: true },
-    { label: "Chat", key: "feature_chat", bool: true },
-    { label: "Assignments", key: "feature_assignment", bool: true },
-    { section: "Communication" },
-    { label: "SMS Notifications", key: "feature_sms", bool: true },
-    { label: "Email Notifications", key: "feature_email", bool: true },
-    { label: "WhatsApp", key: "feature_whatsapp", bool: true },
+    { section: "Attendance" },
+    { label: "Manage Student Attendance", key: "feature_attendance", format: v => v && v !== 'none' ? (v === 'advanced' ? 'Advanced' : 'Basic') : '—' },
+    { label: "View Attendance",           key: "feature_attendance", format: v => v && v !== 'none' ? '\u2713' : '—' },
+    { label: "Scan Student QR Code",      key: "feature_scan_qr",          bool: true },
+    { label: "Faculty Attendance",        key: "feature_faculty_attendance",bool: true },
+    { label: "View Faculty Tracker",      key: "feature_faculty_tracker",   bool: true },
+    { label: "Scan Faculty QR Code",      key: "feature_faculty_tracker",   bool: true },
+    { label: "Biometric Attendance",      key: "feature_biometric",         bool: true },
+    { section: "People Management" },
+    { label: "Manage Admin / Managers",   key: "feature_students",          bool: true },
+    { label: "Manage Students",           key: "feature_students",          bool: true },
+    { label: "Manage Classes & Subjects", key: "feature_classes",           bool: true },
+    { label: "Manage Faculty",            key: "feature_faculty",           bool: true },
+    { label: "Manage Parents",            key: "feature_parent_portal",     bool: true },
+    { section: "Finance" },
+    { label: "Collect Fees",              key: "feature_fees",              bool: true },
+    { label: "Finances & Expenses",       key: "feature_finance",           bool: true },
+    { label: "Salary Management",         key: "feature_salary",            bool: true },
+    { section: "Academics" },
+    { label: "Manage Exams",              key: "feature_exams",             bool: true },
+    { label: "Master Timetable",          key: "feature_timetable",         bool: true },
+    { label: "Assignments",               key: "feature_assignment",        bool: true },
+    { label: "Exam Reports",              key: "feature_export",            bool: true },
+    { section: "Communication & Content" },
+    { label: "Announcements",             key: "feature_announcements",     bool: true },
+    { label: "All Notes",                 key: "feature_notes",             bool: true },
+    { label: "Chat Monitor",              key: "feature_chat",              bool: true },
+    { section: "Reports & Analytics" },
+    { label: "Reports & Analytics",       key: "feature_reports", format: v => v === 'advanced' ? 'Advanced' : v === 'basic' ? 'Standard' : '—' },
+    { label: "Student Performance Analytics", key: "feature_performance_analytics", bool: true },
+    { label: "Faculty Performance Analytics", key: "feature_performance_analytics", bool: true },
+    { section: "Communication Channels" },
+    { label: "SMS Notifications",         key: "feature_sms",               bool: true },
+    { label: "Email Notifications",       key: "feature_email",             bool: true },
+    { label: "WhatsApp",                  key: "feature_whatsapp",          bool: true },
+    { section: "Institute Web Page" },
+    { label: "Institute Public Web Page", key: "feature_public_page",       bool: true },
+    { label: "Custom Domain & Branding",  key: "feature_custom_branding",   bool: true },
     { section: "Advanced" },
-    { label: "Finance & Salary", key: "feature_finance", bool: true },
-    { label: "Transport Fees", key: "feature_transport", bool: true },
-    { label: "Public Profile Page", key: "feature_public_page", bool: true },
-    { label: "Parent Portal", key: "feature_parent_portal", bool: true },
-    { label: "Custom Branding", key: "feature_custom_branding", bool: true },
-    { label: "Multi-Branch", key: "feature_multi_branch", bool: true },
-    { label: "API Access", key: "feature_api_access", bool: true },
-    { section: "Mobile" },
-    { label: "Mobile App Access", key: "feature_mobile_app", bool: true },
-    { label: "Push Notifications", key: "feature_push_notifications", bool: true },
-    { label: "Offline Attendance", key: "feature_offline_attendance", bool: true },
-    { label: "Parent App", key: "feature_parent_app", bool: true },
-    { label: "Student App", key: "feature_student_app", bool: true },
+    { label: "API Access",                key: "feature_api_access",        bool: true },
+    { label: "Multi-Branch Management",   key: "feature_multi_branch",      bool: true },
+    { section: "Limits" },
+    { label: "Max Students",  key: "max_students",   format: v => v === -1 ? "Unlimited" : `Up to ${v?.toLocaleString('en-IN')}` },
+    { label: "Max Admins",    key: "max_admin_users",format: v => v === -1 ? "Unlimited" : `${v}` },
+    { label: "Max Faculty",   key: "max_faculty",    format: v => v === -1 ? "Unlimited" : `${v}` },
+    { label: "Storage",       key: "max_storage_mb", format: v => storageLabel(v) },
+    { section: "Mobile (Web + Mobile only)" },
+    { label: "Mobile App Access",    key: "feature_mobile_app",           bool: true },
+    { label: "Push Notifications",   key: "feature_push_notifications",   bool: true },
+    { label: "Offline Attendance",   key: "feature_offline_attendance",   bool: true },
+    { label: "Parent App",           key: "feature_parent_app",           bool: true },
+    { label: "Student App",          key: "feature_student_app",          bool: true },
 ];
 
 /* ───────── FAQ data ───────── */
@@ -62,46 +93,35 @@ const FAQS = [
 function PricingPage() {
     const navigate = useNavigate();
     const { user } = useContext(AuthContext);
+    const fetchedRef = useRef(false);
     const [plans, setPlans] = useState([]);
     const [lifetimePlan, setLifetimePlan] = useState(null);
     const [loading, setLoading] = useState(true);
     const [billingCycle, setBillingCycle] = useState("monthly");
     const [activeTab, setActiveTab] = useState("web_only");
     const [showModal, setShowModal] = useState(false);
-    const [modalPlan, setModalPlan] = useState(null); // for single-plan detail view
+    const [modalPlan, setModalPlan] = useState(null);
     const [openFaq, setOpenFaq] = useState(null);
 
+    /* ── single combined API call (no duplicate fetches) ── */
     useEffect(() => {
-        fetchPlans();
-        fetchLifetimePlan();
-    }, []);
-
-    const fetchPlans = async () => {
-        try {
-            const response = await api.get("/plans");
-            const activePlans = response.data.data
-                .filter(p => p.status === "active" && !p.is_lifetime)
+        if (fetchedRef.current) return;
+        fetchedRef.current = true;
+        Promise.all([
+            api.get("/plans"),
+            api.get("/lifetime/info").catch(() => null),
+        ]).then(([plansRes, ltRes]) => {
+            const activePlans = (plansRes.data.data || [])
+                .filter(p => p.status === "active" && !p.is_lifetime && !p.is_hidden)
                 .sort((a, b) => (a.display_order || 0) - (b.display_order || 0));
             setPlans(activePlans);
-        } catch (error) {
-            console.error("Error fetching plans:", error);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const fetchLifetimePlan = async () => {
-        try {
-            const res = await api.get("/lifetime/info");
-            if (res.data.success) setLifetimePlan(res.data.plan);
-        } catch { /* not configured yet */ }
-    };
+            if (ltRes?.data?.success) setLifetimePlan(ltRes.data.plan);
+        }).catch(err => console.error("Error fetching plans:", err))
+          .finally(() => setLoading(false));
+    }, []);
 
     const handleChoosePlan = (plan) => {
-        if (plan.contact_sales) {
-            navigate("/contact");
-            return;
-        }
+        if (plan.contact_sales) { navigate("/contact"); return; }
         if (user && user.role === "admin") {
             navigate(`/checkout?plan_id=${plan.id}&cycle=${billingCycle}`);
         } else {
@@ -111,21 +131,22 @@ function PricingPage() {
     };
 
     const handleChooseLifetime = () => {
-        if (user && user.role === "admin") {
-            navigate("/billing?tab=lifetime");
-        } else {
-            navigate("/register?intent=lifetime");
-        }
+        if (user && user.role === "admin") navigate("/billing?tab=lifetime");
+        else navigate("/register?intent=lifetime");
     };
 
-    /* ── Filtered plans by platform tab ── */
     const filteredPlans = plans.filter(p => p.platform_type === activeTab);
 
-    /* ── Get display price ── */
     const getPrice = (plan) => {
         if (plan.contact_sales) return null;
         if (billingCycle === "yearly" && plan.yearly_price) return Number(plan.yearly_price);
         return Number(plan.price);
+    };
+
+    const getSavings = (plan) => {
+        if (billingCycle !== "yearly" || !plan.yearly_price || !plan.price) return null;
+        const saved = Number(plan.price) * 12 - Number(plan.yearly_price);
+        return saved > 0 ? saved : null;
     };
 
     const formatPrice = (num) => {
@@ -133,34 +154,23 @@ function PricingPage() {
         return num.toLocaleString("en-IN");
     };
 
-    /* ── Key limits for compact card ── */
-    const getKeyLimits = (plan) => {
-        const limits = [];
-        const ms = plan.max_students;
-        limits.push({ icon: "👥", text: ms === -1 ? "Unlimited Students" : `${ms} Students` });
-        const mf = plan.max_faculty;
-        limits.push({ icon: "👨‍🏫", text: mf === -1 ? "Unlimited Faculty" : `${mf} Faculty` });
-        if (plan.max_branches && plan.max_branches !== 1) {
-            limits.push({ icon: "🏢", text: plan.max_branches === -1 ? "Multi-Branch" : `${plan.max_branches} Branches` });
-        }
-        return limits;
-    };
-
     if (loading) {
         return (
-            <div className="sp-pricing">
-                <PublicNavbar />
-                <div style={{ textAlign: "center", padding: "6rem 2rem", color: "#94a3b8" }}>Loading plans...</div>
+            <div className="landing-root sp-pricing" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+                <Navbar />
+                <div style={{ textAlign: "center", padding: "10rem 2rem", color: "#94a3b8", flex: 1 }}>Loading plans...</div>
+                <Footer />
             </div>
         );
     }
 
     return (
-        <div className="sp-pricing">
-            <PublicNavbar />
-
-            {/* ── Header ── */}
-            <header className="sp-header">
+        <div className="landing-root sp-pricing" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+            <Navbar />
+            
+            <main style={{ flex: 1, paddingBottom: '4rem' }}>
+                {/* ── Header ── */}
+                <header className="sp-header" style={{ paddingTop: '100px' }}>
                 <div className="sp-badge">Transparent Pricing</div>
                 <h1 className="sp-title">Choose the Perfect Plan for Your Institute</h1>
                 <p className="sp-subtitle">
@@ -176,88 +186,116 @@ function PricingPage() {
                 <div className="sp-trust-item"><span className="icon">🔄</span> Cancel Anytime</div>
             </div>
 
-            {/* ── Controls: Platform Tabs + Billing Toggle ── */}
+            {/* ── Controls: Billing + Platform ── */}
             <div className="sp-controls">
-                <div className="sp-platform-tabs">
-                    <button
-                        className={`sp-platform-tab ${activeTab === "web_only" ? "active" : ""}`}
-                        onClick={() => setActiveTab("web_only")}
-                    >
-                        💻 Web Only
-                    </button>
-                    <button
-                        className={`sp-platform-tab ${activeTab === "web_android" ? "active" : ""}`}
-                        onClick={() => setActiveTab("web_android")}
-                    >
-                        📱 Web + Android
-                    </button>
+                <div style={{ display:'flex', alignItems:'center', gap:'8px' }}>
+                    <span className="sp-ctrl-label">Billing:</span>
+                    <div className="sp-billing-toggle">
+                        <button
+                            className={`sp-billing-btn ${billingCycle === "monthly" ? "active" : ""}`}
+                            onClick={() => setBillingCycle("monthly")}
+                        >
+                            Monthly
+                        </button>
+                        <button
+                            className={`sp-billing-btn ${billingCycle === "yearly" ? "active" : ""}`}
+                            onClick={() => setBillingCycle("yearly")}
+                        >
+                            Yearly <span className="sp-save-tag">save 2 months</span>
+                        </button>
+                    </div>
                 </div>
 
-                <div className="sp-billing-toggle">
-                    <button
-                        className={`sp-billing-btn ${billingCycle === "monthly" ? "active" : ""}`}
-                        onClick={() => setBillingCycle("monthly")}
-                    >
-                        Monthly
-                    </button>
-                    <button
-                        className={`sp-billing-btn ${billingCycle === "yearly" ? "active" : ""}`}
-                        onClick={() => setBillingCycle("yearly")}
-                    >
-                        Annual <span className="sp-save-tag">Save 20%</span>
-                    </button>
+                <div style={{ display:'flex', alignItems:'center', gap:'8px' }}>
+                    <span className="sp-ctrl-label">Platform:</span>
+                    <div className="sp-platform-tabs">
+                        <button
+                            className={`sp-platform-tab ${activeTab === "web_only" ? "active" : ""}`}
+                            onClick={() => setActiveTab("web_only")}
+                        >
+                            Web only
+                        </button>
+                        <button
+                            className={`sp-platform-tab ${activeTab === "web_android" ? "active" : ""}`}
+                            onClick={() => setActiveTab("web_android")}
+                        >
+                            Web + Mobile app <span className="sp-extra-tag">+extra</span>
+                        </button>
+                    </div>
                 </div>
             </div>
 
             {/* ── Plan Cards ── */}
+            <style>{`
+                .sp-plan-card:hover  { transform: translateY(-5px) !important; box-shadow: 0 16px 40px rgba(0,0,0,0.35) !important; }
+                .sp-plan-card:active { transform: translateY(0) scale(0.98) !important; }
+                .sp-cta-btn:hover    { filter: brightness(1.12); transform: translateY(-1px); }
+                .sp-cta-btn:active   { filter: brightness(0.95); transform: translateY(1px); }
+            `}</style>
             <div className="sp-plans-container">
                 <div className="sp-plans-grid">
                     {filteredPlans.map((plan) => {
-                        const price = getPrice(plan);
-                        const isTrial = plan.is_free_trial;
+                        const price    = getPrice(plan);
+                        const savings  = getSavings(plan);
+                        const isTrial  = plan.is_free_trial;
                         const isPopular = plan.is_popular;
                         const isEnterprise = plan.contact_sales;
+                        const icon     = PLAN_ICONS[plan.name] || '📋';
+                        const fCount   = plan.feature_count ?? 0;  // from DB spec
+                        const storage  = storageLabel(plan.max_storage_mb);
+                        const students = plan.max_students    === -1 ? 'Unlimited' : plan.max_students?.toLocaleString('en-IN');
+                        const admins   = plan.max_admin_users === -1 ? 'Unlimited' : plan.max_admin_users;
+                        const faculty  = plan.max_faculty     === -1 ? 'Unlimited' : plan.max_faculty?.toLocaleString('en-IN');
 
                         return (
                             <div
                                 key={plan.id}
-                                className={`sp-plan-card ${isPopular ? "popular" : ""} ${isTrial ? "trial" : ""}`}
+                                className={`sp-plan-card ${isPopular ? "popular" : ""}`}
                             >
-                                {isPopular && <div className="sp-popular-tag">Most Popular</div>}
-                                {isTrial && !isPopular && <div className="sp-trial-tag">14-Day Free Trial</div>}
+                                {isPopular && <div className="sp-popular-tag">Most popular</div>}
 
+                                {/* Icon · Name · Description */}
+                                <div className="sp-plan-icon">{icon}</div>
                                 <h3 className="sp-plan-name">{plan.name}</h3>
+                                <div className="sp-plan-desc">{plan.description || ''}</div>
 
                                 {/* Price */}
                                 {isEnterprise ? (
-                                    <div className="sp-price-block contact-sales">
-                                        <div className="sp-price-label">Custom Pricing</div>
+                                    <div className="sp-price-block">
+                                        <span className="sp-price-amount" style={{ fontSize:'1.6rem' }}>Contact Sales</span>
                                     </div>
                                 ) : (
                                     <div className="sp-price-block">
                                         <span className="sp-currency">₹</span>
                                         <span className="sp-price-amount">{formatPrice(price)}</span>
-                                        <span className="sp-price-period">/{billingCycle === "yearly" ? "yr" : "mo"}</span>
+                                        <span className="sp-price-period">per {billingCycle === "yearly" ? "year" : "month"}</span>
                                     </div>
                                 )}
-                                <div className="sp-price-note">
-                                    {isTrial
-                                        ? "Free for 14 days, no card needed"
-                                        : isEnterprise
-                                            ? "Tailored to your institute needs"
-                                            : billingCycle === "yearly"
-                                                ? `₹${formatPrice(Math.round(price / 12))}/mo billed annually`
-                                                : "Billed monthly"
-                                    }
+
+                                {/* Savings row (yearly only) */}
+                                <div className="sp-save-row">
+                                    {savings ? `Save ₹${formatPrice(savings)}/yr` : '\u00A0'}
                                 </div>
 
-                                {/* Key Limits Chips */}
-                                <div className="sp-key-limits">
-                                    {getKeyLimits(plan).map((l, i) => (
-                                        <div key={i} className="sp-limit-chip">
-                                            <span className="icon">{l.icon}</span> {l.text}
-                                        </div>
-                                    ))}
+                                <hr className="sp-divider" />
+
+                                {/* Stats grid */}
+                                <div className="sp-stats-grid">
+                                    <div className="sp-stat-line">
+                                        <strong>{students}</strong>
+                                        <span className="sp-muted"> students</span>
+                                    </div>
+                                    <div className="sp-stat-line">
+                                        <strong>{admins} admins</strong>
+                                        <span className="sp-muted"> · </span>
+                                        <strong>{faculty} faculty</strong>
+                                    </div>
+                                    <div className="sp-stat-line">
+                                        <strong>{fCount} features</strong>
+                                        <span className="sp-muted"> · </span>
+                                        <strong>{storage}</strong>
+                                        <span className="sp-muted"> storage</span>
+                                    </div>
                                 </div>
 
                                 {/* CTA */}
@@ -265,27 +303,15 @@ function PricingPage() {
                                     className={`sp-cta-btn ${isEnterprise ? "sales" : isPopular ? "primary" : "outline"}`}
                                     onClick={() => handleChoosePlan(plan)}
                                 >
-                                    {isTrial ? "🎁 Start Free Trial" : isEnterprise ? "📞 Contact Sales" : `Choose ${plan.name}`}
+                                    {isTrial ? "🎁 Start Free Trial" : isEnterprise ? "📞 Contact Sales" : `Get ${plan.name}`}
                                 </button>
 
-                                {/* View Features */}
-                                <button
-                                    className="sp-features-link"
-                                    onClick={() => { setModalPlan(plan); setShowModal(true); }}
-                                >
-                                    View all features →
-                                </button>
                             </div>
                         );
                     })}
                 </div>
 
-                {/* Compare All Plans */}
-                <div className="sp-compare-row">
-                    {/* <button className="sp-compare-btn" onClick={() => { setModalPlan(null); setShowModal(true); }}>
-                        📊 Compare All Plans
-                    </button> */}
-                </div>
+                <div className="sp-compare-row"></div>
             </div>
 
             {/* ── Lifetime Access Premium Section ── */}
@@ -395,20 +421,6 @@ function PricingPage() {
                 </div>
             )}
 
-            {/* ── FAQ Section ── */}
-            <section className="sp-faq">
-                <h2>Frequently Asked Questions</h2>
-                {FAQS.map((item, i) => (
-                    <div key={i} className="sp-faq-item">
-                        <button className="sp-faq-q" onClick={() => setOpenFaq(openFaq === i ? null : i)}>
-                            {item.q}
-                            <span className={`arrow ${openFaq === i ? "open" : ""}`}>▼</span>
-                        </button>
-                        {openFaq === i && <div className="sp-faq-a">{item.a}</div>}
-                    </div>
-                ))}
-            </section>
-
             {/* ── Final CTA ── */}
             <section style={{ textAlign: "center", padding: "2rem 1.5rem 4rem" }}>
                 <h2 style={{ fontSize: "1.4rem", fontWeight: 700, color: "#fff", marginBottom: 8 }}>Still have questions?</h2>
@@ -429,38 +441,9 @@ function PricingPage() {
                     Contact Us
                 </Link>
             </section>
+            </main>
 
-            {/* ── Footer ── */}
-            <footer className="public-footer">
-                <div className="container">
-                    <div className="footer-grid">
-                        <div className="footer-col">
-                            <h4>ZF Solution</h4>
-                            <p>Professional coaching center management software</p>
-                        </div>
-                        <div className="footer-col">
-                            <h4>Product</h4>
-                            <Link to="/features">Features</Link>
-                            <Link to="/pricing">Pricing</Link>
-                            <Link to="/about">About Us</Link>
-                        </div>
-                        <div className="footer-col">
-                            <h4>Support</h4>
-                            <Link to="/contact">Contact</Link>
-                            <Link to="/terms">Terms of Service</Link>
-                            <Link to="/privacy">Privacy Policy</Link>
-                        </div>
-                        <div className="footer-col">
-                            <h4>Connect</h4>
-                            <a href="mailto:support@zfsolution.com">support@zfsolution.com</a>
-                            <a href="tel:+911234567890">+91 123 456 7890</a>
-                        </div>
-                    </div>
-                    <div className="footer-bottom">
-                        <p>&copy; 2026 ZF Solution. All rights reserved.</p>
-                    </div>
-                </div>
-            </footer>
+            <Footer />
         </div>
     );
 }

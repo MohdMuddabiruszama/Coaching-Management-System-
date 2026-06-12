@@ -5,15 +5,18 @@ const {
     Exam, Mark, ClassSession, Expense, Assignment, StudentParent,
     InstituteDiscount,
     // All models needed for cascade delete
-    StudentSubject, StudentClass, StudentFee, StudentFeePayment,
-    FeeDiscountLog, FacultyAttendance, FacultySalary,
-    Timetable, TimetableSlot, Note, NoteDownload,
+    StudentFee, StudentFeePayment, AssignmentSubmission,
     ChatRoom, ChatMessage, ChatParticipant,
-    BiometricDevice, BiometricEnrollment, BiometricPunch, BiometricSettings,
-    AssignmentSubmission, AssignmentSubmissionHistory, AssignmentSetting,
-    RazorpayOrder, RazorpayPayment, Invoice,
-    InstitutePublicProfile, InstituteGalleryPhoto, InstituteReview,
-    PublicEnquiry, TransportFee
+    Timetable, TimetableSlot,
+    BiometricDevice, BiometricPunch, BiometricEnrollment,
+    Note, NoteDownload,
+    InstitutePublicProfile, InstituteGalleryPhoto, InstituteReview, PublicEnquiry,
+    RazorpayOrder, RazorpayPayment, Invoice, FeeDiscountLog,
+    FacultyAttendance, FacultySalary, AssignmentSetting,
+    StudentClass, StudentSubject, TransportFee,
+    BiometricSettings, AssignmentSubmissionHistory,
+    SlowRequestLog, AuditLog, BulkImportLog, UsageTracker, InstituteAddOn, SubscriptionEvent,
+    Lead
 } = require("../models");
 const { Op, fn, col, literal } = require("sequelize");
 
@@ -85,6 +88,8 @@ exports.getDashboardStats = async (req, res) => {
         const totalFoundingMembers = await Institute.count({ where: { founding_member: true } });
         const lifetimePlan = await Plan.findOne({ where: { is_lifetime: true } });
 
+        const unreadEnquiriesCount = await Lead.count({ where: { is_read: false } });
+
         res.json({
             totalInstitutes,
             activeInstitutes,
@@ -100,6 +105,7 @@ exports.getDashboardStats = async (req, res) => {
             totalFreeTrialUsers,
             totalDiscount,
             totalLandingPageViews,
+            unreadEnquiriesCount,
             // Lifetime stats
             lifetime: {
                 total_lifetime_institutes: totalLifetimeInstitutes,
@@ -314,6 +320,7 @@ exports.updateInstituteLimits = async (req, res) => {
             current_feature_auto_attendance,
             current_feature_fees,
             current_feature_finance,
+            current_feature_expenses,
             current_feature_salary,
             current_feature_reports,
             current_feature_announcements,
@@ -345,6 +352,7 @@ exports.updateInstituteLimits = async (req, res) => {
         if (current_feature_auto_attendance !== undefined) updates.current_feature_auto_attendance = !!current_feature_auto_attendance;
         if (current_feature_fees !== undefined) updates.current_feature_fees = !!current_feature_fees;
         if (current_feature_finance !== undefined) updates.current_feature_finance = !!current_feature_finance;
+        if (current_feature_expenses !== undefined) updates.current_feature_expenses = !!current_feature_expenses;
         if (current_feature_salary !== undefined) updates.current_feature_salary = !!current_feature_salary;
         if (current_feature_reports !== undefined) updates.current_feature_reports = current_feature_reports;
         if (current_feature_announcements !== undefined) updates.current_feature_announcements = !!current_feature_announcements;
@@ -368,7 +376,7 @@ exports.updateInstituteLimits = async (req, res) => {
         } catch(e) {}
         
         const booleanFeatures = [
-            'current_feature_auto_attendance', 'current_feature_fees', 'current_feature_finance',
+            'current_feature_auto_attendance', 'current_feature_fees', 'current_feature_finance', 'current_feature_expenses',
             'current_feature_salary', 'current_feature_announcements', 'current_feature_export',
             'current_feature_timetable', 'current_feature_whatsapp', 'current_feature_custom_branding',
             'current_feature_multi_branch', 'current_feature_api_access', 'current_feature_public_page',
@@ -408,12 +416,18 @@ exports.updateInstituteLimits = async (req, res) => {
 // ─────────────────────────────────────────────────────────────
 // EXISTING: updateInstituteStatus
 // ─────────────────────────────────────────────────────────────
+const { clearInstituteCache } = require("../middlewares/auth.middleware");
+
 exports.updateInstituteStatus = async (req, res) => {
     try {
         const { id } = req.params;
         const { status } = req.body;
 
         await Institute.update({ status }, { where: { id } });
+        
+        // Immediately invalidate cache so suspended institutes are blocked in real-time
+        clearInstituteCache(parseInt(id, 10));
+        
         res.json({ message: "Institute status updated" });
     } catch (error) {
         res.status(500).json({ error: error.message });
@@ -607,6 +621,15 @@ exports.deleteInstitute = async (req, res) => {
         // Note: parent users (role = 'parent') linked via StudentParent
         // are NOT deleted to preserve their accounts (they may be linked elsewhere).
         // Only users directly belonging to this institute (admin, manager, faculty, student) are removed.
+        
+        // Logs and trackers that may reference users
+        await SlowRequestLog.destroy({ where: { institute_id: id }, transaction: t });
+        await AuditLog.destroy({ where: { institute_id: id }, transaction: t });
+        await BulkImportLog.destroy({ where: { institute_id: id }, transaction: t });
+        await UsageTracker.destroy({ where: { institute_id: id }, transaction: t });
+        await InstituteAddOn.destroy({ where: { institute_id: id }, transaction: t });
+        await SubscriptionEvent.destroy({ where: { institute_id: id }, transaction: t });
+
         await User.destroy({
             where: {
                 institute_id: id,
@@ -680,7 +703,7 @@ exports.suspendInstitute = async (req, res) => {
 
         // Clear cache so it takes effect instantly
         const { clearInstituteCache } = require("../middlewares/auth.middleware");
-        if (typeof clearInstituteCache === "function") clearInstituteCache(id);
+        if (typeof clearInstituteCache === "function") clearInstituteCache(parseInt(id, 10));
 
         // Log the action
         console.log(`[SUSPEND] Institute: ${institute.name} (ID: ${id})`, {
@@ -720,7 +743,7 @@ exports.restoreInstitute = async (req, res) => {
 
         // Clear cache so it takes effect instantly
         const { clearInstituteCache } = require("../middlewares/auth.middleware");
-        if (typeof clearInstituteCache === "function") clearInstituteCache(id);
+        if (typeof clearInstituteCache === "function") clearInstituteCache(parseInt(id, 10));
 
         res.status(200).json({
             success: true,

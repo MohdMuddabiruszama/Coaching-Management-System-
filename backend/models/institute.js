@@ -63,6 +63,10 @@ const Institute = sequelize.define("Institute", {
         type: DataTypes.BOOLEAN,
         defaultValue: false
     },
+    current_feature_expenses: {
+        type: DataTypes.BOOLEAN,
+        defaultValue: false
+    },
     current_feature_salary: {
         type: DataTypes.BOOLEAN,
         defaultValue: false

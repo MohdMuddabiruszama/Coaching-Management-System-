@@ -24,6 +24,15 @@ const verifyPayment = {
     }),
 };
 
+const verifyFailure = {
+    body: Joi.object({
+        razorpay_order_id: Joi.string().min(5).max(100).required(),
+        error_description: Joi.string().max(500).allow("", null).optional(),
+        planId: Joi.number().integer().positive().required(),
+        billingCycle: Joi.string().valid("monthly", "yearly").default("monthly"),
+    }),
+};
+
 const createFeeOrder = {
     body: Joi.object({
         student_fee_id: Joi.number().integer().positive().required(),
@@ -46,6 +55,7 @@ const verifyFeePayment = {
 module.exports = {
     initiatePayment,
     verifyPayment,
+    verifyFailure,
     createFeeOrder,
     verifyFeePayment,
 };

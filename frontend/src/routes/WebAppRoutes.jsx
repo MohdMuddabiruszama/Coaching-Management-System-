@@ -12,6 +12,7 @@ const Pricing = lazy(() => import("../pages/public/PricingPage"));
 const PaymentAndCheckout = lazy(() => import("../pages/public/PaymentPage"));
 const Terms = lazy(() => import("../pages/public/TermsPage"));
 const Privacy = lazy(() => import("../pages/public/PrivacyPage"));
+const BookDemoPage = lazy(() => import("../pages/public/BookDemoPage"));
 const InstitutePage = lazy(() => import("../pages/public/InstitutePage"));
 
 const Login = lazy(() => import("../pages/auth/Login"));
@@ -30,6 +31,7 @@ const SuperAdminSettings = lazy(() => import("../pages/superadmin/Settings"));
 const SuperAdminExpenses = lazy(() => import("../pages/superadmin/Expenses"));
 const LandingPage = lazy(() => import("../pages/superadmin/LandingPage"));
 const InstituteLimits = lazy(() => import("../pages/superadmin/InstituteLimits"));
+const Enquiries = lazy(() => import("../pages/superadmin/Enquiries"));
 
 const AdminDashboard = lazy(() => import("../pages/admin/Dashboard"));
 const Students = lazy(() => import("../pages/admin/Students"));
@@ -156,6 +158,7 @@ export default function WebAppRoutes() {
         <Route path="/register" element={<Register />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/suspended" element={<SuspendedPage />} />
+        <Route path="/book-demo" element={<BookDemoPage />} />
         <Route path="/change-password" element={
           <ProtectedRoute allowedRoles={["student", "faculty", "parent"]} skipFirstLoginCheck={true}>
             <ChangePassword />
@@ -178,6 +181,7 @@ export default function WebAppRoutes() {
                 <Route path="settings" element={<SuperAdminSettings />} />
                 <Route path="landing-page" element={<LandingPage />} />
                 <Route path="institute-limits" element={<InstituteLimits />} />
+                <Route path="enquiries" element={<Enquiries />} />
                 <Route path="*" element={<Navigate to="/superadmin/dashboard" />} />
               </Routes>
             </ProtectedRoute>

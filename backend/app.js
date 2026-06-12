@@ -518,6 +518,7 @@ const syncDatabase = async () => {
     try { await sequelize.query(`ALTER TABLE plans ADD COLUMN feature_transport_fees BOOLEAN DEFAULT false;`); } catch (e) { }
     try { await sequelize.query(`ALTER TABLE plans ADD COLUMN feature_finance BOOLEAN DEFAULT false;`); } catch (e) { }
     try { await sequelize.query(`ALTER TABLE institutes ADD COLUMN current_feature_finance BOOLEAN DEFAULT false;`); } catch (e) { }
+    try { await sequelize.query(`ALTER TABLE institutes ADD COLUMN current_feature_expenses BOOLEAN DEFAULT false;`); } catch (e) { }
     try { await sequelize.query(`ALTER TABLE institutes ADD COLUMN current_feature_salary BOOLEAN DEFAULT false;`); } catch (e) { }
     try { await sequelize.query(`ALTER TABLE institutes ADD COLUMN current_feature_mobile_app BOOLEAN DEFAULT false;`); } catch (e) { }
     console.log("âœ… Finance & Mobile module feature columns ensured");
@@ -618,6 +619,25 @@ const syncDatabase = async () => {
     try { await sequelize.query(`CREATE INDEX IF NOT EXISTS idx_marks_student_id ON marks(student_id);`); } catch (e) { }
     try { await sequelize.query(`CREATE INDEX IF NOT EXISTS idx_exams_locked ON exams(marks_locked);`); } catch (e) { }
     console.log('✅ Exam Result System columns ensured');
+
+    // ── Timetable Slots per Class ──────────────────────────────────────
+    try {
+      await sequelize.query(`ALTER TABLE timetable_slots ADD COLUMN IF NOT EXISTS class_id INTEGER REFERENCES classes(id) ON DELETE CASCADE;`);
+      console.log('✅ Timetable Slots class_id column ensured');
+    } catch (e) {
+      console.error('Error adding class_id to timetable_slots:', e.message);
+    }
+
+    // ── Break Support for Timetable ──────────────────────────────────────
+    try {
+      await sequelize.query(`ALTER TABLE timetables ADD COLUMN IF NOT EXISTS is_break BOOLEAN NOT NULL DEFAULT FALSE;`);
+      await sequelize.query(`ALTER TABLE timetables ADD COLUMN IF NOT EXISTS break_label VARCHAR(100) DEFAULT NULL;`);
+      await sequelize.query(`ALTER TABLE timetables ALTER COLUMN subject_id DROP NOT NULL;`);
+      await sequelize.query(`ALTER TABLE timetables ALTER COLUMN faculty_id DROP NOT NULL;`);
+      console.log('✅ Timetable break columns ensured');
+    } catch (e) {
+      console.error('Error adding break columns to timetables:', e.message);
+    }
 
     // ── Chat Message Limit (Subscription Plan Feature) ────────────────────────
     try { await sequelize.query(`ALTER TABLE plans ADD COLUMN IF NOT EXISTS max_chat_messages INTEGER NOT NULL DEFAULT 500;`); } catch (e) { }

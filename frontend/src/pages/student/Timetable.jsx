@@ -62,7 +62,7 @@ function StudentTimetable() {
         setLoading(true);
         try {
             const [slotsRes, timetableRes] = await Promise.all([
-                api.get("/timetable/slots"),
+                api.get(`/timetable/slots?class_id=${classId}`),
                 api.get(`/timetable/class/${classId}`)
             ]);
             setSlots(slotsRes.data.data || []);
@@ -125,8 +125,37 @@ function StudentTimetable() {
         return <div className="tt-v2-container" style={{ padding: '3rem', textAlign: 'center' }}>Loading Class Schedule...</div>;
     }
 
-    const activeSlots = slots.filter(slot => 
-        timetable.some(t => t.slot_id === slot.id && enrolledSubjectIds.has(t.subject_id))
+    // Helper to determine if a break should be shown on a specific day for this student
+    // Rule: Show break ONLY if the student has an enrolled class BEFORE the break AND AFTER the break on that day.
+    const shouldShowBreak = (day, currentSlot) => {
+        let hasClassBefore = false;
+        let hasClassAfter = false;
+
+        for (const otherSlot of slots) {
+            const otherEntry = timetable.find(t => t.slot_id === otherSlot.id && t.day_of_week === day);
+            if (otherEntry && !otherEntry.is_break && enrolledSubjectIds.has(otherEntry.subject_id)) {
+                if (otherSlot.start_time < currentSlot.start_time) {
+                    hasClassBefore = true;
+                }
+                if (otherSlot.start_time > currentSlot.start_time) {
+                    hasClassAfter = true;
+                }
+            }
+            if (hasClassBefore && hasClassAfter) return true;
+        }
+        return false;
+    };
+
+    // Include slots that have a scheduled subject for the current class
+    // OR a break, but ONLY IF the break satisfies the before/after condition for at least one day
+    const activeSlots = slots.filter(slot =>
+        timetable.some(t => {
+            if (t.slot_id !== slot.id) return false;
+            if (t.is_break) {
+                return shouldShowBreak(t.day_of_week, slot);
+            }
+            return enrolledSubjectIds.has(t.subject_id);
+        })
     );
 
     return (
@@ -250,6 +279,27 @@ function StudentTimetable() {
                                         </td>
                                         {DAYS_OF_WEEK.map(day => {
                                             const entry = timetable.find(t => t.slot_id === slot.id && t.day_of_week === day);
+
+                                            // Break period
+                                            if (entry && entry.is_break) {
+                                                if (shouldShowBreak(day, slot)) {
+                                                    return (
+                                                        <td key={`${slot.id}-${day}`}>
+                                                            <div className="tt-v2-cell-break">
+                                                                <span className="tt-v2-break-icon">☕</span>
+                                                                <span className="tt-v2-break-label">{entry.break_label || 'Break'}</span>
+                                                            </div>
+                                                        </td>
+                                                    );
+                                                } else {
+                                                    return (
+                                                        <td key={`${slot.id}-${day}`}>
+                                                            <div className="tt-v2-cell-empty">-</div>
+                                                        </td>
+                                                    );
+                                                }
+                                            }
+
                                             const isEnrolled = entry && enrolledSubjectIds.has(entry.subject_id);
 
                                             if (isEnrolled) {
@@ -288,7 +338,12 @@ function StudentTimetable() {
                             {DAYS_OF_WEEK.map((day, idx) => {
                                 const dayEntries = activeSlots.map(slot => {
                                     const entry = timetable.find(t => t.slot_id === slot.id && t.day_of_week === day);
-                                    if (entry && enrolledSubjectIds.has(entry.subject_id)) return { slot, entry };
+                                    if (!entry) return null;
+                                    // Include breaks and enrolled subjects conditionally
+                                    if (entry.is_break) {
+                                        return shouldShowBreak(day, slot) ? { slot, entry } : null;
+                                    }
+                                    if (enrolledSubjectIds.has(entry.subject_id)) return { slot, entry };
                                     return null;
                                 }).filter(Boolean);
 
@@ -301,6 +356,19 @@ function StudentTimetable() {
                                         </h3>
                                         <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
                                             {dayEntries.map(({ slot, entry }) => {
+                                                if (entry.is_break) {
+                                                    return (
+                                                        <div key={slot.id} style={{ display: "flex", alignItems: "center", background: "linear-gradient(135deg, #FFF8E1, #FFF3CD)", border: "1.5px dashed #F59E0B", borderRadius: "12px", padding: "1rem" }}>
+                                                            <div style={{ width: "120px", fontWeight: "600", color: "#64748b", fontSize: "0.85rem", borderRight: "1px solid #FDE68A", marginRight: "1rem" }}>
+                                                                {slot.start_time.slice(0, 5)} - {slot.end_time.slice(0, 5)}
+                                                            </div>
+                                                            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                                                                <span style={{ fontSize: "1.1rem" }}>☕</span>
+                                                                <span style={{ fontWeight: "700", color: "#92400E", fontSize: "0.9rem" }}>{entry.break_label || 'Break'}</span>
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                }
                                                 const theme = getSubjectColorTheme(entry.Subject?.name || '');
                                                 return (
                                                     <div key={slot.id} style={{ display: "flex", alignItems: "center", background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: "12px", padding: "1rem", boxShadow: "0 1px 2px rgba(0,0,0,0.02)" }}>
@@ -339,6 +407,9 @@ function StudentTimetable() {
                     </div>
                     <div className="tt-v2-legend-item">
                         <div className="tt-v2-dot" style={{ background: '#22c55e' }}></div> English
+                    </div>
+                    <div className="tt-v2-legend-item">
+                        <div className="tt-v2-dot" style={{ background: '#F59E0B' }}></div> Break
                     </div>
                     <div className="tt-v2-legend-item" style={{ marginLeft: '1rem', color: '#64748b' }}>
                         👤 Teacher

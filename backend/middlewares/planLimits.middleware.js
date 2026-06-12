@@ -12,6 +12,7 @@ const computeFeatures = (institute, plan) => {
         auto_attendance: institute.current_feature_auto_attendance !== null ? institute.current_feature_auto_attendance : plan.feature_auto_attendance,
         fees: institute.current_feature_fees !== null ? institute.current_feature_fees : plan.feature_fees,
         finance: institute.current_feature_finance !== null ? institute.current_feature_finance : plan.feature_finance,
+        expenses: institute.current_feature_expenses !== null && institute.current_feature_expenses !== undefined ? institute.current_feature_expenses : (plan.feature_expenses || false),
         salary: institute.current_feature_salary !== null ? institute.current_feature_salary : plan.feature_salary,
         reports: institute.current_feature_reports || plan.feature_reports,
         announcements: institute.current_feature_announcements !== null ? institute.current_feature_announcements : plan.feature_announcements,
@@ -28,7 +29,13 @@ const computeFeatures = (institute, plan) => {
         exams: plan.feature_exams || false,
         performance_hub: institute.current_feature_performance_hub !== null && institute.current_feature_performance_hub !== undefined ? institute.current_feature_performance_hub : (plan.feature_performance_hub || false),
         public_page: institute.current_feature_public_page !== null && institute.current_feature_public_page !== undefined ? institute.current_feature_public_page : (plan.feature_public_page || false),
-        mobile_app: institute.current_feature_mobile_app !== null && institute.current_feature_mobile_app !== undefined ? institute.current_feature_mobile_app : (plan.feature_mobile_app || false)
+        mobile_app: institute.current_feature_mobile_app !== null && institute.current_feature_mobile_app !== undefined ? institute.current_feature_mobile_app : (plan.feature_mobile_app || false),
+        // ── New features from Update_Plans.md spec ──
+        scan_qr:              plan.feature_scan_qr              || false,
+        faculty_attendance:   plan.feature_faculty_attendance   || false,
+        faculty_tracker:      plan.feature_faculty_tracker      || false,
+        biometric:            plan.feature_biometric            || false,
+        performance_analytics: plan.feature_performance_analytics || plan.feature_performance_hub || false,
     };
 
     let expiries = {};
@@ -322,6 +329,9 @@ const checkFeatureAccess = (featureName) => {
                 case 'fees':
                     hasAccess = features.fees === true;
                     break;
+                case 'expenses':
+                    hasAccess = features.expenses === true;
+                    break;
                 case 'reports':
                     hasAccess = features.reports !== 'none';
                     break;
@@ -364,8 +374,24 @@ const checkFeatureAccess = (featureName) => {
                 case 'performance_hub':
                     hasAccess = features.performance_hub === true;
                     break;
+                case 'performance_analytics':
+                    hasAccess = features.performance_analytics === true;
+                    break;
                 case 'public_page':
                     hasAccess = features.public_page === true;
+                    break;
+                // ── New features (Update_Plans.md spec) ──
+                case 'scan_qr':
+                    hasAccess = features.scan_qr === true;
+                    break;
+                case 'faculty_attendance':
+                    hasAccess = features.faculty_attendance === true;
+                    break;
+                case 'faculty_tracker':
+                    hasAccess = features.faculty_tracker === true;
+                    break;
+                case 'biometric':
+                    hasAccess = features.biometric === true;
                     break;
                 default:
                     hasAccess = true; // Unknown features are allowed by default

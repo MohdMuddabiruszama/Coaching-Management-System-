@@ -1,173 +1,254 @@
 /**
  * Landing Page Pricing Section
- * Uses the same professional design as PricingPage.jsx:
- * - Platform tabs (Web Only / Web + Android)
- * - Monthly / Annual billing toggle
- * - Compact cards with limit chips
- * - Feature comparison modal
- * - Lifetime plan premium banner
+ * Card layout matches the uploaded reference images:
+ *   - Billing: Monthly / Yearly (save 2 months) toggle
+ *   - Platform: Web Only / Web + Mobile app toggle
+ *   - Card: icon · name · description · price · save badge (yearly) · divider
+ *            · students · admins · faculty · features · storage
+ *   - Feature comparison modal
+ *   - Lifetime premium banner
  */
 
-import { useState, useEffect, useContext } from 'react';
+import { useState, useEffect, useContext, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../../context/AuthContext';
 import api from '../../services/api';
 
-/* ── Inline styles scoped to pricing section (no CSS file conflict) ── */
-const ps = {
-    wrap: { padding: '80px 0', background: 'var(--lp-bg, #0F172A)', position: 'relative' },
-    inner: { maxWidth: '1100px', margin: '0 auto', padding: '0 1.5rem' },
-    header: { textAlign: 'center', marginBottom: '3.5rem' },
-    eyebrow: { display: 'inline-block', fontSize: '0.85rem', fontWeight: 700, letterSpacing: '1px', color: 'var(--lp-primary, #6366f1)', marginBottom: '0.75rem' },
-    h2: { fontSize: 'clamp(2rem, 4.5vw, 3rem)', fontWeight: 800, color: 'var(--lp-text, #fff)', lineHeight: 1.15, marginBottom: '1rem' },
-    sub: { fontSize: '1.1rem', color: 'var(--lp-muted, #94a3b8)', maxWidth: '600px', margin: '0 auto' },
-    controls: { display: 'flex', flexWrap: 'wrap', justifyContent: 'center', alignItems: 'center', gap: '12px', marginBottom: '3rem' },
-    tabGroup: { display: 'flex', background: 'var(--lp-surface, rgba(255,255,255,0.04))', border: '1px solid var(--lp-border, rgba(255,255,255,0.06))', borderRadius: '12px', padding: '4px', gap: '4px' },
-    tab: (active) => ({ padding: '9px 20px', border: 'none', borderRadius: '8px', background: active ? 'var(--lp-primary, #6366f1)' : 'transparent', color: active ? '#fff' : 'var(--lp-muted, #94a3b8)', fontSize: '0.88rem', fontWeight: 600, cursor: 'pointer', transition: 'all 0.22s', whiteSpace: 'nowrap' }),
-
-    // NEW GRID & CARDS
-    grid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1.25rem', marginBottom: '2.5rem', alignItems: 'stretch' },
-    card: (isSelected) => ({
-        background: isSelected ? 'linear-gradient(145deg, #1e1b4b, #2e1065, #4c1d95)' : 'var(--lp-surface, rgba(255,255,255,0.03))',
-        border: `1px solid ${isSelected ? 'rgba(167,139,250,0.5)' : 'var(--lp-border, rgba(255,255,255,0.06))'}`,
-        borderRadius: '16px',
-        padding: '2rem 1.5rem',
-        position: 'relative',
-        display: 'flex',
-        flexDirection: 'column',
-        transition: 'all 0.3s ease',
-        boxShadow: isSelected ? '0 10px 30px rgba(76, 29, 149, 0.4)' : 'var(--lp-shadow-sm, none)',
-        cursor: 'pointer'
-    }),
-    planHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', height: '24px' },
-    planName: (isSelected) => ({ fontSize: '0.85rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px', color: isSelected ? 'rgba(255,255,255,0.9)' : 'var(--lp-muted, #94a3b8)' }),
-    badgePopular: { background: 'rgba(255,255,255,0.1)', color: 'var(--lp-text, #fff)', border: '1px solid rgba(255,255,255,0.2)', fontSize: '0.65rem', fontWeight: 700, padding: '4px 10px', borderRadius: '20px', letterSpacing: '0.5px', textTransform: 'uppercase' },
-    priceBlock: { marginBottom: '1.75rem', display: 'flex', alignItems: 'baseline' },
-    currency: (isSelected) => ({ fontSize: '1.2rem', color: isSelected ? 'rgba(255,255,255,0.9)' : 'var(--lp-text, #fff)', fontWeight: 700, marginRight: '2px' }),
-    amount: (isSelected) => ({ fontSize: '2.8rem', fontWeight: 800, color: isSelected ? '#fff' : 'var(--lp-text, #fff)', lineHeight: 1 }),
-    period: (isSelected) => ({ fontSize: '0.9rem', color: isSelected ? 'rgba(255,255,255,0.8)' : 'var(--lp-muted, #94a3b8)', marginLeft: '4px' }),
-    featureList: { listStyle: 'none', padding: 0, margin: '0 0 2rem 0', flex: 1, display: 'flex', flexDirection: 'column', gap: '14px' },
-    featureItem: (isSelected) => ({ display: 'flex', alignItems: 'flex-start', gap: '10px', fontSize: '0.9rem', color: isSelected ? 'rgba(255,255,255,0.95)' : 'var(--lp-text, #e2e8f0)', lineHeight: 1.4 }),
-    checkIcon: (isSelected) => ({ color: isSelected ? '#fff' : 'var(--lp-primary, #6366f1)', fontSize: '1.1rem', lineHeight: 1 }),
-    ctaBtn: (isSelected, isEnterprise, popular) => {
-        const base = { width: '100%', padding: '14px', border: 'none', borderRadius: '10px', fontSize: '0.95rem', fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s', marginTop: 'auto' };
-        if (isSelected) return { ...base, background: '#fff', color: 'var(--lp-primary, #6366f1)' };
-        if (popular) return { ...base, background: 'var(--lp-primary, #6366f1)', color: '#fff' };
-        return { ...base, background: 'transparent', border: '1px solid var(--lp-border, rgba(255,255,255,0.2))', color: 'var(--lp-text, #fff)' };
-    },
-    viewLink: (isSelected) => ({ display: 'block', textAlign: 'center', fontSize: '0.77rem', color: isSelected ? 'rgba(255,255,255,0.8)' : 'var(--lp-muted, #94a3b8)', cursor: 'pointer', background: 'none', border: 'none', width: '100%', padding: '6px 0', marginTop: '10px' }),
-    compareRow: { textAlign: 'center', padding: '0.5rem 0 2.5rem' },
-    compareBtn: { display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'var(--lp-surface, rgba(255,255,255,0.03))', border: '1px solid var(--lp-border, rgba(255,255,255,0.06))', color: 'var(--lp-text, #94a3b8)', padding: '10px 24px', borderRadius: '10px', fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer', transition: 'all 0.22s' },
-    /* Lifetime */
-    ltCard: { background: 'linear-gradient(145deg, #1e1b4b, #2e1065, #4c1d95)', border: '1px solid rgba(167,139,250,0.3)', borderRadius: '14px', padding: '2rem', position: 'relative', overflow: 'hidden', marginBottom: '2rem', boxShadow: 'var(--lp-shadow-lg, 0 10px 30px rgba(76, 29, 149, 0.15))' },
-    ltBadge: { display: 'inline-flex', alignItems: 'center', gap: '5px', background: 'rgba(245,158,11,0.15)', border: '1px solid rgba(245,158,11,0.3)', color: '#f59e0b', fontSize: '0.67rem', fontWeight: 700, padding: '4px 12px', borderRadius: '20px', letterSpacing: '0.5px', textTransform: 'uppercase', marginBottom: '1rem' },
-    ltRow: { display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'flex-start', gap: '1.5rem', position: 'relative', zIndex: 1 },
-    ltInfo: { flex: 1, minWidth: '240px' },
-    ltH: { fontSize: '1.5rem', fontWeight: 800, color: '#fff', marginBottom: '0.4rem' },
-    ltP: { fontSize: '0.9rem', color: '#e2e8f0', marginBottom: '1rem' },
-    ltPerks: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(190px, 1fr))', gap: '6px' },
-    ltPerk: { fontSize: '0.85rem', color: '#f8fafc', padding: '2px 0', display: 'flex', alignItems: 'center', gap: '6px' },
-    ltBox: { minWidth: '200px', textAlign: 'center', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '12px', padding: '1.5rem', position: 'relative', zIndex: 1, backdropFilter: 'blur(10px)' },
-    ltPrice: { fontSize: '2.2rem', fontWeight: 900, color: '#fff', lineHeight: 1, marginBottom: '4px' },
-    ltLabel: { fontSize: '0.82rem', color: '#e2e8f0', marginBottom: '1rem' },
-    ltCta: { width: '100%', padding: '12px', border: 'none', borderRadius: '10px', background: 'linear-gradient(135deg,#f59e0b,#d97706)', color: '#fff', fontSize: '0.9rem', fontWeight: 800, cursor: 'pointer', boxShadow: '0 4px 16px rgba(245,158,11,0.3)', textShadow: '0 1px 2px rgba(0,0,0,0.2)' },
-    /* Modal */
-    overlay: { position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.8)', backdropFilter: 'blur(8px)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.5rem' },
-    modal: { background: 'var(--lp-surface, #111827)', border: '1px solid var(--lp-border, rgba(255,255,255,0.06))', borderRadius: '16px', maxWidth: '880px', width: '100%', maxHeight: '85vh', overflowY: 'auto', padding: '2rem', position: 'relative', boxShadow: 'var(--lp-shadow-lg, none)' },
-    closeBtn: { position: 'absolute', top: 14, right: 14, width: 32, height: 32, border: '1px solid var(--lp-border, rgba(255,255,255,0.08))', borderRadius: '7px', background: 'var(--lp-bg, rgba(255,255,255,0.04))', color: 'var(--lp-muted)', fontSize: '1rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s' },
-    table: { width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' },
-    th: { padding: '12px 12px', textAlign: 'left', color: 'var(--lp-primary, #818cf8)', fontWeight: 700, borderBottom: '1px solid var(--lp-border, rgba(255,255,255,0.06))', whiteSpace: 'nowrap', fontSize: '0.8rem', background: 'var(--lp-bg, transparent)' },
-    td: { padding: '12px 12px', borderBottom: '1px solid var(--lp-border, rgba(255,255,255,0.02))', color: 'var(--lp-text, var(--lp-muted))' },
-    sectionRow: { padding: '20px 12px 8px', fontWeight: 700, color: 'var(--lp-primary, #818cf8)', fontSize: '0.75rem', letterSpacing: '1px', textTransform: 'uppercase', borderBottom: '2px solid var(--lp-border, rgba(99,102,241,0.12))', background: 'var(--lp-surface, transparent)' },
-    /* Trust bar */
-    trustBar: { display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '1.5rem', marginBottom: '2rem' },
-    trustItem: { display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', color: 'var(--lp-text, var(--lp-muted))', fontWeight: 600 },
+/* ── plan icons by name ── */
+const PLAN_ICONS = {
+    Starter:      '🪴',
+    Basic:        '📖',
+    Professional: '🚀',
+    Enterprise:   '🏛️',
 };
 
-/* ── Feature comparison rows ── */
+/* ── storage label ── */
+function storageLabel(mb) {
+    if (mb === -1 || mb == null) return 'Unlimited';
+    if (mb >= 1024) return `${(mb / 1024).toFixed(0)} GB`;
+    return `${mb} MB`;
+}
+
+/* ── Feature comparison rows (26 features per spec) ── */
 const COMPARE_ROWS = [
-    { section: 'Core Limits' },
-    { label: 'Students', key: 'max_students', fmt: v => v === -1 ? 'Unlimited' : `Up to ${v}` },
-    { label: 'Faculty', key: 'max_faculty', fmt: v => v === -1 ? 'Unlimited' : String(v) },
-    { label: 'Storage', key: 'max_storage_mb', fmt: v => v === -1 ? 'Unlimited' : `${(v / 1024).toFixed(0)} GB` },
-    { label: 'AI Messages/mo', key: 'max_ai_messages', fmt: v => v === -1 ? 'Unlimited' : String(v) },
-    { section: 'Features' },
-    { label: 'Fee Management', key: 'feature_fees', bool: true },
-    { label: 'Exams & Marks', key: 'feature_exams', bool: true },
-    { label: 'Timetable', key: 'feature_timetable', bool: true },
-    { label: 'Reports', key: 'feature_reports', fmt: v => v === 'advanced' ? 'Advanced' : v === 'basic' ? 'Basic' : '—' },
-    { label: 'Announcements', key: 'feature_announcements', bool: true },
-    { label: 'Finance & Salary', key: 'feature_finance', bool: true },
-    { label: 'SMS / Email', key: 'feature_sms', bool: true },
-    { label: 'Parent Portal', key: 'feature_parent_portal', bool: true },
-    { label: 'Custom Branding', key: 'feature_custom_branding', bool: true },
-    { label: 'API Access', key: 'feature_api_access', bool: true },
-    { section: 'Mobile (Web + Android only)' },
-    { label: 'Mobile App', key: 'feature_mobile_app', bool: true },
-    { label: 'Push Notifications', key: 'feature_push_notifications', bool: true },
-    { label: 'Offline Attendance', key: 'feature_offline_attendance', bool: true },
-    { label: 'Parent App', key: 'feature_parent_app', bool: true },
-    { label: 'Student App', key: 'feature_student_app', bool: true },
+    { section: 'Attendance' },
+    { label: 'Manage Student Attendance', key: 'feature_attendance', fmt: v => v && v !== 'none' ? (v === 'advanced' ? 'Advanced' : 'Basic') : '\u2014' },
+    { label: 'View Attendance',            key: 'feature_attendance', fmt: v => v && v !== 'none' ? '\u2713' : '\u2014' },
+    { label: 'Scan Student QR Code',       key: 'feature_scan_qr',         bool: true },
+    { label: 'Faculty Attendance',         key: 'feature_faculty_attendance', bool: true },
+    { label: 'View Faculty Tracker',       key: 'feature_faculty_tracker',  bool: true },
+    { label: 'Scan Faculty QR Code',       key: 'feature_faculty_tracker',  bool: true },
+    { label: 'Biometric Attendance',       key: 'feature_biometric',        bool: true },
+    { section: 'People Management' },
+    { label: 'Manage Admin / Managers',    key: 'feature_students',         bool: true },
+    { label: 'Manage Students',            key: 'feature_students',         bool: true },
+    { label: 'Manage Classes & Subjects',  key: 'feature_classes',          bool: true },
+    { label: 'Manage Faculty',             key: 'feature_faculty',          bool: true },
+    { label: 'Manage Parents',             key: 'feature_parent_portal',    bool: true },
+    { section: 'Finance' },
+    { label: 'Collect Fees',               key: 'feature_fees',             bool: true },
+    { label: 'Finances & Expenses',        key: 'feature_finance',          bool: true },
+    { label: 'Salary Management',          key: 'feature_salary',           bool: true },
+    { section: 'Academics' },
+    { label: 'Manage Exams',               key: 'feature_exams',            bool: true },
+    { label: 'Master Timetable',           key: 'feature_timetable',        bool: true },
+    { label: 'Assignments',                key: 'feature_assignment',       bool: true },
+    { label: 'Exam Reports',               key: 'feature_export',           bool: true },
+    { section: 'Communication & Content' },
+    { label: 'Announcements',              key: 'feature_announcements',    bool: true },
+    { label: 'All Notes',                  key: 'feature_notes',            bool: true },
+    { label: 'Chat Monitor',               key: 'feature_chat',             bool: true },
+    { section: 'Reports & Analytics' },
+    { label: 'Reports & Analytics',        key: 'feature_reports', fmt: v => v === 'advanced' ? 'Advanced' : v === 'basic' ? 'Standard' : '\u2014' },
+    { label: 'Student Performance Analytics', key: 'feature_performance_analytics', bool: true },
+    { label: 'Faculty Performance Analytics', key: 'feature_performance_analytics', bool: true },
+    { section: 'Communication Channels' },
+    { label: 'SMS Notifications',          key: 'feature_sms',              bool: true },
+    { label: 'Email Notifications',        key: 'feature_email',            bool: true },
+    { label: 'WhatsApp',                   key: 'feature_whatsapp',         bool: true },
+    { section: 'Institute Web Page' },
+    { label: 'Institute Public Web Page',  key: 'feature_public_page',      bool: true },
+    { label: 'Custom Domain & Branding',   key: 'feature_custom_branding',  bool: true },
+    { section: 'Advanced' },
+    { label: 'API Access',                 key: 'feature_api_access',       bool: true },
+    { label: 'Multi-Branch Management',    key: 'feature_multi_branch',     bool: true },
+    { section: 'Limits' },
+    { label: 'Max Students',               key: 'max_students',  fmt: v => v === -1 ? 'Unlimited' : v?.toLocaleString('en-IN') },
+    { label: 'Max Admins',                 key: 'max_admin_users', fmt: v => v === -1 ? 'Unlimited' : String(v) },
+    { label: 'Max Faculty',                key: 'max_faculty',   fmt: v => v === -1 ? 'Unlimited' : v?.toLocaleString('en-IN') },
+    { label: 'Storage',                    key: 'max_storage_mb',fmt: v => storageLabel(v) },
+    { section: 'Mobile (Web + Mobile only)' },
+    { label: 'Mobile App',                 key: 'feature_mobile_app',          bool: true },
+    { label: 'Push Notifications',         key: 'feature_push_notifications',  bool: true },
+    { label: 'Offline Attendance',         key: 'feature_offline_attendance',  bool: true },
+    { label: 'Parent App',                 key: 'feature_parent_app',          bool: true },
+    { label: 'Student App',                key: 'feature_student_app',         bool: true },
 ];
 
+const CheckCircle = () => (
+    <svg style={S.checkIcon} viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+        <polyline points="22 4 12 14.01 9 11.01"></polyline>
+    </svg>
+);
+
+const CheckIcon = () => (
+    <svg style={S.checkIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" strokeWidth="1.5"></path>
+        <polyline points="22 4 12 14.01 9 11.01" strokeWidth="2"></polyline>
+    </svg>
+);
+
+const FeatureCheck = () => (
+    <svg style={S.checkIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="1.5" fill="none"/>
+        <path d="M8 12.5l3 3 5-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+);
+
+
+/* ── Inline styles ── */
+const S = {
+    wrap:    { padding: '140px 0 80px', background: 'var(--lp-bg, #f8fafc)', position: 'relative', fontFamily: "'Inter', 'Plus Jakarta Sans', sans-serif" },
+    inner:   { maxWidth: '1200px', margin: '0 auto', padding: '0 1.5rem' },
+    header:  { textAlign: 'center', marginBottom: '3rem' },
+    eyebrow: { display:'inline-block', fontSize:'0.8rem', fontWeight:700, letterSpacing:'1px', textTransform:'uppercase', color:'var(--lp-primary, #6366f1)', marginBottom:'0.5rem' },
+    h2:      { fontSize:'clamp(1.6rem, 3.5vw, 2.4rem)', fontWeight:800, color:'var(--lp-text, #0f172a)', lineHeight:1.2, marginBottom:'0.75rem' },
+    sub:     { fontSize:'0.95rem', color:'var(--lp-muted, #64748b)', maxWidth:'600px', margin:'0 auto' },
+
+    controls:  { display:'flex', flexWrap:'wrap', justifyContent:'space-between', alignItems:'center', gap:'16px', marginBottom:'2.5rem' },
+    ctrlGroup: { display:'flex', alignItems:'center', gap:'12px' },
+    ctrlLabel: { fontSize:'0.85rem', fontWeight:600, color:'var(--lp-muted, #64748b)', marginRight:'6px' },
+    btnGroup:  { display:'flex', background:'var(--lp-surface, #fff)', border:'1px solid var(--lp-border, #e2e8f0)', borderRadius:'10px', padding:'4px', gap:'4px', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' },
+    btn: (active) => ({
+        padding:'8px 16px', border:'none', borderRadius:'8px', cursor:'pointer',
+        fontWeight:600, fontSize:'0.85rem', transition:'all 0.2s', display: 'flex', alignItems: 'center',
+        background: active ? 'var(--lp-primary, #6366f1)' : 'transparent',
+        color:      active ? '#fff' : 'var(--lp-text, #0f172a)',
+        boxShadow:  active ? '0 2px 4px rgba(99,102,241,0.2)' : 'none',
+    }),
+    saveBadge: { display:'inline-flex', alignItems:'center', background:'#dcfce7', color:'#059669', fontSize:'0.7rem', fontWeight:700, padding:'4px 10px', borderRadius:'20px', marginLeft:'8px' },
+    extraBadge:{ color:'var(--lp-primary, #6366f1)', fontSize:'0.7rem', fontWeight:700, marginLeft:'6px' },
+
+    grid:  { display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(240px,1fr))', gap:'1.25rem', marginBottom:'3rem', alignItems:'stretch' },
+
+    card: (popular) => ({
+        background: 'var(--lp-surface, #fff)',
+        border: `1px solid ${popular ? 'var(--lp-primary, #6366f1)' : 'var(--lp-border, #e2e8f0)'}`,
+        borderRadius:'20px', padding:'1.75rem 1.5rem',
+        position:'relative', display:'flex', flexDirection:'column',
+        transition:'transform 0.3s ease, box-shadow 0.3s ease',
+        boxShadow: popular ? '0 16px 32px rgba(99,102,241,0.08)' : '0 4px 6px rgba(0,0,0,0.02)',
+        transform: popular ? 'scale(1.02)' : 'scale(1)',
+        zIndex: popular ? 10 : 1,
+    }),
+
+    popularTag: {
+        position:'absolute', top:'-13px', left:'50%', transform:'translateX(-50%)',
+        background:'var(--lp-primary, #6366f1)', color:'#fff', fontSize:'0.75rem', fontWeight:700,
+        padding:'4px 14px', borderRadius:'20px', whiteSpace:'nowrap',
+    },
+
+    planIcon: { fontSize:'1.6rem', marginBottom:'0.75rem', display:'inline-block' },
+    planName: { fontSize:'1.15rem', fontWeight:800, color:'var(--lp-text, #0f172a)', marginBottom:'0.2rem' },
+    planDesc: { fontSize:'0.82rem', color:'var(--lp-muted, #64748b)', marginBottom:'1rem', lineHeight:1.4 },
+
+    priceRow:   { display:'flex', alignItems:'baseline', gap:'3px', marginBottom:'0.2rem' },
+    currency:   { fontSize:'1.3rem', fontWeight:700, color:'var(--lp-text, #0f172a)' },
+    amount:     { fontSize:'2.4rem', fontWeight:800, color:'var(--lp-text, #0f172a)', lineHeight:1, letterSpacing: '-1px' },
+    period:     { fontSize:'0.85rem', color:'var(--lp-muted, #64748b)', marginLeft:'3px', fontWeight: 500 },
+    saveRow:    { fontSize:'0.85rem', color:'#10b981', fontWeight:600, marginBottom:'1.25rem', minHeight:'1.2rem' },
+
+    divider:    { border:'none', borderTop:'1px solid var(--lp-border, #e2e8f0)', margin:'0 0 1.25rem 0' },
+
+    featuresList: { display:'flex', flexDirection:'column', gap:'12px', marginBottom:'2rem', listStyle: 'none', padding: 0, margin: '0 0 2rem 0' },
+    featItem:   { display:'flex', alignItems:'flex-start', fontSize:'0.85rem', color:'var(--lp-muted, #475569)', lineHeight:1.4 },
+    checkIcon:  { color: 'var(--lp-primary, #6366f1)', width: '16px', height: '16px', marginRight: '8px', flexShrink: 0, marginTop: '2px' },
+    
+    // Bottom features container
+    bottomFeatures: {
+        display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: '1.5rem',
+        background: 'var(--lp-surface, #fff)', border: '1px solid var(--lp-border, #e2e8f0)', borderRadius: '20px', padding: '1.5rem 2rem',
+        boxShadow: '0 10px 30px rgba(0,0,0,0.03)', marginTop: '2rem',
+    },
+    bfItem: { display: 'flex', alignItems: 'center', gap: '12px' },
+    bfIconWrap: { width: '40px', height: '40px', borderRadius: '12px', background: 'rgba(99,102,241,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--lp-primary, #6366f1)' },
+    bfTextWrap: { display: 'flex', flexDirection: 'column' },
+    bfTitle: { fontSize: '0.85rem', fontWeight: 700, color: 'var(--lp-text, #0f172a)', marginBottom: '2px' },
+    bfDesc: { fontSize: '0.75rem', color: 'var(--lp-muted, #64748b)' },
+
+    /* modal */
+    overlay: { position:'fixed', inset:0, background:'rgba(15,23,42,0.85)', backdropFilter:'blur(8px)', zIndex:9999, display:'flex', alignItems:'center', justifyContent:'center', padding:'1.5rem' },
+    modal:   { background:'var(--lp-surface, #fff)', border:'1px solid var(--lp-border, #e2e8f0)', borderRadius:'16px', maxWidth:'900px', width:'100%', maxHeight:'85vh', overflowY:'auto', padding:'2rem', position:'relative', boxShadow:'0 20px 60px rgba(0,0,0,0.2)' },
+    closeBtn:{ position:'absolute', top:14, right:14, width:32, height:32, border:'1px solid var(--lp-border, #e2e8f0)', borderRadius:'7px', background:'var(--lp-bg, #f8fafc)', color:'var(--lp-muted, #64748b)', fontSize:'1rem', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center' },
+    table:   { width:'100%', borderCollapse:'collapse', fontSize:'0.84rem' },
+    th:      { padding:'10px 12px', textAlign:'left', color:'var(--lp-primary, #6366f1)', fontWeight:700, borderBottom:'1px solid var(--lp-border, #e2e8f0)', fontSize:'0.85rem', background:'var(--lp-bg, #f8fafc)' },
+    td:      { padding:'10px 12px', borderBottom:'1px solid var(--lp-border, #e2e8f0)', color:'var(--lp-text, #0f172a)' },
+    secRow:  { padding:'18px 12px 6px', fontWeight:700, color:'var(--lp-primary, #6366f1)', fontSize:'0.75rem', letterSpacing:'1px', textTransform:'uppercase', borderBottom:'2px solid rgba(99,102,241,0.12)', background:'rgba(99,102,241,0.02)' },
+};
+
+// SVG Icons for Bottom Features
+const IconClock = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>;
+const IconCard = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>;
+const IconTool = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>;
+const IconCancel = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>;
+const IconGlobe = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>;
+const IconMobile = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>;
+
 export default function Pricing() {
-    const navigate = useNavigate();
-    const { user } = useContext(AuthContext);
+    const navigate  = useNavigate();
+    const { user }  = useContext(AuthContext);
+    const fetchedRef = useRef(false);
 
-    const [allPlans, setAllPlans] = useState([]);
+    const [allPlans,     setAllPlans]     = useState([]);
     const [lifetimePlan, setLifetimePlan] = useState(null);
-    const [loading, setLoading] = useState(true);
-    const [billingCycle, setBillingCycle] = useState('monthly');
-    const [activeTab, setActiveTab] = useState('web_only');
-    const [showModal, setShowModal] = useState(false);
-    const [modalPlan, setModalPlan] = useState(null);
-    const [selectedPlanId, setSelectedPlanId] = useState(null);
+    const [loading,      setLoading]      = useState(true);
+    const [billing,      setBilling]      = useState('monthly');   // 'monthly' | 'yearly'
+    const [platform,     setPlatform]     = useState('web_only');  // 'web_only' | 'web_android'
+    const [showModal,    setShowModal]    = useState(false);
+    const [modalPlan,    setModalPlan]    = useState(null);
 
+    /* ── single API call on mount ── */
     useEffect(() => {
-        api.get('/plans')
-            .then(res => {
-                const active = res.data.data
-                    .filter(p => p.status === 'active' && !p.is_lifetime)
-                    .sort((a, b) => (a.display_order || 0) - (b.display_order || 0));
-                setAllPlans(active);
-            })
-            .catch(() => { })
-            .finally(() => setLoading(false));
+        if (fetchedRef.current) return;
+        fetchedRef.current = true;
 
-        api.get('/lifetime/info')
-            .then(res => { if (res.data.success) setLifetimePlan(res.data.plan); })
-            .catch(() => { });
+        Promise.all([
+            api.get('/plans'),
+            api.get('/lifetime/info').catch(() => null),
+        ]).then(([plansRes, ltRes]) => {
+            const active = (plansRes.data.data || [])
+                .filter(p => p.status === 'active' && !p.is_lifetime && !p.is_hidden)
+                .sort((a, b) => (a.display_order || 0) - (b.display_order || 0));
+            setAllPlans(active);
+            if (ltRes?.data?.success) setLifetimePlan(ltRes.data.plan);
+        }).catch(() => {}).finally(() => setLoading(false));
     }, []);
 
-    const filteredPlans = allPlans.filter(p => p.platform_type === activeTab);
+    const visible = allPlans.filter(p => p.platform_type === platform);
 
     const getPrice = (plan) => {
         if (plan.contact_sales) return null;
-        if (billingCycle === 'yearly' && plan.yearly_price) return Number(plan.yearly_price);
+        if (billing === 'yearly' && plan.yearly_price) return Number(plan.yearly_price);
         return Number(plan.price);
     };
 
-    const fmt = num => num != null ? num.toLocaleString('en-IN') : '';
-
-    const getChips = (plan) => {
-        const chips = [];
-        const ms = plan.max_students;
-        chips.push({ icon: '👥', text: ms === -1 ? 'Unlimited Students' : `${ms} Students` });
-        const mf = plan.max_faculty;
-        chips.push({ icon: '👨‍🏫', text: mf === -1 ? 'Unlimited Faculty' : `${mf} Faculty` });
-        return chips;
+    const getSavings = (plan) => {
+        if (billing !== 'yearly' || !plan.yearly_price || !plan.price) return null;
+        const monthly = Number(plan.price);
+        const yearly  = Number(plan.yearly_price);
+        const saved   = monthly * 12 - yearly;
+        return saved > 0 ? saved : null;
     };
+
+    const fmt = n => n != null ? n.toLocaleString('en-IN') : '';
 
     const handleChoose = (plan) => {
         if (plan.contact_sales) {
-            if (window.location.pathname === '/') {
-                document.getElementById('contact')?.scrollIntoView({ behavior: 'smooth' });
-            } else {
-                navigate('/#contact', { replace: false });
-            }
+            document.getElementById('contact')?.scrollIntoView({ behavior: 'smooth' });
             return;
         }
-        if (user?.role === 'admin') navigate(`/checkout?plan_id=${plan.id}&cycle=${billingCycle}`);
+        if (user?.role === 'admin') navigate(`/checkout?plan_id=${plan.id}&cycle=${billing}`);
         else { localStorage.setItem('selectedPlan', plan.id); navigate('/register'); }
     };
 
@@ -176,232 +257,251 @@ export default function Pricing() {
         else navigate('/register?intent=lifetime');
     };
 
-    const renderVal = (plan, row) => {
-        if (row.bool) return plan[row.key] ? <span style={{ color: '#10b981' }}>✓</span> : <span style={{ color: '#374151' }}>—</span>;
-        if (row.fmt) return row.fmt(plan[row.key]);
-        return plan[row.key] != null ? String(plan[row.key]) : '—';
-    };
-
     if (loading) return (
-        <section id="pricing" style={ps.wrap}>
-            <div style={ps.inner}>
-                <div style={{ textAlign: 'center', padding: '60px', color: 'var(--lp-muted)' }}>Loading plans...</div>
+        <section id="pricing" style={S.wrap}>
+            <div style={S.inner}>
+                <div style={{ textAlign:'center', padding:'60px', color:'var(--lp-muted)' }}>Loading plans…</div>
             </div>
         </section>
     );
 
     return (
-        <section id="pricing" style={ps.wrap}>
-            <div style={ps.inner}>
+        <section id="pricing" style={S.wrap}>
+            {/* hover / active micro-animations */}
+            <style>{`
+                .lp-pc:hover  { transform: translateY(-5px) !important; box-shadow: 0 16px 40px rgba(0,0,0,0.08) !important; border-color: var(--lp-primary) !important; }
+                .lp-pc.popular:hover { box-shadow: 0 20px 50px rgba(99,102,241,0.15) !important; }
+                
+                /* Button Base */
+                .lp-pb {
+                    margin-top: auto; width: 100%; padding: 12px; border-radius: 10px;
+                    font-size: 0.9rem; font-weight: 700; cursor: pointer; transition: all 0.2s ease;
+                }
+                
+                /* Outline Button */
+                .lp-pb-outline {
+                    background: transparent;
+                    color: var(--lp-primary, #6366f1);
+                    border: 1px solid var(--lp-border, #e2e8f0);
+                }
+                .lp-pb-outline:hover {
+                    background: var(--lp-primary, #6366f1);
+                    color: #fff;
+                    border-color: var(--lp-primary, #6366f1);
+                    transform: translateY(-2px);
+                    box-shadow: 0 4px 12px rgba(99,102,241,0.15);
+                }
+                
+                /* Solid Button */
+                .lp-pb-solid {
+                    background: var(--lp-primary, #6366f1);
+                    color: #fff;
+                    border: 1px solid var(--lp-primary, #6366f1);
+                }
+                .lp-pb-solid:hover {
+                    filter: brightness(1.1);
+                    transform: translateY(-2px);
+                    box-shadow: 0 6px 16px rgba(99,102,241,0.25);
+                }
+                
+                .lp-pb:active { transform: translateY(1px) !important; filter: brightness(0.95) !important; box-shadow: none !important; }
+            `}</style>
+
+            <div style={S.inner}>
                 {/* Header */}
-                <div style={ps.header}>
-                    <span style={ps.eyebrow}>Transparent Pricing</span>
-                    <h2 style={ps.h2}>Choose the Perfect Plan for Your Institute</h2>
-                    <p style={ps.sub}>No hidden fees. Cancel anytime. Start with our 14-day free trial — no credit card required.</p>
+                <div style={S.header}>
+                    <span style={S.eyebrow}>Transparent Pricing</span>
+                    <h2 style={S.h2}>Choose the Perfect Plan for Your Institute</h2>
+                    <p style={S.sub}>No hidden fees. Cancel anytime. 14-day free trial — no credit card required.</p>
                 </div>
 
-                {/* Trust bar */}
-                <div style={ps.trustBar}>
-                    {[['🔒', 'Secure Payments'], ['⚡', 'Instant Setup'], ['📞', 'Free Support'], ['🔄', 'Cancel Anytime']].map(([icon, text]) => (
-                        <div key={text} style={ps.trustItem}><span>{icon}</span> {text}</div>
-                    ))}
-                </div>
-
-                {/* Platform tabs + billing toggle */}
-                <div style={ps.controls}>
-                    <div style={ps.tabGroup}>
-                        {[['web_only', '💻 Web Only'], ['web_android', '📱 Web + Android']].map(([val, label]) => (
-                            <button key={val} style={ps.tab(activeTab === val)} onClick={() => setActiveTab(val)}>{label}</button>
-                        ))}
+                {/* Controls */}
+                <div style={{ ...S.controls, display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'center', gap: '24px', marginBottom: '3rem' }}>
+                    {/* Billing toggle */}
+                    <div style={S.ctrlGroup}>
+                        <span style={S.ctrlLabel}>Billing:</span>
+                        <div style={S.btnGroup}>
+                            <button style={S.btn(billing === 'monthly')} onClick={() => setBilling('monthly')}>Monthly</button>
+                            <button style={S.btn(billing === 'yearly')}  onClick={() => setBilling('yearly')}>Yearly</button>
+                        </div>
+                        <span style={S.saveBadge}>Save up to 20%</span>
                     </div>
-                    <div style={ps.tabGroup}>
-                        <button style={ps.tab(billingCycle === 'monthly')} onClick={() => setBillingCycle('monthly')}>Monthly</button>
-                        <button style={ps.tab(billingCycle === 'yearly')} onClick={() => setBillingCycle('yearly')}>
-                            Annual <span style={{ background: '#10b981', color: '#fff', fontSize: '0.6rem', fontWeight: 700, padding: '2px 6px', borderRadius: '12px', marginLeft: '5px', verticalAlign: 'middle' }}>Save 20%</span>
-                        </button>
+
+                    {/* Book Free Demo Button */}
+                    <button 
+                        className="lp-pb lp-pb-solid" 
+                        style={{ margin: 0, padding: '10px 24px', width: 'auto', borderRadius: '30px' }}
+                        onClick={() => window.location.href = '/book-demo'}
+                    >
+                        Book Free Demo
+                    </button>
+
+                    {/* Platform toggle */}
+                    <div style={S.ctrlGroup}>
+                        <span style={S.ctrlLabel}>Platform:</span>
+                        <div style={S.btnGroup}>
+                            <button style={S.btn(platform === 'web_only')} onClick={() => setPlatform('web_only')}>
+                                <span style={{marginRight: '6px', display:'flex'}}><IconGlobe/></span> Web Only
+                            </button>
+                            <button style={S.btn(platform === 'web_android')} onClick={() => setPlatform('web_android')}>
+                                <span style={{marginRight: '6px', display:'flex'}}><IconMobile/></span> Web + Mobile App
+                                <span style={S.extraBadge}>+₹extra</span>
+                            </button>
+                        </div>
                     </div>
                 </div>
 
-                {/* Plan cards */}
-                <style>{`
-                    .cg-pricing-card { border: 1px solid transparent; }
-                    .cg-pricing-card:hover { transform: translateY(-4px); border-color: var(--lp-primary, #6366f1) !important; box-shadow: 0 12px 30px rgba(99,102,241,0.15); }
-                    .cg-pricing-card:active { transform: translateY(0) scale(0.98); }
-                    html.dark-mode .cg-pricing-card:hover { border-color: var(--lp-primary, #6366f1) !important; box-shadow: 0 12px 30px rgba(0,0,0,0.4); }
-                    .cg-pricing-btn:hover { filter: brightness(1.1); transform: translateY(-1px); }
-                    .cg-pricing-btn:active { filter: brightness(0.95); transform: translateY(1px); }
-                `}</style>
-                <div style={ps.grid}>
-                    {filteredPlans.map((plan, index) => {
-                        const price = getPrice(plan);
-                        const isPopular = plan.is_popular;
-                        const isTrial = plan.is_free_trial;
-                        const isEnterprise = plan.contact_sales;
-                        const isFirst = index === 0;
-                        const activeSelectedId = selectedPlanId || (filteredPlans.length > 0 ? filteredPlans[0].id : null);
-                        const isSelected = activeSelectedId === plan.id;
+                {/* Plan Cards */}
+                <div style={S.grid}>
+                    {visible.map((plan) => {
+                        const price   = getPrice(plan);
+                        const savings = getSavings(plan);
+                        const popular = !!plan.is_popular;
+                        const isEnt   = !!plan.contact_sales;
+                        const icon    = PLAN_ICONS[plan.name] || '📋';
+                        const fCount  = plan.feature_count ?? 0;
+                        const storage = storageLabel(plan.max_storage_mb);
 
-                        // Build feature list mimicking ConsentGuard
-                        const features = [];
-                        if (plan.max_students === -1) features.push('Unlimited students');
-                        else features.push(`Up to ${plan.max_students.toLocaleString('en-IN')} students`);
-
-                        if (plan.max_faculty === -1) features.push('Unlimited faculty');
-                        else features.push(`Up to ${plan.max_faculty.toLocaleString('en-IN')} faculty`);
-
-                        if (plan.feature_fees) features.push('Fee management & payments');
-                        if (plan.feature_exams) features.push('Exams & marks portal');
-                        if (plan.feature_announcements) features.push('Announcements & SMS');
-                        if (plan.feature_mobile_app) features.push('White-labeled Mobile App');
-                        else if (plan.feature_parent_portal) features.push('Parent & Student portals');
-
-                        if (plan.max_storage_mb === -1) features.push('Unlimited cloud storage');
-                        else if (plan.max_storage_mb >= 5120) features.push(`${(plan.max_storage_mb / 1024).toFixed(0)} GB cloud storage`);
+                        const students = plan.max_students    === -1 ? 'Unlimited' : plan.max_students?.toLocaleString('en-IN');
+                        const admins   = plan.max_admin_users === -1 ? 'Unlimited' : plan.max_admin_users;
+                        const faculty  = plan.max_faculty     === -1 ? 'Unlimited' : plan.max_faculty?.toLocaleString('en-IN');
 
                         return (
-                            <div key={plan.id} className="cg-pricing-card" style={ps.card(isSelected)} onClick={() => setSelectedPlanId(plan.id)}>
-                                <div style={ps.planHeader}>
-                                    <div style={ps.planName(isSelected)}>{plan.name}</div>
-                                    {isPopular && <div style={ps.badgePopular}>Most Popular</div>}
-                                </div>
+                            <div key={plan.id} className={`lp-pc ${popular ? 'popular' : ''}`} style={S.card(popular)}>
+                                {popular && <div style={S.popularTag}>Most Popular</div>}
 
-                                {isEnterprise ? (
-                                    <div style={ps.priceBlock}>
-                                        <span style={ps.amount(isSelected)}>Custom</span>
+                                {/* Icon · Name · Description */}
+                                <div>
+                                    <span style={S.planIcon}>{icon}</span>
+                                </div>
+                                <div style={S.planName}>{plan.name}</div>
+                                <div style={S.planDesc}>{plan.description || ''}</div>
+
+                                {/* Price */}
+                                {isEnt ? (
+                                    <div style={S.priceRow}>
+                                        <span style={{ ...S.amount, fontSize:'2.2rem' }}>Contact Sales</span>
                                     </div>
                                 ) : (
-                                    <div style={ps.priceBlock}>
-                                        <span style={ps.currency(isSelected)}>₹</span>
-                                        <span style={ps.amount(isSelected)}>{fmt(price)}</span>
-                                        <span style={ps.period(isSelected)}>/{billingCycle === 'yearly' ? 'yr' : 'mo'}</span>
+                                    <div style={S.priceRow}>
+                                        <span style={S.currency}>₹</span>
+                                        <span style={S.amount}>{fmt(price)}</span>
+                                        <span style={S.period}>/{billing === 'yearly' ? 'year' : 'month'}</span>
                                     </div>
                                 )}
 
-                                <ul style={ps.featureList}>
-                                    {features.map((f, i) => (
-                                        <li key={i} style={ps.featureItem(isSelected)}>
-                                            <span style={ps.checkIcon(isSelected)}>✓</span>
-                                            {f}
-                                        </li>
-                                    ))}
+                                {/* Savings row (yearly only) */}
+                                <div style={S.saveRow}>
+                                    {savings ? <span>Save ₹{fmt(savings)}/yr</span> : null}
+                                </div>
+
+                                <hr style={S.divider} />
+
+                                {/* Stats & Features */}
+                                <ul style={S.featuresList}>
+                                    <li style={S.featItem}>
+                                        <FeatureCheck />
+                                        <span><strong style={{color:'var(--lp-text)'}}>{students}</strong> students</span>
+                                    </li>
+                                    <li style={S.featItem}>
+                                        <FeatureCheck />
+                                        <span><strong style={{color:'var(--lp-text)'}}>{admins}</strong> admins &middot; <strong style={{color:'var(--lp-text)'}}>{faculty}</strong> faculty</span>
+                                    </li>
+                                    <li style={S.featItem}>
+                                        <FeatureCheck />
+                                        <span><strong style={{color:'var(--lp-text)'}}>{fCount}</strong> features &middot; <strong style={{color:'var(--lp-text)'}}>{storage}</strong> storage</span>
+                                    </li>
+                                    <li style={S.featItem}>
+                                        <FeatureCheck />
+                                        <span>{isEnt ? 'Dedicated account manager' : popular ? 'Priority support' : 'Email support'}</span>
+                                    </li>
                                 </ul>
 
+                                {/* CTA */}
                                 <button
-                                    className="cg-pricing-btn"
-                                    style={ps.ctaBtn(isSelected, isEnterprise, isPopular)}
-                                    onClick={() => handleChoose(plan)}
+                                    className={`lp-pb ${popular ? 'lp-pb-solid' : 'lp-pb-outline'}`}
+                                    onClick={(e) => { e.stopPropagation(); handleChoose(plan); }}
                                 >
-                                    {isTrial ? 'Start Free Trial' : isEnterprise ? 'Contact Sales' : isPopular ? `Upgrade to ${plan.name} ` : 'Upgrade to pro'}
+                                    {isEnt ? `Get ${plan.name}` : plan.is_free_trial ? 'Start Free Trial' : `Get ${plan.name}`}
                                 </button>
 
-                                <button style={ps.viewLink(isSelected)} onClick={() => { setModalPlan(plan); setShowModal(true); }}>
-                                    View all features →
-                                </button>
                             </div>
                         );
                     })}
                 </div>
 
-                {/* Compare all plans */}
-                <div style={ps.compareRow}>
-                    {/* <button style={ps.compareBtn} onClick={() => { setModalPlan(null); setShowModal(true); }}>
-                        📊 Compare All {activeTab === 'web_only' ? 'Web Only' : 'Web + Android'} Plans
-                    </button> */}
+                {/* Bottom Features */}
+                <div style={S.bottomFeatures}>
+                    <div style={S.bfItem}>
+                        <div style={S.bfIconWrap}><IconClock /></div>
+                        <div style={S.bfTextWrap}>
+                            <div style={S.bfTitle}>14-Day Free Trial</div>
+                            <div style={S.bfDesc}>Explore all features</div>
+                        </div>
+                    </div>
+                    <div style={S.bfItem}>
+                        <div style={S.bfIconWrap}><IconCard /></div>
+                        <div style={S.bfTextWrap}>
+                            <div style={S.bfTitle}>No Credit Card</div>
+                            <div style={S.bfDesc}>No upfront payment</div>
+                        </div>
+                    </div>
+                    <div style={S.bfItem}>
+                        <div style={S.bfIconWrap}><IconTool /></div>
+                        <div style={S.bfTextWrap}>
+                            <div style={S.bfTitle}>Easy Setup</div>
+                            <div style={S.bfDesc}>Get started in minutes</div>
+                        </div>
+                    </div>
+                    <div style={S.bfItem}>
+                        <div style={S.bfIconWrap}><IconCancel /></div>
+                        <div style={S.bfTextWrap}>
+                            <div style={S.bfTitle}>Cancel Anytime</div>
+                            <div style={S.bfDesc}>No questions asked</div>
+                        </div>
+                    </div>
                 </div>
-
-                {/* ── Lifetime Premium Section ── */}
-                {lifetimePlan ? (
-                    <div style={ps.ltCard}>
-                        <div style={ps.ltBadge}>💎 Best Long-Term Value</div>
-                        <div style={ps.ltRow}>
-                            <div style={ps.ltInfo}>
-                                <div style={ps.ltH}>Lifetime Access</div>
-                                <div style={ps.ltP}>Pay once. Use forever. No recurring charges — ever.</div>
-                                <div style={ps.ltPerks}>
-                                    {['✅ Unlimited students & faculty', '✅ All premium features forever', '✅ Full finance & salary module', '✅ Priority 24/7 support', '✅ Custom subdomain', '✅ Free future updates'].map(p => (
-                                        <span key={p} style={ps.ltPerk}>{p}</span>
-                                    ))}
-                                </div>
-                            </div>
-                            <div style={ps.ltBox}>
-                                {lifetimePlan.is_founding_available && (
-                                    <div style={{ textDecoration: 'line-through', color: '#a78bfa', fontSize: '0.95rem', marginBottom: 3 }}>
-                                        ₹{lifetimePlan.standard_price?.toLocaleString('en-IN') || '24,999'}
-                                    </div>
-                                )}
-                                <div style={ps.ltPrice}>₹{lifetimePlan.current_price?.toLocaleString('en-IN') || '19,999'}</div>
-                                <div style={ps.ltLabel}>One-time payment</div>
-                                {lifetimePlan.slots_remaining != null && (
-                                    <div style={{ fontSize: '0.75rem', color: '#fca5a5', fontWeight: 600, marginBottom: '10px' }}>
-                                        ⚡ Only {lifetimePlan.slots_remaining} slots left!
-                                    </div>
-                                )}
-                                <button style={ps.ltCta} onClick={handleLifetime}>💎 Get Lifetime Access</button>
-                                <div style={{ color: '#6b7280', fontSize: '0.7rem', marginTop: '8px' }}>🔒 Secure via Razorpay</div>
-                            </div>
-                        </div>
-                    </div>
-                ) : (
-                    /* Lifetime fallback when /lifetime/info endpoint not set up yet */
-                    <div style={ps.ltCard}>
-                        <div style={ps.ltBadge}>💎 Best Long-Term Value</div>
-                        <div style={ps.ltRow}>
-                            <div style={ps.ltInfo}>
-                                <div style={ps.ltH}>Lifetime Access</div>
-                                <div style={ps.ltP}>Pay once. Use forever. No recurring charges — ever.</div>
-                                <div style={ps.ltPerks}>
-                                    {['✅ Unlimited students & faculty', '✅ All premium features forever', '✅ Full finance & salary module', '✅ Priority 24/7 support', '✅ Custom subdomain', '✅ Free future updates'].map(p => (
-                                        <span key={p} style={ps.ltPerk}>{p}</span>
-                                    ))}
-                                </div>
-                            </div>
-                            <div style={ps.ltBox}>
-                                <div style={{ textDecoration: 'line-through', color: '#a78bfa', fontSize: '0.95rem', marginBottom: 3 }}>₹39,999</div>
-                                <div style={ps.ltPrice}>₹24,999</div>
-                                <div style={ps.ltLabel}>One-time payment · Web + Android</div>
-                                <div style={{ fontSize: '0.75rem', color: '#fca5a5', fontWeight: 600, marginBottom: '10px' }}>⚡ Limited founding slots!</div>
-                                <button style={ps.ltCta} onClick={handleLifetime}>💎 Get Lifetime Access</button>
-                                <div style={{ color: '#6b7280', fontSize: '0.7rem', marginTop: '8px' }}>🔒 Secure via Razorpay</div>
-                            </div>
-                        </div>
-                    </div>
-                )}
 
                 {/* Feature Comparison Modal */}
                 {showModal && (
-                    <div style={ps.overlay} onClick={() => setShowModal(false)}>
-                        <div style={ps.modal} onClick={e => e.stopPropagation()}>
-                            <button style={ps.closeBtn} onClick={() => setShowModal(false)}>✕</button>
-                            <h3 style={{ fontSize: '1.3rem', fontWeight: 700, color: 'var(--lp-text)', marginBottom: '1.5rem' }}>
-                                {modalPlan ? `${modalPlan.name} — All Features` : `Compare ${activeTab === 'web_only' ? 'Web Only' : 'Web + Android'} Plans`}
+                    <div style={S.overlay} onClick={() => setShowModal(false)}>
+                        <div style={S.modal} onClick={e => e.stopPropagation()}>
+                            <button style={S.closeBtn} onClick={() => setShowModal(false)}>✕</button>
+                            <h3 style={{ fontSize:'1.25rem', fontWeight:700, color:'var(--lp-text)', marginBottom:'1.5rem' }}>
+                                {modalPlan ? `${modalPlan.name} — All Features` : `Compare ${platform === 'web_only' ? 'Web Only' : 'Web + Mobile'} Plans`}
                             </h3>
-                            <div style={{ overflowX: 'auto' }}>
-                                <table style={ps.table}>
+                            <div style={{ overflowX:'auto' }}>
+                                <table style={S.table}>
                                     <thead>
                                         <tr>
-                                            <th style={ps.th}>Feature</th>
-                                            {modalPlan ? (
-                                                <th style={ps.th}>{modalPlan.name}</th>
-                                            ) : (
-                                                filteredPlans.map(p => <th key={p.id} style={ps.th}>{p.name}</th>)
-                                            )}
+                                            <th style={S.th}>Feature</th>
+                                            {modalPlan
+                                                ? <th style={S.th}>{modalPlan.name}</th>
+                                                : visible.map(p => <th key={p.id} style={S.th}>{p.name}</th>)
+                                            }
                                         </tr>
                                     </thead>
                                     <tbody>
                                         {COMPARE_ROWS.map((row, idx) => {
                                             if (row.section) return (
                                                 <tr key={idx}>
-                                                    <td colSpan={modalPlan ? 2 : filteredPlans.length + 1} style={ps.sectionRow}>{row.section}</td>
+                                                    <td colSpan={modalPlan ? 2 : visible.length + 1} style={S.secRow}>{row.section}</td>
                                                 </tr>
                                             );
+                                            const renderVal = (p) => {
+                                                if (row.bool) return p[row.key]
+                                                    ? <span style={{ color:'#10b981', fontWeight:700 }}>\u2713</span>
+                                                    : <span style={{ color:'var(--lp-muted)' }}>—</span>;
+                                                if (row.fmt) return row.fmt(p[row.key]);
+                                                return p[row.key] != null ? String(p[row.key]) : '—';
+                                            };
                                             return (
                                                 <tr key={idx}>
-                                                    <td style={{ ...ps.td, color: 'var(--lp-text)', fontWeight: 600 }}>{row.label}</td>
-                                                    {modalPlan ? (
-                                                        <td style={ps.td}>{renderVal(modalPlan, row)}</td>
-                                                    ) : (
-                                                        filteredPlans.map(p => <td key={p.id} style={ps.td}>{renderVal(p, row)}</td>)
-                                                    )}
+                                                    <td style={{ ...S.td, fontWeight:600, color:'var(--lp-text)' }}>{row.label}</td>
+                                                    {modalPlan
+                                                        ? <td style={S.td}>{renderVal(modalPlan)}</td>
+                                                        : visible.map(p => <td key={p.id} style={S.td}>{renderVal(p)}</td>)
+                                                    }
                                                 </tr>
                                             );
                                         })}
@@ -415,3 +515,4 @@ export default function Pricing() {
         </section>
     );
 }
+

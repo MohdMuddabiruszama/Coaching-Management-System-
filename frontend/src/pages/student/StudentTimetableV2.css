@@ -263,6 +263,30 @@
 .tt-v2-bg-orange { background: #fff7ed; }
 .tt-v2-text-orange { color: #f97316; }
 
+/* Break Period Cell */
+.tt-v2-cell-break {
+    border-radius: 12px;
+    padding: 0.75rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 80px;
+    background: linear-gradient(135deg, #FFF8E1, #FFF3CD);
+    border: 1.5px dashed #F59E0B;
+    gap: 6px;
+}
+.tt-v2-break-icon {
+    font-size: 1.2rem;
+    line-height: 1;
+}
+.tt-v2-break-label {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: #92400E;
+    text-align: center;
+}
+
 /* Legend */
 .tt-v2-legend {
     display: flex;

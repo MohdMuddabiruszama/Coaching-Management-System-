@@ -19,7 +19,8 @@ const Pricing = () => {
     const fetchPlans = async () => {
         try {
             const res = await api.get("/plans");
-            setPlans(res.data.data || []);
+            const activePlans = (res.data.data || []).filter(p => p.status === "active" && !p.is_hidden);
+            setPlans(activePlans);
         } catch (error) {
             console.error("Error fetching plans:", error);
         } finally {

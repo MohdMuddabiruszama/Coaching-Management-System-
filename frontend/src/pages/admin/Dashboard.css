@@ -1545,7 +1545,7 @@ html.dark-mode .pmb-chip-name { color: #e2e8f0; }
 
 .da-card.disabled-card {
     opacity: 0.6;
-    cursor: not-allowed;
+    cursor: pointer;
     filter: grayscale(0.5);
 }
 .da-card.disabled-card:hover {

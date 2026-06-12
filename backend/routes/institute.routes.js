@@ -51,6 +51,6 @@ router.patch("/:id/status", verifyToken, allowRoles("super_admin"), instituteCon
  * @desc    Delete institute
  * @access  Super Admin only
  */
-router.delete("/:id", verifyToken, allowRoles("super_admin"), instituteController.deleteInstitute);
+// Use /api/superadmin/institutes/:id for deletion instead
 
 module.exports = router;

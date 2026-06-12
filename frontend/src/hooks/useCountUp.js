@@ -5,7 +5,10 @@ export function useCountUp(target, duration = 2200, trigger = true) {
   const rafRef = useRef(null);
 
   useEffect(() => {
-    if (!trigger) return;
+    if (!trigger) {
+      setCount(0);
+      return;
+    }
     let start = null;
     const step = (timestamp) => {
       if (!start) start = timestamp;

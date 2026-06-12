@@ -77,7 +77,7 @@ function FacultySchedule() {
         myTimetable.forEach(t => {
             if (t.Class && t.Class.id) {
                 if (!classMap.has(t.Class.id)) {
-                    classMap.set(t.Class.id, t.Class.name);
+                    classMap.set(t.Class.id, `${t.Class.name} ${t.Class.section ? `- ${t.Class.section}` : ''}`.trim());
                 }
             }
         });
@@ -85,6 +85,32 @@ function FacultySchedule() {
         classesArray.sort((a, b) => a.name.localeCompare(b.name));
         return classesArray;
     }, [myTimetable]);
+
+    const uniqueTimeSlots = useMemo(() => {
+        const timeSet = new Set();
+        const unique = [];
+
+        const relevantClassIds = selectedClass === 'all' 
+            ? myClasses.map(c => c.id.toString()) 
+            : [selectedClass.toString()];
+
+        slots.forEach(slot => {
+            if (!slot.start_time || !slot.end_time) return;
+            
+            // Only include slots that belong to the relevant classes
+            if (slot.class_id && !relevantClassIds.includes(slot.class_id.toString())) {
+                return;
+            }
+
+            const timeKey = `${slot.start_time.slice(0, 5)}-${slot.end_time.slice(0, 5)}`;
+            if (!timeSet.has(timeKey)) {
+                timeSet.add(timeKey);
+                unique.push(slot); // Store the entire slot object
+            }
+        });
+        unique.sort((a, b) => a.start_time.localeCompare(b.start_time));
+        return unique;
+    }, [slots, selectedClass, myClasses]);
 
     const getClassStyle = (className) => {
         const idx = myClasses.findIndex(c => c.name === className);
@@ -166,44 +192,52 @@ function FacultySchedule() {
                             </tr>
                         </thead>
                         <tbody>
-                            {slots.map((slot, idx) => {
-                                // Simple mock for Lunch Break if there's a big gap or specific slot pattern. Let's assume period 5 is lunch.
-                                const isLunch = idx === 4; 
-                                if (isLunch) {
-                                    return (
-                                        <tr key="lunch">
-                                            <td style={{ padding: '1.5rem 1rem', fontSize: '0.85rem', fontWeight: '600', color: '#1e293b', borderBottom: '1px solid #f1f5f9', whiteSpace: 'nowrap' }}>
-                                                {slot.start_time.slice(0, 5)} - {slot.end_time.slice(0, 5)}
-                                            </td>
-                                            <td colSpan={6} style={{ padding: '1rem', borderBottom: '1px solid #f1f5f9' }}>
-                                                <div style={{ background: '#fffbeb', color: '#b45309', borderRadius: '8px', padding: '0.8rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', fontWeight: '600', fontSize: '0.9rem' }}>
-                                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
-                                                    Lunch Break
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    );
-                                }
-
+                            {uniqueTimeSlots.map((slot, idx) => {
                                 return (
-                                    <tr key={slot.id}>
+                                    <tr key={`${slot.start_time}-${slot.end_time}`}>
                                         <td style={{ padding: '1.5rem 1rem', fontSize: '0.85rem', fontWeight: '600', color: '#1e293b', borderBottom: '1px solid #f1f5f9', whiteSpace: 'nowrap' }}>
                                             {slot.start_time.slice(0, 5)} - {slot.end_time.slice(0, 5)}
                                         </td>
                                         
                                         {DAYS_OF_WEEK.map(day => {
-                                            const entry = selectedClass === 'all' 
-                                                ? myTimetable.find(t => t.slot_id === slot.id && t.day_of_week === day)
-                                                : classTimetables[selectedClass]?.find(t => t.slot_id === slot.id && t.day_of_week === day);
-                                            
+                                            let entry = null;
+
+                                            if (selectedClass === 'all') {
+                                                entry = myTimetable.find(t => t.TimetableSlot?.start_time === slot.start_time && t.TimetableSlot?.end_time === slot.end_time && t.day_of_week === day);
+                                                
+                                                if (!entry) {
+                                                    // Search for a break entry in any class the faculty teaches
+                                                    for (const classId in classTimetables) {
+                                                        const breakEntry = classTimetables[classId]?.find(t => t.TimetableSlot?.start_time === slot.start_time && t.TimetableSlot?.end_time === slot.end_time && t.day_of_week === day && t.is_break);
+                                                        if (breakEntry) {
+                                                            entry = breakEntry;
+                                                            break;
+                                                        }
+                                                    }
+                                                }
+                                            } else {
+                                                entry = classTimetables[selectedClass]?.find(t => t.TimetableSlot?.start_time === slot.start_time && t.TimetableSlot?.end_time === slot.end_time && t.day_of_week === day);
+                                            }
+
                                             if (entry) {
+                                                if (entry.is_break) {
+                                                    return (
+                                                        <td key={`${slot.start_time}-${day}`} style={{ padding: '0.75rem', borderBottom: '1px solid #f1f5f9' }}>
+                                                            <div style={{ background: 'linear-gradient(135deg, #FFF8E1, #FFF3CD)', border: '1.5px dashed #F59E0B', borderRadius: '10px', padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.4rem', alignItems: 'center', justifyContent: 'center', minHeight: '80px' }}>
+                                                                <span style={{ fontSize: '1.2rem' }}>☕</span>
+                                                                <strong style={{ color: '#92400E', fontSize: '0.85rem' }}>{entry.break_label || 'Break'}</strong>
+                                                            </div>
+                                                        </td>
+                                                    );
+                                                }
+
                                                 const isMySubject = myTimetable.some(myT => myT.id === entry.id);
                                                 const style = selectedClass === 'all' || isMySubject 
                                                     ? getClassStyle(entry.Class?.name) 
                                                     : { bg: '#f8fafc', border: '#e2e8f0', text: '#475569', dot: '#94a3b8' };
 
                                                 return (
-                                                    <td key={`${slot.id}-${day}`} style={{ padding: '0.75rem', borderBottom: '1px solid #f1f5f9' }}>
+                                                    <td key={`${slot.start_time}-${day}`} style={{ padding: '0.75rem', borderBottom: '1px solid #f1f5f9' }}>
                                                         <div style={{ background: style.bg, border: `1px solid ${style.border}`, borderRadius: '10px', padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.4rem', alignItems: 'flex-start', textAlign: 'left', minHeight: '80px', transition: 'transform 0.2s', cursor: 'pointer' }} className="timetable-card">
                                                             <strong style={{ color: style.text, fontSize: '0.95rem' }}>{entry.Subject?.name || 'N/A'}</strong>
                                                             <div style={{ color: isMySubject || selectedClass === 'all' ? '#475569' : '#64748b', fontSize: '0.8rem', fontWeight: isMySubject ? '700' : '500' }}>
@@ -224,7 +258,7 @@ function FacultySchedule() {
                                                 );
                                             } else {
                                                 return (
-                                                    <td key={`${slot.id}-${day}`} style={{ padding: '0.75rem', borderBottom: '1px solid #f1f5f9' }}>
+                                                    <td key={`${slot.start_time}-${day}`} style={{ padding: '0.75rem', borderBottom: '1px solid #f1f5f9' }}>
                                                         <div style={{ border: '1.5px dashed #e2e8f0', borderRadius: '10px', padding: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem', color: '#94a3b8', minHeight: '80px', fontSize: '0.85rem', fontWeight: '600' }}>
                                                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8h1a4 4 0 0 1 0 8h-1"></path><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"></path><line x1="6" y1="1" x2="6" y2="4"></line><line x1="10" y1="1" x2="10" y2="4"></line><line x1="14" y1="1" x2="14" y2="4"></line></svg>
                                                             Free

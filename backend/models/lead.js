@@ -41,6 +41,10 @@ const Lead = sequelize.define('Lead', {
     type: DataTypes.STRING(20),
     validate: { isIn: [['new', 'contacted', 'demo_scheduled', 'closed_won', 'closed_lost']] },
     defaultValue: 'new'
+  },
+  is_read: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: false
   }
 }, {
   tableName: 'leads',

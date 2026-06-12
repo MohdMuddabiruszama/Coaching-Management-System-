@@ -84,6 +84,14 @@ router.get(
     parentController.getParentById
 );
 
+// Bulk actions
+router.post(
+    "/bulk-delete",
+    verifyToken,
+    allowRoles("admin", "manager"),
+    parentController.bulkDeleteParents
+);
+
 // Bulk import route
 router.post(
     "/bulk-import",

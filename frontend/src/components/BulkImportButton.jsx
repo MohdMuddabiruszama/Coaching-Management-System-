@@ -11,7 +11,7 @@ import { validateRows } from '../utils/bulkValidation';
 
 // Required columns per type — used to detect missing header columns
 const REQUIRED_HEADERS = {
-  students: ['name', 'email', 'phone', 'roll_number', 'class_name', 'gender', 'date_of_birth', 'admission_date', 'address'],
+  students: ['name', 'email', 'phone', 'roll_number', 'class_name', 'section', 'gender', 'date_of_birth', 'admission_date', 'address', 'is_full_course', 'subjects'],
   parents:  ['name', 'email', 'phone', 'student_roll_number', 'relationship'],
   faculty:  ['name', 'email', 'phone'],
 };
@@ -27,7 +27,7 @@ export default function BulkImportButton({ type, onSuccess, customButton, label,
     // Generate dummy row for guidance
     let dummyRow = {};
     if (type === 'students') {
-      dummyRow = { name: 'John Doe', email: 'john@example.com', phone: '9876543210', roll_number: '101', class_name: 'Class 10', gender: 'male', date_of_birth: '15/08/2005', admission_date: '02/05/2026', address: '123 Main Street' };
+      dummyRow = { name: 'John Doe', email: 'john@example.com', phone: '9876543210', roll_number: '101', class_name: 'Class 10', section: 'A', gender: 'male', date_of_birth: '15/08/2005', admission_date: '02/05/2026', address: '123 Main Street', is_full_course: 'Yes', subjects: 'Math, Science' };
     } else if (type === 'parents') {
       dummyRow = { name: 'Jane Doe', email: 'jane@example.com', phone: '9876543210', student_roll_number: '101', relationship: 'mother' };
     } else if (type === 'faculty') {

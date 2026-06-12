@@ -72,11 +72,11 @@ function Plans() {
         lifetime_price: "",
         lifetime_slots_total: 100,
 
-        // Chat limit (only applies when feature_chat is true)
         max_chat_messages: 500,
 
         razorpay_plan_id: "",
-        is_popular: false
+        is_popular: false,
+        is_hidden: false
     };
 
     const [formData, setFormData] = useState(initialFormState);
@@ -100,16 +100,16 @@ function Plans() {
         e.preventDefault();
         try {
             const payload = { ...formData };
-            // Ensure numeric values are numbers
-            payload.price = parseFloat(payload.price);
-            payload.max_students = parseInt(payload.max_students);
-            payload.max_faculty = parseInt(payload.max_faculty);
-            payload.max_classes = parseInt(payload.max_classes);
-            payload.max_admin_users = parseInt(payload.max_admin_users);
-            payload.trial_days = parseInt(payload.trial_days || 0);
-            payload.max_chat_messages = parseInt(payload.max_chat_messages || 500);
-            if (payload.lifetime_price) payload.lifetime_price = parseFloat(payload.lifetime_price);
-            if (payload.lifetime_slots_total) payload.lifetime_slots_total = parseInt(payload.lifetime_slots_total);
+            // Ensure numeric values are numbers, handle empty strings
+            payload.price = payload.price !== "" && payload.price !== null ? parseFloat(payload.price) : 0;
+            payload.max_students = payload.max_students !== "" && payload.max_students !== null ? parseInt(payload.max_students) : 100;
+            payload.max_faculty = payload.max_faculty !== "" && payload.max_faculty !== null ? parseInt(payload.max_faculty) : 5;
+            payload.max_classes = payload.max_classes !== "" && payload.max_classes !== null ? parseInt(payload.max_classes) : 5;
+            payload.max_admin_users = payload.max_admin_users !== "" && payload.max_admin_users !== null ? parseInt(payload.max_admin_users) : 1;
+            payload.trial_days = payload.trial_days !== "" && payload.trial_days !== null ? parseInt(payload.trial_days) : 0;
+            payload.max_chat_messages = payload.max_chat_messages !== "" && payload.max_chat_messages !== null ? parseInt(payload.max_chat_messages) : 500;
+            payload.lifetime_price = payload.lifetime_price !== "" && payload.lifetime_price !== null ? parseFloat(payload.lifetime_price) : null;
+            payload.lifetime_slots_total = payload.lifetime_slots_total !== "" && payload.lifetime_slots_total !== null ? parseInt(payload.lifetime_slots_total) : 100;
 
             if (editMode) {
                 await api.put(`/plans/${formData.id}`, payload);
@@ -540,6 +540,7 @@ function Plans() {
                                             { key: 'feature_auto_attendance', label: 'Smart Attendance' },
                                             { key: 'feature_fees', label: 'Fees Management' },
                                             { key: 'feature_finance', label: '🏦 Finance Dashboard' },
+                                            { key: 'feature_expenses', label: 'Expenses' },
                                             { key: 'feature_salary', label: 'Faculty Salary Management' },
                                             { key: 'feature_announcements', label: 'Announcements' },
                                             { key: 'feature_exams', label: 'Examinations' },
@@ -561,6 +562,7 @@ function Plans() {
                                             { key: 'feature_transport', label: '🚌 Finances & Transport' },
                                             { key: 'is_free_trial', label: 'Start Free Trial' },
                                             { key: 'is_popular', label: 'Mark as Popular' },
+                                            { key: 'is_hidden', label: 'Hide Plan from Public' },
                                             { key: 'is_lifetime', label: '💎 Lifetime Plan (One-Time)' },
                                         ].map(feature => (
                                             <label key={feature.key} className="feature-checkbox">

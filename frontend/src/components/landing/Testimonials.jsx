@@ -19,7 +19,7 @@ export default function Testimonials() {
           {/* Double the array for seamless infinite scrolling */}
           {[...TESTIMONIALS, ...TESTIMONIALS].map((t, i) => (
             <div className='lp-testi-card' key={`${t.id}-${i}`}>
-              <div style={{ color: '#FCD34D', fontSize: '18px', marginBottom: '16px', letterSpacing: '4px' }}>
+              <div style={{ color: '#F59E0B', fontSize: '18px', marginBottom: '16px', letterSpacing: '4px' }}>
                 {'★'.repeat(t.stars)}
               </div>
               <p className='lp-testi-text'>"{t.text}"</p>

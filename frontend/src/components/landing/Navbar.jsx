@@ -8,7 +8,8 @@ const NAV_LINKS = [
   { label: 'Features', href: '#features' },
   { label: 'Pricing', href: '#pricing' },
   { label: 'Testimonials', href: '#testimonials' },
-  { label: 'FAQ', href: '#faq' }
+  { label: 'FAQ', href: '#faq' },
+  { label: 'Contact', href: '#contact' }
 ];
 
 // Returns dashboard path based on the stored user role
@@ -50,7 +51,7 @@ function MobileDrawer({ onClose, scrollTo, onLoginClick }) {
           >
             Login / Dashboard
           </button>
-          <Link to='/register?plan=free_trial' className='lp-btn-primary'>Get Started Free</Link>
+          <Link to='/register?plan=free_trial' className='lp-btn-primary' style={{ textDecoration: 'none', textAlign: 'center' }}>Get Started Free</Link>
         </div>
           </aside>
     </>,
@@ -67,7 +68,7 @@ export default function Navbar() {
   useEffect(() => {
     const onScroll = () => {
       setScrolled(window.scrollY > 30);
-      const ids = ['home', 'features', 'pricing', 'testimonials', 'faq'];
+      const ids = ['home', 'features', 'pricing', 'testimonials', 'faq', 'contact'];
       let current = 'home';
       ids.forEach(id => {
         const el = document.getElementById(id);
@@ -107,7 +108,7 @@ export default function Navbar() {
   return (
     <nav className={`lp-nav ${scrolled ? 'scrolled' : ''}`}>
       <Link to="/" className='lp-logo'>
-        <img src={zfLogo} alt="ZF Solution" style={{ height: '60px', width: '60px', objectFit: 'contain' }} />Solution
+        <img src={zfLogo} alt="ZF ZenithFlows" style={{ height: '40px', width: 'auto', objectFit: 'contain' }} />ZenithFlows
       </Link>
 
       <ul className='lp-nav-links'>
@@ -128,11 +129,11 @@ export default function Navbar() {
         <button
           className='lp-btn-ghost'
           onClick={handleLoginClick}
-          style={{ border: 'none', cursor: 'pointer', background: 'none', font: 'inherit', fontSize: '15px', fontWeight: '500' }}
+          style={{ fontSize: '15px', marginRight: '8px' }}
         >
           Login
         </button>
-        <Link to='/register?plan=free_trial' className='lp-btn-primary'>Start Free Trial</Link>
+          <Link to='/register?plan=free_trial' className='lp-btn-primary' style={{ padding: '12px 28px', fontSize: '15px', textDecoration: 'none' }}>Start Free Trial →</Link>
       </div>
 
       <button className='lp-hamburger' onClick={() => setDrawer(true)}>

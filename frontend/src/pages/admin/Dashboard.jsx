@@ -11,7 +11,6 @@ import { AnnouncementSidebarContext } from "../../context/AnnouncementSidebarCon
 import ThemeSelector from "../../components/ThemeSelector";
 import BlockedScreen from "./BlockedScreen";
 import InstituteLogo from "../../components/common/InstituteLogo";
-import SetupGuideModal from "./SetupGuideModal";
 import AdvancedStatCard from "../../components/common/AdvancedStatCard";
 import managerAvatarImg from "../../assets/manager_avatar.png";
 import blueDiamondImg from "../../assets/blue_diamond.png";
@@ -109,7 +108,6 @@ function AdminDashboard() {
     const [planDetails, setPlanDetails] = useState(null);
     const [loading, setLoading] = useState(true);
     const [showUpgradeModal, setShowUpgradeModal] = useState(false);
-    const [showHelpModal, setShowHelpModal] = useState(false);
     const [blockedFeature, setBlockedFeature] = useState("");
     const [managerStats, setManagerStats] = useState(null);
 
@@ -298,7 +296,10 @@ function AdminDashboard() {
         return (
             <div
                 onClick={(e) => {
-                    if (isLocked) return;
+                    if (isLocked) {
+                        handleNavigation(path, featureKey);
+                        return;
+                    }
                     if (onClick) onClick(e);
                     else handleNavigation(path, featureKey);
                 }}
@@ -839,9 +840,6 @@ function AdminDashboard() {
             )}
 
             {/* ── Help Guide Modal ── */}
-            {showHelpModal && (
-                <SetupGuideModal onClose={() => setShowHelpModal(false)} />
-            )}
         </div>
     );
 }
