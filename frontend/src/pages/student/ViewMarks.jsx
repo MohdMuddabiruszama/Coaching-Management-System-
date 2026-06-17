@@ -118,7 +118,7 @@ function ScorecardModal({ examName, onClose }) {
                         <div style={{ textAlign: 'center', color: '#888', padding: '2rem' }}>No scorecard data available.</div>
                     ) : (
                         <>
-                            <div style={{ overflowX: 'auto', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+                            <div className="desktop-only-table" style={{ borderRadius: '12px', border: '1px solid #e2e8f0', overflow: 'hidden' }}>
                                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '14px' }}>
                                     <thead>
                                         <tr style={{ background: '#f8fafc', color: '#64748b' }}>
@@ -166,6 +166,58 @@ function ScorecardModal({ examName, onClose }) {
                                         </tr>
                                     </tfoot>
                                 </table>
+                            </div>
+
+                            <div className="mobile-only-cards" style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                {sc.subjects.map((s, i) => (
+                                    <div key={s.subject} style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '16px' }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                                            <strong style={{ color: '#0f172a', fontSize: '15px' }}>{s.subject}</strong>
+                                            <span style={{
+                                                background: s.status === 'Pass' ? '#dcfce7' : '#fee2e2',
+                                                color: s.status === 'Pass' ? '#16a34a' : '#e11d48',
+                                                borderRadius: '8px', padding: '4px 10px', fontSize: '12px', fontWeight: 600
+                                            }}>{s.status}</span>
+                                        </div>
+                                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', background: '#fff', padding: '12px', borderRadius: '8px' }}>
+                                            <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                                <span style={{ fontSize: '11px', color: '#64748b', fontWeight: 600, textTransform: 'uppercase' }}>Marks</span>
+                                                <span style={{ fontSize: '14px', color: '#0f172a', fontWeight: 600 }}>{s.marks_obtained} <span style={{ color: '#94a3b8', fontSize: '12px' }}>/ {s.total_marks}</span></span>
+                                            </div>
+                                            <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                                <span style={{ fontSize: '11px', color: '#64748b', fontWeight: 600, textTransform: 'uppercase' }}>Percentage</span>
+                                                <span style={{ fontSize: '14px', color: '#0f172a', fontWeight: 600 }}>{s.percentage}%</span>
+                                            </div>
+                                            <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                                <span style={{ fontSize: '11px', color: '#64748b', fontWeight: 600, textTransform: 'uppercase' }}>Grade</span>
+                                                <span style={{ fontSize: '14px', fontWeight: 700, color: s.status === 'Pass' ? '#22c55e' : '#ef4444' }}>{s.grade}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+
+                                <div style={{ background: '#f1f5f9', border: '1px dashed #cbd5e1', borderRadius: '12px', padding: '16px', marginTop: '4px' }}>
+                                    <div style={{ fontSize: '12px', color: '#64748b', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '12px' }}>OVERALL RESULT</div>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', alignItems: 'center' }}>
+                                        <span style={{ fontSize: '13px', color: '#64748b', fontWeight: 500 }}>Total Marks</span>
+                                        <span style={{ fontSize: '15px', fontWeight: 700, color: '#0f172a' }}>{sc.total_obtained} <span style={{ color: '#94a3b8', fontSize: '13px', fontWeight: 500 }}>/ {sc.total_maximum}</span></span>
+                                    </div>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', alignItems: 'center' }}>
+                                        <span style={{ fontSize: '13px', color: '#64748b', fontWeight: 500 }}>Percentage</span>
+                                        <span style={{ fontSize: '15px', fontWeight: 700, color: '#0f172a' }}>{sc.overall_percentage}%</span>
+                                    </div>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '12px', paddingTop: '12px', borderTop: '1px solid #e2e8f0' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                            <span style={{ fontSize: '13px', color: '#64748b', fontWeight: 500 }}>Grade</span>
+                                            <strong style={{ color: sc.overall_status === 'Pass' ? '#22c55e' : '#ef4444', fontSize: '16px' }}>{sc.overall_grade}</strong>
+                                        </div>
+                                        <span style={{
+                                            background: sc.overall_status === 'Pass' ? '#dcfce7' : '#fee2e2',
+                                            color: sc.overall_status === 'Pass' ? '#16a34a' : '#e11d48',
+                                            borderRadius: '8px', padding: '4px 12px', fontSize: '13px', fontWeight: 700
+                                        }}>{sc.overall_status}</span>
+                                    </div>
+                                </div>
                             </div>
 
                             <button
@@ -355,8 +407,25 @@ function ViewMarks() {
 
     return (
         <div className="marks-dashboard">
-            {/* Header */}
-            <div className="st-header">
+            {/* Mobile Header (Visible only on mobile) */}
+            <div className="marks-mobile-header">
+                <button className="marks-mobile-back-btn" onClick={() => navigate(-1)}>
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+                </button>
+                <div className="marks-mobile-header-center">
+                    <div className="marks-mobile-header-icon">📋</div>
+                    <div className="marks-mobile-header-text">
+                        <h2>My Exam Marks</h2>
+                        <p>View your performance across all exams</p>
+                    </div>
+                </div>
+                <button className="marks-mobile-filter-btn">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg>
+                </button>
+            </div>
+
+            {/* Desktop Header */}
+            <div className="st-header desktop-only-header">
                 <div className="st-header-top-row">
                     <div className="st-header-left">
                         <h1>My Exam Marks</h1>
@@ -422,8 +491,12 @@ function ViewMarks() {
                 <div className="marks-grid-left">
                     {/* Exam Results Table */}
                     <div className="marks-panel">
-                        <h2 className="marks-panel-title">Exam Results</h2>
-                        <div className="marks-table-wrapper">
+                        <div className="marks-panel-header-flex">
+                            <h2 className="marks-panel-title"><span className="marks-panel-title-icon">📋</span> Exam Results</h2>
+                            <button className="marks-view-all-link">View All</button>
+                        </div>
+                        {/* Desktop Table View */}
+                        <div className="marks-table-wrapper desktop-only-table">
                             <table className="marks-table">
                                 <thead>
                                     <tr>
@@ -432,18 +505,17 @@ function ViewMarks() {
                                         <th>Subject</th>
                                         <th>Date</th>
                                         <th>Marks</th>
-                                        <th>Percentage</th>
+                                        <th>%</th>
                                         <th>Grade</th>
                                         <th>Rank</th>
-                                        <th>Passing Marks</th>
                                         <th>Status</th>
-                                        <th>Action</th>
+                                        <th className="desktop-only-cell">Action</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {marks.length === 0 ? (
                                         <tr>
-                                            <td colSpan="11" style={{ textAlign: 'center', padding: '2rem', color: '#888' }}>
+                                            <td colSpan="10" style={{ textAlign: 'center', padding: '2rem', color: '#888' }}>
                                                 No results available yet.
                                             </td>
                                         </tr>
@@ -469,15 +541,15 @@ function ViewMarks() {
                                                         </span>
                                                     </td>
                                                     <td style={{ fontWeight: 500, color: '#1e293b' }}>{mark.subject_name || 'N/A'}</td>
-                                                    <td>{new Date(mark.exam_date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</td>
+                                                    <td>{new Date(mark.exam_date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }).replace(/ /g, '\n')}</td>
                                                     <td>
                                                         {isAbsent ? (
                                                             <span style={{ color: '#94a3b8', fontStyle: 'italic' }}>Absent</span>
                                                         ) : (
-                                                            <>
+                                                            <div className="marks-fraction">
                                                                 <strong style={{ color: '#0f172a' }}>{mark.marks_obtained}</strong>
                                                                 <span style={{ color: '#94a3b8' }}> / {mark.total_marks}</span>
-                                                            </>
+                                                            </div>
                                                         )}
                                                     </td>
                                                     <td style={{ color: '#334155' }}>{mark.percentage != null ? `${mark.percentage}%` : '—'}</td>
@@ -486,23 +558,18 @@ function ViewMarks() {
                                                     </td>
                                                     <td style={{ fontWeight: 600 }}>
                                                         {isAbsent ? '—' : (
-                                                            <>
+                                                            <div className="marks-fraction">
                                                                 #{mark.rank_in_class}
                                                                 <span style={{ color: '#94a3b8', fontSize: '11px', fontWeight: 500 }}> / {mark.total_in_class}</span>
-                                                            </>
+                                                            </div>
                                                         )}
                                                     </td>
-                                                    <td style={{ color: '#64748b' }}>{mark.passing_marks}</td>
                                                     <td>
-                                                        <span style={{
-                                                            background: isAbsent ? '#f1f5f9' : isPassed ? '#dcfce7' : '#fee2e2',
-                                                            color: isAbsent ? '#64748b' : isPassed ? '#16a34a' : '#e11d48',
-                                                            padding: '4px 10px', borderRadius: '12px', fontSize: '12px', fontWeight: 600
-                                                        }}>
+                                                        <span className={`marks-status-badge ${isAbsent ? 'absent' : isPassed ? 'pass' : 'fail'}`}>
                                                             {isAbsent ? 'Absent' : isPassed ? 'Pass' : 'Fail'}
                                                         </span>
                                                     </td>
-                                                    <td>
+                                                    <td className="desktop-only-cell">
                                                         <button className="marks-table-action-btn" onClick={() => setScorecardExam(mark.exam_name)} title="View Scorecard">
                                                             👁️
                                                         </button>
@@ -513,21 +580,150 @@ function ViewMarks() {
                                     )}
                                 </tbody>
                             </table>
-                            {marks.length > 5 && (
-                                <button className="marks-view-all-btn">View All Records</button>
+                        </div>
+
+                        {/* Mobile Cards View */}
+                        <div className="mobile-only-cards">
+                            {marks.length === 0 ? (
+                                <div style={{ textAlign: 'center', padding: '2rem', color: '#888' }}>
+                                    No results available yet.
+                                </div>
+                            ) : (
+                                marks.map((mark, i) => {
+                                    const isAbsent = mark.is_absent;
+                                    const isPassed = mark.status === 'Pass';
+                                    const typeColor = EXAM_TYPE_COLORS[mark.exam_type] || EXAM_TYPE_COLORS.other;
+
+                                    return (
+                                        <div className="marks-result-card" key={`mobile-${mark.exam_id}-${i}`}>
+                                            <div className="marks-result-card-header">
+                                                <div>
+                                                    <div className="marks-result-card-title" onClick={() => setScorecardExam(mark.exam_name)}>
+                                                        {mark.exam_name}
+                                                    </div>
+                                                    <div className="marks-result-card-date">
+                                                        {new Date(mark.exam_date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+                                                    </div>
+                                                </div>
+                                                <span className="marks-table-type" style={{ background: typeColor.bg, color: typeColor.color }}>
+                                                    {EXAM_TYPE_LABELS[mark.exam_type] || mark.exam_type}
+                                                </span>
+                                            </div>
+                                            <div className="marks-result-card-grid">
+                                                <div className="marks-result-item">
+                                                    <span className="marks-result-label">Subject</span>
+                                                    <span className="marks-result-val">{mark.subject_name || 'N/A'}</span>
+                                                </div>
+                                                <div className="marks-result-item">
+                                                    <span className="marks-result-label">Marks / %</span>
+                                                    <span className="marks-result-val">
+                                                        {isAbsent ? (
+                                                            <span style={{ color: '#94a3b8', fontStyle: 'italic' }}>Absent</span>
+                                                        ) : (
+                                                            `${mark.marks_obtained} / ${mark.total_marks} (${mark.percentage}%)`
+                                                        )}
+                                                    </span>
+                                                </div>
+                                                <div className="marks-result-item">
+                                                    <span className="marks-result-label">Grade & Rank</span>
+                                                    <span className="marks-result-val">
+                                                        {isAbsent ? '—' : `${mark.grade || '—'} (Rank #${mark.rank_in_class})`}
+                                                    </span>
+                                                </div>
+                                                <div className="marks-result-item">
+                                                    <span className="marks-result-label">Status</span>
+                                                    <span className={`marks-status-badge ${isAbsent ? 'absent' : isPassed ? 'pass' : 'fail'}`} style={{ alignSelf: 'flex-start' }}>
+                                                        {isAbsent ? 'Absent' : isPassed ? 'Pass' : 'Fail'}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                            <div className="marks-result-card-footer">
+                                                <button className="marks-result-view-btn" onClick={() => setScorecardExam(mark.exam_name)}>
+                                                    View Scorecard
+                                                </button>
+                                            </div>
+                                        </div>
+                                    );
+                                })
                             )}
+                        </div>
+                    </div>
+
+                    {/* Performance Summary (Mobile Only - Moved from Right Col) */}
+                    <div className="marks-panel mobile-only-panel">
+                        <h2 className="marks-panel-title"><span className="marks-panel-title-icon">📊</span> Performance Summary</h2>
+                        <div className="marks-summary-flex">
+                            <div className="marks-doughnut-container-small">
+                                <Doughnut 
+                                    data={{
+                                        labels: ['Passed', 'Failed'],
+                                        datasets: [{
+                                            data: [passedCount, failedCount],
+                                            backgroundColor: ['#22c55e', '#ef4444'],
+                                            borderWidth: 0,
+                                            cutout: '75%',
+                                        }]
+                                    }}
+                                    options={{
+                                        responsive: true,
+                                        maintainAspectRatio: false,
+                                        plugins: {
+                                            legend: { display: false },
+                                            tooltip: { enabled: true }
+                                        }
+                                    }}
+                                />
+                                <div className="marks-doughnut-inner-text-small">
+                                    <h3>{passRate}%</h3>
+                                    <p>Pass Rate</p>
+                                </div>
+                            </div>
+                            <div className="marks-summary-stats">
+                                <div className="marks-summary-stat-item">
+                                    <span className="marks-legend-dot" style={{ background: '#22c55e' }}></span>
+                                    <span>Passed</span>
+                                    <span className="marks-summary-value">{passedCount} ({passRate}%)</span>
+                                </div>
+                                <div className="marks-summary-stat-item">
+                                    <span className="marks-legend-dot" style={{ background: '#ef4444' }}></span>
+                                    <span>Failed</span>
+                                    <span className="marks-summary-value">{failedCount} ({failRate}%)</span>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
                     {/* Performance Trend */}
                     <div className="marks-panel">
-                        <h2 className="marks-panel-title">Performance Trend</h2>
+                        <h2 className="marks-panel-title"><span className="marks-panel-title-icon">📈</span> Performance Trend</h2>
                         <PerformanceTrendChart trend={trend} />
+                    </div>
+                    
+                    {/* Top Subjects (Mobile Only - Moved from Right Col) */}
+                    <div className="marks-panel mobile-only-panel">
+                        <h2 className="marks-panel-title"><span className="marks-panel-title-icon">⭐</span> Top Subjects</h2>
+                        <div className="marks-top-subjects-list">
+                            {topSubjects.length === 0 ? (
+                                <div style={{ color: '#888', fontSize: '14px', textAlign: 'center', padding: '10px' }}>No data available.</div>
+                            ) : (
+                                topSubjects.map((sub, idx) => (
+                                    <div className="marks-subject-item" key={sub.name}>
+                                        <div className="marks-subject-name">
+                                            <span style={{ color: '#94a3b8', fontSize: '13px' }}>{idx + 1}.</span> {sub.name}
+                                        </div>
+                                        <div className="marks-subject-score">{sub.avg}%</div>
+                                    </div>
+                                ))
+                            )}
+                        </div>
+                        <button className="marks-view-all-btn" style={{ marginTop: '20px' }} onClick={() => navigate('/student/performance')}>
+                            📈 View Performance Analytics
+                        </button>
                     </div>
                 </div>
 
-                {/* Right Column */}
-                <div className="marks-grid-right">
+                {/* Right Column (Desktop Only) */}
+                <div className="marks-grid-right desktop-only-col">
                     {/* Performance Summary (Doughnut) */}
                     <div className="marks-panel">
                         <h2 className="marks-panel-title">Performance Summary</h2>
@@ -612,3 +808,4 @@ function ViewMarks() {
 }
 
 export default ViewMarks;
+

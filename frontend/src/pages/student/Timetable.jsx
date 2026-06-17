@@ -1,4 +1,4 @@
-import { useState, useEffect, useContext } from "react";
+import { useState, useEffect, useContext, useMemo, useCallback } from "react";
 import { Link } from "react-router-dom";
 import api from "../../services/api";
 import { AuthContext } from "../../context/AuthContext";
@@ -14,7 +14,8 @@ function StudentTimetable() {
     const [timetable, setTimetable] = useState([]);
     const [classes, setClasses] = useState([]);
     const [selectedClass, setSelectedClass] = useState("");
-    const [viewMode, setViewMode] = useState("week"); // 'week' or 'list'
+    const [viewMode, setViewMode] = useState("list"); // Set default to list on mobile, week on desktop? Let's keep week, or let user toggle. Actually, I will set it to 'list' if window width < 768px.
+    const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
 
     // Enrolled subject IDs fetched from /students/me
     const [enrolledSubjectIds, setEnrolledSubjectIds] = useState(new Set());
@@ -24,7 +25,17 @@ function StudentTimetable() {
     const [currentDate, setCurrentDate] = useState(new Date());
 
     useEffect(() => {
+        const handleResize = () => setIsMobile(window.innerWidth <= 768);
+        window.addEventListener('resize', handleResize);
+        
+        // Default to list view on mobile
+        if (window.innerWidth <= 768) {
+            setViewMode('list');
+        }
+
         fetchStudentData();
+
+        return () => window.removeEventListener('resize', handleResize);
     }, []);
 
     useEffect(() => {
@@ -121,61 +132,81 @@ function StudentTimetable() {
         return { bg: 'tt-v2-bg-blue', text: 'tt-v2-text-blue', pill: 'tt-v2-pill-blue' }; // default
     };
 
+    // ── Pre-compute Timetable Map for O(1) Lookups ──
+    // Create a dictionary: "slotId-dayOfWeek" -> entry
+    const timetableMap = useMemo(() => {
+        const map = new Map();
+        timetable.forEach(t => {
+            map.set(`${t.slot_id}-${t.day_of_week}`, t);
+        });
+        return map;
+    }, [timetable]);
+
+    // Pre-calculate enrolled days per slot to fast-track break condition
+    const daySubjectBoundaries = useMemo(() => {
+        const boundaries = {};
+        DAYS_OF_WEEK.forEach(day => {
+            let firstSubjectSlotTime = null;
+            let lastSubjectSlotTime = null;
+
+            slots.forEach(slot => {
+                const entry = timetableMap.get(`${slot.id}-${day}`);
+                if (entry && !entry.is_break && enrolledSubjectIds.has(entry.subject_id)) {
+                    if (!firstSubjectSlotTime || slot.start_time < firstSubjectSlotTime) firstSubjectSlotTime = slot.start_time;
+                    if (!lastSubjectSlotTime || slot.start_time > lastSubjectSlotTime) lastSubjectSlotTime = slot.start_time;
+                }
+            });
+            boundaries[day] = { first: firstSubjectSlotTime, last: lastSubjectSlotTime };
+        });
+        return boundaries;
+    }, [slots, timetableMap, enrolledSubjectIds]);
+
+    const shouldShowBreak = useCallback((day, currentSlot) => {
+        const bounds = daySubjectBoundaries[day];
+        if (!bounds || !bounds.first || !bounds.last) return false;
+        return currentSlot.start_time > bounds.first && currentSlot.start_time < bounds.last;
+    }, [daySubjectBoundaries]);
+
+    const activeSlots = useMemo(() => {
+        return slots.filter(slot => {
+            return DAYS_OF_WEEK.some(day => {
+                const t = timetableMap.get(`${slot.id}-${day}`);
+                if (!t) return false;
+                if (t.is_break) return shouldShowBreak(day, slot);
+                return enrolledSubjectIds.has(t.subject_id);
+            });
+        });
+    }, [slots, timetableMap, shouldShowBreak, enrolledSubjectIds]);
+
     if (loading) {
         return <div className="tt-v2-container" style={{ padding: '3rem', textAlign: 'center' }}>Loading Class Schedule...</div>;
     }
 
-    // Helper to determine if a break should be shown on a specific day for this student
-    // Rule: Show break ONLY if the student has an enrolled class BEFORE the break AND AFTER the break on that day.
-    const shouldShowBreak = (day, currentSlot) => {
-        let hasClassBefore = false;
-        let hasClassAfter = false;
-
-        for (const otherSlot of slots) {
-            const otherEntry = timetable.find(t => t.slot_id === otherSlot.id && t.day_of_week === day);
-            if (otherEntry && !otherEntry.is_break && enrolledSubjectIds.has(otherEntry.subject_id)) {
-                if (otherSlot.start_time < currentSlot.start_time) {
-                    hasClassBefore = true;
-                }
-                if (otherSlot.start_time > currentSlot.start_time) {
-                    hasClassAfter = true;
-                }
-            }
-            if (hasClassBefore && hasClassAfter) return true;
-        }
-        return false;
-    };
-
-    // Include slots that have a scheduled subject for the current class
-    // OR a break, but ONLY IF the break satisfies the before/after condition for at least one day
-    const activeSlots = slots.filter(slot =>
-        timetable.some(t => {
-            if (t.slot_id !== slot.id) return false;
-            if (t.is_break) {
-                return shouldShowBreak(t.day_of_week, slot);
-            }
-            return enrolledSubjectIds.has(t.subject_id);
-        })
-    );
-
     return (
         <div className="tt-v2-container">
             {/* ── Header ── */}
-            <div className="st-header">
-                <div className="st-header-top-row">
-                    <div className="st-header-left">
-                        <h1>My Class Timetable</h1>
-                        <p>Your weekly class schedule for enrolled subjects.</p>
+            <div className="tt-v2-header" style={isMobile ? { display: 'flex', flexDirection: 'row', alignItems: 'center', width: '100%', marginBottom: '1rem' } : { display: 'flex', flexDirection: 'row', alignItems: 'center', width: '100%', marginBottom: '1.5rem', justifyContent: 'space-between' }}>
+                <div className="tt-v2-header-left" style={{ display: 'flex', alignItems: 'center', gap: isMobile ? '0.75rem' : '1rem', width: '100%' }}>
+                    {/* Back Arrow */}
+                    <Link to="/student/dashboard" style={{ textDecoration: 'none', color: '#0f172a', fontSize: '1.2rem', padding: '5px' }}>
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5"></path><path d="M12 19l-7-7 7-7"></path></svg>
+                    </Link>
+                    
+                    {/* Calendar Icon */}
+                    <div className="tt-v2-header-icon" style={{ background: '#f8fafc', border: '1px solid #f1f5f9', borderRadius: '12px', padding: '10px', fontSize: '1.6rem', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 1px 2px rgba(0,0,0,0.02)' }}>
+                        📅
                     </div>
-                </div>
-                <div className="st-header-bottom-row">
-                    <div className="st-breadcrumbs">
-                        <span>Dashboard</span>
-                        <span>›</span>
-                        <span className="active">My Class Timetable</span>
+                    
+                    {/* Titles */}
+                    <div className="tt-v2-header-titles" style={{ flex: 1 }}>
+                        <h1 style={{ margin: 0, fontSize: isMobile ? '1.2rem' : '1.5rem', fontWeight: 700, color: '#0f172a' }}>My Class Timetable</h1>
+                        <p style={{ margin: '4px 0 0', fontSize: isMobile ? '0.75rem' : '0.85rem', color: '#64748b' }}>Your weekly class schedule for enrolled subjects.</p>
                     </div>
-                    <div className="st-header-actions">
-                    </div>
+
+                    {/* Filter Icon */}
+                    <button style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '10px', width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#475569', cursor: 'pointer', marginLeft: 'auto', boxShadow: '0 1px 2px rgba(0,0,0,0.02)' }}>
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg>
+                    </button>
                 </div>
             </div>
 
@@ -278,7 +309,7 @@ function StudentTimetable() {
                                             {slot.start_time.slice(0, 5)} - {slot.end_time.slice(0, 5)}
                                         </td>
                                         {DAYS_OF_WEEK.map(day => {
-                                            const entry = timetable.find(t => t.slot_id === slot.id && t.day_of_week === day);
+                                            const entry = timetableMap.get(`${slot.id}-${day}`);
 
                                             // Break period
                                             if (entry && entry.is_break) {
@@ -337,7 +368,7 @@ function StudentTimetable() {
                         <div style={{ padding: "1.5rem" }}>
                             {DAYS_OF_WEEK.map((day, idx) => {
                                 const dayEntries = activeSlots.map(slot => {
-                                    const entry = timetable.find(t => t.slot_id === slot.id && t.day_of_week === day);
+                                    const entry = timetableMap.get(`${slot.id}-${day}`);
                                     if (!entry) return null;
                                     // Include breaks and enrolled subjects conditionally
                                     if (entry.is_break) {

@@ -1,6 +1,6 @@
 {
-  "appId": "com.studentsaas.universal",
-  "appName": "StudentSaaS-Universal",
+  "appId": "com.studentsaas.student",
+  "appName": "StudentSaaS-Student",
   "webDir": "dist",
   "server": {
     "androidScheme": "http",

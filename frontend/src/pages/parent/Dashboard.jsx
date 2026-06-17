@@ -17,6 +17,9 @@ import "../student/StudentTimetableV2.css";
 import "./ParentAssignments.css";
 import api from "../../services/api";
 
+import { Capacitor } from "@capacitor/core";
+import MobileDashboard from "./MobileDashboard";
+
 const DAYS_OF_WEEK = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
 // SVG Icons for Assignments
@@ -38,6 +41,10 @@ const getAsgSubjectIcon = (name) => {
 };
 
 function ParentDashboard() {
+    if (Capacitor.isNativePlatform()) {
+        return <MobileDashboard />;
+    }
+
     const { user, logout } = useContext(AuthContext);
     const { toggleSidebar } = useContext(AnnouncementSidebarContext);
     const navigate = useNavigate();

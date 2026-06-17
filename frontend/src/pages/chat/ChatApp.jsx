@@ -499,6 +499,30 @@ function ChatApp() {
                         <span style={{ fontSize: '1.4rem' }}>💬</span> Academic Chat
                     </h3>
                     <p>Connect with your faculty and classmates</p>
+
+                    {chatUsage && (user?.role === "admin" || user?.role === "owner" || user?.role === "manager") && (
+                        <div style={{ marginTop: '15px', padding: '12px', background: '#f8fafc', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '0.85rem', color: '#1e293b', fontWeight: 600 }}>
+                                <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ color: '#8b5cf6' }}>
+                                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                                    </svg>
+                                    Message Usage
+                                </span>
+                                <span>{chatUsage.unlimited ? 'Unlimited' : `${chatUsage.used.toLocaleString()} / ${chatUsage.limit.toLocaleString()}`}</span>
+                            </div>
+                            {!chatUsage.unlimited && (
+                                <div style={{ width: '100%', height: '6px', background: '#e2e8f0', borderRadius: '4px', overflow: 'hidden' }}>
+                                    <div style={{ 
+                                        height: '100%', 
+                                        width: `${chatUsage.percent}%`, 
+                                        background: chatUsage.percent > 90 ? '#ef4444' : chatUsage.percent > 75 ? '#f59e0b' : '#8b5cf6',
+                                        transition: 'width 0.3s ease' 
+                                    }}></div>
+                                </div>
+                            )}
+                        </div>
+                    )}
                 </div>
 
                 {/* Admin Filters UI */}
@@ -653,9 +677,47 @@ function ChatApp() {
                                 <span className="chat-header-pill">
                                     {activeRoom.type === 'direct' ? 'Direct Chat' : 'Group Chat'}
                                 </span>
+                                {isReadOnly && (
+                                    <div 
+                                        className="chat-header-icon" 
+                                        onClick={() => setShowParticipants(!showParticipants)}
+                                        style={{ 
+                                            marginLeft: '8px', 
+                                            width: '32px', 
+                                            height: '32px', 
+                                            background: showParticipants ? '#f3e8ff' : '#ffffff', 
+                                            color: showParticipants ? '#7e22ce' : '#6b7280', 
+                                            borderColor: showParticipants ? '#d8b4fe' : '#e5e7eb' 
+                                        }}
+                                        title="View Participants"
+                                    >
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                            <circle cx="12" cy="12" r="10"></circle>
+                                            <line x1="12" y1="16" x2="12" y2="12"></line>
+                                            <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                                        </svg>
+                                    </div>
+                                )}
                             </div>
-                            <div className="chat-header-actions" style={{ marginRight: isReadOnly ? '260px' : '0' }}>
-                                <div className="chat-header-icon" onClick={() => setShowParticipants(!showParticipants)}>ⓘ</div>
+                            <div className="chat-header-actions">
+                                {!isReadOnly && (
+                                    <div 
+                                        className="chat-header-icon" 
+                                        onClick={() => setShowParticipants(!showParticipants)}
+                                        style={{ 
+                                            background: showParticipants ? '#f3e8ff' : '#ffffff', 
+                                            color: showParticipants ? '#7e22ce' : '#6b7280', 
+                                            borderColor: showParticipants ? '#d8b4fe' : '#e5e7eb' 
+                                        }}
+                                        title="View Participants"
+                                    >
+                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                            <circle cx="12" cy="12" r="10"></circle>
+                                            <line x1="12" y1="16" x2="12" y2="12"></line>
+                                            <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                                        </svg>
+                                    </div>
+                                )}
                             </div>
                         </div>
 

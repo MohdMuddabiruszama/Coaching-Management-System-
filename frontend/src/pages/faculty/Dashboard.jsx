@@ -6,7 +6,14 @@ import ThemeSelector from "../../components/ThemeSelector";
 import AnnouncementBell from "../../components/AnnouncementBell";
 import "./FacultyDashboard.css";
 
+import { Capacitor } from "@capacitor/core";
+import MobileDashboard from "./MobileDashboard";
+
 function FacultyDashboard() {
+    if (Capacitor.isNativePlatform()) {
+        return <MobileDashboard />;
+    }
+
     const { user, logout } = useContext(AuthContext);
     const navigate = useNavigate();
     

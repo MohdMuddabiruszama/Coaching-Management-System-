@@ -1,0 +1,151 @@
+/* ============================================================
+   MobileStudentLayout.css — Phase 1B
+   Native bottom-tab layout for Student app.
+   Safe-area aware. Zero desktop styles.
+   ============================================================ */
+
+/* ── Root layout ─────────────────────────────────────────── */
+.msl-layout {
+    display: flex;
+    flex-direction: column;
+    height: 100dvh; /* dynamic viewport height — handles keyboard correctly */
+    width: 100%;
+    overflow: hidden;
+    background: #f5f6fa;
+}
+
+/* ── Scrollable content area ─────────────────────────────── */
+.msl-content {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+    /* leave room for bottom nav + safe area */
+    padding-bottom: calc(68px + env(safe-area-inset-bottom));
+    padding-top: env(safe-area-inset-top);
+}
+
+/* ── Bottom tab bar ──────────────────────────────────────── */
+.msl-bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: calc(60px + env(safe-area-inset-bottom));
+    padding-bottom: env(safe-area-inset-bottom);
+    background: #fff;
+    border-top: 1px solid rgba(0, 0, 0, 0.08);
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
+    z-index: 9999;
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.08);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+}
+.msl-bottom-nav::-webkit-scrollbar {
+    display: none;
+}
+
+/* ── Tab button ──────────────────────────────────────────── */
+.msl-nav-item {
+    flex: 0 0 auto;
+    min-width: 75px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    min-height: 48px;
+    padding: 6px 4px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    color: #94a3b8;
+    position: relative;
+    transition: color 0.2s ease;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+}
+
+.msl-nav-item:active {
+    transform: scale(0.9);
+}
+
+.msl-nav-item.active {
+    color: #667eea;
+}
+
+/* ── Tab icon + unread badge ─────────────────────────────── */
+.msl-tab-icon {
+    font-size: 22px;
+    line-height: 1;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.msl-unread-dot {
+    position: absolute;
+    top: -5px;
+    right: -8px;
+    background: #ef4444;
+    color: #fff;
+    font-size: 9px;
+    font-weight: 800;
+    min-width: 16px;
+    height: 16px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 3px;
+    border: 1.5px solid #fff;
+    line-height: 1;
+}
+
+/* ── Tab label ───────────────────────────────────────────── */
+.msl-tab-label {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.2px;
+    line-height: 1;
+}
+
+/* ── Active indicator line ───────────────────────────────── */
+.msl-active-indicator {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 24px;
+    height: 3px;
+    background: linear-gradient(90deg, #667eea, #764ba2);
+    border-radius: 0 0 4px 4px;
+    animation: msl-slide-in 0.2s ease;
+}
+
+@keyframes msl-slide-in {
+    from { width: 0; opacity: 0; }
+    to   { width: 24px; opacity: 1; }
+}
+
+/* ── Ripple effect on tap ────────────────────────────────── */
+.msl-nav-item::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 12px;
+    background: currentColor;
+    opacity: 0;
+    transition: opacity 0.1s;
+}
+
+.msl-nav-item:active::after {
+    opacity: 0.06;
+}

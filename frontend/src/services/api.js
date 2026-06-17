@@ -18,6 +18,11 @@ const getBaseURL = () => {
     // Remove trailing slash if present
     if (baseURL) {
         baseURL = baseURL.replace(/\/$/, "");
+        // Safeguard: Ensure baseURL always ends with /api
+        if (!baseURL.endsWith("/api")) {
+            console.warn(`⚠️ VITE_API_URL (${baseURL}) is missing /api. Auto-appending it.`);
+            baseURL += "/api";
+        }
     }
 
     if (!baseURL || !baseURL.trim()) {

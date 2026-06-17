@@ -1,0 +1,67 @@
+/* MobileParentLayout.css — Phase 1B */
+.mpl-layout {
+    display: flex;
+    flex-direction: column;
+    height: 100dvh;
+    width: 100%;
+    overflow: hidden;
+    background: #f5f6fa;
+}
+.mpl-content {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: calc(68px + env(safe-area-inset-bottom));
+    padding-top: env(safe-area-inset-top);
+}
+.mpl-bottom-nav {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    height: calc(60px + env(safe-area-inset-bottom));
+    padding-bottom: env(safe-area-inset-bottom);
+    background: #fff;
+    border-top: 1px solid rgba(0,0,0,0.08);
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    z-index: 9999;
+    box-shadow: 0 -4px 20px rgba(0,0,0,0.08);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+}
+.mpl-nav-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    min-height: 48px;
+    padding: 6px 4px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    color: #94a3b8;
+    position: relative;
+    transition: color 0.2s ease;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+}
+.mpl-nav-item:active { transform: scale(0.9); }
+.mpl-nav-item.active { color: #f59e0b; }
+.mpl-tab-icon { font-size: 22px; line-height: 1; position: relative; display: flex; align-items: center; justify-content: center; }
+.mpl-tab-label { font-size: 10px; font-weight: 600; letter-spacing: 0.2px; line-height: 1; }
+.mpl-active-indicator {
+    position: absolute;
+    top: 0; left: 50%;
+    transform: translateX(-50%);
+    width: 24px; height: 3px;
+    background: linear-gradient(90deg, #f59e0b, #d97706);
+    border-radius: 0 0 4px 4px;
+    animation: mpl-slide-in 0.2s ease;
+}
+@keyframes mpl-slide-in {
+    from { width: 0; opacity: 0; }
+    to   { width: 24px; opacity: 1; }
+}

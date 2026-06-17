@@ -1,9 +1,11 @@
 /**
  * Native shell: student role only (bundled when VITE_APP_VARIANT=student).
+ * Phase 1C: Uses MobileStudentLayout (bottom tabs) on native, StudentLayout (sidebar) on web.
  */
 
 import { Routes, Route, Navigate, useNavigate } from "react-router-dom";
 import { lazy, Suspense, useEffect } from "react";
+import { Capacitor } from "@capacitor/core";
 import ProtectedRoute from "./ProtectedRoute";
 import LoadingSpinner from "../components/common/LoadingSpinner";
 
@@ -15,11 +17,12 @@ const Profile = lazy(() => import("../pages/admin/Profile"));
 const ChatApp = lazy(() => import("../pages/chat/ChatApp"));
 const Unauthorized = lazy(() => import("../pages/common/Unauthorized"));
 
-const StudentDashboard = lazy(() => import("../pages/student/Dashboard"));
-const ViewAttendance = lazy(() => import("../pages/student/ViewAttendance"));
+const StudentDashboard = lazy(() => import("../pages/student/MobileDashboard"));
+const ViewAttendance = lazy(() => import("../pages/student/MobileAttendance"));
 const ViewMarks = lazy(() => import("../pages/student/ViewMarks"));
 const ViewAnnouncements = lazy(() => import("../pages/student/ViewAnnouncements"));
 const PayFees = lazy(() => import("../pages/student/PayFees"));
+const StudentPerformance = lazy(() => import("../pages/student/Performance"));
 const ScanAttendance = lazy(() => import("../pages/student/ScanAttendance"));
 const StudentTimetable = lazy(() => import("../pages/student/Timetable"));
 const StudentNotes = lazy(() => import("../pages/student/StudentNotes"));
@@ -32,7 +35,11 @@ const PageLoader = () => (
   </div>
 );
 
-const StudentLayout = lazy(() => import("../components/layout/StudentLayout"));
+// Phase 1C: Select layout based on platform
+const IS_NATIVE = Capacitor.isNativePlatform();
+const StudentLayout = IS_NATIVE
+    ? lazy(() => import("../components/layout/MobileStudentLayout"))
+    : lazy(() => import("../components/layout/StudentLayout"));
 
 function StudentArea() {
   return (
@@ -49,6 +56,7 @@ function StudentArea() {
           <Route path="timetable" element={<StudentTimetable />} />
           <Route path="notes" element={<StudentNotes />} />
           <Route path="assignments" element={<StudentAssignments />} />
+          <Route path="performance" element={<StudentPerformance />} />
           <Route path="chat" element={<ChatApp />} />
           <Route path="profile" element={<Profile />} />
           <Route path="*" element={<Navigate to="dashboard" replace />} />

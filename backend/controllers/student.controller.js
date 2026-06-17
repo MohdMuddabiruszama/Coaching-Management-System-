@@ -227,7 +227,7 @@ exports.getAllStudents = async (req, res) => {
     try {
         const { page = 1, limit = 10, search = "", class_id, cursor } = req.query;
         const institute_id = req.user.institute_id;
-        const parsedLimit = Math.min(parseInt(limit, 10) || 10, 100);
+        const parsedLimit = Math.min(parseInt(limit, 10) || 10, 10000);
         const offset = (parseInt(page, 10) - 1) * parsedLimit;
 
         // Build where clause

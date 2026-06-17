@@ -322,3 +322,162 @@
     align-items: center;
     gap: 4px;
 }
+
+/* ── Mobile Responsiveness ── */
+@media (max-width: 768px) {
+    .tt-v2-container {
+        padding: 1rem;
+    }
+    .tt-v2-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+        margin-bottom: 1rem;
+    }
+    .st-header-bottom-row {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+    }
+    .tt-v2-top-banner {
+        flex-direction: column;
+        gap: 0.75rem;
+        margin-bottom: 1rem;
+    }
+    .tt-v2-enrolled-card {
+        margin-right: 0;
+        width: 100%;
+        box-sizing: border-box;
+        align-items: flex-start;
+        flex-direction: column;
+        text-align: left;
+        gap: 0.5rem;
+        padding: 0.75rem 1rem;
+    }
+    .tt-v2-enrolled-icon {
+        display: none; /* Hide icon on mobile to save space */
+    }
+    .tt-v2-pills {
+        justify-content: flex-start;
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        width: 100%;
+        padding-bottom: 4px;
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+    }
+    .tt-v2-pills::-webkit-scrollbar {
+        display: none;
+    }
+    .tt-v2-academic-card {
+        margin-right: 0;
+        width: 100%;
+        box-sizing: border-box;
+        justify-content: space-between;
+        flex-direction: row;
+        padding: 0.75rem 1rem;
+    }
+    .tt-v2-controls {
+        flex-direction: column;
+        gap: 1rem;
+        padding: 1rem;
+        align-items: center;
+        text-align: center;
+    }
+    .tt-v2-date-nav {
+        width: 100%;
+        justify-content: space-between;
+    }
+    .tt-v2-date-range {
+        position: static;
+        transform: none;
+        margin: 0;
+        font-size: 0.95rem;
+    }
+    .tt-v2-view-toggles {
+        width: 100%;
+        justify-content: center;
+    }
+    .tt-v2-view-btn {
+        flex: 1;
+        justify-content: center;
+        padding: 8px;
+    }
+    .tt-v2-legend {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+        padding: 1rem;
+    }
+    .tt-v2-legend-left {
+        flex-wrap: wrap;
+        gap: 1rem;
+    }
+    .tt-v2-grid-container {
+        border-radius: 12px;
+        overflow-x: hidden;
+    }
+    
+    /* Extreme compression for Week View Grid on Mobile */
+    .tt-v2-table {
+        min-width: 100%;
+        table-layout: fixed;
+    }
+    .tt-v2-table th, .tt-v2-table td {
+        padding: 4px 2px;
+    }
+    .tt-v2-table th {
+        font-size: 0.55rem;
+    }
+    .tt-v2-table th .date {
+        font-size: 0.45rem;
+    }
+    .tt-v2-table td.time-col {
+        width: 35px;
+        font-size: 0.5rem;
+        word-spacing: 100vw; /* Force wrapping of time */
+        line-height: 1.2;
+    }
+    .tt-v2-cell-card {
+        padding: 4px 2px;
+        min-height: 60px;
+        border-radius: 6px;
+    }
+    .tt-v2-cell-subject {
+        font-size: 0.55rem;
+        margin-bottom: 2px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 100%;
+        width: 100%;
+        display: block;
+    }
+    .tt-v2-cell-detail {
+        font-size: 0.45rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 100%;
+        width: 100%;
+        display: block;
+    }
+    .tt-v2-cell-break {
+        padding: 4px 2px;
+        min-height: 60px;
+        gap: 2px;
+        border-radius: 6px;
+    }
+    .tt-v2-break-icon {
+        font-size: 0.7rem;
+    }
+    .tt-v2-break-label {
+        font-size: 0.5rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 100%;
+        display: block;
+    }
+}
+

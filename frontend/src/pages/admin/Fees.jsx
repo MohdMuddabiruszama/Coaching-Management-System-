@@ -357,24 +357,43 @@ function Fees() {
     const handleStructureSubmit = async (e) => {
         e.preventDefault();
         // Validate individual student is selected when target is individual
-        if (structureForm.student_target === 'individual' && !structureForm.individual_student_id) {
-            alert('Please select a student for Individual Student fee structure.');
+        if (structureForm.student_target === 'individual' && (!structureForm.individual_student_ids || structureForm.individual_student_ids.length === 0)) {
+            alert('Please select at least one student for Individual Student fee structure.');
             return;
         }
-        const payload = {
-            ...structureForm,
-            fee_type: structureForm.fee_type === 'Other' ? structureForm.custom_fee_type : structureForm.fee_type,
-            // Only send individual_student_id if individual target
-            individual_student_id: structureForm.student_target === 'individual' ? structureForm.individual_student_id : null,
-            // Force subject_id to null if targeting an individual
-            subject_id: structureForm.student_target === 'individual' ? null : structureForm.subject_id
-        };
+
         try {
             if (editingStructureId) {
+                const payload = {
+                    ...structureForm,
+                    fee_type: structureForm.fee_type === 'Other' ? structureForm.custom_fee_type : structureForm.fee_type,
+                    // Only send individual_student_id if individual target (take the first one if array)
+                    individual_student_id: structureForm.student_target === 'individual' ? structureForm.individual_student_ids[0] : null,
+                    // Force subject_id to null if targeting an individual
+                    subject_id: structureForm.student_target === 'individual' ? null : structureForm.subject_id
+                };
                 await api.put(`/fees/structure/${editingStructureId}`, payload);
                 setSuccess("✅ Fee structure updated successfully.");
             } else {
-                await api.post('/fees/structure', payload);
+                if (structureForm.student_target === 'individual') {
+                    // Create a fee structure for each selected student
+                    for (const studentId of structureForm.individual_student_ids) {
+                        const payload = {
+                            ...structureForm,
+                            fee_type: structureForm.fee_type === 'Other' ? structureForm.custom_fee_type : structureForm.fee_type,
+                            individual_student_id: studentId,
+                            subject_id: null
+                        };
+                        await api.post('/fees/structure', payload);
+                    }
+                } else {
+                    const payload = {
+                        ...structureForm,
+                        fee_type: structureForm.fee_type === 'Other' ? structureForm.custom_fee_type : structureForm.fee_type,
+                        individual_student_id: null,
+                    };
+                    await api.post('/fees/structure', payload);
+                }
                 setSuccess("✅ Fee structure created successfully.");
             }
             setTimeout(() => setSuccess(''), 5000);

@@ -198,6 +198,8 @@ function EnterMarks() {
     const [error, setError] = useState('');
     const [lockingExam, setLockingExam] = useState(false);
     const [showImportModal, setShowImportModal] = useState(false);
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 10;
     const navigate = useNavigate();
     const fileInputRef = useRef(null);
 
@@ -211,6 +213,7 @@ function EnterMarks() {
             setStudents([]);
             setMarksData({});
         }
+        setCurrentPage(1);
     }, [selectedExam]);
 
     const fetchExams = async () => {
@@ -227,7 +230,7 @@ function EnterMarks() {
         setError('');
         try {
             const [studRes, marksRes] = await Promise.all([
-                api.get(`/students?class_id=${examObj.class_id}`),
+                api.get(`/students?class_id=${examObj.class_id}&limit=10000`),
                 api.get(`/exams/${examObj.id}/marks`).catch(() => ({ data: { data: [] } })),
             ]);
 
@@ -447,6 +450,9 @@ function EnterMarks() {
         }
     }
 
+    const totalPages = Math.ceil(students.length / itemsPerPage);
+    const currentStudents = students.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
     return (
         <div className="dashboard-container">
             {/* HEADER */}
@@ -629,7 +635,7 @@ function EnterMarks() {
                                                 </td>
                                             </tr>
                                         ) : (
-                                            students.map(student => (
+                                            currentStudents.map(student => (
                                                 <MarkRow
                                                     key={student.id}
                                                     student={student}
@@ -643,6 +649,83 @@ function EnterMarks() {
                                     </tbody>
                                 </table>
                             </div>
+
+                            {/* PAGINATION */}
+                            {totalPages > 1 && (
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '1.5rem', padding: '1rem', background: '#f9fafb', borderRadius: '8px', border: '1px solid #e5e7eb' }}>
+                                    <div style={{ color: '#6b7280', fontSize: '0.9rem' }}>
+                                        Showing <strong>{(currentPage - 1) * itemsPerPage + 1}</strong> to <strong>{Math.min(currentPage * itemsPerPage, students.length)}</strong> of <strong>{students.length}</strong> students
+                                    </div>
+                                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                        <button
+                                            onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                                            disabled={currentPage === 1}
+                                            style={{
+                                                padding: '8px 12px',
+                                                borderRadius: '6px',
+                                                border: '1px solid #d1d5db',
+                                                background: currentPage === 1 ? '#f3f4f6' : 'white',
+                                                color: currentPage === 1 ? '#9ca3af' : '#374151',
+                                                cursor: currentPage === 1 ? 'not-allowed' : 'pointer',
+                                                fontWeight: '500',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                gap: '4px',
+                                                transition: 'all 0.2s'
+                                            }}
+                                        >
+                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                                            Previous
+                                        </button>
+                                        
+                                        <div style={{ display: 'flex', gap: '4px' }}>
+                                            {[...Array(totalPages)].map((_, i) => (
+                                                <button
+                                                    key={i}
+                                                    onClick={() => setCurrentPage(i + 1)}
+                                                    style={{
+                                                        width: '36px',
+                                                        height: '36px',
+                                                        borderRadius: '6px',
+                                                        border: currentPage === i + 1 ? '1px solid #8b5cf6' : '1px solid #d1d5db',
+                                                        background: currentPage === i + 1 ? '#f3e8ff' : 'white',
+                                                        color: currentPage === i + 1 ? '#7e22ce' : '#374151',
+                                                        cursor: 'pointer',
+                                                        fontWeight: currentPage === i + 1 ? '600' : '500',
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        justifyContent: 'center',
+                                                        transition: 'all 0.2s'
+                                                    }}
+                                                >
+                                                    {i + 1}
+                                                </button>
+                                            ))}
+                                        </div>
+
+                                        <button
+                                            onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                                            disabled={currentPage === totalPages}
+                                            style={{
+                                                padding: '8px 12px',
+                                                borderRadius: '6px',
+                                                border: '1px solid #d1d5db',
+                                                background: currentPage === totalPages ? '#f3f4f6' : 'white',
+                                                color: currentPage === totalPages ? '#9ca3af' : '#374151',
+                                                cursor: currentPage === totalPages ? 'not-allowed' : 'pointer',
+                                                fontWeight: '500',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                gap: '4px',
+                                                transition: 'all 0.2s'
+                                            }}
+                                        >
+                                            Next
+                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
 
                             {/* Lock Banner / Button */}
                             {examObj && !examObj.marks_locked ? (

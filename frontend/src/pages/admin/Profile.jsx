@@ -2,6 +2,7 @@ import { useState, useEffect, useContext } from "react";
 import { AuthContext } from "../../context/AuthContext";
 import api from "../../services/api";
 import { useNavigate } from "react-router-dom";
+import { Capacitor } from "@capacitor/core";
 import "./Profile.css";
 
 const EyeIcon = ({ visible }) => (
@@ -130,6 +131,57 @@ function Profile() {
         }
     };
 
+    // Phase 5C: Camera for Profile Photo
+    const handlePhotoUpdate = async () => {
+        try {
+            let photoBase64 = null;
+            if (Capacitor.isNativePlatform()) {
+                const { Camera, CameraResultType, CameraSource } = await import('@capacitor/camera');
+                const image = await Camera.getPhoto({
+                    quality: 80,
+                    allowEditing: true,
+                    resultType: CameraResultType.Base64,
+                    source: CameraSource.Prompt
+                });
+                photoBase64 = `data:image/jpeg;base64,${image.base64String}`;
+            } else {
+                const input = document.createElement('input');
+                input.type = 'file';
+                input.accept = 'image/*';
+                input.onchange = (e) => {
+                    const file = e.target.files[0];
+                    if (!file) return;
+                    const reader = new FileReader();
+                    reader.onload = async () => {
+                        await uploadPhoto(reader.result);
+                    };
+                    reader.readAsDataURL(file);
+                };
+                input.click();
+                return;
+            }
+
+            if (photoBase64) {
+                await uploadPhoto(photoBase64);
+            }
+        } catch (e) {
+            console.log("Photo capture cancelled or failed", e);
+        }
+    };
+
+    const uploadPhoto = async (base64) => {
+        try {
+            setUpdating(true);
+            await api.post('/admin/upload-photo', { image: base64, userId: profile.id });
+            setMessage({ type: "success", text: "Photo updated successfully." });
+            fetchProfile();
+        } catch (err) {
+            setMessage({ type: "error", text: "Failed to upload photo." });
+        } finally {
+            setUpdating(false);
+        }
+    };
+
     const handlePasswordChange = async (e) => {
         if (e) e.preventDefault();
         setMessage({ type: "", text: "" });
@@ -197,11 +249,17 @@ function Profile() {
             <div className="profile-grid">
                 {/* LEFT CARD */}
                 <div className="profile-card-left">
-                    <div className="profile-avatar-wrapper">
+                    <div className="profile-avatar-wrapper" onClick={handlePhotoUpdate} style={{ cursor: 'pointer', position: 'relative' }}>
                         <div className="profile-avatar">
-                            {getInitials(formData.name)}
+                            {profile?.photo_url ? (
+                                <img src={profile.photo_url} alt="Profile" style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} />
+                            ) : (
+                                getInitials(formData.name)
+                            )}
                         </div>
-
+                        <div style={{ position: 'absolute', bottom: 0, right: 0, background: '#4f46e5', color: 'white', borderRadius: '50%', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 4px rgba(0,0,0,0.2)' }}>
+                            📷
+                        </div>
                     </div>
                     
                     <h2 className="profile-name">{formData.name}</h2>

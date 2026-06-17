@@ -59,7 +59,8 @@ function StudentPerformance() {
                 api.get(`/attendance/student/${studentId}/report`).then(r => r.data.data.records || []).catch(() => []),
             ]);
             setPerf(perfData);
-            setTrend(trendData.trend || []);
+            const trendDataList = trendData.trend || [];
+            setTrend(trendDataList);
             setAttendance(attData);
         } catch (err) {
             console.error('Performance fetch error:', err);
@@ -139,10 +140,10 @@ function StudentPerformance() {
         else if (a.status === 'holiday') holidayCount++;
     });
     const totalDays = presentCount + absentCount + lateCount;
-    const presentPct = totalDays > 0 ? ((presentCount / totalDays) * 100).toFixed(2) : 0;
-    const absentPct = totalDays > 0 ? ((absentCount / totalDays) * 100).toFixed(2) : 0;
-    const latePct = totalDays > 0 ? ((lateCount / totalDays) * 100).toFixed(2) : 0;
-    const holidayPct = (attendance.length > 0) ? ((holidayCount / attendance.length) * 100).toFixed(2) : 0;
+    const presentPct = totalDays > 0 ? ((presentCount / totalDays) * 100).toFixed(0) : 0;
+    const absentPct = totalDays > 0 ? ((absentCount / totalDays) * 100).toFixed(0) : 0;
+    const latePct = totalDays > 0 ? ((lateCount / totalDays) * 100).toFixed(0) : 0;
+    const holidayPct = (attendance.length > 0) ? ((holidayCount / attendance.length) * 100).toFixed(0) : 0;
 
     if (loading) {
         return (
@@ -171,7 +172,12 @@ function StudentPerformance() {
 
     // Trend Chart Data
     const displayTrend = trend.slice(-Number(trendFilter));
-    const trendLabels = displayTrend.map(t => t.month ? t.month.substring(5) : '');
+    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const trendLabels = displayTrend.map(t => {
+        if (!t.month) return '';
+        const m = parseInt(t.month.substring(5, 7), 10);
+        return m >= 1 && m <= 12 ? monthNames[m - 1] : t.month.substring(5);
+    });
     const trendAvgMarks = displayTrend.map(t => t.score || 0);
     const trendAttendance = displayTrend.map(t => Math.min(100, (t.score || 0) + Math.floor(Math.random() * 20))); // Dummy data for attendance trend since API doesn't return it yet, keeping it visually aligned with image
     
@@ -222,8 +228,27 @@ function StudentPerformance() {
     return (
         <div className="perf-v2-dashboard">
 
-            {/* ── Header ── */}
-            <div className="st-header">
+            {/* Mobile Header (Visible only on mobile) */}
+            <div className="marks-mobile-header">
+                <div className="marks-mobile-header-left" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <div style={{ cursor: 'pointer', display: 'flex', alignItems: 'center' }} onClick={() => navigate(-1)}>
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#0f172a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+                    </div>
+                    <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', padding: '6px', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6366f1" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
+                    </div>
+                    <div className="marks-mobile-header-text">
+                        <h2>My Performance</h2>
+                        <p style={{ marginTop: '2px' }}>Complete overview of your academic performance</p>
+                    </div>
+                </div>
+                <button className="marks-mobile-filter-btn" onClick={() => {}}>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg>
+                </button>
+            </div>
+
+            {/* Desktop Header */}
+            <div className="st-header desktop-only-header">
                 <div className="st-header-top-row">
                     <div className="st-header-left">
                         <h1>My Performance</h1>
@@ -486,7 +511,7 @@ function StudentPerformance() {
                         ))}
                     </div>
                     
-                    <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem', fontSize: '0.7rem', color: '#64748b', justifyContent: 'center' }}>
+                    <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem', fontSize: '0.7rem', color: '#64748b', justifyContent: 'center', flexWrap: 'wrap' }}>
                         <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><div style={{ width: 10, height: 10, borderRadius: 3, background: '#10b981' }}></div> Present</span>
                         <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><div style={{ width: 10, height: 10, borderRadius: 3, background: '#ef4444' }}></div> Absent</span>
                         <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><div style={{ width: 10, height: 10, borderRadius: 3, background: '#f59e0b' }}></div> Late</span>
@@ -503,27 +528,8 @@ function StudentPerformance() {
                         </div>
                     </div>
 
-                    <div style={{ position: 'relative' }}>
-                        <div className="perf-v2-breakdown-legends">
-                            {top2Subjects.map((s, i) => (
-                                <div key={s.subject_id} className="perf-v2-breakdown-legend">
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                        <div style={{ width: 10, height: 10, borderRadius: '50%', background: doughnutColors[i] }}></div>
-                                        {s.subject_name}
-                                    </div>
-                                    <div>{s.avg_pct}%</div>
-                                </div>
-                            ))}
-                            <div className="perf-v2-breakdown-legend" style={{ marginTop: '8px', paddingTop: '8px', borderTop: '1px solid #f1f5f9' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                    <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#a855f7' }}></div>
-                                    Overall Average
-                                </div>
-                                <div>{overallAvg}%</div>
-                            </div>
-                        </div>
-
-                        <div className="perf-v2-doughnut-container" style={{ width: '180px', margin: '2rem 0' }}>
+                    <div>
+                        <div className="perf-v2-doughnut-container">
                             <Doughnut 
                                 data={{
                                     labels: doughnutLabels,
@@ -548,10 +554,28 @@ function StudentPerformance() {
                                 <div className="perf-v2-doughnut-lbl">Average<br/>Marks</div>
                             </div>
                         </div>
-                    </div>
 
+                        <div className="perf-v2-breakdown-legends">
+                            {top2Subjects.map((s, i) => (
+                                <div key={s.subject_id} className="perf-v2-breakdown-legend">
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                        <div style={{ width: 10, height: 10, borderRadius: '50%', background: doughnutColors[i] }}></div>
+                                        {s.subject_name}
+                                    </div>
+                                    <div>{s.avg_pct}%</div>
+                                </div>
+                            ))}
+                            <div className="perf-v2-breakdown-legend" style={{ marginTop: '8px', paddingTop: '8px', borderTop: '1px solid #f1f5f9' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                    <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#a855f7' }}></div>
+                                    Overall Average
+                                </div>
+                                <div>{overallAvg}%</div>
+                            </div>
+                        </div>
+                    </div>
                     <button className="perf-v2-btn-outline" onClick={() => navigate('/student/exams')}>
-                        👁 View Detailed Marksheet
+                        <span style={{ fontSize: '1rem' }}>👁️</span> View Detailed Marksheet
                     </button>
                 </div>
             </div>

@@ -2,8 +2,9 @@
  * Native shell: parent role only (bundled when VITE_APP_VARIANT=parent).
  */
 
-import { Routes, Route, Navigate, useNavigate } from "react-router-dom";
+import { Routes, Route, Navigate, useNavigate, Outlet } from "react-router-dom";
 import { lazy, Suspense, useEffect } from "react";
+import { Capacitor } from "@capacitor/core";
 import ProtectedRoute from "./ProtectedRoute";
 import LoadingSpinner from "../components/common/LoadingSpinner";
 
@@ -25,16 +26,22 @@ const PageLoader = () => (
   </div>
 );
 
+const IS_NATIVE = Capacitor.isNativePlatform();
+const MobileParentLayout = lazy(() => import("../components/layout/MobileParentLayout"));
+const ParentLayout = IS_NATIVE ? MobileParentLayout : () => <Outlet />;
+
 function ParentArea() {
   return (
     <ProtectedRoute allowedRoles={["parent"]}>
       <Routes>
-        <Route path="dashboard" element={<ParentDashboard />} />
-        <Route path="timetable" element={<ParentTimetable />} />
-        <Route path="assignments" element={<ParentAssignments />} />
-        <Route path="chat" element={<ChatApp />} />
-        <Route path="profile" element={<Profile />} />
-        <Route path="*" element={<Navigate to="/parent/dashboard" replace />} />
+        <Route path="/" element={<ParentLayout />}>
+          <Route path="dashboard" element={<ParentDashboard />} />
+          <Route path="timetable" element={<ParentTimetable />} />
+          <Route path="assignments" element={<ParentAssignments />} />
+          <Route path="chat" element={<ChatApp />} />
+          <Route path="profile" element={<Profile />} />
+          <Route path="*" element={<Navigate to="dashboard" replace />} />
+        </Route>
       </Routes>
     </ProtectedRoute>
   );

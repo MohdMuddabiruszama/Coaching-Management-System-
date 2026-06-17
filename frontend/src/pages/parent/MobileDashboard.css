@@ -1,0 +1,252 @@
+/* MobileDashboard.css — Phase 3C */
+.mpd-container {
+    padding: env(safe-area-inset-top) 16px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+/* Loading / Error */
+.mpd-loading-container, .mpd-error-container {
+    height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    color: #64748b;
+    gap: 16px;
+}
+.mpd-error-container button {
+    padding: 8px 16px;
+    border-radius: 8px;
+    border: none;
+    background: #4f46e5;
+    color: white;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+/* Header */
+.mpd-header {
+    margin-top: 10px;
+}
+.mpd-greeting h2 {
+    margin: 0 0 4px;
+    font-size: 22px;
+    font-weight: 800;
+    color: #1e293b;
+}
+.mpd-greeting p {
+    margin: 0;
+    font-size: 13px;
+    color: #64748b;
+}
+
+/* Sections */
+.mpd-section {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+.mpd-section-title, .mpd-section-header h3 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 700;
+    color: #1e293b;
+}
+.mpd-section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+.mpd-view-all {
+    font-size: 13px;
+    color: #4f46e5;
+    font-weight: 600;
+}
+
+/* Children List */
+.mpd-children-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+.mpd-child-card {
+    background: #ffffff;
+    border-radius: 16px;
+    padding: 16px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.03);
+    border: 1px solid rgba(0,0,0,0.04);
+}
+.mpd-child-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+.mpd-child-avatar {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #4f46e5, #7c3aed);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    font-weight: 800;
+}
+.mpd-child-info {
+    flex: 1;
+}
+.mpd-child-info h4 {
+    margin: 0 0 2px;
+    font-size: 16px;
+    font-weight: 700;
+    color: #1e293b;
+}
+.mpd-child-info p {
+    margin: 0;
+    font-size: 12px;
+    color: #64748b;
+}
+.mpd-child-att {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+}
+.mpd-att-val {
+    font-size: 16px;
+    font-weight: 800;
+    color: #10b981;
+}
+.mpd-att-label {
+    font-size: 10px;
+    color: #94a3b8;
+    text-transform: uppercase;
+    font-weight: 700;
+}
+
+/* Child Stats Chips */
+.mpd-child-stats {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 12px;
+}
+.mpd-stat-chip {
+    padding: 4px 8px;
+    background: #f1f5f9;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 700;
+    color: #475569;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+.mpd-stat-alert {
+    background: #fef2f2;
+    color: #dc2626;
+}
+.mpd-stat-warn {
+    background: #fffbeb;
+    color: #d97706;
+}
+
+/* Child Actions */
+.mpd-child-actions {
+    display: flex;
+    gap: 8px;
+    border-top: 1px solid #f1f5f9;
+    padding-top: 12px;
+}
+.mpd-child-actions button {
+    flex: 1;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    color: #475569;
+    padding: 8px 0;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+/* Quick Actions Grid */
+.mpd-quick-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+}
+.mpd-action-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    background: none;
+    border: none;
+}
+.mpd-action-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 14px;
+    background: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.04);
+}
+.mpd-action-btn span:last-child {
+    font-size: 11px;
+    font-weight: 600;
+    color: #475569;
+}
+
+/* Lists */
+.mpd-list-container {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+.mpd-list-item {
+    background: #ffffff;
+    border-radius: 14px;
+    padding: 12px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.02);
+    border: 1px solid rgba(0,0,0,0.03);
+}
+.mpd-list-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    background: #f1f5f9;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    flex-shrink: 0;
+}
+.mpd-list-content {
+    flex: 1;
+    min-width: 0;
+}
+.mpd-list-content h4 {
+    margin: 0 0 2px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #1e293b;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.mpd-list-content p {
+    margin: 0;
+    font-size: 12px;
+    color: #64748b;
+}

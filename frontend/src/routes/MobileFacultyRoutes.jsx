@@ -4,6 +4,7 @@
 
 import { Routes, Route, Navigate, useNavigate } from "react-router-dom";
 import { lazy, Suspense, useEffect } from "react";
+import { Capacitor } from "@capacitor/core";
 import ProtectedRoute from "./ProtectedRoute";
 import LoadingSpinner from "../components/common/LoadingSpinner";
 
@@ -33,24 +34,31 @@ const PageLoader = () => (
   </div>
 );
 
+const IS_NATIVE = Capacitor.isNativePlatform();
+const FacultyLayout = IS_NATIVE
+    ? lazy(() => import("../components/layout/MobileFacultyLayout"))
+    : lazy(() => import("../components/layout/FacultyLayout"));
+
 function FacultyArea() {
   return (
     <ProtectedRoute allowedRoles={["faculty"]}>
       <Routes>
-        <Route path="dashboard" element={<FacultyDashboard />} />
-        <Route path="attendance" element={<MarkAttendance />} />
-        <Route path="view-attendance" element={<FacultyViewAttendance />} />
-        <Route path="smart-attendance" element={<FacultySmartAttendance />} />
-        <Route path="scan-attendance" element={<ScanFacultyQR />} />
-        <Route path="marks" element={<EnterMarks />} />
-        <Route path="students" element={<ViewStudents />} />
-        <Route path="announcements" element={<FacultyAnnouncements />} />
-        <Route path="timetable" element={<FacultySchedule />} />
-        <Route path="notes" element={<FacultyNotes />} />
-        <Route path="assignments" element={<FacultyAssignments />} />
-        <Route path="chat" element={<ChatApp />} />
-        <Route path="profile" element={<Profile />} />
-        <Route path="*" element={<Navigate to="/faculty/dashboard" replace />} />
+        <Route path="/" element={<FacultyLayout />}>
+          <Route path="dashboard" element={<FacultyDashboard />} />
+          <Route path="attendance" element={<MarkAttendance />} />
+          <Route path="view-attendance" element={<FacultyViewAttendance />} />
+          <Route path="smart-attendance" element={<FacultySmartAttendance />} />
+          <Route path="scan-attendance" element={<ScanFacultyQR />} />
+          <Route path="marks" element={<EnterMarks />} />
+          <Route path="students" element={<ViewStudents />} />
+          <Route path="announcements" element={<FacultyAnnouncements />} />
+          <Route path="timetable" element={<FacultySchedule />} />
+          <Route path="notes" element={<FacultyNotes />} />
+          <Route path="assignments" element={<FacultyAssignments />} />
+          <Route path="chat" element={<ChatApp />} />
+          <Route path="profile" element={<Profile />} />
+          <Route path="*" element={<Navigate to="dashboard" replace />} />
+        </Route>
       </Routes>
     </ProtectedRoute>
   );

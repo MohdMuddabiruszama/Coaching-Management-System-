@@ -361,6 +361,7 @@ app.use("/api/biometric", require("./routes/biometric.routes"));
 app.use("/api/notes", require("./routes/note.routes"));
 app.use("/api/assignments", require("./routes/assignment.routes"));
 app.use("/api/performance", require("./routes/performance.routes")); // ✅ Student Performance System
+app.use("/api/mobile", require("./routes/mobileDashboard.routes")); // ✅ Phase 2C: Bundled mobile dashboard APIs
 
 // Public Web Page routes
 app.use("/api/admin/public-page", require("./routes/publicPage.routes"));
@@ -609,6 +610,15 @@ const syncDatabase = async () => {
       console.log('✅ Student Password columns ensured');
     } catch (e) {
       console.error('Error adding Student Password columns:', e.message);
+    }
+
+    // ── Phase 5A: FCM Push Token columns (Mobile App) ────────────────────────
+    try {
+      await sequelize.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS fcm_token VARCHAR(500) DEFAULT NULL;`);
+      await sequelize.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS fcm_platform VARCHAR(20) DEFAULT NULL;`);
+      console.log('✅ FCM token columns ensured on users table');
+    } catch (e) {
+      console.error('Error adding FCM token columns:', e.message);
     }
 
     // ── Dashboard Unread Tracking ─────────────────────────────────────

@@ -19,6 +19,7 @@ import "./styles/public-theme-overrides.css"; // Public theme fixes
 import { Toaster } from "react-hot-toast";
 import MobileAppInit from "./components/MobileAppInit";
 import SplashOverlay from "./components/SplashOverlay";
+import MobileNotificationBanner from "./components/MobileNotificationBanner";
 
 import { BrandingProvider } from "./context/BrandingContext";
 
@@ -48,6 +49,7 @@ function App() {
                                 <MobileAppInit />
                                 <NetworkStatus />
                                 <Toaster position="top-right" />
+                                <MobileNotificationBanner />
                                 {isMobileShell ? <MobileShell /> : <WebAppRoutes />}
                                 <AnnouncementSidebar />
                             </AnnouncementSidebarProvider>

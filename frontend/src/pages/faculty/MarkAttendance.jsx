@@ -2,6 +2,7 @@ import { useState, useEffect, useContext } from "react";
 import { Link } from "react-router-dom";
 import api from "../../services/api";
 import { AuthContext } from "../../context/AuthContext";
+import { addToQueue } from "../../services/offlineQueue";
 import "../admin/Dashboard.css";
 
 const getLocalDate = () => {
@@ -132,14 +133,62 @@ function MarkAttendance() {
         }
     };
 
-    const handleStatusChange = (studentId, status) => {
+    const handleStatusChange = async (studentId, status) => {
+        const prevData = attendanceData[studentId];
+
+        // 1. Optimistic UI update
         setAttendanceData(prev => ({
             ...prev,
             [studentId]: {
                 ...prev[studentId],
-                status
+                status,
+                isExisting: true // optimistically mark as existing so it moves to "Marked" table if applicable
             }
         }));
+
+        // 2. Background POST (Phase 4A)
+        try {
+            await api.post("/attendance/bulk", {
+                class_id: parseInt(selectedClass),
+                subject_id: parseInt(selectedSubject),
+                date: selectedDate,
+                attendance_data: [{
+                    student_id: parseInt(studentId),
+                    status: status,
+                    remarks: prevData?.remarks || ""
+                }]
+            });
+            // Update stats silently
+            fetchDashboardStats();
+        } catch (error) {
+            // 3. Rollback on failure
+            setAttendanceData(prev => ({
+                ...prev,
+                [studentId]: prevData // revert to original state
+            }));
+            
+            // Queue for offline replay
+            if (!error.response || error.response.status >= 500) {
+                await addToQueue({
+                    method: 'POST',
+                    url: '/attendance/bulk',
+                    data: {
+                        class_id: parseInt(selectedClass),
+                        subject_id: parseInt(selectedSubject),
+                        date: selectedDate,
+                        attendance_data: [{
+                            student_id: parseInt(studentId),
+                            status: status,
+                            remarks: prevData?.remarks || ""
+                        }]
+                    }
+                });
+                console.log("Added to offline queue");
+            } else {
+                const msg = error.response?.data?.message || "Failed to save attendance.";
+                alert(`Failed to mark ${status}: ${msg}`);
+            }
+        }
     };
 
     const handleRemarksChange = (studentId, remarks) => {

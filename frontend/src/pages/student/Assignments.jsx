@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import api from '../../services/api';
 import BackButton from '../../components/common/BackButton';
 import { resolveFileUrl } from '../../utils/resolveUrl';
@@ -120,9 +120,8 @@ function MiniCalendar({ assignments }) {
 }
 
 function UpcomingDeadlines({ pendingAssignments }) {
-    // Sort pending assignments by closest due date
+    // Sort pending assignments by closest due date (show all pending even if past due)
     const sorted = [...pendingAssignments]
-        .filter(a => a.due_date && new Date(a.due_date) > new Date())
         .sort((a, b) => new Date(a.due_date) - new Date(b.due_date))
         .slice(0, 3); // Take top 3
 
@@ -181,6 +180,13 @@ export default function StudentAssignments() {
     const [uploading, setUploading] = useState(false);
     const [file, setFile] = useState(null);
     const [msg, setMsg] = useState(null);
+    const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+
+    useEffect(() => {
+        const handleResize = () => setIsMobile(window.innerWidth <= 768);
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
 
     const flash = (text, type = 'success') => { setMsg({ text, type }); setTimeout(() => setMsg(null), 3500); };
 
@@ -286,26 +292,29 @@ export default function StudentAssignments() {
             </div>}
 
             {/* ── HEADER ── */}
-            <div className="st-header">
-                <div className="st-header-top-row">
-                    <div className="st-header-left">
+            <div className="asg-v2-header">
+                <div className="asg-v2-header-left">
+                    {/* Back Arrow */}
+                    <Link to="/student/dashboard" style={{ textDecoration: 'none', color: '#0f172a', fontSize: '1.2rem', padding: '5px' }}>
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5"></path><path d="M12 19l-7-7 7-7"></path></svg>
+                    </Link>
+                    
+                    {/* Clipboard Icon */}
+                    <div className="asg-v2-header-icon">
+                        📋
+                    </div>
+                    
+                    {/* Titles */}
+                    <div className="asg-v2-header-titles">
                         <h1>My Assignments</h1>
                         <p>View, submit, and track your assignment submissions</p>
                     </div>
-                </div>
-                <div className="st-header-bottom-row">
-                    <div className="st-breadcrumbs">
-                        <span>Dashboard</span>
-                        <span>›</span>
-                        <span className="active">My Assignments</span>
-                    </div>
-                    <div className="st-header-actions">
-                        {detailAsg && (
-                            <button className="st-btn st-btn-outline" onClick={() => setDetailAsg(null)}>
-                                ← Back to List
-                            </button>
-                        )}
-                    </div>
+
+                    {/* Notification Bell Icon */}
+                    <button className="asg-v2-bell-icon">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0f172a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+                        <span className="asg-v2-bell-dot"></span>
+                    </button>
                 </div>
             </div>
 
@@ -556,69 +565,73 @@ export default function StudentAssignments() {
                                     <div key={asg.id} className="asg-v3-card">
                                         <div className="asg-v3-menu-dots">⋮</div>
                                         
-                                        {/* Left: Icon & Badge */}
-                                        <div className="asg-v3-card-left">
-                                            <div className="asg-v3-card-icon-box" style={{ background: isGraded ? '#dcfce7' : isPending ? '#ffedd5' : '#e0e7ff', color: isGraded ? '#16a34a' : isPending ? '#ea580c' : '#4f46e5' }}>
+                                        {/* Left: Icon & Badge & Title wrapper for mobile */}
+                                        <div className="asg-v3-card-mobile-header" style={{ display: 'flex', gap: '16px', alignItems: 'flex-start', width: '100%' }}>
+                                            <div className="asg-v3-card-icon-box" style={{ background: isGraded ? '#dcfce7' : isPending ? '#ffedd5' : '#e0e7ff', color: isGraded ? '#16a34a' : isPending ? '#ea580c' : '#4f46e5', flexShrink: 0 }}>
                                                 {isGraded ? '📄' : isPending ? '⏳' : '📥'}
                                             </div>
-                                            <StatusBadgeV2 status={status} />
+                                            <div style={{ flex: 1 }}>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                                    <h3 className="asg-v3-title">{asg.title}</h3>
+                                                    <StatusBadgeV2 status={status} />
+                                                </div>
+                                                <div className="asg-v3-meta-row" style={{ flexWrap: 'wrap', marginBottom: '8px' }}>
+                                                    <div className="asg-v3-meta-item">
+                                                        <span style={{ color: '#3b82f6' }}>📚</span> Mathematics
+                                                    </div>
+                                                    <span className="asg-v3-meta-divider">|</span>
+                                                    <div className="asg-v3-meta-item">
+                                                        <span style={{ color: '#8b5cf6' }}>🎓</span> Class {asg.Class?.name?.replace('Class ', '') || '10'}
+                                                    </div>
+                                                    <span className="asg-v3-meta-divider">|</span>
+                                                    <div className="asg-v3-meta-item">
+                                                        👤 {asg.faculty?.name || 'Ritika Saha'}
+                                                    </div>
+                                                </div>
+                                                <div className="asg-v3-meta-row" style={{ color: '#0f172a', flexWrap: 'wrap', margin: 0 }}>
+                                                    <div className="asg-v3-meta-item">
+                                                        📅 Due: {formatDateTime(asg.due_date)}
+                                                    </div>
+                                                    <div className="asg-v3-meta-item">
+                                                        <span style={{ color: '#e11d48' }}>🎯</span> {Number(asg.max_marks)} marks
+                                                    </div>
+                                                </div>
+                                            </div>
                                         </div>
 
-                                        {/* Center: Content */}
-                                        <div className="asg-v3-card-center">
-                                            <h3 className="asg-v3-title">{asg.title}</h3>
-                                            <div className="asg-v3-meta-row">
-                                                <div className="asg-v3-meta-item">
-                                                    <span style={{ color: '#3b82f6' }}>📚</span> Mathematics
-                                                </div>
-                                                <span className="asg-v3-meta-divider">|</span>
-                                                <div className="asg-v3-meta-item">
-                                                    <span style={{ color: '#8b5cf6' }}>🎓</span> Class {asg.Class?.name?.replace('Class ', '') || '10'}
-                                                </div>
-                                                <span className="asg-v3-meta-divider">|</span>
-                                                <div className="asg-v3-meta-item">
-                                                    👤 {asg.faculty?.name || 'Rahul Sharma'}
-                                                </div>
-                                            </div>
-                                            <div className="asg-v3-meta-row" style={{ color: '#0f172a' }}>
-                                                <div className="asg-v3-meta-item">
-                                                    📅 Due: {formatDateTime(asg.due_date)}
-                                                </div>
-                                                <div className="asg-v3-meta-item" style={{ marginLeft: 16 }}>
-                                                    <span style={{ color: '#e11d48' }}>🎯</span> {Number(asg.max_marks)} marks
-                                                </div>
-                                            </div>
+                                        {/* Center: Content (Description only for mobile) */}
+                                        <div className="asg-v3-card-center" style={{ marginTop: '0px' }}>
                                             <div className="asg-v3-desc">
-                                                {asg.description || 'Submit before the deadline. Complete all questions and upload your file.'}
+                                                {asg.description || 'Please prepare and submit before the due date.'}
                                             </div>
                                         </div>
 
                                         {/* Right: Action Box */}
                                         <div className="asg-v3-card-right" style={{ background: isGraded ? '#f0fdf4' : isPending ? '#fff7ed' : '#f8fafc', border: `1px solid ${isGraded ? '#bbf7d0' : isPending ? '#ffedd5' : '#e2e8f0'}` }}>
                                             {isGraded ? (
-                                                <>
-                                                    <div className="asg-v3-action-label">Your Score</div>
-                                                    <div className="asg-v3-action-value" style={{ color: '#16a34a' }}>
-                                                        {Number(asg.my_submission?.marks_obtained || 0)}/{Number(asg.max_marks)}
-                                                    </div>
-                                                    <div className="asg-v3-action-sub" style={{ color: '#15803d' }}>
-                                                        Grade: {asg.my_submission?.grade || 'A+'}
+                                                <div className="asg-v3-action-wrap">
+                                                    <div>
+                                                        <div className="asg-v3-action-label">Your Score</div>
+                                                        <div className="asg-v3-action-value" style={{ color: '#16a34a' }}>
+                                                            {Number(asg.my_submission?.marks_obtained || 0)}/{Number(asg.max_marks)}
+                                                        </div>
                                                     </div>
                                                     <button className="asg-v3-action-btn" style={{ color: '#16a34a', border: '1px solid #16a34a' }} onClick={() => openDetail(asg)}>
                                                         📈 View Result
                                                     </button>
-                                                </>
+                                                </div>
                                             ) : (
-                                                <>
-                                                    <div className="asg-v3-action-label">Time Left</div>
-                                                    <div className="asg-v3-action-value" style={{ color: '#ea580c' }}>
-                                                        {getTimeLeftStr(asg.due_date)}
+                                                <div className="asg-v3-action-wrap">
+                                                    <div style={{ textAlign: 'left' }}>
+                                                        <div className="asg-v3-action-label">Time Left</div>
+                                                        <div className="asg-v3-action-value" style={{ color: '#ea580c' }}>
+                                                            {getTimeLeftStr(asg.due_date)}
+                                                        </div>
                                                     </div>
-                                                    <div className="asg-v3-action-sub"></div>
                                                     <button className="asg-v3-action-btn" style={{ color: '#4f46e5', border: '1px solid #e0e7ff', background: '#fff' }} onClick={() => openDetail(asg)}>
                                                         📤 Submit Now
                                                     </button>
-                                                </>
+                                                </div>
                                             )}
                                         </div>
                                     </div>
