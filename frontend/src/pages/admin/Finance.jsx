@@ -399,19 +399,19 @@ function FinanceDashboard() {
                  <div style={{ display: "flex", alignItems: "center", gap: 8, color: "#374151", fontSize: 14, fontWeight: 600 }}>
                     <span style={{ fontSize: 18 }}>👨‍🏫</span> Total Payroll
                  </div>
-                 <div style={{ color: "#6366f1", fontWeight: 800, fontSize: 15 }}>{formatRupee(summary?.salaries?.total)}</div>
+                 <div style={{ color: "#6366f1", fontWeight: 800, fontSize: 15 }}>{formatRupee(summary?.salaries?.payroll || summary?.salaries?.total || 0)}</div>
               </div>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0.75rem", background: "#ecfdf5", borderRadius: 8 }}>
                  <div style={{ display: "flex", alignItems: "center", gap: 8, color: "#065f46", fontSize: 14, fontWeight: 600 }}>
                     <span style={{ fontSize: 18 }}>💵</span> Salaries Paid
                  </div>
-                 <div style={{ color: "#10b981", fontWeight: 800, fontSize: 15 }}>{formatRupee(summary?.salaries?.total)}</div>
+                 <div style={{ color: "#10b981", fontWeight: 800, fontSize: 15 }}>{formatRupee(summary?.salaries?.total || 0)}</div>
               </div>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0.75rem", background: "#fffbeb", borderRadius: 8 }}>
                  <div style={{ display: "flex", alignItems: "center", gap: 8, color: "#92400e", fontSize: 14, fontWeight: 600 }}>
                     <span style={{ fontSize: 18 }}>⏳</span> Pending Salaries
                  </div>
-                 <div style={{ color: "#ef4444", fontWeight: 800, fontSize: 15 }}>{formatRupee(0)}</div>
+                 <div style={{ color: "#ef4444", fontWeight: 800, fontSize: 15 }}>{formatRupee(summary?.salaries?.pending || 0)}</div>
               </div>
               <Link to="/admin/salary" style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 4, marginTop: "auto", padding: "0.75rem", color: "#6366f1", fontWeight: 600, textDecoration: "none", fontSize: 14 }}>
                  📝 View Salary Details →

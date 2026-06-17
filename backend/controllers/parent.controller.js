@@ -77,12 +77,15 @@ exports.createParent = async (req, res) => {
 exports.getAllParents = async (req, res) => {
     try {
         const institute_id = req.user.institute_id;
-        const { search } = req.query;
+        const { search = "", page = 1, limit = 25, cursor } = req.query;
+        const parsedLimit = Math.min(parseInt(limit, 10) || 25, 100);
+        const offset = (parseInt(page, 10) - 1) * parsedLimit;
 
         const whereClause = {
             institute_id,
             role: "parent",
         };
+        if (cursor) whereClause.id = { [Op.lt]: cursor };
 
         if (search) {
             whereClause[Op.or] = [
@@ -92,7 +95,7 @@ exports.getAllParents = async (req, res) => {
             ];
         }
 
-        const parents = await User.findAll({
+        const queryOptions = {
             where: whereClause,
             attributes: ["id", "name", "email", "phone", "status"],
             include: [{
@@ -105,13 +108,23 @@ exports.getAllParents = async (req, res) => {
                 ],
                 through: { attributes: ["relationship"] }
             }],
-            order: [["id", "DESC"]]
-        });
+            order: [["id", "DESC"]],
+            limit: cursor ? parsedLimit + 1 : parsedLimit,
+        };
+
+        if (!cursor) queryOptions.offset = parseInt(offset, 10);
+
+        const rows = await User.findAll(queryOptions);
+        const hasMore = cursor ? rows.length > parsedLimit : rows.length === parsedLimit;
+        const parents = cursor && hasMore ? rows.slice(0, parsedLimit) : rows;
 
         res.status(200).json({
             success: true,
             message: "Parents retrieved successfully",
-            data: parents
+            data: parents,
+            count: parents.length,
+            nextCursor: hasMore && parents.length ? parents[parents.length - 1].id : null,
+            hasMore,
         });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });

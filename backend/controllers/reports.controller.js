@@ -173,7 +173,7 @@ exports.getAttendanceReport = async (req, res) => {
  */
 exports.getFeesReport = async (req, res) => {
     try {
-        const { start_date, end_date, class_id } = req.query;
+        const { start_date, end_date, class_id, fee_type } = req.query;
         const institute_id = req.user.institute_id;
 
         // Validate date range and plan limits
@@ -218,16 +218,32 @@ exports.getFeesReport = async (req, res) => {
             });
         }
 
+        const { StudentFee, FeesStructure } = require('../models');
+
+        const paymentIncludes = [
+            {
+                model: Student,
+                attributes: ['id', 'roll_number'],
+                include: studentInclude,
+                required: class_id ? true : undefined
+            }
+        ];
+
+        const feeStructureWhere = {};
+        if (fee_type) {
+            feeStructureWhere.fee_type = { [Op.like]: `%${fee_type}%` };
+        }
+
+        paymentIncludes.push({
+            model: FeesStructure,
+            attributes: ['fee_type'],
+            where: Object.keys(feeStructureWhere).length > 0 ? feeStructureWhere : undefined,
+            required: fee_type ? true : false
+        });
+
         const payments = await Payment.findAll({
             where: whereClause,
-            include: [
-                {
-                    model: Student,
-                    attributes: ['id', 'roll_number'],
-                    include: studentInclude,
-                    required: class_id ? true : undefined
-                }
-            ],
+            include: paymentIncludes,
             order: [['payment_date', 'DESC']]
         });
 
@@ -235,8 +251,7 @@ exports.getFeesReport = async (req, res) => {
         const totalCollected = payments.reduce((sum, p) => sum + parseFloat(p.amount_paid), 0);
         const studentsWithPayments = payments.map(p => p.student_id);
 
-        // Fetch actual pending fees from StudentFee table
-        const { StudentFee, FeesStructure } = require('../models');
+        // Calculate totals
         
         const pendingWhere = { institute_id, status: { [Op.ne]: 'paid' }, due_amount: { [Op.gt]: 0 } };
         if (class_id) {
@@ -254,13 +269,45 @@ exports.getFeesReport = async (req, res) => {
                 },
                 {
                     model: FeesStructure,
-                    attributes: ['fee_type', 'due_date']
+                    attributes: ['fee_type', 'due_date'],
+                    where: Object.keys(feeStructureWhere).length > 0 ? feeStructureWhere : undefined,
+                    required: fee_type ? true : false
                 }
             ],
             order: [[{ model: FeesStructure }, 'due_date', 'ASC']]
         });
 
         const uniquePendingStudentsCount = new Set(pendingFees.map(pf => pf.student_id)).size;
+
+        // Generate Daily Trend Data
+        let trendData = [];
+        const endDateObj = end_date ? new Date(end_date) : new Date();
+        const startDateObj = start_date ? new Date(start_date) : new Date(endDateObj.getTime() - 30 * 24 * 60 * 60 * 1000);
+        
+        const dateMap = {};
+        for(let d = new Date(startDateObj); d <= endDateObj; d.setDate(d.getDate() + 1)) {
+            const dStr = d.toISOString().split('T')[0];
+            const shortName = d.toLocaleString('en-US', { month: 'short', day: 'numeric' });
+            dateMap[dStr] = { name: shortName, Collected: 0, Pending: 0 };
+        }
+        
+        payments.forEach(p => {
+            const dStr = p.payment_date;
+            if(dateMap[dStr]) {
+                dateMap[dStr].Collected += parseFloat(p.amount_paid);
+            }
+        });
+        
+        pendingFees.forEach(pf => {
+            if(pf.FeesStructure && pf.FeesStructure.due_date) {
+                const dStr = pf.FeesStructure.due_date;
+                if(dateMap[dStr]) {
+                    dateMap[dStr].Pending += parseFloat(pf.due_amount);
+                }
+            }
+        });
+        
+        trendData = Object.values(dateMap);
 
         res.status(200).json({
             success: true,
@@ -271,6 +318,7 @@ exports.getFeesReport = async (req, res) => {
                     students_paid: new Set(studentsWithPayments).size,
                     students_pending: uniquePendingStudentsCount
                 },
+                trend: trendData,
                 payments,
                 pending_students: pendingFees.map(pf => ({
                     student_id: pf.Student.id,

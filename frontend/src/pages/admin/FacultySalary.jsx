@@ -142,6 +142,8 @@ export default function FacultySalaryPage() {
         payment_due_date:"", remarks:""
     };
     const [form, setForm] = useState(emptyForm);
+    const [facultySearch, setFacultySearch] = useState("");
+    const [settingsFacultySearch, setSettingsFacultySearch] = useState("");
 
     // ── Pay form ──────────────────────────────────────────────────────────────
     const [payForm, setPayForm] = useState({
@@ -166,7 +168,7 @@ export default function FacultySalaryPage() {
             if (statusFilter) params.status = statusFilter;
             const [salRes, facRes] = await Promise.all([
                 api.get("/salary", { params }),
-                api.get("/faculty"),
+                api.get("/faculty?limit=1000"),
             ]);
             setSalaries(salRes.data.data || []);
             setFaculty(facRes.data.data || []);
@@ -323,10 +325,21 @@ export default function FacultySalaryPage() {
         setGenLoading(true);
         try {
             const res = await salaryService.generateMonth(reportMonth);
-            showToast(`✅ Generated: ${res.data?.generated || 0} records, ${res.data?.skipped || 0} skipped.`);
+            showToast(`✅ Generated: ${res.data?.data?.generated || 0} records, ${res.data?.data?.skipped || 0} skipped.`);
             loadReport();
         } catch (err) { alert(err.response?.data?.message || "Failed."); }
         finally { setGenLoading(false); }
+    };
+
+    const handleBulkGenerate = async () => {
+        if (!window.confirm(`Auto-generate all pending salary records for ${monthFilter} based on faculty settings?`)) return;
+        setLoading(true);
+        try {
+            const res = await salaryService.generateMonth(monthFilter);
+            showToast(`🚀 Bulk generated: ${res.data?.data?.generated || 0} records created, ${res.data?.data?.skipped || 0} skipped.`);
+            loadData();
+        } catch (err) { alert(err.response?.data?.message || "Bulk generation failed."); }
+        finally { setLoading(false); }
     };
 
     const handleDownloadSlip = async (salary) => {
@@ -410,7 +423,16 @@ export default function FacultySalaryPage() {
                         </Link>
                         {canCreate && (
                             <button
-                                onClick={() => { setEditingRecord(null); setForm({ ...emptyForm, month_year: monthFilter }); setFormError(""); setShowCreateModal(true); }}
+                                onClick={handleBulkGenerate}
+                                className="st-btn st-btn-primary"
+                                style={{ background: "linear-gradient(135deg, #10b981, #059669)", border: "none", display: "inline-flex", alignItems: "center", gap: "0.5rem" }}
+                            >
+                                🚀 Bulk Generate
+                            </button>
+                        )}
+                        {canCreate && (
+                            <button
+                                onClick={() => { setEditingRecord(null); setForm({ ...emptyForm, month_year: monthFilter }); setFormError(""); setFacultySearch(""); setShowCreateModal(true); }}
                                 className="st-btn st-btn-primary"
                                 style={{ background:"#7e22ce", border:"none" }}
                             >
@@ -482,7 +504,7 @@ export default function FacultySalaryPage() {
                                 <div style={{ fontSize:"3rem", marginBottom:"0.75rem" }}>💼</div>
                                 <h3>No salary records for {new Date(monthFilter + "-01").toLocaleString("default", { month:"long", year:"numeric" })}</h3>
                                 {canCreate && (
-                                    <button onClick={() => { setEditingRecord(null); setForm({ ...emptyForm, month_year: monthFilter }); setFormError(""); setShowCreateModal(true); }}
+                                    <button onClick={() => { setEditingRecord(null); setForm({ ...emptyForm, month_year: monthFilter }); setFormError(""); setFacultySearch(""); setShowCreateModal(true); }}
                                         className="st-btn st-btn-primary"
                                         style={{ background:"#7e22ce", border:"none", marginTop:"1rem" }}>
                                         + Add Salary Record
@@ -569,7 +591,7 @@ export default function FacultySalaryPage() {
                                                                 </button>
                                                             )}
                                                             {!isPaid && canUpdate && (
-                                                                <button onClick={() => { setForm({ faculty_id:s.faculty_id, month_year:s.month_year, basic_salary:s.basic_salary, allowances:s.allowances, deductions:s.deductions, advance_paid:s.advance_paid, working_days:s.working_days, present_days:s.present_days, payment_due_date:s.payment_due_date||"", remarks:s.remarks||"" }); setEditingRecord(s); setFormError(""); setShowCreateModal(true); }}
+                                                                <button onClick={() => { setForm({ faculty_id:s.faculty_id, month_year:s.month_year, basic_salary:s.basic_salary, allowances:s.allowances, deductions:s.deductions, advance_paid:s.advance_paid, working_days:s.working_days, present_days:s.present_days, payment_due_date:s.payment_due_date||"", remarks:s.remarks||"" }); setEditingRecord(s); setFormError(""); setFacultySearch(""); setShowCreateModal(true); }}
                                                                     style={{ padding:"0.35rem 0.65rem", borderRadius:6, border:"1px solid #e5e7eb", background:"#f9fafb", color:"#374151", cursor:"pointer", fontSize:"0.82rem" }}>
                                                                     ✏️
                                                                 </button>
@@ -753,12 +775,110 @@ export default function FacultySalaryPage() {
                         {formError && <div style={{ background:"rgba(239,68,68,0.1)", border:"1px solid rgba(239,68,68,0.4)", borderRadius:8, padding:"0.75rem 1rem", marginBottom:"1rem", color:"#ef4444", fontSize:14 }}>⚠️ {formError}</div>}
 
                         <form onSubmit={handleCreate} className="form-grid">
-                            <div className="form-group">
-                                <label className="form-label">Faculty *</label>
-                                <select className="form-select" value={form.faculty_id} onChange={e => setForm({ ...form, faculty_id: e.target.value })} required disabled={!!editingRecord}>
-                                    <option value="">— Select Faculty —</option>
-                                    {faculty.map(f => <option key={f.id} value={f.id}>{f.User?.name || f.name} ({f.User?.email})</option>)}
-                                </select>
+                            <div className="form-group" style={{ gridColumn: "1 / -1" }}>
+                                <label className="form-label" style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                    <span>Select Faculty *</span>
+                                    {form.faculty_id && !editingRecord && (
+                                        <span style={{ color: '#059669', fontSize: '0.85rem' }}>
+                                            1 selected
+                                        </span>
+                                    )}
+                                </label>
+                                
+                                {editingRecord ? (
+                                    <div style={{ padding: '0.75rem 1rem', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                        {(() => {
+                                            const selF = faculty.find(f => f.id.toString() === form.faculty_id?.toString());
+                                            const name = selF?.User?.name || selF?.name || "Unknown";
+                                            const initials = name.substring(0, 2).toUpperCase();
+                                            return (
+                                                <>
+                                                    <div style={{ width: 36, height: 36, borderRadius: '50%', background: '#f3e8ff', color: '#7e22ce', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' }}>
+                                                        {initials}
+                                                    </div>
+                                                    <div>
+                                                        <div style={{ fontWeight: 600, color: '#1e293b' }}>{name}</div>
+                                                        <div style={{ fontSize: '0.8rem', color: '#64748b' }}>{selF?.User?.email}</div>
+                                                    </div>
+                                                    <div style={{ marginLeft: 'auto', color: '#94a3b8', fontSize: '0.85rem' }}>Cannot change while editing</div>
+                                                </>
+                                            );
+                                        })()}
+                                    </div>
+                                ) : (
+                                    <div style={{ border: "1px solid #e2e8f0", borderRadius: "8px", overflow: "hidden", background: "#f8fafc" }}>
+                                        <div style={{ display: "flex", alignItems: "center", padding: "0.5rem 1rem", borderBottom: "1px solid #e2e8f0", background: "#fff" }}>
+                                            <span style={{ marginRight: "0.5rem" }}>🔍</span>
+                                            <input 
+                                                type="text" 
+                                                placeholder="Search faculty by name or email..." 
+                                                value={facultySearch}
+                                                onChange={(e) => setFacultySearch(e.target.value)}
+                                                style={{ border: "none", outline: "none", width: "100%", padding: "0.5rem 0", background: "transparent", fontSize: "0.95rem" }}
+                                            />
+                                        </div>
+                                        <div style={{ maxHeight: "220px", overflowY: "auto", padding: "0.5rem" }}>
+                                            {(() => {
+                                                const searchTerms = facultySearch.toLowerCase().trim().split(/\s+/).filter(Boolean);
+                                                const filteredFac = faculty.filter(f => {
+                                                    const name = (f.User?.name || f.name || "").toLowerCase();
+                                                    const email = (f.User?.email || "").toLowerCase();
+                                                    const searchTarget = `${name} ${email}`;
+                                                    // if no search terms, match all. otherwise must match all terms
+                                                    return searchTerms.length === 0 || searchTerms.every(term => searchTarget.includes(term));
+                                                });
+                                                
+                                                if (filteredFac.length === 0) {
+                                                    return (
+                                                        <div style={{ textAlign: "center", padding: "1.5rem 1rem", color: "#64748B" }}>
+                                                            No faculty found matching your criteria.
+                                                        </div>
+                                                    );
+                                                }
+                                                
+                                                return filteredFac.map(f => {
+                                                    const isSelected = form.faculty_id?.toString() === f.id.toString();
+                                                    const name = f.User?.name || f.name || "Unknown";
+                                                    const initials = name.substring(0, 2).toUpperCase();
+                                                    
+                                                    return (
+                                                        <div 
+                                                            key={f.id}
+                                                            onClick={() => setForm({ ...form, faculty_id: f.id.toString() })}
+                                                            style={{ 
+                                                                display: "flex", alignItems: "center", padding: "0.75rem", 
+                                                                borderRadius: "6px", cursor: "pointer", marginBottom: "0.25rem",
+                                                                background: isSelected ? "#f0fdf4" : "#fff",
+                                                                border: isSelected ? "1px solid #86efac" : "1px solid transparent",
+                                                                transition: "all 0.2s"
+                                                            }}
+                                                            onMouseEnter={(e) => { if (!isSelected) e.currentTarget.style.background = "#f1f5f9" }}
+                                                            onMouseLeave={(e) => { if (!isSelected) e.currentTarget.style.background = "#fff" }}
+                                                        >
+                                                            <div style={{ marginRight: "1rem" }}>
+                                                                <input 
+                                                                    type="radio" 
+                                                                    checked={isSelected} 
+                                                                    readOnly
+                                                                    style={{ cursor: "pointer", width: "16px", height: "16px", accentColor: "#10b981" }}
+                                                                />
+                                                            </div>
+                                                            <div style={{ width: 36, height: 36, borderRadius: '50%', background: isSelected ? '#dcfce7' : '#f3e8ff', color: isSelected ? '#166534' : '#7e22ce', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', marginRight: "1rem", flexShrink: 0 }}>
+                                                                {initials}
+                                                            </div>
+                                                            <div>
+                                                                <div style={{ fontWeight: 600, color: '#1e293b' }}>{name}</div>
+                                                                <div style={{ fontSize: '0.8rem', color: '#64748b' }}>
+                                                                    {f.User?.email}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                });
+                                            })()}
+                                        </div>
+                                    </div>
+                                )}
                             </div>
 
                             <div className="form-group">
@@ -902,12 +1022,79 @@ export default function FacultySalaryPage() {
                         {formError && <div style={{ background:"rgba(239,68,68,0.1)", border:"1px solid rgba(239,68,68,0.4)", borderRadius:8, padding:"0.75rem 1rem", marginBottom:"1rem", color:"#ef4444", fontSize:14 }}>⚠️ {formError}</div>}
 
                         <form onSubmit={handleUpsertSettings} className="form-grid">
-                            <div className="form-group" style={{ gridColumn:"1 / -1" }}>
+                            <div className="form-group" style={{ gridColumn: "1 / -1" }}>
                                 <label className="form-label">Faculty *</label>
-                                <select className="form-select" value={settingsForm.faculty_id} onChange={e => setSettingsForm({ ...settingsForm, faculty_id: e.target.value })} required>
-                                    <option value="">— Select Faculty —</option>
-                                    {faculty.map(f => <option key={f.user_id} value={f.user_id}>{f.User?.name || f.name} ({f.User?.email})</option>)}
-                                </select>
+                                <div style={{ border: "1px solid #e2e8f0", borderRadius: "8px", background: "#f8fafc", overflow: "hidden" }}>
+                                    <div style={{ padding: "0.75rem", borderBottom: "1px solid #e2e8f0", background: "#fff", display: "flex", alignItems: "center" }}>
+                                        <span style={{ marginRight: "0.5rem", color: "#64748b" }}>🔍</span>
+                                        <input 
+                                            type="text" 
+                                            placeholder="Search faculty by name or email..." 
+                                            value={settingsFacultySearch}
+                                            onChange={(e) => setSettingsFacultySearch(e.target.value)}
+                                            style={{ border: "none", outline: "none", width: "100%", fontSize: "0.95rem" }}
+                                        />
+                                    </div>
+                                    <div style={{ maxHeight: "220px", overflowY: "auto", padding: "0.5rem" }}>
+                                        {(() => {
+                                            const searchTerms = settingsFacultySearch.toLowerCase().trim().split(/\s+/).filter(Boolean);
+                                            const filteredFac = faculty.filter(f => {
+                                                const name = (f.User?.name || f.name || "").toLowerCase();
+                                                const email = (f.User?.email || "").toLowerCase();
+                                                const searchTarget = `${name} ${email}`;
+                                                return searchTerms.length === 0 || searchTerms.every(term => searchTarget.includes(term));
+                                            });
+                                            
+                                            if (filteredFac.length === 0) {
+                                                return (
+                                                    <div style={{ textAlign: "center", padding: "1.5rem 1rem", color: "#64748B" }}>
+                                                        No faculty found matching your criteria.
+                                                    </div>
+                                                );
+                                            }
+                                            
+                                            return filteredFac.map(f => {
+                                                const isSelected = settingsForm.faculty_id?.toString() === f.user_id?.toString();
+                                                const name = f.User?.name || f.name || "Unknown";
+                                                const initials = name.substring(0, 2).toUpperCase();
+                                                
+                                                return (
+                                                    <div 
+                                                        key={f.user_id}
+                                                        onClick={() => setSettingsForm({ ...settingsForm, faculty_id: f.user_id?.toString() })}
+                                                        style={{ 
+                                                            display: "flex", alignItems: "center", padding: "0.75rem", 
+                                                            borderRadius: "6px", cursor: "pointer", marginBottom: "0.25rem",
+                                                            background: isSelected ? "#f0fdf4" : "#fff",
+                                                            border: isSelected ? "1px solid #86efac" : "1px solid transparent",
+                                                            transition: "all 0.2s"
+                                                        }}
+                                                        onMouseEnter={(e) => { if (!isSelected) e.currentTarget.style.background = "#f1f5f9" }}
+                                                        onMouseLeave={(e) => { if (!isSelected) e.currentTarget.style.background = "#fff" }}
+                                                    >
+                                                        <div style={{ marginRight: "1rem" }}>
+                                                            <input 
+                                                                type="radio" 
+                                                                checked={isSelected} 
+                                                                readOnly
+                                                                style={{ cursor: "pointer", width: "16px", height: "16px", accentColor: "#10b981" }}
+                                                            />
+                                                        </div>
+                                                        <div style={{ width: 36, height: 36, borderRadius: '50%', background: isSelected ? '#dcfce7' : '#f3e8ff', color: isSelected ? '#166534' : '#7e22ce', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', marginRight: "1rem", flexShrink: 0 }}>
+                                                            {initials}
+                                                        </div>
+                                                        <div>
+                                                            <div style={{ fontWeight: 600, color: '#1e293b' }}>{name}</div>
+                                                            <div style={{ fontSize: '0.8rem', color: '#64748b' }}>
+                                                                {f.User?.email}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            });
+                                        })()}
+                                    </div>
+                                </div>
                             </div>
 
                             <div className="form-group">

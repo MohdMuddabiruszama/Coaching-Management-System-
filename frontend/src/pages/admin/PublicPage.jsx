@@ -152,7 +152,6 @@ export default function PublicPage() {
         </p>
         <div style={{ display: "flex", gap: "1rem", justifyContent: "center", flexWrap: "wrap" }}>
           <button className="btn btn-primary" onClick={() => navigate("/pricing")}>⬆️ Upgrade Plan to Unlock</button>
-          <button className="btn btn-secondary" onClick={() => navigate("/admin/dashboard")}>← Back to Dashboard</button>
         </div>
         <div style={{ marginTop: "2rem", display: "flex", gap: "1.5rem", justifyContent: "center", flexWrap: "wrap" }}>
           {["🎯 Attract more students", "📋 Showcase your courses", "📞 Collect enquiries", "🔗 Share a live URL"].map(f => (
@@ -194,9 +193,6 @@ export default function PublicPage() {
           <h1 style={{ margin: 0 }}>🌐 Public Web Page</h1>
           <p style={{ color: "var(--text-secondary)", margin: 0 }}>Manage your institute's public-facing website</p>
         </div>
-        <button className="btn btn-secondary" onClick={() => navigate("/admin/dashboard")}>
-          ← Back to Dashboard
-        </button>
       </div>
 
       {/* Status Banner */}

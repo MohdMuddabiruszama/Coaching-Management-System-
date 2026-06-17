@@ -47,6 +47,13 @@ exports.getRevenueSummary = async (req, res) => {
         if (month_year) salWhere.month_year = month_year;
         const totalSalaries = await FacultySalary.sum("net_salary", { where: salWhere }) || 0;
 
+        // Pending Salaries
+        const salPendingWhere = { institute_id, status: { [Op.ne]: "paid" } };
+        if (month_year) salPendingWhere.month_year = month_year;
+        const pendingSalaries = await FacultySalary.sum("net_salary", { where: salPendingWhere }) || 0;
+        
+        const totalPayroll = parseFloat(totalSalaries) + parseFloat(pendingSalaries);
+
         // Pending Fees — from StudentFee
         const sfPendingWhere = { institute_id, status: ["pending", "partial"] };
         const totalPendingDue = await StudentFee.sum("due_amount", { where: sfPendingWhere }) || 0;
@@ -63,7 +70,12 @@ exports.getRevenueSummary = async (req, res) => {
             data: {
                 revenue: { total: parseFloat(totalRevenue), label: "Total Fees Collected" },
                 expenses: { total: parseFloat(totalExpenses), label: "Operational Expenses" },
-                salaries: { total: parseFloat(totalSalaries), label: "Faculty Salaries Paid" },
+                salaries: { 
+                    total: parseFloat(totalSalaries), 
+                    pending: parseFloat(pendingSalaries),
+                    payroll: totalPayroll,
+                    label: "Faculty Salaries Paid" 
+                },
                 total_costs: { total: totalCosts, label: "Total Costs" },
                 profit_loss: { amount: netProfitLoss, is_profit: netProfitLoss >= 0 },
                 pending: { total: parseFloat(totalPendingDue), label: "Pending Fee Collections" },

@@ -425,22 +425,37 @@ function AdminDashboard() {
                 )
             ) : (
                 <div className="stats-grid advanced-stats-grid">
-                    <AdvancedStatCard
-                        icon="👥"
-                        colorClass="asc-purple"
-                        label="Total Admins"
-                        value={`${stats.totalAdmins || 0} / ${planDetails?.plan?.max_admin_users || 1}`}
-                        subLabel="Active / Total"
-                        progress={(((stats.totalAdmins || 0) / (planDetails?.plan?.max_admin_users || 1)) * 100).toFixed(1)}
-                    />
-                    <AdvancedStatCard
-                        icon="👔"
-                        colorClass="asc-indigo"
-                        label="Total Managers"
-                        value={`${stats.totalManagers || 0} / ${planDetails?.plan?.max_admin_users || 1}`}
-                        subLabel="Active / Total"
-                        progress={(((stats.totalManagers || 0) / (planDetails?.plan?.max_admin_users || 1)) * 100).toFixed(1)}
-                    />
+                    {(() => {
+                        const totalAdminsLimit = 1;
+                        const usageAdminsLimit = planDetails?.usage?.admin_users?.limit;
+                        const totalManagersLimit = usageAdminsLimit === '∞' ? '∞' : Math.max(0, (usageAdminsLimit || 1) - 1);
+                        
+                        const adminsProgress = Math.min(100, ((stats.totalAdmins || 0) / totalAdminsLimit) * 100).toFixed(1);
+                        const managersProgress = totalManagersLimit === '∞' ? '0.0' : (totalManagersLimit > 0 
+                            ? Math.min(100, ((stats.totalManagers || 0) / totalManagersLimit) * 100).toFixed(1)
+                            : ((stats.totalManagers || 0) > 0 ? 100 : 0).toFixed(1));
+                            
+                        return (
+                            <>
+                                <AdvancedStatCard
+                                    icon="👥"
+                                    colorClass="asc-purple"
+                                    label="Total Admins"
+                                    value={`${stats.totalAdmins || 0} / ${totalAdminsLimit}`}
+                                    subLabel="Active / Total"
+                                    progress={adminsProgress}
+                                />
+                                <AdvancedStatCard
+                                    icon="👔"
+                                    colorClass="asc-indigo"
+                                    label="Total Managers"
+                                    value={`${stats.totalManagers || 0} / ${totalManagersLimit}`}
+                                    subLabel="Active / Total"
+                                    progress={managersProgress}
+                                />
+                            </>
+                        );
+                    })()}
                     <AdvancedStatCard
                         icon="👨‍🎓"
                         colorClass="asc-blue"

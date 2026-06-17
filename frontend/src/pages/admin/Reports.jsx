@@ -397,9 +397,6 @@ function Reports() {
                         <button className="st-btn st-btn-outline" onClick={() => handleExport("Excel")} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                             <span style={{ color: '#10b981' }}>📊</span> Export Excel {isPro ? "" : "🔒"}
                         </button>
-                        <button className="st-btn st-btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                            ⚡ Custom Report
-                        </button>
                     </div>
                 </div>
             </div>
@@ -457,36 +454,12 @@ function Reports() {
                             <label style={{ fontSize: 11, color: '#6b7280', fontWeight: 600 }}>Class</label>
                             <select className="form-select" style={{ fontSize: 13 }} value={dashFilters.class_id} onChange={e => setDashFilters({...dashFilters, class_id: e.target.value})}>
                                 <option value="">All Classes</option>
-                                {classes.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                            </select>
-                        </div>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 4, flex: 1 }}>
-                            <label style={{ fontSize: 11, color: '#6b7280', fontWeight: 600 }}>Section</label>
-                            <select className="form-select" style={{ fontSize: 13 }} value={dashFilters.section} onChange={e => setDashFilters({...dashFilters, section: e.target.value})}>
-                                <option value="">All Sections</option>
-                                <option value="A">Section A</option>
-                                <option value="B">Section B</option>
-                            </select>
-                        </div>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 4, flex: 1 }}>
-                            <label style={{ fontSize: 11, color: '#6b7280', fontWeight: 600 }}>Route</label>
-                            <select className="form-select" style={{ fontSize: 13 }} value={dashFilters.route} onChange={e => setDashFilters({...dashFilters, route: e.target.value})}>
-                                <option value="">All Routes</option>
-                                <option value="R1">Route 1</option>
-                                <option value="R2">Route 2</option>
-                            </select>
-                        </div>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 4, flex: 1 }}>
-                            <label style={{ fontSize: 11, color: '#6b7280', fontWeight: 600 }}>Status</label>
-                            <select className="form-select" style={{ fontSize: 13 }} value={dashFilters.status} onChange={e => setDashFilters({...dashFilters, status: e.target.value})}>
-                                <option value="">All Status</option>
-                                <option value="active">Active</option>
-                                <option value="inactive">Inactive</option>
+                                {classes.map(c => <option key={c.id} value={c.id}>{c.name}{c.section ? ` - ${c.section}` : ''}</option>)}
                             </select>
                         </div>
                         <div style={{ display: 'flex', alignItems: 'flex-end' }}>
                             <button className="btn btn-secondary" style={{ padding: '0.65rem 1.25rem', fontSize: 13, display: 'flex', alignItems: 'center', gap: 6, background: '#fff' }} onClick={() => {
-                                setDashFilters({ month: new Date().toISOString().slice(0, 7), class_id: "", section: "", route: "", status: "" });
+                                setDashFilters({ month: new Date().toISOString().slice(0, 7), class_id: "" });
                                 fetchDashboardData(new Date().toISOString().slice(0, 7));
                             }}>🔄 Reset</button>
                         </div>
@@ -590,13 +563,6 @@ function Reports() {
                                 </div>
                             </div>
                         </Link>
-                        <button style={{ background: "#fff", border: "1px dashed #c084fc", borderRadius: 12, padding: "1.25rem", display: "flex", alignItems: "center", gap: 12, transition: "all 0.2s", cursor: "pointer", textAlign: "left" }} onMouseEnter={e => e.currentTarget.style.transform="translateY(-2px)"} onMouseLeave={e => e.currentTarget.style.transform="translateY(0)"}>
-                            <div style={{ width: 40, height: 40, borderRadius: 8, background: "#f3e8ff", color: "#a855f7", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.2rem", flexShrink: 0 }}>⚡</div>
-                            <div>
-                                <div style={{ color: "#7e22ce", fontSize: 13, fontWeight: 700 }}>Custom Report</div>
-                                <div style={{ color: "#6b7280", fontSize: 11 }}>Generate custom reports</div>
-                            </div>
-                        </button>
                     </div>
                 </div>
             )}
@@ -679,9 +645,6 @@ function Reports() {
                                     setRecordFilter('all');
                                 }} style={{ background: 'transparent', border: 'none', color: '#7e22ce', fontSize: 13, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}>
                                     🔄 Reset
-                                </button>
-                                <button onClick={() => fetchFeesReport()} className="btn btn-secondary" style={{ padding: '0.55rem 1.25rem', fontSize: 13, display: 'flex', alignItems: 'center', gap: 6, background: '#8b5cf6', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer' }}>
-                                    ▼ Apply Filters
                                 </button>
                             </div>
                         </div>
@@ -768,15 +731,7 @@ function Reports() {
                                     </div>
                                     <div style={{ height: '240px', width: '100%' }}>
                                         <ResponsiveContainer width="100%" height="100%">
-                                            <AreaChart data={[
-                                                {name: 'May 1', Collected: 0, Pending: 0},
-                                                {name: 'May 5', Collected: 8000, Pending: 2000},
-                                                {name: 'May 10', Collected: 0, Pending: 0},
-                                                {name: 'May 15', Collected: 2000, Pending: 500},
-                                                {name: 'May 20', Collected: 0, Pending: 0},
-                                                {name: 'May 25', Collected: 12000, Pending: 3000},
-                                                {name: 'May 31', Collected: 0, Pending: 0}
-                                            ]}>
+                                            <AreaChart data={feesReport?.trend || []}>
                                                 <defs>
                                                     <linearGradient id="colorCol" x1="0" y1="0" x2="0" y2="1">
                                                         <stop offset="5%" stopColor="#7e22ce" stopOpacity={0.15}/>
@@ -845,8 +800,9 @@ function Reports() {
                             </div>
 
                             {/* Tables Grid */}
-                            <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '1.5rem' }}>
+                            <div style={{ display: 'grid', gridTemplateColumns: recordFilter === 'all' ? '1.2fr 1fr' : '1fr', gap: '1.5rem' }}>
                                 {/* Recent Payments */}
+                                {(recordFilter === 'all' || recordFilter === 'paid') && (
                                 <div style={{ background: '#fff', borderRadius: '12px', border: '1px solid #e5e7eb', boxShadow: '0 2px 4px rgba(0,0,0,0.02)', overflow: 'hidden' }}>
                                     <div style={{ padding: '1.25rem 1.5rem', borderBottom: '1px solid #e5e7eb', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                         <h3 style={{ margin: 0, color: '#111827', fontSize: '1.1rem', fontWeight: '700' }}>Recent Payments</h3>
@@ -878,7 +834,7 @@ function Reports() {
                                                                 <div style={{ color: '#6b7280', fontSize: '11px', marginTop: 2 }}>{payment.Student?.roll_number || 'RN037'}</div>
                                                             </td>
                                                             <td style={{ padding: '1rem 1.25rem', color: '#374151', fontSize: '13px' }}>
-                                                                Tuition Fee
+                                                                {payment.FeesStructure?.fee_type || 'Tuition Fee'}
                                                             </td>
                                                             <td style={{ padding: '1rem 1.25rem', color: '#111827', fontSize: '13px', fontWeight: '700' }}>
                                                                 ₹{parseFloat(payment.amount_paid).toLocaleString()}
@@ -896,8 +852,10 @@ function Reports() {
                                         </table>
                                     </div>
                                 </div>
+                                )}
 
                                 {/* Pending Students */}
+                                {(recordFilter === 'all' || recordFilter === 'pending') && (
                                 <div style={{ background: '#fff', borderRadius: '12px', border: '1px solid #e5e7eb', boxShadow: '0 2px 4px rgba(0,0,0,0.02)', overflow: 'hidden' }}>
                                     <div style={{ padding: '1.25rem 1.5rem', borderBottom: '1px solid #e5e7eb', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                         <h3 style={{ margin: 0, color: '#111827', fontSize: '1.1rem', fontWeight: '700' }}>Pending Students ({feesReport.pending_students?.length || 47})</h3>
@@ -943,6 +901,7 @@ function Reports() {
                                         </table>
                                     </div>
                                 </div>
+                                )}
                             </div>
                         </div>
                     )}
@@ -954,41 +913,6 @@ function Reports() {
                 <div>
                     {isPro ? (
                         <>
-                            {/* Filters Row */}
-                            <div style={{ background: '#fff', borderRadius: '12px', padding: '1.5rem', border: '1px solid #e5e7eb', marginBottom: '1.5rem', display: 'flex', alignItems: 'flex-end', gap: '1.5rem' }}>
-                                <div style={{ flex: 1.5, display: 'flex', flexDirection: 'column', gap: 4 }}>
-                                    <label style={{ fontSize: 11, color: '#6b7280', fontWeight: 600 }}>Date Range</label>
-                                    <div style={{ position: 'relative' }}>
-                                        <input type="text" className="form-input" style={{ fontSize: 13, paddingRight: 30, width: '100%', cursor: 'pointer' }} value={trendsFilters.dateRange} onChange={e => setTrendsFilters({...trendsFilters, dateRange: e.target.value})} />
-                                        <span style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', color: '#9ca3af', pointerEvents: 'none' }}>📅</span>
-                                    </div>
-                                </div>
-                                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 4 }}>
-                                    <label style={{ fontSize: 11, color: '#6b7280', fontWeight: 600 }}>Compare With</label>
-                                    <select className="form-select" style={{ fontSize: 13, width: '100%' }} value={trendsFilters.compareWith} onChange={e => setTrendsFilters({...trendsFilters, compareWith: e.target.value})}>
-                                        <option value="No Comparison">No Comparison</option>
-                                        <option value="Previous Year">Previous Year</option>
-                                    </select>
-                                </div>
-                                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 4 }}>
-                                    <label style={{ fontSize: 11, color: '#6b7280', fontWeight: 600 }}>View</label>
-                                    <select className="form-select" style={{ fontSize: 13, width: '100%' }} value={trendsFilters.view} onChange={e => setTrendsFilters({...trendsFilters, view: e.target.value})}>
-                                        <option value="Monthly">Monthly</option>
-                                        <option value="Quarterly">Quarterly</option>
-                                    </select>
-                                </div>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginLeft: 'auto' }}>
-                                    <button onClick={() => fetchMonthlyTrends()} className="btn btn-secondary" style={{ padding: '0.6rem 1.5rem', fontSize: 13, background: '#7e22ce', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
-                                        ▼ Apply Filters
-                                    </button>
-                                    <button onClick={() => {
-                                        setTrendsFilters({ dateRange: "01/01/2026 - 30/06/2026", compareWith: "No Comparison", view: "Monthly" });
-                                        fetchMonthlyTrends();
-                                    }} style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 8, padding: '0.6rem 1rem', color: '#4b5563', fontSize: 13, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
-                                        ⭯ Reset
-                                    </button>
-                                </div>
-                            </div>
 
                             {/* KPI Cards Grid */}
                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1.25rem', marginBottom: '1.5rem' }}>

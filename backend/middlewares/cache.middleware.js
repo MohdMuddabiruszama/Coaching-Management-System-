@@ -1,31 +1,47 @@
-/**
- * ✅ Phase 3.3: Caching Middleware
- * Intercepts GET requests, serves from Redis cache if available.
- * Falls back gracefully when Redis is unavailable.
- * Impact: 80-90% faster for repeated requests.
- */
-
 const redis = require("../config/redis");
 
-/**
- * Cache middleware for GET requests
- * @param {number} ttl - Time to live in seconds (default: 5 minutes = 300s)
- * @returns Express middleware
- */
-const cacheMiddleware = (ttl = 300) => {
+const normalizeUrl = (req) => {
+    const [path, rawQuery = ""] = req.originalUrl.split("?");
+    if (!rawQuery) return path;
+
+    const params = new URLSearchParams(rawQuery);
+    const normalized = new URLSearchParams();
+    [...params.keys()].sort().forEach((key) => {
+        params.getAll(key).forEach((value) => normalized.append(key, value));
+    });
+
+    const query = normalized.toString();
+    return query ? `${path}?${query}` : path;
+};
+
+const shouldVaryByUser = (req, options = {}) => {
+    if (options.scope === "tenant") return false;
+    if (options.scope === "user") return true;
+    if (Array.isArray(options.varyByUserRoles) && options.varyByUserRoles.includes(req.user?.role)) {
+        return true;
+    }
+    return ["student", "parent", "faculty"].includes(req.user?.role);
+};
+
+const buildCacheKey = (req, options = {}) => {
+    const instituteId = req.user?.institute_id || "public";
+    const role = req.user?.role || "anon";
+    const userId = shouldVaryByUser(req, options) ? req.user?.id || "anon" : "shared";
+    return `cache:${normalizeUrl(req)}:i:${instituteId}:r:${role}:u:${userId}`;
+};
+
+const cacheMiddleware = (ttl = 300, options = {}) => {
     return async (req, res, next) => {
-        // Only cache GET requests
-        if (req.method !== "GET") {
+        if (req.method !== "GET") return next();
+
+        if (typeof options.cacheWhen === "function" && !options.cacheWhen(req)) {
+            res.setHeader("X-Cache", "BYPASS");
             return next();
         }
 
-        // Build a unique cache key per route + institute (multi-tenant safe)
-        const instituteId = req.user?.institute_id || "public";
-        const userId = req.user?.id || "anon";
-        const cacheKey = `cache:${req.originalUrl}:${instituteId}:${userId}`;
+        const cacheKey = buildCacheKey(req, options);
 
         try {
-            // Check Redis cache
             const cachedData = await redis.get(cacheKey);
 
             if (cachedData) {
@@ -37,53 +53,50 @@ const cacheMiddleware = (ttl = 300) => {
 
             res.setHeader("X-Cache", "MISS");
 
-            // Intercept res.json to store result in cache
             const originalJson = res.json.bind(res);
             res.json = (body) => {
-                // Only cache successful responses
                 if (res.statusCode === 200 || res.statusCode === 201) {
                     redis.set(cacheKey, ttl, JSON.stringify(body)).catch(() => {});
                 }
                 return originalJson(body);
             };
 
-            next();
+            return next();
         } catch (error) {
-            // Never block a request due to cache errors
-            console.error("⚠️  Cache middleware error:", error.message);
-            next();
+            console.error("Cache middleware error:", error.message);
+            return next();
         }
     };
 };
 
-/**
- * Clear cache matching a URL pattern
- * Used after POST/PUT/DELETE to invalidate stale data.
- * @param {string} pattern - Redis key pattern (e.g. "cache:/api/students*")
- */
 const clearCache = async (pattern) => {
     try {
-        const keys = await redis.keys(pattern);
-        if (keys.length > 0) {
-            await redis.del(...keys);
-            console.log(`🗑️  Cleared ${keys.length} cache key(s) matching: ${pattern}`);
+        let cursor = "0";
+        let deleted = 0;
+
+        do {
+            const [nextCursor, keys] = await redis.scan(cursor, { match: pattern, count: 100 });
+            cursor = String(nextCursor);
+
+            if (keys.length > 0) {
+                await redis.del(...keys);
+                deleted += keys.length;
+            }
+        } while (cursor !== "0");
+
+        if (deleted > 0) {
+            console.log(`Cache cleared ${deleted} key(s) matching: ${pattern}`);
         }
     } catch (error) {
-        console.error("⚠️  Cache clear error:", error.message);
+        console.error("Cache clear error:", error.message);
     }
 };
 
-/**
- * Middleware to auto-invalidate caches on mutation requests (POST/PUT/DELETE/PATCH)
- * Attach to routes that modify data to keep cache fresh.
- * @param {string[]} patterns - Array of cache key patterns to invalidate
- */
 const invalidateCache = (...patterns) => {
     return async (req, res, next) => {
         if (["POST", "PUT", "DELETE", "PATCH"].includes(req.method)) {
             const originalJson = res.json.bind(res);
             res.json = async (body) => {
-                // Invalidate after successful mutations
                 if (res.statusCode >= 200 && res.statusCode < 300) {
                     for (const pattern of patterns) {
                         await clearCache(pattern);

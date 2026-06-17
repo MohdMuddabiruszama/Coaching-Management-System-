@@ -236,7 +236,10 @@ exports.getInstituteDetails = async (req, res) => {
             totalAssignments,
             totalParents,
             latestSubscription,
-            discounts
+            discounts,
+            totalExams,
+            totalNotes,
+            storageTracker
         ] = await Promise.all([
             Student.count({ where: { institute_id: id } }),
             Faculty.count({ where: { institute_id: id } }),
@@ -264,7 +267,10 @@ exports.getInstituteDetails = async (req, res) => {
                 where: { institute_id: id },
                 order: [["createdAt", "DESC"]],
                 include: [{ model: User, as: "approver", attributes: ["name"] }]
-            })
+            }),
+            Exam.count({ where: { institute_id: id } }),
+            Note.count({ where: { institute_id: id } }),
+            UsageTracker.findOne({ where: { institute_id: id, metric: "storage_mb" } })
         ]);
 
         // Count enabled features in current institute config
@@ -304,7 +310,10 @@ exports.getInstituteDetails = async (req, res) => {
                 totalSubjects,
                 totalAssignments,
                 totalParents,
-                totalFeatures
+                totalFeatures,
+                totalExams,
+                totalNotes,
+                storageUsed: storageTracker ? storageTracker.current_value : 0
             },
             latestSubscription,
             discounts: discounts || []
@@ -837,6 +846,7 @@ exports.upgradePlan = async (req, res) => {
             current_feature_auto_attendance: newPlan.feature_auto_attendance,
             current_feature_fees: newPlan.feature_fees,
             current_feature_finance: newPlan.feature_finance,
+            current_feature_expenses: newPlan.feature_expenses || false,
             current_feature_salary: newPlan.feature_salary,
             current_feature_reports: newPlan.feature_reports,
             current_feature_announcements: newPlan.feature_announcements,
@@ -850,6 +860,12 @@ exports.upgradePlan = async (req, res) => {
             current_feature_assignment: newPlan.feature_assignment || false,
             current_feature_performance_hub: newPlan.feature_performance_hub || false,
             current_feature_transport: newPlan.feature_transport || false,
+            current_feature_mobile_app: newPlan.feature_mobile_app || false,
+            current_feature_chat: newPlan.feature_chat || false,
+            current_feature_push_notifications: newPlan.feature_push_notifications || false,
+            current_feature_offline_attendance: newPlan.feature_offline_attendance || false,
+            current_feature_parent_app: newPlan.feature_parent_app || false,
+            current_feature_student_app: newPlan.feature_student_app || false,
             current_limit_chat_messages: newPlan.max_chat_messages || 500,
             
             // Sync lifetime flags

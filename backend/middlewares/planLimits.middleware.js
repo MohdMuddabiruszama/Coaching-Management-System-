@@ -6,6 +6,11 @@
 const { Institute, Plan, Student, User, Class } = require("../models");
 const { Op } = require("sequelize");
 
+const getEffectiveLimit = (curr, plan) => {
+    if (curr === -1 || plan === -1) return -1;
+    return Math.max(curr || 0, plan || 0);
+};
+
 const computeFeatures = (institute, plan) => {
     const features = {
         attendance: institute.current_feature_attendance !== 'none' ? institute.current_feature_attendance : plan.feature_attendance,
@@ -86,7 +91,7 @@ const checkStudentLimit = async (req, res, next) => {
         });
 
         // Determine limit (Snapshot first, then Plan fallback)
-        const limit_students = institute.current_limit_students || institute.Plan.max_students;
+        const limit_students = getEffectiveLimit(institute.current_limit_students, institute.Plan.max_students);
 
         // -1 = unlimited (lifetime override)
         if (limit_students !== -1 && studentCount >= limit_students) {
@@ -141,7 +146,7 @@ const checkFacultyLimit = async (req, res, next) => {
             }
         });
 
-        const limit_faculty = institute.current_limit_faculty || institute.Plan.max_faculty;
+        const limit_faculty = getEffectiveLimit(institute.current_limit_faculty, institute.Plan.max_faculty);
 
         // -1 = unlimited
         if (limit_faculty !== -1 && facultyCount >= limit_faculty) {
@@ -190,7 +195,7 @@ const checkClassLimit = async (req, res, next) => {
             where: { institute_id }
         });
 
-        const limit_classes = institute.current_limit_classes || institute.Plan.max_classes;
+        const limit_classes = getEffectiveLimit(institute.current_limit_classes, institute.Plan.max_classes);
 
         if (classCount >= limit_classes) {
             if (req.method === 'GET') return next();
@@ -244,7 +249,7 @@ const checkAdminUserLimit = async (req, res, next) => {
             }
         });
 
-        const limit_admins = institute.current_limit_admins || institute.Plan.max_admin_users;
+        const limit_admins = getEffectiveLimit(institute.current_limit_admins, institute.Plan.max_admin_users);
 
         // -1 = unlimited
         if (limit_admins !== -1 && adminCount >= limit_admins) {
@@ -445,10 +450,10 @@ const getUsageStats = async (req, res) => {
         ]);
 
         // Determine limits (Snapshot first, then Plan fallback; -1 = unlimited)
-        const limit_students = institute.current_limit_students || institute.Plan.max_students;
-        const limit_faculty = institute.current_limit_faculty || institute.Plan.max_faculty;
-        const limit_classes = institute.current_limit_classes || institute.Plan.max_classes;
-        const limit_admins = institute.current_limit_admins || institute.Plan.max_admin_users;
+        const limit_students = getEffectiveLimit(institute.current_limit_students, institute.Plan.max_students);
+        const limit_faculty = getEffectiveLimit(institute.current_limit_faculty, institute.Plan.max_faculty);
+        const limit_classes = getEffectiveLimit(institute.current_limit_classes, institute.Plan.max_classes);
+        const limit_admins = getEffectiveLimit(institute.current_limit_admins, institute.Plan.max_admin_users);
 
         // Helper: safe percentage (handles -1 unlimited)
         const safePct = (cur, lim) => lim === -1 ? 0 : Math.round((cur / lim) * 100);

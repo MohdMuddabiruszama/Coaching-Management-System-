@@ -1,66 +1,99 @@
-/**
- * Faculty Routes
- * Defines API endpoints for faculty management
- */
-
 const express = require("express");
 const router = express.Router();
 const facultyController = require("../controllers/faculty.controller");
 const verifyToken = require("../middlewares/auth.middleware");
 const checkSubscription = require("../middlewares/subscription.middleware");
 const allowRoles = require("../middlewares/role.middleware");
-
-/**
- * @route   POST /api/faculty
- * @desc    Create a new faculty member
- * @access  Admin only
- */
 const { checkFacultyLimit } = require("../middlewares/planLimits.middleware");
 const checkManagerPermission = require("../middlewares/checkManagerPermission");
-const { bulkImportFaculty } = require('../controllers/bulkImport/bulkFaculty.controller');
-const validate = require("../middlewares/validate.middleware"); // ✅ Phase 7
-const facValidator = require("../validators/faculty.validator"); // ✅ Phase 7
+const { bulkImportFaculty } = require("../controllers/bulkImport/bulkFaculty.controller");
+const validate = require("../middlewares/validate.middleware");
+const facValidator = require("../validators/faculty.validator");
+const { cacheMiddleware, invalidateCache } = require("../middlewares/cache.middleware");
 
 router.get("/me", verifyToken, checkSubscription, allowRoles("faculty"), facultyController.getMe);
-router.get("/dashboard-stats", verifyToken, checkSubscription, allowRoles("faculty"), facultyController.getDashboardStats);
-router.post("/", verifyToken, checkSubscription, allowRoles("admin", "manager"), checkManagerPermission("faculty.create"), checkFacultyLimit, validate(facValidator.createFaculty), facultyController.createFaculty);
+router.get("/dashboard-stats", verifyToken, checkSubscription, allowRoles("faculty"), cacheMiddleware(60, { scope: "user" }), facultyController.getDashboardStats);
 
-/**
- * @route   GET /api/faculty
- * @desc    Get all faculty members with pagination and search
- * @access  Admin, Faculty
- */
-router.get("/", verifyToken, checkSubscription, allowRoles("admin", "faculty", "manager"), checkManagerPermission("faculty.read"), validate(facValidator.getFaculty), facultyController.getAllFaculty);
+router.post(
+    "/",
+    verifyToken,
+    checkSubscription,
+    allowRoles("admin", "manager"),
+    checkManagerPermission("faculty.create"),
+    checkFacultyLimit,
+    validate(facValidator.createFaculty),
+    invalidateCache("cache:/api/faculty*", "cache:/api/admin/stats*"),
+    facultyController.createFaculty
+);
 
-/**
- * @route   GET /api/faculty/:id
- * @desc    Get faculty by ID
- * @access  Admin, Faculty (own record)
- */
-router.get("/:id", verifyToken, checkSubscription, allowRoles("admin", "faculty", "manager"), checkManagerPermission("faculty.read"), validate(facValidator.getFacultyById), facultyController.getFacultyById);
+router.get(
+    "/",
+    verifyToken,
+    checkSubscription,
+    allowRoles("admin", "faculty", "manager"),
+    checkManagerPermission("faculty.read"),
+    validate(facValidator.getFaculty),
+    cacheMiddleware(300, {
+        varyByUserRoles: ["faculty"],
+        cacheWhen: (req) => !req.query.search,
+    }),
+    facultyController.getAllFaculty
+);
 
-/**
- * @route   PUT /api/faculty/:id
- * @desc    Update faculty details
- * @access  Admin, Faculty (own record)
- */
-router.put("/:id", verifyToken, checkSubscription, allowRoles("admin", "faculty", "manager"), checkManagerPermission("faculty.update"), validate(facValidator.updateFaculty), facultyController.updateFaculty);
+router.get(
+    "/:id",
+    verifyToken,
+    checkSubscription,
+    allowRoles("admin", "faculty", "manager"),
+    checkManagerPermission("faculty.read"),
+    validate(facValidator.getFacultyById),
+    cacheMiddleware(600),
+    facultyController.getFacultyById
+);
 
-/**
- * @route   DELETE /api/faculty/:id
- * @desc    Delete faculty
- * @access  Admin only
- */
-router.delete("/:id", verifyToken, checkSubscription, allowRoles("admin", "manager"), checkManagerPermission("faculty.delete"), validate(facValidator.deleteFaculty), facultyController.deleteFaculty);
+router.put(
+    "/:id",
+    verifyToken,
+    checkSubscription,
+    allowRoles("admin", "faculty", "manager"),
+    checkManagerPermission("faculty.update"),
+    validate(facValidator.updateFaculty),
+    invalidateCache("cache:/api/faculty*", "cache:/api/admin/stats*"),
+    facultyController.updateFaculty
+);
 
-// Credentials
+router.delete(
+    "/:id",
+    verifyToken,
+    checkSubscription,
+    allowRoles("admin", "manager"),
+    checkManagerPermission("faculty.delete"),
+    validate(facValidator.deleteFaculty),
+    invalidateCache("cache:/api/faculty*", "cache:/api/admin/stats*"),
+    facultyController.deleteFaculty
+);
+
 router.post("/credentials", verifyToken, allowRoles("admin", "manager"), facultyController.getFacultyCredentials);
 router.post("/:id/resend-credentials", verifyToken, allowRoles("admin", "manager"), facultyController.resendFacultyCredentials);
 
-// Bulk delete route
-router.post("/bulk-delete", verifyToken, checkSubscription, allowRoles("admin", "manager"), checkManagerPermission("faculty.delete"), facultyController.bulkDeleteFaculty);
+router.post(
+    "/bulk-delete",
+    verifyToken,
+    checkSubscription,
+    allowRoles("admin", "manager"),
+    checkManagerPermission("faculty.delete"),
+    invalidateCache("cache:/api/faculty*", "cache:/api/admin/stats*"),
+    facultyController.bulkDeleteFaculty
+);
 
-// Bulk import route
-router.post("/bulk-import", verifyToken, checkSubscription, allowRoles("admin", "manager"), checkManagerPermission("faculty.create"), bulkImportFaculty);
+router.post(
+    "/bulk-import",
+    verifyToken,
+    checkSubscription,
+    allowRoles("admin", "manager"),
+    checkManagerPermission("faculty.create"),
+    invalidateCache("cache:/api/faculty*", "cache:/api/admin/stats*"),
+    bulkImportFaculty
+);
 
 module.exports = router;

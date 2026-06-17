@@ -458,24 +458,9 @@ const AdminExpenses = forwardRef((props, ref) => {
                                 </select>
                             </div>
                         </div>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 4, flex: 1, minWidth: '150px' }}>
-                            <label style={{ fontSize: 11, color: '#6b7280', fontWeight: 600 }}>Route</label>
-                            <div style={{ position: 'relative' }}>
-                                <span style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#9ca3af', pointerEvents: 'none' }}>🚌</span>
-                                <select className="form-select" style={{ fontSize: 13, paddingLeft: 30 }}>
-                                    <option value="">All Routes</option>
-                                    <option value="R1">Route A</option>
-                                    <option value="R2">Route B</option>
-                                </select>
-                            </div>
-                        </div>
-                        
                         <div style={{ display: 'flex', alignItems: 'flex-end', gap: '0.5rem', flex: 1, justifyContent: 'flex-end', minWidth: '220px' }}>
                             <button onClick={() => {setFilterCategory(""); setFilterPeriod("current_month"); setFilterDateValue("");}} style={{ background: 'transparent', border: 'none', color: '#6b7280', fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}>
                                 🔄 Reset
-                            </button>
-                            <button onClick={() => fetchExpensesData()} className="btn btn-secondary" style={{ padding: '0.65rem 1.25rem', fontSize: 13, display: 'flex', alignItems: 'center', gap: 6, background: '#fff', color: '#7e22ce', borderColor: '#e9d5ff' }}>
-                                ⚡ Advanced Filters
                             </button>
                         </div>
                     </div>

@@ -12,10 +12,22 @@ import BackButton from "../../components/common/BackButton";
 import ThemeSelector from "../../components/ThemeSelector";
 import "../admin/Dashboard.css";
 import "./Plans.css";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
+import * as XLSX from "xlsx";
 
 /* ─ helpers ─ */
 const fmt = (n) => (n !== undefined && n !== null ? n : "N/A");
 const fmtDate = (d) => (d ? new Date(d).toLocaleDateString("en-IN", { year: "numeric", month: "short", day: "numeric" }) : "N/A");
+const formatStorage = (mb) => {
+    if (!mb) return "0 MB";
+    if (mb >= 1024) return (mb / 1024).toFixed(2) + " GB";
+    return mb.toFixed(2) + " MB";
+};
+const getAddress = (inst) => {
+    const parts = [inst.address, inst.city, inst.state, inst.zip_code].filter(Boolean);
+    return parts.length > 0 ? parts.join(', ') : "N/A";
+};
 
 // Smart Attendance is index 0 — the Feature Toggles renderer treats it specially
 // (shows QR sub-feature dependency cards beneath it)
@@ -242,6 +254,83 @@ function InstituteLimits() {
         setMsg("ℹ️ Limits synced from base plan. Click Save to apply.");
     };
 
+    const handleDownloadPDF = () => {
+        if (!details || !details.institute) return;
+        const doc = new jsPDF();
+        const inst = details.institute;
+        const stats = details.stats;
+        
+        doc.setFontSize(20);
+        doc.text(`Institute Details: ${inst.name}`, 14, 22);
+        
+        doc.setFontSize(11);
+        doc.text(`Email: ${inst.email}`, 14, 30);
+        doc.text(`Phone: ${inst.phone || "N/A"}`, 14, 36);
+        doc.text(`Address: ${getAddress(inst)}`, 14, 42);
+        doc.text(`Status: ${inst.status?.toUpperCase()}`, 14, 48);
+        doc.text(`Plan: ${inst.Plan?.name || "None"}`, 14, 54);
+        doc.text(`Subscription Start: ${details.latestSubscription ? fmtDate(details.latestSubscription.start_date) : "N/A"}`, 14, 60);
+        doc.text(`Subscription End: ${fmtDate(inst.subscription_end)}`, 14, 66);
+
+        const tableData = [
+            ["Metric", "Count"],
+            ["Students", stats?.totalStudents || 0],
+            ["Faculty", stats?.totalFaculty || 0],
+            ["Managers", stats?.totalManagers || 0],
+            ["Classes", stats?.totalClasses || 0],
+            ["Subjects", stats?.totalSubjects || 0],
+            ["Exams", stats?.totalExams || 0],
+            ["Assignments", stats?.totalAssignments || 0],
+            ["Notes", stats?.totalNotes || 0],
+            ["Storage Used", formatStorage(stats?.storageUsed)],
+            ["Features Active", stats?.totalFeatures || 0],
+            ["Parents", stats?.totalParents || 0]
+        ];
+
+        autoTable(doc, {
+            startY: 76,
+            head: [tableData[0]],
+            body: tableData.slice(1),
+            theme: 'grid',
+            headStyles: { fillColor: [99, 102, 241] }
+        });
+
+        doc.save(`${inst.name.replace(/\s+/g, '_')}_Details.pdf`);
+    };
+
+    const handleDownloadExcel = () => {
+        if (!details || !details.institute) return;
+        const inst = details.institute;
+        const stats = details.stats;
+
+        const info = [
+            { "Metric": "Name", "Value": inst.name },
+            { "Metric": "Email", "Value": inst.email },
+            { "Metric": "Phone", "Value": inst.phone || "N/A" },
+            { "Metric": "Address", "Value": getAddress(inst) },
+            { "Metric": "Status", "Value": inst.status },
+            { "Metric": "Plan", "Value": inst.Plan?.name || "None" },
+            { "Metric": "Subscription Start", "Value": details.latestSubscription ? fmtDate(details.latestSubscription.start_date) : "N/A" },
+            { "Metric": "Subscription End", "Value": fmtDate(inst.subscription_end) },
+            { "Metric": "Students", "Value": stats?.totalStudents || 0 },
+            { "Metric": "Faculty", "Value": stats?.totalFaculty || 0 },
+            { "Metric": "Managers", "Value": stats?.totalManagers || 0 },
+            { "Metric": "Classes", "Value": stats?.totalClasses || 0 },
+            { "Metric": "Subjects", "Value": stats?.totalSubjects || 0 },
+            { "Metric": "Exams", "Value": stats?.totalExams || 0 },
+            { "Metric": "Assignments", "Value": stats?.totalAssignments || 0 },
+            { "Metric": "Notes", "Value": stats?.totalNotes || 0 },
+            { "Metric": "Storage Used", "Value": formatStorage(stats?.storageUsed) },
+            { "Metric": "Features Active", "Value": stats?.totalFeatures || 0 },
+            { "Metric": "Parents", "Value": stats?.totalParents || 0 }
+        ];
+
+        const ws = XLSX.utils.json_to_sheet(info);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Institute Details");
+        XLSX.writeFile(wb, `${inst.name.replace(/\s+/g, '_')}_Details.xlsx`);
+    };
+
     const filtered = institutes.filter(i =>
         (i.name || "").toLowerCase().includes(search.toLowerCase()) ||
         (i.email || "").toLowerCase().includes(search.toLowerCase())
@@ -333,8 +422,14 @@ function InstituteLimits() {
                             <h2 style={{ margin: 0, fontSize: "1.4rem" }}>{selected.name}</h2>
                             <p style={{ margin: "4px 0 0", color: "var(--text-secondary)", fontSize: "14px" }}>{selected.email}</p>
                         </div>
-                        <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
-                            <span className={`badge badge-${selected.status === 'active' ? 'success' : selected.status === 'suspended' ? 'warning' : 'danger'}`} style={{ fontSize: "13px", padding: "6px 14px" }}>
+                        <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", alignItems: "center" }}>
+                            <button className="btn btn-sm" style={{ background: "#ef4444", color: "#fff", display: "flex", alignItems: "center", gap: "6px" }} onClick={handleDownloadPDF}>
+                                📄 Download PDF
+                            </button>
+                            <button className="btn btn-sm" style={{ background: "#10b981", color: "#fff", display: "flex", alignItems: "center", gap: "6px" }} onClick={handleDownloadExcel}>
+                                📊 Download Excel
+                            </button>
+                            <span className={`badge badge-${selected.status === 'active' ? 'success' : selected.status === 'suspended' ? 'warning' : 'danger'}`} style={{ fontSize: "13px", padding: "6px 14px", marginLeft: "8px" }}>
                                 {selected.status?.toUpperCase()}
                             </span>
                             <button className="btn btn-sm" style={{ background: "var(--border-color)", color: "var(--text-primary)" }} onClick={() => { setSelected(null); setSearchParams({}); }}>

@@ -82,6 +82,7 @@ exports.registerInstitute = async (data) => {
         current_feature_auto_attendance: plan ? plan.feature_auto_attendance : false,
         current_feature_fees: plan ? plan.feature_fees : false,
         current_feature_finance: plan ? plan.feature_finance : false,
+        current_feature_expenses: plan ? plan.feature_expenses : false,
         current_feature_salary: plan ? plan.feature_salary : false,
         current_feature_reports: plan ? plan.feature_reports : 'none',
         current_feature_announcements: plan ? plan.feature_announcements : false,
@@ -97,6 +98,10 @@ exports.registerInstitute = async (data) => {
         current_feature_mobile_app: plan ? plan.feature_mobile_app : false,
         current_feature_public_page: plan ? plan.feature_public_page : false,
         current_feature_chat: plan ? plan.feature_chat : false,
+        current_feature_push_notifications: plan ? plan.feature_push_notifications : false,
+        current_feature_offline_attendance: plan ? plan.feature_offline_attendance : false,
+        current_feature_parent_app: plan ? plan.feature_parent_app : false,
+        current_feature_student_app: plan ? plan.feature_student_app : false,
         has_used_trial: hasUsedTrial,
         logo: data.logo || null,
     });

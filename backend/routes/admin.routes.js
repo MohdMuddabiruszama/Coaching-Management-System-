@@ -4,6 +4,7 @@ const verifyToken = require("../middlewares/auth.middleware");
 const allowRoles = require("../middlewares/role.middleware");
 const adminController = require("../controllers/admin.controller");
 const checkSubscription = require("../middlewares/subscription.middleware");
+const { cacheMiddleware, invalidateCache } = require("../middlewares/cache.middleware");
 
 const { getUsageStats } = require("../middlewares/planLimits.middleware");
 
@@ -13,6 +14,7 @@ router.get(
     verifyToken,
     checkSubscription,
     allowRoles("admin", "manager"),
+    cacheMiddleware(60, { scope: "user" }),
     adminController.getDashboardStats
 );
 
@@ -22,6 +24,7 @@ router.post(
     verifyToken,
     checkSubscription,
     allowRoles("admin", "manager"),
+    invalidateCache("cache:/api/admin/stats*"),
     adminController.clearUnreadAnnouncements
 );
 
@@ -30,6 +33,7 @@ router.post(
     verifyToken,
     checkSubscription,
     allowRoles("admin", "manager"),
+    invalidateCache("cache:/api/admin/stats*"),
     adminController.clearUnreadChats
 );
 
@@ -38,6 +42,7 @@ router.post(
     verifyToken,
     checkSubscription,
     allowRoles("admin", "manager"),
+    invalidateCache("cache:/api/admin/stats*"),
     adminController.clearUnreadAssignments
 );
 
@@ -46,6 +51,7 @@ router.post(
     verifyToken,
     checkSubscription,
     allowRoles("admin", "manager"),
+    invalidateCache("cache:/api/admin/stats*"),
     adminController.clearUnreadNotes
 );
 
@@ -54,6 +60,7 @@ router.post(
     verifyToken,
     checkSubscription,
     allowRoles("admin", "manager"),
+    invalidateCache("cache:/api/admin/stats*"),
     adminController.clearUnreadEnquiries
 );
 

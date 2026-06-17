@@ -64,6 +64,19 @@ const safeRedis = {
         if (!redis) return [];
         try { return await redis.keys(pattern); } catch { return []; }
     },
+    scan: async (cursor = 0, options = {}) => {
+        if (!redis) return ["0", []];
+        try {
+            const result = await redis.scan(cursor, options);
+            if (Array.isArray(result)) return result;
+            if (result && typeof result === "object") {
+                return [String(result.cursor ?? "0"), result.keys || result.results || []];
+            }
+            return ["0", []];
+        } catch {
+            return ["0", []];
+        }
+    },
     isAvailable: () => redisAvailable,
 };
 

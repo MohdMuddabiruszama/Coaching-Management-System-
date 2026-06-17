@@ -161,10 +161,10 @@ exports.createFaculty = async (req, res) => {
  */
 exports.getAllFaculty = async (req, res) => {
     try {
-        const { page = 1, limit = 100, search = "" } = req.query;
+        const { page = 1, limit = 100, search = "", cursor } = req.query;
         const institute_id = req.user.institute_id;
-
-        const offset = (page - 1) * limit;
+        const parsedLimit = Math.min(parseInt(limit, 10) || 100, 100);
+        const offset = (parseInt(page, 10) - 1) * parsedLimit;
 
         const userWhereClause = search
             ? {
@@ -175,11 +175,13 @@ exports.getAllFaculty = async (req, res) => {
             }
             : {};
 
-        const { count, rows } = await Faculty.findAndCountAll({
-            where: { institute_id },
-            limit: parseInt(limit),
-            offset: parseInt(offset),
-            order: [["created_at", "DESC"]],
+        const whereClause = { institute_id };
+        if (cursor) whereClause.id = { [Op.lt]: cursor };
+
+        const queryOptions = {
+            where: whereClause,
+            limit: cursor ? parsedLimit + 1 : parsedLimit,
+            order: [["id", "DESC"]],
             distinct: true, // Fix for correct count with includes
             include: [
                 {
@@ -200,7 +202,26 @@ exports.getAllFaculty = async (req, res) => {
                     ]
                 },
             ],
-        });
+        };
+
+        if (!cursor) queryOptions.offset = parseInt(offset, 10);
+
+        if (cursor) {
+            const rows = await Faculty.findAll(queryOptions);
+            const hasMore = rows.length > parsedLimit;
+            const data = hasMore ? rows.slice(0, parsedLimit) : rows;
+
+            return res.status(200).json({
+                success: true,
+                message: "Faculty retrieved successfully",
+                data,
+                count: data.length,
+                nextCursor: hasMore && data.length ? data[data.length - 1].id : null,
+                hasMore,
+            });
+        }
+
+        const { count, rows } = await Faculty.findAndCountAll(queryOptions);
 
         res.status(200).json({
             success: true,

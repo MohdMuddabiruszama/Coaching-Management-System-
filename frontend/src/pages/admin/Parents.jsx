@@ -126,6 +126,9 @@ function Parents() {
     const { user } = useContext(AuthContext);
     const [parents, setParents] = useState([]);
     const [students, setStudents] = useState([]);
+    const [classes, setClasses] = useState([]);
+    const [selectedClassId, setSelectedClassId] = useState("");
+    const [alreadyLinkedStudents, setAlreadyLinkedStudents] = useState([]);
     const [loading, setLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
     const [editMode, setEditMode] = useState(false);
@@ -165,7 +168,7 @@ function Parents() {
 
     useEffect(() => {
         fetchParents();
-        fetchStudents();
+        fetchClasses();
     }, []);
 
     useEffect(() => {
@@ -190,14 +193,31 @@ function Parents() {
         }
     };
 
-    const fetchStudents = async () => {
+    const fetchClasses = async () => {
         try {
-            const response = await api.get("/students/lookup?limit=5000");
+            const res = await api.get("/classes");
+            setClasses(res.data.data || []);
+        } catch (error) {
+            console.error("Error fetching classes:", error);
+        }
+    };
+
+    const fetchStudents = async (classId) => {
+        if (!classId) {
+            setStudents([]);
+            return;
+        }
+        try {
+            const response = await api.get(`/students/lookup?class_id=${classId}&limit=200`);
             setStudents(response.data.data || []);
         } catch (error) {
             console.error("Error fetching students:", error);
         }
     };
+
+    useEffect(() => {
+        fetchStudents(selectedClassId);
+    }, [selectedClassId]);
 
     const handleSelectAll = (e) => {
         if (e.target.checked) setSelectedParents(parents.map(p => p.id));
@@ -288,6 +308,8 @@ function Parents() {
                 student_ids: (p.LinkedStudents || []).map(s => String(s.id)),
                 relationships: []
             });
+            setAlreadyLinkedStudents(p.LinkedStudents || []);
+            setSelectedClassId("");
             setEditMode(true);
             setShowModal(true);
         } catch (err) {
@@ -335,6 +357,8 @@ function Parents() {
             relationships: []
         });
         setEditMode(false);
+        setAlreadyLinkedStudents([]);
+        setSelectedClassId("");
     };
 
     const handleChange = (e) => {
@@ -837,6 +861,21 @@ function Parents() {
                                 </div>
 
                                 <div className="ap-form-group">
+                                    <label className="ap-form-label">Select Class to Filter Students</label>
+                                    <select 
+                                        className="ap-input"
+                                        value={selectedClassId}
+                                        onChange={(e) => setSelectedClassId(e.target.value)}
+                                        style={{ marginBottom: '1rem', cursor: 'pointer', background: '#fff' }}
+                                    >
+                                        <option value="">-- Select a Class --</option>
+                                        {classes.map(c => (
+                                            <option key={c.id} value={c.id}>{c.name} {c.section ? `(${c.section})` : ''}</option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                <div className="ap-form-group">
                                     <label className="ap-form-label">Link Students (Select one or more students) <span>*</span></label>
                                     <div className="ap-students-section">
                                         <div className="ap-students-search">
@@ -855,43 +894,84 @@ function Parents() {
                                             </span>
                                         </div>
                                         <div className="ap-students-list">
-                                            {students.filter(s => {
-                                                const sName = s.User?.name || "";
-                                                const sRoll = s.roll_number ? String(s.roll_number) : "";
-                                                const q = studentSearch.toLowerCase();
-                                                return sName.toLowerCase().includes(q) || sRoll.toLowerCase().includes(q);
-                                            }).map((s) => {
-                                                const idStr = String(s.id);
-                                                const isSelected = formData.student_ids.includes(idStr);
-                                                const initials = (s.User?.name || '?').split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
-                                                const colors = ['#F3E8FF', '#EBF8FF', '#FFF5F5', '#F0FFF4'];
-                                                const textColors = ['#7E22CE', '#3182CE', '#E53E3E', '#38A169'];
-                                                const colorIdx = s.id % colors.length;
+                                            {!selectedClassId && studentSearch.length === 0 && alreadyLinkedStudents.length === 0 ? (
+                                                <div style={{ textAlign: "center", padding: "2rem 1rem", color: "#64748B" }}>
+                                                    Please select a class to view and link students.
+                                                </div>
+                                            ) : null}
+                                            
+                                            {(() => {
+                                                const studentMap = new Map();
+                                                alreadyLinkedStudents.forEach(s => studentMap.set(String(s.id), s));
+                                                students.forEach(s => studentMap.set(String(s.id), s));
                                                 
-                                                return (
-                                                    <div key={s.id} className="ap-student-item" onClick={() => handleStudentCheckbox(s.id)}>
-                                                        <input 
-                                                            type="checkbox" 
-                                                            className="ap-checkbox"
-                                                            checked={isSelected}
-                                                            onChange={() => {}} // handled by parent onClick
-                                                        />
-                                                        <div className="ap-avatar" style={{ background: colors[colorIdx], color: textColors[colorIdx], width: '32px', height: '32px', fontSize: '0.8rem', flexShrink: 0 }}>
-                                                            {initials}
+                                                const combinedStudents = Array.from(studentMap.values());
+                                                
+                                                const filteredStudents = combinedStudents.filter(s => {
+                                                    const sName = (s.User?.name || s.name || "").toLowerCase();
+                                                    const sRoll = (s.roll_number ? String(s.roll_number) : "").toLowerCase();
+                                                    const cName = (s.Classes && s.Classes.length > 0 ? s.Classes[0].name : (s.Class?.name || "")).toLowerCase();
+                                                    const cSection = (s.Classes && s.Classes.length > 0 && s.Classes[0].section ? s.Classes[0].section : (s.Class?.section || "")).toLowerCase();
+                                                    
+                                                    const q = studentSearch.toLowerCase().trim();
+                                                    
+                                                    // Create flexible search strings
+                                                    const combinedStr1 = `${cName}-${sRoll}`.replace(/\s+/g, ''); // e.g. "class10-288"
+                                                    const combinedStr2 = `${cName}${sRoll}`.replace(/\s+/g, '');  // e.g. "class10288"
+                                                    const qNoSpaces = q.replace(/\s+/g, '');
+                                                    
+                                                    return sName.includes(q) || 
+                                                           sRoll.includes(q) || 
+                                                           combinedStr1.includes(qNoSpaces) || 
+                                                           combinedStr2.includes(qNoSpaces) ||
+                                                           cName.includes(q) ||
+                                                           (cName + ' ' + cSection).includes(q);
+                                                });
+
+                                                if (filteredStudents.length === 0 && (selectedClassId || studentSearch)) {
+                                                    return (
+                                                        <div style={{ textAlign: "center", padding: "1.5rem 1rem", color: "#64748B" }}>
+                                                            No students found matching your criteria.
                                                         </div>
-                                                        <div className="ap-student-info">
-                                                            <div className="ap-student-name">{s.User?.name}</div>
-                                                            <div className="ap-student-meta">
-                                                                <span>Roll: {s.roll_number}</span>
-                                                                <span>•</span>
-                                                                <span>Class: {s.Classes && s.Classes.length > 0 ? s.Classes[0].name : 'N/A'}</span>
-                                                                <span>•</span>
-                                                                <span>Section: {s.Classes && s.Classes.length > 0 && s.Classes[0].section ? s.Classes[0].section : 'N/A'}</span>
+                                                    );
+                                                }
+
+                                                return filteredStudents.map((s) => {
+                                                    const idStr = String(s.id);
+                                                    const isSelected = formData.student_ids.includes(idStr);
+                                                    const initials = (s.User?.name || s.name || '?').split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+                                                    const colors = ['#F3E8FF', '#EBF8FF', '#FFF5F5', '#F0FFF4'];
+                                                    const textColors = ['#7E22CE', '#3182CE', '#E53E3E', '#38A169'];
+                                                    const colorIdx = (s.id || 0) % colors.length;
+                                                    
+                                                    const className = s.Classes && s.Classes.length > 0 ? s.Classes[0].name : (s.Class?.name || 'N/A');
+                                                    const sectionName = s.Classes && s.Classes.length > 0 && s.Classes[0].section ? s.Classes[0].section : (s.Class?.section || 'N/A');
+                                                    
+                                                    return (
+                                                        <div key={s.id} className="ap-student-item" onClick={() => handleStudentCheckbox(s.id)}>
+                                                            <input 
+                                                                type="checkbox" 
+                                                                className="ap-checkbox"
+                                                                checked={isSelected}
+                                                                onChange={() => {}} // handled by parent onClick
+                                                            />
+                                                            <div className="ap-avatar" style={{ background: colors[colorIdx], color: textColors[colorIdx], width: '32px', height: '32px', fontSize: '0.8rem', flexShrink: 0 }}>
+                                                                {initials}
+                                                            </div>
+                                                            <div className="ap-student-info">
+                                                                <div className="ap-student-name">{s.User?.name || s.name || 'Unknown'}</div>
+                                                                <div className="ap-student-meta">
+                                                                    <span>Roll: {s.roll_number || 'N/A'}</span>
+                                                                    <span>•</span>
+                                                                    <span>Class: {className}</span>
+                                                                    <span>•</span>
+                                                                    <span>Section: {sectionName}</span>
+                                                                </div>
                                                             </div>
                                                         </div>
-                                                    </div>
-                                                );
-                                            })}
+                                                    );
+                                                });
+                                            })()}
                                         </div>
                                     </div>
                                 </div>

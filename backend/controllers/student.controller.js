@@ -225,13 +225,14 @@ exports.createStudent = async (req, res) => {
  */
 exports.getAllStudents = async (req, res) => {
     try {
-        const { page = 1, limit = 10, search = "", class_id } = req.query;
+        const { page = 1, limit = 10, search = "", class_id, cursor } = req.query;
         const institute_id = req.user.institute_id;
-
-        const offset = (page - 1) * limit;
+        const parsedLimit = Math.min(parseInt(limit, 10) || 10, 100);
+        const offset = (parseInt(page, 10) - 1) * parsedLimit;
 
         // Build where clause
         const whereClause = { institute_id };
+        if (cursor) whereClause.id = { [Op.lt]: cursor };
 
         // Search filter
         const userWhereClause = search
@@ -271,10 +272,9 @@ exports.getAllStudents = async (req, res) => {
             }
         }
 
-        const { count, rows } = await Student.findAndCountAll({
+        const queryOptions = {
             where: whereClause,
-            limit: parseInt(limit),
-            offset: parseInt(offset),
+            limit: cursor ? parsedLimit + 1 : parsedLimit,
             order: [["id", "DESC"]],
             include: [
                 {
@@ -289,7 +289,26 @@ exports.getAllStudents = async (req, res) => {
                 subjectIncludeOptions
             ],
             distinct: true,
-        });
+        };
+
+        if (!cursor) queryOptions.offset = parseInt(offset, 10);
+
+        if (cursor) {
+            const rows = await Student.findAll(queryOptions);
+            const hasMore = rows.length > parsedLimit;
+            const data = hasMore ? rows.slice(0, parsedLimit) : rows;
+
+            return res.status(200).json({
+                success: true,
+                message: "Students retrieved successfully",
+                data,
+                count: data.length,
+                nextCursor: hasMore && data.length ? data[data.length - 1].id : null,
+                hasMore,
+            });
+        }
+
+        const { count, rows } = await Student.findAndCountAll(queryOptions);
 
         res.status(200).json({
             success: true,
