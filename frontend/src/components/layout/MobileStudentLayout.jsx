@@ -13,6 +13,9 @@
 import { useState, useContext, useEffect, useRef, useCallback } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { AuthContext } from "../../context/AuthContext";
+import { BrandingContext } from "../../context/BrandingContext";
+import { AnnouncementSidebarContext } from "../../context/AnnouncementSidebarContext";
+import { FiBell } from "react-icons/fi";
 import api from "../../services/api";
 import "./MobileStudentLayout.css";
 
@@ -23,6 +26,9 @@ const TABS = [
     { id: "exams",        label: "Marks",      icon: "📄", path: "/student/exams"        },
     { id: "timetable",    label: "Timetable",  icon: "🗓️", path: "/student/timetable"  },
     { id: "assignments",  label: "Assignments",icon: "📋", path: "/student/assignments"},
+    { id: "chat",         label: "Chat",       icon: "💬", path: "/student/chat"         },
+    { id: "fees",         label: "Pay Fees",   icon: "💳", path: "/student/fees"         },
+    { id: "notes",        label: "Notes",      icon: "📓", path: "/student/notes"        },
     { id: "performance",  label: "Performance",icon: "📊", path: "/student/performance"  },
     { id: "announcements",label: "Notices",    icon: "📢", path: "/student/announcements"},
     { id: "profile",      label: "Profile",    icon: "👤", path: "/student/profile"      },
@@ -30,8 +36,12 @@ const TABS = [
 
 const MobileStudentLayout = () => {
     const { user } = useContext(AuthContext);
+    const { logo, name } = useContext(BrandingContext);
+    const { toggleSidebar } = useContext(AnnouncementSidebarContext);
     const location = useLocation();
     const navigate = useNavigate();
+
+    const firstName = user?.name ? user.name.split(" ")[0] : "Student";
 
     const [unreadCount, setUnreadCount]   = useState(0);
     const touchStartX = useRef(null);
@@ -82,6 +92,31 @@ const MobileStudentLayout = () => {
 
     return (
         <div className="msl-layout">
+            {/* Global Header */}
+            <header className="msl-header">
+                <div className="msl-header-left">
+                    <div className="msl-brand">
+                        <div className="msl-brand-logo">
+                            <img src={logo} alt="Institute Logo" />
+                        </div>
+                        <div className="msl-brand-text">
+                            <h1>{name || "Institute"}</h1>
+                            <p>Student Portal</p>
+                        </div>
+                    </div>
+                </div>
+                <div className="msl-header-right">
+                    <button className="msl-bell-btn" onClick={toggleSidebar}>
+                        <FiBell />
+                        {unreadCount > 0 && <span className="msl-bell-dot"></span>}
+                    </button>
+                    <div className="msl-avatar" onClick={() => navigate('/student/profile')}>
+                        {firstName.charAt(0).toUpperCase()}
+                        <span className="msl-status-dot"></span>
+                    </div>
+                </div>
+            </header>
+
             {/* Main scrollable content area */}
             <main
                 className="msl-content"

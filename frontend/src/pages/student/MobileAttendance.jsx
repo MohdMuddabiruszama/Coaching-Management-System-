@@ -119,7 +119,7 @@ function MobileAttendance() {
     return (
         <div className="ma-container">
             {/* Header */}
-            <div className="ma-header" style={{ justifyContent: 'center' }}>
+            <div className="ma-header">
                 <div className="ma-title-area">
                     <div className="ma-title-icon">🗓️</div>
                     <div className="ma-title-text">

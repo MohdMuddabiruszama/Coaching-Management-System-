@@ -128,18 +128,11 @@ function ViewAnnouncements() {
 
             {/* Mobile Header */}
             <div className="ann-mobile-header mobile-only">
-                <div className="ann-mh-top">
-                    <Link to="/student/dashboard" className="ann-mh-back">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
-                    </Link>
-                    <div className="ann-mh-icon">📢</div>
-                    <div className="ann-mh-title">
+                <div className="ann-mh-top" style={{ justifyContent: 'flex-start' }}>
+                    <div className="ann-mh-icon" style={{ margin: 0 }}>📢</div>
+                    <div className="ann-mh-title" style={{ textAlign: 'left' }}>
                         <h1>Institute Announcements</h1>
                         <p>Important updates and notifications from the institute and faculty.</p>
-                    </div>
-                    <div className="ann-mh-bell">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
-                        <span className="ann-bell-dot"></span>
                     </div>
                 </div>
             </div>

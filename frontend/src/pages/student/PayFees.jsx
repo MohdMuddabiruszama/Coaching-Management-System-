@@ -184,18 +184,11 @@ function PayFees() {
 
             {/* Mobile Header matching img1 */}
             <div className="pf-mobile-header mobile-only">
-                <div className="pf-mh-top">
-                    <Link to="/student/dashboard" className="pf-mh-back">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
-                    </Link>
-                    <div className="pf-mh-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4Z"/></svg></div>
-                    <div className="pf-mh-title">
+                <div className="pf-mh-top" style={{ justifyContent: 'flex-start' }}>
+                    <div className="pf-mh-icon" style={{ margin: 0 }}><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4Z"/></svg></div>
+                    <div className="pf-mh-title" style={{ textAlign: 'left' }}>
                         <h1>Pay Fees</h1>
                         <p>View your fee structures and make secure online payments.</p>
-                    </div>
-                    <div className="pf-mh-bell">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
-                        <span className="pf-bell-dot"></span>
                     </div>
                 </div>
             </div>

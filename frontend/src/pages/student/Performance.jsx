@@ -229,22 +229,16 @@ function StudentPerformance() {
         <div className="perf-v2-dashboard">
 
             {/* Mobile Header (Visible only on mobile) */}
-            <div className="marks-mobile-header">
-                <div className="marks-mobile-header-left" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    <div style={{ cursor: 'pointer', display: 'flex', alignItems: 'center' }} onClick={() => navigate(-1)}>
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#0f172a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
-                    </div>
+            <div className="marks-mobile-header" style={{ justifyContent: 'flex-start' }}>
+                <div className="marks-mobile-header-left" style={{ display: 'flex', alignItems: 'center', gap: '12px', textAlign: 'left' }}>
                     <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', padding: '6px', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6366f1" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
                     </div>
                     <div className="marks-mobile-header-text">
-                        <h2>My Performance</h2>
-                        <p style={{ marginTop: '2px' }}>Complete overview of your academic performance</p>
+                        <h2 style={{ margin: 0 }}>My Performance</h2>
+                        <p style={{ marginTop: '2px', margin: 0 }}>Complete overview of your academic performance</p>
                     </div>
                 </div>
-                <button className="marks-mobile-filter-btn" onClick={() => {}}>
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg>
-                </button>
             </div>
 
             {/* Desktop Header */}

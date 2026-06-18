@@ -79,30 +79,7 @@ export default function MobileDashboard() {
 
     return (
         <div className="msd-container">
-            {/* Header Area */}
-            <div className="msd-header">
-                <div className="msd-header-left">
-                    <div className="msd-brand">
-                        <div className="msd-brand-logo" style={{ background: 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            <img src={logo} alt="Institute Logo" style={{ width: '32px', height: '32px', objectFit: 'contain' }} />
-                        </div>
-                        <div className="msd-brand-text">
-                            <h1>{name}</h1>
-                            <p>Student Portal</p>
-                        </div>
-                    </div>
-                </div>
-                <div className="msd-header-right">
-                    <button className="msd-bell-btn" onClick={toggleSidebar}>
-                        <FiBell />
-                        {announcements?.length > 0 && <span className="msd-bell-dot"></span>}
-                    </button>
-                    <div className="msd-avatar" onClick={() => navigate('/student/profile')}>
-                        {firstName.charAt(0).toUpperCase()}
-                        <span className="msd-status-dot"></span>
-                    </div>
-                </div>
-            </div>
+
 
             {/* Greeting */}
             <div className="msd-greeting-section">

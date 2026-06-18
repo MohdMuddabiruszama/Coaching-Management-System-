@@ -208,34 +208,27 @@ function StudentNotes() {
 
             {/* Mobile Header */}
             <div className="notes-mobile-header mobile-only">
-                <div className="notes-mh-top">
-                    <div className="notes-mh-back" onClick={() => navigate('/student/dashboard')}>
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
-                    </div>
-                    <div className="notes-mh-icon" style={{background: '#f3e8ff', fontSize: '24px'}}>📘</div>
-                    <div className="notes-mh-title">
+                <div className="notes-mh-top" style={{ justifyContent: 'flex-start' }}>
+                    <div className="notes-mh-icon" style={{background: '#f3e8ff', fontSize: '24px', margin: 0}}>📘</div>
+                    <div className="notes-mh-title" style={{ textAlign: 'left' }}>
                         <h1>Study Materials</h1>
                         <p>Access notes and study materials shared by your faculty.</p>
                     </div>
-                    <div className="notes-mh-subject">
-                        {subjects.length > 0 && (
-                            <select
-                                className="st-select"
-                                value={selectedSubject}
-                                onChange={e => setSelectedSubject(e.target.value)}
-                                style={{ padding: '6px 24px 6px 12px', fontSize: '0.8rem', borderRadius: '8px', border: '1px solid #e2e8f0', backgroundPosition: 'right 8px top 50%' }}
-                            >
-                                <option value="">All Subjects</option>
-                                {subjects.map(s => (
-                                    <option key={s.id} value={s.id}>{s.name}</option>
-                                ))}
-                            </select>
-                        )}
-                    </div>
-                    <div className="notes-mh-bell">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
-                        <span className="notes-bell-dot"></span>
-                    </div>
+                </div>
+                <div style={{ marginTop: '12px' }}>
+                    {subjects.length > 0 && (
+                        <select
+                            className="st-select"
+                            value={selectedSubject}
+                            onChange={e => setSelectedSubject(e.target.value)}
+                            style={{ width: '100%', padding: '10px 16px', fontSize: '0.95rem', borderRadius: '8px', border: '1px solid #e2e8f0', backgroundPosition: 'right 16px top 50%' }}
+                        >
+                            <option value="">All Subjects</option>
+                            {subjects.map(s => (
+                                <option key={s.id} value={s.id}>{s.name}</option>
+                            ))}
+                        </select>
+                    )}
                 </div>
             </div>
 

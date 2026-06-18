@@ -408,20 +408,14 @@ function ViewMarks() {
     return (
         <div className="marks-dashboard">
             {/* Mobile Header (Visible only on mobile) */}
-            <div className="marks-mobile-header">
-                <button className="marks-mobile-back-btn" onClick={() => navigate(-1)}>
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
-                </button>
-                <div className="marks-mobile-header-center">
-                    <div className="marks-mobile-header-icon">📋</div>
+            <div className="marks-mobile-header" style={{ justifyContent: 'flex-start' }}>
+                <div className="marks-mobile-header-center" style={{ display: 'flex', alignItems: 'center', gap: '12px', textAlign: 'left' }}>
+                    <div className="marks-mobile-header-icon" style={{ margin: 0 }}>📋</div>
                     <div className="marks-mobile-header-text">
-                        <h2>My Exam Marks</h2>
-                        <p>View your performance across all exams</p>
+                        <h2 style={{ margin: 0 }}>My Exam Marks</h2>
+                        <p style={{ margin: 0 }}>View your performance across all exams</p>
                     </div>
                 </div>
-                <button className="marks-mobile-filter-btn">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg>
-                </button>
             </div>
 
             {/* Desktop Header */}

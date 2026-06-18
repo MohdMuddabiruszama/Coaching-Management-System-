@@ -668,15 +668,22 @@ function ChatApp() {
                             <button
                                 className="chat-mobile-back"
                                 onClick={handleMobileBack}
-                                style={{ display: 'none' }} 
                             >
-                                ← Back
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                    <line x1="19" y1="12" x2="5" y2="12"></line>
+                                    <polyline points="12 19 5 12 12 5"></polyline>
+                                </svg>
                             </button>
                             <div className="chat-header-info">
-                                <h3>{getRoomLabel(activeRoom)}</h3>
-                                <span className="chat-header-pill">
-                                    {activeRoom.type === 'direct' ? 'Direct Chat' : 'Group Chat'}
-                                </span>
+                                <div className="room-avatar purple" style={{ width: 40, height: 40, fontSize: '1rem', margin: 0 }}>
+                                    {getRoomInitial(activeRoom)}
+                                </div>
+                                <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+                                    <h3>{getRoomLabel(activeRoom)}</h3>
+                                    <span style={{ fontSize: '0.8rem', color: '#10b981', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                        <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#10b981', display: 'inline-block' }}></span> Online
+                                    </span>
+                                </div>
                                 {isReadOnly && (
                                     <div 
                                         className="chat-header-icon" 
@@ -725,7 +732,7 @@ function ChatApp() {
                         {!isReadOnly && (
                             <div className="chat-monitoring-info-banner">
                                 <div className="chat-monitoring-icon">
-                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                                         <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
                                     </svg>
                                 </div>
@@ -917,17 +924,14 @@ function ChatApp() {
                                     </div>
                                 )}
                                 <div className="chat-input-wrapper">
-                                    <textarea
+                                    <input
+                                        type="text"
                                         className="chat-input"
                                         placeholder="Type your message..."
                                         value={newMessage}
-                                        onChange={e => {
-                                            setNewMessage(e.target.value);
-                                            e.target.style.height = 'auto';
-                                            e.target.style.height = (e.target.scrollHeight < 100 ? e.target.scrollHeight : 100) + 'px';
-                                        }}
+                                        onChange={e => setNewMessage(e.target.value)}
                                         onKeyDown={e => {
-                                            if (e.key === 'Enter' && !e.shiftKey) {
+                                            if (e.key === 'Enter') {
                                                 e.preventDefault();
                                                 if (newMessage.trim() && !sending) {
                                                     sendMessage(e);
@@ -936,17 +940,35 @@ function ChatApp() {
                                         }}
                                         disabled={sending}
                                         autoFocus
-                                        rows={1}
-                                        style={{ resize: 'none', minHeight: '24px', maxHeight: '100px', overflowY: 'auto' }}
                                     />
-                                    <div className="chat-input-actions" style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                                        <span onClick={() => setNewMessage(prev => prev + '\n')} title="Next line" style={{ cursor: 'pointer', fontSize: '1.2rem', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>↵</span>
-                                        <span onClick={() => setShowEmojiPicker(!showEmojiPicker)} title="Add Emoji" style={{ cursor: 'pointer', fontSize: '1.2rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>😀</span>
-                                        <span style={{ fontSize: '0.8rem' }}>{newMessage.length} / 2000</span>
+                                    <div className="chat-input-bottom-row">
+                                        <div className="chat-input-icons-left">
+                                            <span onClick={() => {}} title="Attach" className="chat-icon-btn">
+                                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                                    <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path>
+                                                </svg>
+                                            </span>
+                                            <span onClick={() => setShowEmojiPicker(!showEmojiPicker)} title="Add Emoji" className="chat-icon-btn">
+                                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                                    <circle cx="12" cy="12" r="10"></circle>
+                                                    <path d="M8 14s1.5 2 4 2 4-2 4-2"></path>
+                                                    <line x1="9" y1="9" x2="9.01" y2="9"></line>
+                                                    <line x1="15" y1="9" x2="15.01" y2="9"></line>
+                                                </svg>
+                                            </span>
+                                        </div>
+                                        <div className="chat-input-actions-right">
+                                            <span className="chat-char-count">{newMessage.length} / 2000</span>
+                                            <button type="submit" className="chat-send-btn" disabled={!newMessage.trim() || sending}>
+                                                {sending ? "⏳" : (
+                                                    <svg width="22" height="22" viewBox="0 0 24 24" fill="white" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ transform: 'translate(-1px, 1px)' }}>
+                                                        <line x1="22" y1="2" x2="11" y2="13"></line>
+                                                        <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                                                    </svg>
+                                                )}
+                                            </button>
+                                        </div>
                                     </div>
-                                    <button type="submit" className="chat-send-btn" disabled={!newMessage.trim() || sending}>
-                                        {sending ? "⏳" : "➤"}
-                                    </button>
                                 </div>
                             </form>
                         )}
