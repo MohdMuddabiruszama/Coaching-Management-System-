@@ -2,10 +2,19 @@
    STUDENT ANNOUNCEMENTS V2
    ========================================================================== */
 
+.ann-v2-container,
+.ann-v2-container *,
+.ann-v2-container *::before,
+.ann-v2-container *::after {
+    box-sizing: border-box;
+}
+
 .ann-v2-container {
     padding: 1.5rem;
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
     color: #0f172a;
+    width: 100%;
+    overflow-x: hidden;
 }
 
 /* ── HEADER ── */
@@ -184,34 +193,37 @@
 }
 
 .ann-v2-search-input-wrapper {
-    position: relative;
-}
-
-.ann-v2-search-icon {
-    position: absolute;
-    left: 12px;
-    top: 50%;
-    transform: translateY(-50%);
-    color: #94a3b8;
-    font-size: 14px;
-}
-
-.ann-v2-search-input {
-    padding: 10px 16px 10px 36px;
-    border-radius: 8px;
-    border: 1px solid #e2e8f0;
+    display: flex;
+    align-items: center;
     background-color: #f8fafc;
-    color: #334155;
-    font-size: 0.9rem;
-    outline: none;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding-left: 12px;
     transition: all 0.2s;
-    width: 240px;
 }
 
-.ann-v2-search-input:focus {
+.ann-v2-search-input-wrapper:focus-within {
     border-color: #8b5cf6;
     background-color: #ffffff;
     box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+}
+
+.ann-v2-search-icon {
+    color: #94a3b8;
+    font-size: 14px;
+    flex-shrink: 0;
+}
+
+.ann-v2-search-input {
+    flex: 1;
+    padding: 10px 16px 10px 8px;
+    border: none;
+    background-color: transparent;
+    color: #334155;
+    font-size: 0.9rem;
+    outline: none;
+    width: 240px;
+    box-sizing: border-box;
 }
 
 .ann-v2-select {
@@ -402,44 +414,198 @@
 }
 
 @media (max-width: 768px) {
+    .desktop-only { display: none !important; }
+    .mobile-only { display: block; }
+    
+    .ann-mobile-header {
+        margin-bottom: 24px;
+        padding: 0 4px;
+    }
+    .ann-mh-top {
+        display: flex;
+        align-items: flex-start;
+        gap: 16px;
+    }
+    .ann-mh-back {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 40px;
+        height: 40px;
+        color: #111827;
+        text-decoration: none;
+    }
+    .ann-mh-icon {
+        width: 52px;
+        height: 52px;
+        background: #f3e8ff;
+        border-radius: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        font-size: 24px;
+    }
+    .ann-mh-title {
+        flex: 1;
+    }
+    .ann-mh-title h1 {
+        font-size: 1.3rem;
+        font-weight: 800;
+        margin: 0 0 6px 0;
+        color: #0f172a;
+    }
+    .ann-mh-title p {
+        font-size: 0.85rem;
+        color: #64748b;
+        margin: 0;
+        line-height: 1.4;
+    }
+    .ann-mh-bell {
+        width: 44px;
+        height: 44px;
+        border: 1px solid #e2e8f0;
+        border-radius: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #475569;
+        position: relative;
+        background: #fff;
+        flex-shrink: 0;
+    }
+    .ann-bell-dot {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        width: 10px;
+        height: 10px;
+        background: #ef4444;
+        border-radius: 50%;
+        border: 2px solid #fff;
+    }
+
     .ann-v2-container {
         padding: 16px;
+        overflow-x: hidden;
+        box-sizing: border-box;
     }
     .ann-v2-header-wrapper {
         flex-direction: column;
         gap: 16px;
     }
     .ann-v2-stats-grid {
-        grid-template-columns: 1fr;
+        display: flex;
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        gap: 12px;
+        padding-bottom: 24px;
+        margin-bottom: 16px;
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+        align-items: stretch;
     }
+    .ann-v2-stats-grid::-webkit-scrollbar {
+        display: none;
+    }
+    .ann-v2-stat-card {
+        flex: 0 0 130px;
+        flex-direction: column;
+        align-items: flex-start;
+        padding: 16px;
+        gap: 12px;
+        height: auto;
+    }
+    .ann-v2-stat-icon-wrapper {
+        margin-bottom: 4px;
+        width: 44px;
+        height: 44px;
+        font-size: 20px;
+        border-radius: 12px;
+    }
+    .ann-v2-stat-value {
+        font-size: 1.5rem;
+    }
+    .ann-v2-stat-label {
+        font-size: 0.85rem;
+    }
+    .ann-v2-stat-sub {
+        font-size: 0.75rem;
+    }
+    
     .ann-v2-filter-row {
         flex-direction: column;
         gap: 16px;
         align-items: flex-start;
     }
+    .ann-v2-pills {
+        width: 100%;
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+    }
+    .ann-v2-pills::-webkit-scrollbar {
+        display: none;
+    }
+    
     .ann-v2-search-sort {
         width: 100%;
-        justify-content: space-between;
+        flex-direction: column;
+        gap: 12px;
+    }
+    .ann-v2-search-input-wrapper {
+        width: 100%;
     }
     .ann-v2-search-input {
         width: 100%;
     }
+    .ann-v2-select.mobile-only {
+        width: 100%;
+    }
     .ann-v2-card {
-        flex-direction: column;
-        align-items: flex-start;
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        padding: 16px !important;
     }
     .ann-v2-card-icon-wrapper {
-        margin-bottom: 16px;
-        margin-right: 0;
+        margin-right: 0 !important;
+        margin-left: 0 !important;
+        margin-bottom: 12px !important;
+        width: 44px;
+        height: 44px;
+        font-size: 20px;
+    }
+    .ann-v2-card-content {
+        flex: 1;
+        width: 100%;
     }
     .ann-v2-card-actions {
-        margin-left: 0;
-        margin-top: 16px;
-        width: 100%;
-        justify-content: space-between;
+        position: absolute;
+        top: 16px;
+        right: 16px;
+        margin: 0;
+        gap: 8px;
+    }
+    .ann-v2-card-title {
+        padding-right: 0 !important;
+        font-size: 1.1rem;
+        margin-bottom: 8px;
+    }
+    .ann-v2-view-btn {
+        padding: 6px 12px;
+        font-size: 0.8rem;
+    }
+    .ann-v2-more-btn {
+        width: 28px;
+        height: 28px;
+        font-size: 1rem;
     }
     .ann-v2-card-desc {
         white-space: normal;
+        display: -webkit-box;
+        -webkit-line-clamp: 3;
+        -webkit-box-orient: vertical;
+        font-size: 0.9rem;
     }
 }
 

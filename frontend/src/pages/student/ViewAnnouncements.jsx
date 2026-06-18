@@ -116,12 +116,30 @@ function ViewAnnouncements() {
         <div className="ann-v2-container">
             
             {/* Header */}
-            <div className="ann-v2-header-wrapper">
+            <div className="ann-v2-header-wrapper desktop-only">
                 <div className="ann-v2-header-left">
                     <div className="ann-v2-header-icon">📢</div>
                     <div>
                         <h1 className="ann-v2-header-title">Institute Announcements</h1>
                         <p className="ann-v2-header-sub">Important updates and notifications from the institute and faculty.</p>
+                    </div>
+                </div>
+            </div>
+
+            {/* Mobile Header */}
+            <div className="ann-mobile-header mobile-only">
+                <div className="ann-mh-top">
+                    <Link to="/student/dashboard" className="ann-mh-back">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+                    </Link>
+                    <div className="ann-mh-icon">📢</div>
+                    <div className="ann-mh-title">
+                        <h1>Institute Announcements</h1>
+                        <p>Important updates and notifications from the institute and faculty.</p>
+                    </div>
+                    <div className="ann-mh-bell">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+                        <span className="ann-bell-dot"></span>
                     </div>
                 </div>
             </div>
@@ -175,7 +193,7 @@ function ViewAnnouncements() {
                 
                 {/* Filter & Search Row */}
                 <div className="ann-v2-filter-row">
-                    <div className="ann-v2-pills">
+                    <div className="ann-v2-pills desktop-only">
                         {['All Announcements', 'Unread', 'Important', 'General', 'Events', 'Academics'].map(pill => (
                             <button 
                                 key={pill}
@@ -188,7 +206,7 @@ function ViewAnnouncements() {
                     </div>
                     <div className="ann-v2-search-sort">
                         <div className="ann-v2-search-input-wrapper">
-                            <span className="ann-v2-search-icon">🔍</span>
+                            <svg className="ann-v2-search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
                             <input 
                                 type="text" 
                                 className="ann-v2-search-input" 
@@ -198,12 +216,26 @@ function ViewAnnouncements() {
                             />
                         </div>
                         <select 
-                            className="ann-v2-select" 
+                            className="ann-v2-select desktop-only" 
                             value={sortOrder}
                             onChange={(e) => setSortOrder(e.target.value)}
                         >
                             <option>Latest First</option>
                             <option>Oldest First</option>
+                        </select>
+                        
+                        {/* Mobile Priority Dropdown replacing pills and sort */}
+                        <select 
+                            className="ann-v2-select mobile-only" 
+                            value={activeTab}
+                            onChange={(e) => setActiveTab(e.target.value)}
+                        >
+                            <option value="All Announcements">All Priorities</option>
+                            <option value="Important">High Priority</option>
+                            <option value="General">Normal Priority</option>
+                            <option value="Events">Events</option>
+                            <option value="Academics">Academics</option>
+                            <option value="Unread">Unread</option>
                         </select>
                     </div>
                 </div>
