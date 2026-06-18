@@ -168,7 +168,7 @@ function ScorecardModal({ examName, onClose }) {
                                 </table>
                             </div>
 
-                            <div className="mobile-only-cards" style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                            <div className="mobile-only-cards" style={{ flexDirection: 'column', gap: '12px' }}>
                                 {sc.subjects.map((s, i) => (
                                     <div key={s.subject} style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '16px' }}>
                                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
@@ -487,7 +487,6 @@ function ViewMarks() {
                     <div className="marks-panel">
                         <div className="marks-panel-header-flex">
                             <h2 className="marks-panel-title"><span className="marks-panel-title-icon">📋</span> Exam Results</h2>
-                            <button className="marks-view-all-link">View All</button>
                         </div>
                         {/* Desktop Table View */}
                         <div className="marks-table-wrapper desktop-only-table">

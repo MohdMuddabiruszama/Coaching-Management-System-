@@ -5,11 +5,13 @@
  */
 
 import { useStudentDashboard } from "../../hooks/useMobileDashboard";
-import { useContext } from "react";
+import { useContext, useState, useEffect } from "react";
+
+let overduePopupShown = false;
 import { AuthContext } from "../../context/AuthContext";
 import { BrandingContext } from "../../context/BrandingContext";
 import { AnnouncementSidebarContext } from "../../context/AnnouncementSidebarContext";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useOutletContext } from "react-router-dom";
 import LoadingSpinner from "../../components/common/LoadingSpinner";
 import { FiMenu, FiBell, FiEdit2 } from "react-icons/fi";
 import "./MobileDashboard.css";
@@ -28,7 +30,79 @@ export default function MobileDashboard() {
     const { logo, name } = useContext(BrandingContext);
     const { toggleSidebar } = useContext(AnnouncementSidebarContext);
     const navigate = useNavigate();
+    const { dismissedReminders, setDismissedReminders } = useOutletContext() || { dismissedReminders: [], setDismissedReminders: () => {} };
     const { data: response, isLoading, isError } = useStudentDashboard();
+
+    const [showOverdueModal, setShowOverdueModal] = useState(false);
+    const [overdueModalClosing, setOverdueModalClosing] = useState(false);
+    const [overdueFeesData, setOverdueFeesData] = useState({ count: 0, totalDue: 0, fees: [] });
+
+    // Helper to close the overdue modal with fade-out animation
+    const closeOverdueModal = () => {
+        setOverdueModalClosing(true);
+        setTimeout(() => {
+            setShowOverdueModal(false);
+            setOverdueModalClosing(false);
+        }, 350);
+    };
+
+    const feesData = response?.data?.fees;
+
+    const getDaysUntil = (dateString) => {
+        if (!dateString) return 999;
+        const today = new Date();
+        today.setHours(0,0,0,0);
+        const target = new Date(dateString);
+        target.setHours(0,0,0,0);
+        const diffTime = target - today;
+        return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    };
+
+    const feeReminders = (feesData?.pendingList || []).filter(fee => {
+        if (!fee.reminderDate) return false;
+        const diffDays = getDaysUntil(fee.reminderDate);
+        return diffDays === 8 || diffDays === 4 || diffDays <= 2;
+    }).map(fee => ({
+        ...fee,
+        daysLeft: getDaysUntil(fee.reminderDate)
+    }));
+
+
+
+    useEffect(() => {
+        if (feesData?.pendingList && !overduePopupShown) {
+            const pendingFees = feesData.pendingList;
+            const overdueFees = pendingFees.filter(fee => {
+                let isDue = false;
+                let isReminderOverdue = false;
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+
+                if (fee.dueDate) {
+                    const dueD = new Date(fee.dueDate);
+                    dueD.setHours(0, 0, 0, 0);
+                    if (dueD <= today) isDue = true;
+                }
+                if (fee.reminderDate) {
+                    const remD = new Date(fee.reminderDate);
+                    remD.setHours(0, 0, 0, 0);
+                    if (remD <= today) isReminderOverdue = true;
+                }
+                return isDue || isReminderOverdue;
+            });
+
+            if (overdueFees.length > 0) {
+                const totalOverdueDue = overdueFees.reduce((s, f) => s + parseFloat(f.dueAmount || 0), 0);
+                setOverdueFeesData({
+                    count: overdueFees.length,
+                    totalDue: totalOverdueDue,
+                    fees: overdueFees.slice(0, 3)
+                });
+                setShowOverdueModal(true);
+                overduePopupShown = true;
+            }
+        }
+    }, [feesData]);
 
     if (isLoading) {
         return (
@@ -70,6 +144,8 @@ export default function MobileDashboard() {
     // Check if any fee is overdue or due very soon
     const needsFeeAttention = fees?.hasPendingFees && fees.totalDue > 0;
 
+
+
     // Safe date formatter
     const safeFormatDate = (dateVal) => {
         if (!dateVal) return '';
@@ -80,6 +156,143 @@ export default function MobileDashboard() {
     return (
         <div className="msd-container">
 
+            {/* OVERDUE PAYMENT POPUP */}
+            {showOverdueModal && (
+                <div
+                    style={{
+                        position: 'fixed', inset: 0, zIndex: 9999,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        padding: '1rem',
+                        background: 'rgba(15, 23, 42, 0.75)',
+                        backdropFilter: 'blur(8px)',
+                        WebkitBackdropFilter: 'blur(8px)',
+                        animation: overdueModalClosing ? 'sd-modal-fade-out 0.35s ease forwards' : 'sd-modal-fade-in 0.35s ease',
+                    }}
+                    onClick={closeOverdueModal}
+                >
+                    <div
+                        onClick={e => e.stopPropagation()}
+                        style={{
+                            background: '#ffffff',
+                            borderRadius: '24px',
+                            width: '100%',
+                            maxWidth: '480px',
+                            overflow: 'hidden',
+                            boxShadow: '0 25px 60px -10px rgba(0,0,0,0.35), 0 0 0 1px rgba(255,255,255,0.1)',
+                            animation: overdueModalClosing ? 'sd-modal-slide-out 0.35s ease forwards' : 'sd-modal-slide-in 0.35s cubic-bezier(0.34, 1.56, 0.64, 1)',
+                        }}
+                    >
+                        {/* Red top accent bar */}
+                        <div style={{ height: '6px', background: 'linear-gradient(90deg, #ef4444, #f97316, #ef4444)', backgroundSize: '200% 100%', animation: 'sd-gradient-shift 3s ease infinite' }} />
+
+                        {/* Header */}
+                        <div style={{ padding: '2rem 2rem 1.25rem', textAlign: 'center', background: 'linear-gradient(180deg, #fff5f5 0%, #ffffff 100%)' }}>
+                            <div style={{
+                                width: '72px', height: '72px', borderRadius: '50%', margin: '0 auto 1rem',
+                                background: 'linear-gradient(135deg, #ef4444, #dc2626)',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                fontSize: '2rem', boxShadow: '0 0 0 12px rgba(239,68,68,0.12), 0 0 0 24px rgba(239,68,68,0.06)',
+                                animation: 'sd-pulse-ring 2s ease infinite',
+                            }}>
+                                🚨
+                            </div>
+                            <h2 style={{ margin: '0 0 0.4rem', fontSize: '1.5rem', fontWeight: '800', color: '#0f172a' }}>
+                                Payment Overdue!
+                            </h2>
+                            <p style={{ margin: 0, color: '#64748b', fontSize: '0.9rem', lineHeight: '1.5' }}>
+                                Hi <strong style={{ color: '#0f172a' }}>{firstName}</strong>, you have{' '}
+                                <strong style={{ color: '#ef4444' }}>{overdueFeesData.count} overdue fee{overdueFeesData.count > 1 ? 's' : ''}</strong>{' '}
+                                that require your immediate attention.
+                            </p>
+                        </div>
+
+                        {/* Fee list */}
+                        <div style={{ padding: '0 1.5rem', margin: '0 0 1.25rem' }}>
+                            {overdueFeesData.fees.map((fee, i) => (
+                                <div key={i} style={{
+                                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                                    padding: '0.85rem 1rem', borderRadius: '12px', marginBottom: '0.5rem',
+                                    background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.15)',
+                                }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                        <div style={{
+                                            width: '36px', height: '36px', borderRadius: '50%',
+                                            background: 'linear-gradient(135deg, #ef4444, #dc2626)',
+                                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                            fontSize: '1rem', flexShrink: 0,
+                                        }}>💳</div>
+                                        <div>
+                                            <div style={{ fontWeight: '700', fontSize: '0.9rem', color: '#0f172a' }}>{fee.feeType}</div>
+                                            {fee.dueDate && (
+                                                <div style={{ fontSize: '0.75rem', color: '#ef4444', fontWeight: '600' }}>
+                                                    Due: {new Date(fee.dueDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                    <div style={{ fontWeight: '800', fontSize: '1.05rem', color: '#ef4444' }}>
+                                        ₹{fee.dueAmount.toLocaleString('en-IN')}
+                                    </div>
+                                </div>
+                            ))}
+                            {/* Total row */}
+                            <div style={{
+                                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                                padding: '0.75rem 1rem', borderRadius: '12px',
+                                background: 'linear-gradient(135deg, rgba(239,68,68,0.1), rgba(249,115,22,0.08))',
+                                border: '1.5px solid rgba(239,68,68,0.25)', marginTop: '0.25rem',
+                            }}>
+                                <span style={{ fontWeight: '700', color: '#374151', fontSize: '0.9rem' }}>Total Outstanding</span>
+                                <span style={{ fontWeight: '900', color: '#dc2626', fontSize: '1.2rem' }}>
+                                    ₹{overdueFeesData.totalDue.toLocaleString('en-IN')}
+                                </span>
+                            </div>
+                        </div>
+
+                        {/* Action buttons */}
+                        <div style={{ padding: '0 1.5rem 1.75rem', display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
+                            {user?.features?.fees && (
+                                <button
+                                    onClick={() => { closeOverdueModal(); navigate('/student/fees'); }}
+                                    style={{
+                                        width: '100%', padding: '0.9rem', borderRadius: '12px', border: 'none',
+                                        background: 'linear-gradient(135deg, #ef4444, #dc2626)',
+                                        color: '#fff', fontWeight: '700', fontSize: '1rem',
+                                        cursor: 'pointer', display: 'flex', alignItems: 'center',
+                                        justifyContent: 'center', gap: '8px',
+                                        boxShadow: '0 4px 15px rgba(239,68,68,0.4)',
+                                        transition: 'transform 0.15s, box-shadow 0.15s',
+                                    }}
+                                    onMouseOver={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 8px 25px rgba(239,68,68,0.45)'; }}
+                                    onMouseOut={e => { e.currentTarget.style.transform = ''; e.currentTarget.style.boxShadow = '0 4px 15px rgba(239,68,68,0.4)'; }}
+                                >
+                                    <span style={{ fontSize: '1.15rem' }}>💳</span> Pay Now
+                                </button>
+                            )}
+                            <button
+                                onClick={closeOverdueModal}
+                                style={{
+                                    width: '100%', padding: '0.75rem', borderRadius: '12px',
+                                    border: '1.5px solid #e2e8f0', background: '#f8fafc',
+                                    color: '#64748b', fontWeight: '600', fontSize: '0.9rem',
+                                    cursor: 'pointer', transition: 'background 0.15s, color 0.15s',
+                                }}
+                                onMouseOver={e => { e.currentTarget.style.background = '#f1f5f9'; e.currentTarget.style.color = '#374151'; }}
+                                onMouseOut={e => { e.currentTarget.style.background = '#f8fafc'; e.currentTarget.style.color = '#64748b'; }}
+                            >
+                                I'll pay later
+                            </button>
+                        </div>
+
+                        {/* Footer note */}
+                        <div style={{ padding: '0.75rem 1.5rem', background: '#f8fafc', borderTop: '1px solid #f1f5f9', textAlign: 'center' }}>
+                            <p style={{ margin: 0, fontSize: '0.75rem', color: '#94a3b8' }}>
+                                ⚠️ Late payment may result in academic hold. Contact admin if you need help.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Greeting */}
             <div className="msd-greeting-section">
@@ -119,6 +332,151 @@ export default function MobileDashboard() {
                 </div>
             </div>
 
+            {/* Fee Reminder Alerts */}
+            {feeReminders.filter(r => !dismissedReminders.includes(r.id)).map(reminder => {
+                const { id, feeType, dueAmount, reminderDate, daysLeft } = reminder;
+                const isOverdue = daysLeft <= 0;
+                const isUrgent = daysLeft <= 2;
+                const isApproaching = daysLeft <= 4;
+
+                let urgencyConfig;
+                if (isOverdue) {
+                    urgencyConfig = {
+                        gradient: 'linear-gradient(135deg, rgba(239,68,68,0.12), rgba(239,68,68,0.05))',
+                        border: '1.5px solid rgba(239,68,68,0.45)',
+                        iconBg: 'linear-gradient(135deg, #ef4444, #dc2626)',
+                        icon: '🚨',
+                        titleColor: '#dc2626',
+                        badgeBg: 'rgba(239,68,68,0.15)',
+                        badgeColor: '#dc2626',
+                        badgeText: `Overdue by ${Math.abs(daysLeft)} day${Math.abs(daysLeft) !== 1 ? 's' : ''}`,
+                        title: 'Payment Overdue!',
+                        msg: `Your ${feeType} reminder date has passed. Please pay ₹${dueAmount.toLocaleString('en-IN')} immediately.`,
+                    };
+                } else if (isUrgent) {
+                    urgencyConfig = {
+                        gradient: 'linear-gradient(135deg, rgba(239,68,68,0.1), rgba(245,158,11,0.06))',
+                        border: '1.5px solid rgba(239,68,68,0.35)',
+                        iconBg: 'linear-gradient(135deg, #f97316, #ef4444)',
+                        icon: '⚠️',
+                        titleColor: '#dc2626',
+                        badgeBg: 'rgba(239,68,68,0.12)',
+                        badgeColor: '#dc2626',
+                        badgeText: daysLeft === 0 ? 'Due Today!' : `${daysLeft} day${daysLeft !== 1 ? 's' : ''} left`,
+                        title: 'Payment Due Very Soon!',
+                        msg: `Your ${feeType} of ₹${dueAmount.toLocaleString('en-IN')} is due on ${new Date(reminderDate).toLocaleDateString('en-GB', { day:'2-digit', month:'short', year:'numeric' })}. Please pay now.`,
+                    };
+                } else if (isApproaching) {
+                    urgencyConfig = {
+                        gradient: 'linear-gradient(135deg, rgba(245,158,11,0.1), rgba(245,158,11,0.05))',
+                        border: '1.5px solid rgba(245,158,11,0.4)',
+                        iconBg: 'linear-gradient(135deg, #f59e0b, #d97706)',
+                        icon: '🔔',
+                        titleColor: '#b45309',
+                        badgeBg: 'rgba(245,158,11,0.15)',
+                        badgeColor: '#b45309',
+                        badgeText: `${daysLeft} days left`,
+                        title: 'Fee Payment Reminder',
+                        msg: `Your ${feeType} of ₹${dueAmount.toLocaleString('en-IN')} is due on ${new Date(reminderDate).toLocaleDateString('en-GB', { day:'2-digit', month:'short', year:'numeric' })}. Please arrange payment soon.`,
+                    };
+                } else {
+                    urgencyConfig = {
+                        gradient: 'linear-gradient(135deg, rgba(99,102,241,0.1), rgba(99,102,241,0.05))',
+                        border: '1.5px solid rgba(99,102,241,0.35)',
+                        iconBg: 'linear-gradient(135deg, #6366f1, #4f46e5)',
+                        icon: '📅',
+                        titleColor: '#4338ca',
+                        badgeBg: 'rgba(99,102,241,0.12)',
+                        badgeColor: '#4338ca',
+                        badgeText: `${daysLeft} days left`,
+                        title: 'Upcoming Fee Reminder',
+                        msg: `Your ${feeType} of ₹${dueAmount.toLocaleString('en-IN')} is due on ${new Date(reminderDate).toLocaleDateString('en-GB', { day:'2-digit', month:'short', year:'numeric' })}.`,
+                    };
+                }
+
+                return (
+                    <div
+                        key={id}
+                        style={{
+                            background: urgencyConfig.gradient,
+                            border: urgencyConfig.border,
+                            borderRadius: '14px',
+                            padding: '1rem',
+                            margin: '0 1.25rem 1rem 1.25rem',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: '14px',
+                            animation: 'sd-reminder-slide-in 0.4s ease',
+                        }}
+                    >
+                        {/* Top Row: Icon, Content, Dismiss */}
+                        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
+                            {/* Icon */}
+                            <div style={{
+                                width: '40px', height: '40px', borderRadius: '12px',
+                                background: urgencyConfig.iconBg,
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                fontSize: '1.25rem', flexShrink: 0,
+                                boxShadow: '0 4px 10px rgba(0,0,0,0.15)'
+                            }}>
+                                {urgencyConfig.icon}
+                            </div>
+
+                            {/* Content */}
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginBottom: '4px' }}>
+                                    <span style={{ fontWeight: '700', fontSize: '0.92rem', color: urgencyConfig.titleColor }}>
+                                        {urgencyConfig.title}
+                                    </span>
+                                    <span style={{
+                                        fontSize: '0.72rem', fontWeight: '700', padding: '2px 8px',
+                                        borderRadius: '20px', background: urgencyConfig.badgeBg,
+                                        color: urgencyConfig.badgeColor, letterSpacing: '0.02em'
+                                    }}>
+                                        {urgencyConfig.badgeText}
+                                    </span>
+                                </div>
+                                <p style={{ margin: 0, fontSize: '0.83rem', color: '#475569', lineHeight: '1.4' }}>
+                                    {urgencyConfig.msg}
+                                </p>
+                            </div>
+
+                            {/* Dismiss */}
+                            <button
+                                onClick={() => setDismissedReminders(prev => [...prev, id])}
+                                style={{
+                                    flexShrink: 0, background: 'rgba(0,0,0,0.04)', border: 'none',
+                                    cursor: 'pointer', color: '#64748b', fontSize: '1rem',
+                                    width: '28px', height: '28px', borderRadius: '50%',
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                    transition: 'background 0.15s, color 0.15s'
+                                }}
+                            >
+                                ✕
+                            </button>
+                        </div>
+
+                        {/* Pay Now Button */}
+                        {user?.features?.fees && (
+                            <button
+                                onClick={() => navigate('/student/fees')}
+                                style={{
+                                    width: '100%', padding: '10px', borderRadius: '8px',
+                                    border: 'none', background: urgencyConfig.iconBg,
+                                    color: '#fff', fontWeight: '600', fontSize: '0.9rem',
+                                    cursor: 'pointer',
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                                    boxShadow: '0 2px 6px rgba(0,0,0,0.15)',
+                                    transition: 'transform 0.15s, box-shadow 0.15s'
+                                }}
+                            >
+                                💳 Pay Now
+                            </button>
+                        )}
+                    </div>
+                );
+            })}
+
             {/* Quick Actions */}
             <div className="msd-section">
                 <div className="msd-section-header">
@@ -157,13 +515,15 @@ export default function MobileDashboard() {
                         <span>Assignments</span>
                         {data.pendingAssignments > 0 && <span className="msd-badge">{data.pendingAssignments}</span>}
                     </button>
-                    <button className="msd-action-btn" onClick={() => navigate('/student/fees')}>
-                        <div className="msd-action-icon">
-                            <span>💳</span>
-                        </div>
-                        <span>Pay Fees</span>
-                        {needsFeeAttention && <span className="msd-badge">!</span>}
-                    </button>
+                    {needsFeeAttention && (
+                        <button className="msd-action-btn" onClick={() => navigate('/student/fees')}>
+                            <div className="msd-action-icon">
+                                <span>💳</span>
+                            </div>
+                            <span>Pay Fees</span>
+                            <span className="msd-badge">!</span>
+                        </button>
+                    )}
                     <button className="msd-action-btn" onClick={() => navigate('/student/notes')}>
                         <div className="msd-action-icon">
                             <span>📓</span>

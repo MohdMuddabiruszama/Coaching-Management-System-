@@ -14,7 +14,7 @@ function StudentTimetable() {
     const [timetable, setTimetable] = useState([]);
     const [classes, setClasses] = useState([]);
     const [selectedClass, setSelectedClass] = useState("");
-    const [viewMode, setViewMode] = useState("list"); // Set default to list on mobile, week on desktop? Let's keep week, or let user toggle. Actually, I will set it to 'list' if window width < 768px.
+    const [viewMode, setViewMode] = useState(window.innerWidth <= 768 ? "list" : "week");
     const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
 
     // Enrolled subject IDs fetched from /students/me
@@ -27,11 +27,7 @@ function StudentTimetable() {
     useEffect(() => {
         const handleResize = () => setIsMobile(window.innerWidth <= 768);
         window.addEventListener('resize', handleResize);
-        
-        // Default to list view on mobile
-        if (window.innerWidth <= 768) {
-            setViewMode('list');
-        }
+
 
         fetchStudentData();
 

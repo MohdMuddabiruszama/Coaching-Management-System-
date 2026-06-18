@@ -555,75 +555,151 @@ export default function StudentAssignments() {
                                     <div key={asg.id} className="asg-v3-card">
                                         <div className="asg-v3-menu-dots">⋮</div>
                                         
-                                        {/* Left: Icon & Badge & Title wrapper for mobile */}
-                                        <div className="asg-v3-card-mobile-header" style={{ display: 'flex', gap: '16px', alignItems: 'flex-start', width: '100%' }}>
-                                            <div className="asg-v3-card-icon-box" style={{ background: isGraded ? '#dcfce7' : isPending ? '#ffedd5' : '#e0e7ff', color: isGraded ? '#16a34a' : isPending ? '#ea580c' : '#4f46e5', flexShrink: 0 }}>
-                                                {isGraded ? '📄' : isPending ? '⏳' : '📥'}
-                                            </div>
-                                            <div style={{ flex: 1 }}>
-                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                        {!isMobile && (
+                                            <>
+                                                {/* Left: Icon & Status Text */}
+                                                <div className="asg-v3-card-left">
+                                                    <div className="asg-v3-card-icon-box" style={{ background: isGraded ? '#dcfce7' : isPending ? '#ffedd5' : '#e0e7ff', color: isGraded ? '#16a34a' : isPending ? '#ea580c' : '#4f46e5' }}>
+                                                        {isGraded ? '📄' : isPending ? '⏳' : '📥'}
+                                                    </div>
+                                                    <div style={{ marginTop: '8px', fontSize: '0.85rem', fontWeight: 600, color: '#475569', textAlign: 'center' }}>
+                                                        {isGraded ? 'Graded' : isPending ? 'Pending' : 'Submitted'}
+                                                    </div>
+                                                </div>
+
+                                                {/* Center: Content */}
+                                                <div className="asg-v3-card-center" style={{ marginTop: '0px' }}>
                                                     <h3 className="asg-v3-title">{asg.title}</h3>
-                                                    <StatusBadgeV2 status={status} />
-                                                </div>
-                                                <div className="asg-v3-meta-row" style={{ flexWrap: 'wrap', marginBottom: '8px' }}>
-                                                    <div className="asg-v3-meta-item">
-                                                        <span style={{ color: '#3b82f6' }}>📚</span> Mathematics
-                                                    </div>
-                                                    <span className="asg-v3-meta-divider">|</span>
-                                                    <div className="asg-v3-meta-item">
-                                                        <span style={{ color: '#8b5cf6' }}>🎓</span> Class {asg.Class?.name?.replace('Class ', '') || '10'}
-                                                    </div>
-                                                    <span className="asg-v3-meta-divider">|</span>
-                                                    <div className="asg-v3-meta-item">
-                                                        👤 {asg.faculty?.name || 'Ritika Saha'}
-                                                    </div>
-                                                </div>
-                                                <div className="asg-v3-meta-row" style={{ color: '#0f172a', flexWrap: 'wrap', margin: 0 }}>
-                                                    <div className="asg-v3-meta-item">
-                                                        📅 Due: {formatDateTime(asg.due_date)}
-                                                    </div>
-                                                    <div className="asg-v3-meta-item">
-                                                        <span style={{ color: '#e11d48' }}>🎯</span> {Number(asg.max_marks)} marks
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        {/* Center: Content (Description only for mobile) */}
-                                        <div className="asg-v3-card-center" style={{ marginTop: '0px' }}>
-                                            <div className="asg-v3-desc">
-                                                {asg.description || 'Please prepare and submit before the due date.'}
-                                            </div>
-                                        </div>
-
-                                        {/* Right: Action Box */}
-                                        <div className="asg-v3-card-right" style={{ background: isGraded ? '#f0fdf4' : isPending ? '#fff7ed' : '#f8fafc', border: `1px solid ${isGraded ? '#bbf7d0' : isPending ? '#ffedd5' : '#e2e8f0'}` }}>
-                                            {isGraded ? (
-                                                <div className="asg-v3-action-wrap">
-                                                    <div>
-                                                        <div className="asg-v3-action-label">Your Score</div>
-                                                        <div className="asg-v3-action-value" style={{ color: '#16a34a' }}>
-                                                            {Number(asg.my_submission?.marks_obtained || 0)}/{Number(asg.max_marks)}
+                                                    <div className="asg-v3-meta-row" style={{ flexWrap: 'wrap', marginBottom: '8px' }}>
+                                                        <div className="asg-v3-meta-item">
+                                                            <span style={{ color: '#3b82f6' }}>📚</span> Mathematics
+                                                        </div>
+                                                        <span className="asg-v3-meta-divider">|</span>
+                                                        <div className="asg-v3-meta-item">
+                                                            <span style={{ color: '#8b5cf6' }}>🎓</span> Class {asg.Class?.name?.replace('Class ', '') || '10'}
+                                                        </div>
+                                                        <span className="asg-v3-meta-divider">|</span>
+                                                        <div className="asg-v3-meta-item">
+                                                            👤 {asg.faculty?.name || 'Ritika Saha'}
                                                         </div>
                                                     </div>
-                                                    <button className="asg-v3-action-btn" style={{ color: '#16a34a', border: '1px solid #16a34a' }} onClick={() => openDetail(asg)}>
-                                                        📈 View Result
-                                                    </button>
-                                                </div>
-                                            ) : (
-                                                <div className="asg-v3-action-wrap">
-                                                    <div style={{ textAlign: 'left' }}>
-                                                        <div className="asg-v3-action-label">Time Left</div>
-                                                        <div className="asg-v3-action-value" style={{ color: '#ea580c' }}>
-                                                            {getTimeLeftStr(asg.due_date)}
+                                                    <div className="asg-v3-meta-row" style={{ color: '#0f172a', flexWrap: 'wrap', margin: 0 }}>
+                                                        <div className="asg-v3-meta-item">
+                                                            📅 Due: {formatDateTime(asg.due_date)}
+                                                        </div>
+                                                        <div className="asg-v3-meta-item" style={{ marginLeft: '16px' }}>
+                                                            <span style={{ color: '#e11d48' }}>🎯</span> {Number(asg.max_marks)} marks
                                                         </div>
                                                     </div>
-                                                    <button className="asg-v3-action-btn" style={{ color: '#4f46e5', border: '1px solid #e0e7ff', background: '#fff' }} onClick={() => openDetail(asg)}>
-                                                        📤 Submit Now
-                                                    </button>
+                                                    <div className="asg-v3-desc">
+                                                        {asg.description || 'Please prepare and submit before the due date.'}
+                                                    </div>
                                                 </div>
-                                            )}
-                                        </div>
+
+                                                {/* Right: Action Box */}
+                                                <div className="asg-v3-card-right" style={{ background: isGraded ? '#f0fdf4' : isPending ? '#fff7ed' : '#f8fafc', border: `1px solid ${isGraded ? '#bbf7d0' : isPending ? '#ffedd5' : '#e2e8f0'}` }}>
+                                                    {isGraded ? (
+                                                        <div className="asg-v3-action-wrap" style={{ flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '12px' }}>
+                                                            <div style={{ textAlign: 'center' }}>
+                                                                <div className="asg-v3-action-label">Your Score</div>
+                                                                <div className="asg-v3-action-value" style={{ color: '#16a34a' }}>
+                                                                    {Number(asg.my_submission?.marks_obtained || 0)}/{Number(asg.max_marks)}
+                                                                </div>
+                                                            </div>
+                                                            <button className="asg-v3-action-btn" style={{ color: '#16a34a', border: '1px solid #16a34a' }} onClick={() => openDetail(asg)}>
+                                                                📈 View Result
+                                                            </button>
+                                                        </div>
+                                                    ) : (
+                                                        <div className="asg-v3-action-wrap" style={{ flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '12px' }}>
+                                                            <div style={{ textAlign: 'center' }}>
+                                                                <div className="asg-v3-action-label">Time Left</div>
+                                                                <div className="asg-v3-action-value" style={{ color: '#ea580c' }}>
+                                                                    {getTimeLeftStr(asg.due_date)}
+                                                                </div>
+                                                            </div>
+                                                            <button className="asg-v3-action-btn" style={{ color: '#4f46e5', border: '1px solid #e0e7ff', background: '#fff' }} onClick={() => openDetail(asg)}>
+                                                                📤 Submit Now
+                                                            </button>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </>
+                                        )}
+
+                                        {isMobile && (
+                                            <>
+                                                {/* Left: Icon & Badge & Title wrapper for mobile */}
+                                                <div className="asg-v3-card-mobile-header" style={{ display: 'flex', gap: '16px', alignItems: 'flex-start', width: '100%' }}>
+                                                    <div className="asg-v3-card-icon-box" style={{ background: isGraded ? '#dcfce7' : isPending ? '#ffedd5' : '#e0e7ff', color: isGraded ? '#16a34a' : isPending ? '#ea580c' : '#4f46e5', flexShrink: 0 }}>
+                                                        {isGraded ? '📄' : isPending ? '⏳' : '📥'}
+                                                    </div>
+                                                    <div style={{ flex: 1 }}>
+                                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                                            <h3 className="asg-v3-title">{asg.title}</h3>
+                                                            <StatusBadgeV2 status={status} />
+                                                        </div>
+                                                        <div className="asg-v3-meta-row" style={{ flexWrap: 'wrap', marginBottom: '8px' }}>
+                                                            <div className="asg-v3-meta-item">
+                                                                <span style={{ color: '#3b82f6' }}>📚</span> Mathematics
+                                                            </div>
+                                                            <span className="asg-v3-meta-divider">|</span>
+                                                            <div className="asg-v3-meta-item">
+                                                                <span style={{ color: '#8b5cf6' }}>🎓</span> Class {asg.Class?.name?.replace('Class ', '') || '10'}
+                                                            </div>
+                                                            <span className="asg-v3-meta-divider">|</span>
+                                                            <div className="asg-v3-meta-item">
+                                                                👤 {asg.faculty?.name || 'Ritika Saha'}
+                                                            </div>
+                                                        </div>
+                                                        <div className="asg-v3-meta-row" style={{ color: '#0f172a', flexWrap: 'wrap', margin: 0 }}>
+                                                            <div className="asg-v3-meta-item">
+                                                                📅 Due: {formatDateTime(asg.due_date)}
+                                                            </div>
+                                                            <div className="asg-v3-meta-item">
+                                                                <span style={{ color: '#e11d48' }}>🎯</span> {Number(asg.max_marks)} marks
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                {/* Center: Content (Description only for mobile) */}
+                                                <div className="asg-v3-card-center" style={{ marginTop: '0px' }}>
+                                                    <div className="asg-v3-desc">
+                                                        {asg.description || 'Please prepare and submit before the due date.'}
+                                                    </div>
+                                                </div>
+
+                                                {/* Right: Action Box */}
+                                                <div className="asg-v3-card-right" style={{ background: isGraded ? '#f0fdf4' : isPending ? '#fff7ed' : '#f8fafc', border: `1px solid ${isGraded ? '#bbf7d0' : isPending ? '#ffedd5' : '#e2e8f0'}` }}>
+                                                    {isGraded ? (
+                                                        <div className="asg-v3-action-wrap">
+                                                            <div>
+                                                                <div className="asg-v3-action-label">Your Score</div>
+                                                                <div className="asg-v3-action-value" style={{ color: '#16a34a' }}>
+                                                                    {Number(asg.my_submission?.marks_obtained || 0)}/{Number(asg.max_marks)}
+                                                                </div>
+                                                            </div>
+                                                            <button className="asg-v3-action-btn" style={{ color: '#16a34a', border: '1px solid #16a34a' }} onClick={() => openDetail(asg)}>
+                                                                📈 View Result
+                                                            </button>
+                                                        </div>
+                                                    ) : (
+                                                        <div className="asg-v3-action-wrap">
+                                                            <div style={{ textAlign: 'left' }}>
+                                                                <div className="asg-v3-action-label">Time Left</div>
+                                                                <div className="asg-v3-action-value" style={{ color: '#ea580c' }}>
+                                                                    {getTimeLeftStr(asg.due_date)}
+                                                                </div>
+                                                            </div>
+                                                            <button className="asg-v3-action-btn" style={{ color: '#4f46e5', border: '1px solid #e0e7ff', background: '#fff' }} onClick={() => openDetail(asg)}>
+                                                                📤 Submit Now
+                                                            </button>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </>
+                                        )}
                                     </div>
                                 );
                             })

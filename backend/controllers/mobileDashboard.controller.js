@@ -185,7 +185,7 @@ exports.getStudentDashboard = async (req, res) => {
                     status:       { [Op.in]: ["pending", "partial"] },
                 },
                 include: [{ model: FeesStructure, attributes: ["fee_type", "due_date"] }],
-                attributes: ["id", "final_amount", "paid_amount"],
+                attributes: ["id", "final_amount", "paid_amount", "reminder_date"],
             }),
 
             // 6. Today's timetable for class
@@ -203,18 +203,20 @@ exports.getStudentDashboard = async (req, res) => {
             }),
 
             // 7. Pending assignments count
-            Assignment.count({
-                where: {
-                    class_id:     classId,
-                    institute_id: instituteId,
-                    due_date:     { [Op.gte]: new Date() },
-                },
-                include: [{
-                    model:    AssignmentSubmission,
-                    where:    { student_id: studentId },
-                    required: false,
-                }],
-            }),
+            sequelize.query(`
+                SELECT COUNT(a.id) AS count
+                FROM   assignments a
+                WHERE  a.class_id = :classId
+                  AND  a.institute_id = :instituteId
+                  AND  a.due_date >= NOW()
+                  AND  NOT EXISTS (
+                       SELECT 1 FROM assignment_submissions s 
+                       WHERE s.assignment_id = a.id AND s.student_id = :studentId
+                  )
+            `, {
+                replacements: { classId: classId || 0, instituteId, studentId },
+                type: sequelize.QueryTypes.SELECT,
+            }).then(res => parseInt(res[0].count || 0, 10)),
             
             // 8. Total assignments count
             Assignment.count({
@@ -308,6 +310,13 @@ exports.getStudentDashboard = async (req, res) => {
                     nextDueDate:    pendingFees.length > 0
                         ? pendingFees.sort((a, b) => new Date(a.FeesStructure?.due_date) - new Date(b.FeesStructure?.due_date))[0]?.FeesStructure?.due_date
                         : null,
+                    pendingList:    pendingFees.map(f => ({
+                        id: f.id,
+                        feeType: f.FeesStructure?.fee_type || 'Fee',
+                        dueAmount: parseFloat(f.final_amount || 0) - parseFloat(f.paid_amount || 0),
+                        dueDate: f.FeesStructure?.due_date,
+                        reminderDate: f.reminder_date
+                    }))
                 },
                 todaySchedule: todayTimetable.map(t => ({
                     id:        t.id,

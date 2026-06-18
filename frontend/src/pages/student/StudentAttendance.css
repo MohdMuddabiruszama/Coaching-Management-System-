@@ -252,7 +252,7 @@
 .percentage {
     fill: var(--att-text-main);
     font-family: 'Inter', sans-serif;
-    font-size: 9px;
+    font-size: 7px;
     font-weight: 700;
     text-anchor: middle;
 }

@@ -522,7 +522,7 @@ function StudentPerformance() {
                         </div>
                     </div>
 
-                    <div>
+                    <div style={{ position: 'relative' }}>
                         <div className="perf-v2-doughnut-container">
                             <Doughnut 
                                 data={{

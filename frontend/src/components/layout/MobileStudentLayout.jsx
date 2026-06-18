@@ -15,7 +15,9 @@ import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { AuthContext } from "../../context/AuthContext";
 import { BrandingContext } from "../../context/BrandingContext";
 import { AnnouncementSidebarContext } from "../../context/AnnouncementSidebarContext";
-import { FiBell } from "react-icons/fi";
+import { FiLogOut } from "react-icons/fi";
+import { useStudentDashboard } from "../../hooks/useMobileDashboard";
+
 import api from "../../services/api";
 import "./MobileStudentLayout.css";
 
@@ -35,7 +37,7 @@ const TABS = [
 ];
 
 const MobileStudentLayout = () => {
-    const { user } = useContext(AuthContext);
+    const { user, logout } = useContext(AuthContext);
     const { logo, name } = useContext(BrandingContext);
     const { toggleSidebar } = useContext(AnnouncementSidebarContext);
     const location = useLocation();
@@ -43,18 +45,101 @@ const MobileStudentLayout = () => {
 
     const firstName = user?.name ? user.name.split(" ")[0] : "Student";
 
-    const [unreadCount, setUnreadCount]   = useState(0);
+    const [announcementData, setAnnouncementData]   = useState({ count: 0, highest_priority: null });
     const touchStartX = useRef(null);
     const touchStartY = useRef(null);
+
+    const [headerBgColor, setHeaderBgColor] = useState('normal');
+    const [dismissedReminders, setDismissedReminders] = useState([]);
+
+    const { data: dashboardRes } = useStudentDashboard();
+    const feesData = dashboardRes?.data?.fees;
+
+    useEffect(() => {
+        if (!feesData?.pendingList) {
+            setHeaderBgColor('normal');
+            return;
+        }
+
+        const getDaysUntil = (dateString) => {
+            if (!dateString) return 999;
+            const today = new Date();
+            today.setHours(0,0,0,0);
+            const target = new Date(dateString);
+            target.setHours(0,0,0,0);
+            const diffTime = target - today;
+            return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        };
+
+        const activeFees = feesData.pendingList.filter(f => !dismissedReminders.includes(f.id));
+        
+        let isRed = false;
+        let isOrange = false;
+        
+        activeFees.forEach(fee => {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+
+            let dueOverdue = false;
+            if (fee.dueDate) {
+                const dueD = new Date(fee.dueDate);
+                dueD.setHours(0, 0, 0, 0);
+                if (dueD < today) dueOverdue = true;
+            }
+
+            let remOverdue = false;
+            if (fee.reminderDate) {
+                const remD = new Date(fee.reminderDate);
+                remD.setHours(0, 0, 0, 0);
+                if (remD <= today) remOverdue = true;
+            }
+
+            if (dueOverdue || remOverdue) {
+                isRed = true;
+            } else if (fee.reminderDate) {
+                const diffDays = getDaysUntil(fee.reminderDate);
+                if (diffDays === 8 || diffDays === 4 || diffDays <= 2) {
+                    isOrange = true;
+                }
+            }
+        });
+
+        if (isRed) setHeaderBgColor('red');
+        else if (isOrange) setHeaderBgColor('orange');
+        else setHeaderBgColor('normal');
+    }, [feesData, dismissedReminders]);
+
+    const getHeaderBackground = () => {
+        if (headerBgColor === 'red') return 'linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%)';
+        if (headerBgColor === 'orange') return 'linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%)';
+        return '#ffffff';
+    };
 
     // Fetch unread announcements badge
     useEffect(() => {
         if (user?.features?.announcements) {
-            api.get("/announcements/unread-count")
-                .then(res => { if (res.data.success) setUnreadCount(res.data.count || 0); })
-                .catch(() => {});
+            const fetchCount = () => {
+                api.get("/announcements/unread-count")
+                    .then(res => { if (res.data.success) setAnnouncementData({ count: res.data.count || 0, highest_priority: res.data.highest_priority }); })
+                    .catch(() => {});
+            };
+            fetchCount();
+            const interval = setInterval(fetchCount, 60_000); // poll every 60s
+            return () => clearInterval(interval);
         }
     }, [user]);
+
+    const unreadCount = announcementData.count;
+    const isUrgent = announcementData.highest_priority === "urgent";
+    const isHigh = announcementData.highest_priority === "high";
+
+    const BELL_COLORS = {
+        urgent: { bg: "#B71C1C", color: "#fff" },
+        high:   { bg: "#E65100", color: "#fff" },
+        normal: { bg: "#1565C0", color: "#fff" },
+        null:   { bg: "transparent", color: "#9E9E9E" },
+    };
+    const badgeStyle = BELL_COLORS[announcementData.highest_priority] || BELL_COLORS.null;
 
     // Active tab detection
     const activeTab = TABS.find(t =>
@@ -93,7 +178,7 @@ const MobileStudentLayout = () => {
     return (
         <div className="msl-layout">
             {/* Global Header */}
-            <header className="msl-header">
+            <header className="msl-header" style={{ background: getHeaderBackground(), transition: 'background 0.3s ease' }}>
                 <div className="msl-header-left">
                     <div className="msl-brand">
                         <div className="msl-brand-logo">
@@ -106,14 +191,69 @@ const MobileStudentLayout = () => {
                     </div>
                 </div>
                 <div className="msl-header-right">
-                    <button className="msl-bell-btn" onClick={toggleSidebar}>
-                        <FiBell />
-                        {unreadCount > 0 && <span className="msl-bell-dot"></span>}
+                    <button className="msl-bell-btn" onClick={toggleSidebar} style={{ position: "relative", padding: "4px" }}>
+                        <span style={{
+                            fontSize: "22px",
+                            filter: unreadCount > 0 ? "none" : "grayscale(1) opacity(0.35)",
+                            display: "inline-block",
+                            animation: isUrgent ? "bellRing 0.8s infinite" : (isHigh ? "bellRing 0.8s 1" : "none"),
+                            transformOrigin: "top center",
+                        }}>
+                            🔔
+                        </span>
+                        {unreadCount > 0 && (
+                            <span style={{
+                                position: "absolute",
+                                top: "0px",
+                                right: "-2px",
+                                background: badgeStyle.bg,
+                                color: badgeStyle.color,
+                                fontSize: "10px",
+                                fontWeight: "bold",
+                                borderRadius: "50%",
+                                minWidth: "17px",
+                                height: "17px",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                padding: "0 3px",
+                                border: "2px solid #fff",
+                                boxShadow: "0 1px 4px rgba(0,0,0,0.25)",
+                                animation: isUrgent ? "pulse 1.5s infinite" : "none",
+                                lineHeight: 1,
+                            }}>
+                                {unreadCount > 99 ? "99+" : unreadCount}
+                            </span>
+                        )}
                     </button>
                     <div className="msl-avatar" onClick={() => navigate('/student/profile')}>
                         {firstName.charAt(0).toUpperCase()}
                         <span className="msl-status-dot"></span>
                     </div>
+                    <button 
+                        className="msl-logout-btn" 
+                        onClick={() => {
+                            logout();
+                            navigate('/login');
+                        }}
+                        style={{
+                            background: "transparent",
+                            border: "none",
+                            padding: "6px",
+                            marginLeft: "4px",
+                            fontSize: "20px",
+                            color: "#ef4444",
+                            cursor: "pointer",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            borderRadius: "50%",
+                            transition: "background 0.2s"
+                        }}
+                        aria-label="Logout"
+                    >
+                        <FiLogOut />
+                    </button>
                 </div>
             </header>
 
@@ -123,7 +263,7 @@ const MobileStudentLayout = () => {
                 onTouchStart={handleTouchStart}
                 onTouchEnd={handleTouchEnd}
             >
-                <Outlet />
+                <Outlet context={{ dismissedReminders, setDismissedReminders }} />
             </main>
 
             {/* Bottom Tab Bar */}
@@ -148,8 +288,12 @@ const MobileStudentLayout = () => {
                             <span className="msl-tab-icon">
                                 {tab.icon}
                                 {hasUnread && (
-                                    <span className="msl-unread-dot" aria-label={`${unreadCount} unread`}>
-                                        {unreadCount > 9 ? "9+" : unreadCount}
+                                    <span className="msl-unread-dot" style={{
+                                        background: badgeStyle.bg,
+                                        color: badgeStyle.color,
+                                        animation: isUrgent ? "pulse 1.5s infinite" : "none",
+                                    }}>
+                                        {unreadCount > 99 ? "99+" : unreadCount}
                                     </span>
                                 )}
                             </span>

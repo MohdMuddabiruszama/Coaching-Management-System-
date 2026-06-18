@@ -249,7 +249,7 @@ function Profile() {
             <div className="profile-grid">
                 {/* LEFT CARD */}
                 <div className="profile-card-left">
-                    <div className="profile-avatar-wrapper" onClick={handlePhotoUpdate} style={{ cursor: 'pointer', position: 'relative' }}>
+                    <div className="profile-avatar-wrapper" onClick={user?.role !== "student" ? handlePhotoUpdate : undefined} style={{ cursor: user?.role !== "student" ? 'pointer' : 'default', position: 'relative' }}>
                         <div className="profile-avatar">
                             {profile?.photo_url ? (
                                 <img src={profile.photo_url} alt="Profile" style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} />
@@ -257,9 +257,11 @@ function Profile() {
                                 getInitials(formData.name)
                             )}
                         </div>
-                        <div style={{ position: 'absolute', bottom: 0, right: 0, background: '#4f46e5', color: 'white', borderRadius: '50%', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 4px rgba(0,0,0,0.2)' }}>
-                            📷
-                        </div>
+                        {user?.role !== "student" && (
+                            <div style={{ position: 'absolute', bottom: 0, right: 0, background: '#4f46e5', color: 'white', borderRadius: '50%', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 4px rgba(0,0,0,0.2)' }}>
+                                📷
+                            </div>
+                        )}
                     </div>
                     
                     <h2 className="profile-name">{formData.name}</h2>

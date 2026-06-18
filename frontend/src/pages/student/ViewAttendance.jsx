@@ -168,9 +168,6 @@ function ViewAttendance() {
                         </button>
                     ))}
                 </div>
-                <button className="att-back-btn" onClick={() => navigate('/student/dashboard')}>
-                    ← Back to Dashboard
-                </button>
             </div>
 
             {/* Stats Grid */}
@@ -226,7 +223,7 @@ function ViewAttendance() {
                             a 15.9155 15.9155 0 0 1 0 31.831
                             a 15.9155 15.9155 0 0 1 0 -31.831"
                         />
-                        <text x="18" y="20.35" className="percentage">{attendancePct}%</text>
+                        <text x="18" y="20.5" className="percentage">{Number(attendancePct).toFixed(1)}%</text>
                     </svg>
                     <div className="att-progress-text">
                         <h4>Attendance Percentage</h4>
