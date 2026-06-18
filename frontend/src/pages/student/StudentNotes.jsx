@@ -176,7 +176,7 @@ function StudentNotes() {
         <div className="notes-v2-container">
             
             {/* Header */}
-            <div className="st-header">
+            <div className="st-header desktop-only">
                 <div className="st-header-top-row">
                     <div className="st-header-left">
                         <h1>Study Materials</h1>
@@ -202,6 +202,39 @@ function StudentNotes() {
                                 ))}
                             </select>
                         )}
+                    </div>
+                </div>
+            </div>
+
+            {/* Mobile Header */}
+            <div className="notes-mobile-header mobile-only">
+                <div className="notes-mh-top">
+                    <div className="notes-mh-back" onClick={() => navigate('/student/dashboard')}>
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+                    </div>
+                    <div className="notes-mh-icon" style={{background: '#f3e8ff', fontSize: '24px'}}>📘</div>
+                    <div className="notes-mh-title">
+                        <h1>Study Materials</h1>
+                        <p>Access notes and study materials shared by your faculty.</p>
+                    </div>
+                    <div className="notes-mh-subject">
+                        {subjects.length > 0 && (
+                            <select
+                                className="st-select"
+                                value={selectedSubject}
+                                onChange={e => setSelectedSubject(e.target.value)}
+                                style={{ padding: '6px 24px 6px 12px', fontSize: '0.8rem', borderRadius: '8px', border: '1px solid #e2e8f0', backgroundPosition: 'right 8px top 50%' }}
+                            >
+                                <option value="">All Subjects</option>
+                                {subjects.map(s => (
+                                    <option key={s.id} value={s.id}>{s.name}</option>
+                                ))}
+                            </select>
+                        )}
+                    </div>
+                    <div className="notes-mh-bell">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+                        <span className="notes-bell-dot"></span>
                     </div>
                 </div>
             </div>
@@ -267,8 +300,16 @@ function StudentNotes() {
                             </button>
                         ))}
                     </div>
-                    <div className="notes-v2-sort">
-                        <span>Sort by:</span>
+                    <div className="notes-v2-search-sort">
+                        <div className="notes-v2-search-input-wrapper">
+                            <svg className="notes-v2-search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                            <input 
+                                type="text" 
+                                className="notes-v2-search-input" 
+                                placeholder="Search materials..." 
+                                style={{ width: '100%' }}
+                            />
+                        </div>
                         <select 
                             className="notes-v2-select" 
                             style={{ minWidth: 140, padding: '8px 12px' }}
@@ -281,8 +322,8 @@ function StudentNotes() {
                     </div>
                 </div>
 
-                {/* Table */}
-                <div className="notes-v2-table-wrapper">
+                {/* Desktop Table */}
+                <div className="notes-v2-table-wrapper desktop-only">
                     <table className="notes-v2-table">
                         <thead>
                             <tr>
@@ -354,6 +395,53 @@ function StudentNotes() {
                             )}
                         </tbody>
                     </table>
+                </div>
+
+                {/* Mobile View for Notes */}
+                <div className="mobile-only notes-mobile-list">
+                    {filteredNotes.length === 0 ? (
+                        <div className="notes-mobile-empty">No Materials Found</div>
+                    ) : (
+                        filteredNotes.map(note => {
+                            const typeInfo = getFileTypeConfig(note);
+                            const dateTime = formatDateTime(note.created_at);
+                            return (
+                                <div key={note.id} className="notes-mobile-card">
+                                    <div className="nmc-top">
+                                        <div className={`notes-v2-file-icon ${typeInfo.class}`}>
+                                            {typeInfo.label}
+                                        </div>
+                                        <div className="nmc-title-area">
+                                            <h3 className="nmc-title">{note.title}</h3>
+                                            <p className="nmc-desc">{note.description || 'No additional description provided.'}</p>
+                                        </div>
+                                        <div className="nmc-top-actions">
+                                            <button className="notes-v2-dl-btn nmc-dl-btn-top" onClick={() => handleDownload(note)}>
+                                                <span style={{ fontSize: '1rem', color: '#8b5cf6', marginRight: '4px' }}>⬇</span> Download
+                                            </button>
+                                            <button className="notes-v2-more-btn nmc-more-btn-top">⋮</button>
+                                        </div>
+                                    </div>
+                                    <div className="nmc-meta-row">
+                                        <div className="nmc-subject">
+                                            <span style={{color: '#3b82f6', fontSize: '1.1rem', marginRight: '6px'}}>📖</span>
+                                            {note.subjectName || note.Subject?.name || "—"}
+                                        </div>
+                                        <div className="nmc-type-pill" style={{color: '#9333ea', background: '#faf5ff', padding: '4px 10px', borderRadius: '6px', fontSize: '0.7rem', fontWeight: 'bold'}}>{typeInfo.label}</div>
+                                        
+                                        <div className="nmc-date-size">
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px', color: '#64748b', fontSize: '0.8rem' }}>
+                                                <span>📅</span> {dateTime.date}, {dateTime.time}
+                                            </div>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#64748b', fontSize: '0.8rem' }}>
+                                                <span>📄</span> {formatSize(note.file_size)}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            );
+                        })
+                    )}
                 </div>
 
                 {/* Help Banner */}
