@@ -336,4 +336,224 @@
     .payfees-header { flex-direction: column; align-items: flex-start; gap: 16px; }
     .payfees-support { flex-direction: column; align-items: flex-start; text-align: left; }
     .payfees-support-btn { width: 100%; }
+
+    .desktop-only { display: none !important; }
+    .mobile-only { display: block; }
+
+    .payfees-container {
+        padding: 16px;
+        box-sizing: border-box;
+        overflow-x: hidden;
+    }
+
+    .pf-mobile-header {
+        margin-bottom: 24px;
+        padding: 0 4px;
+    }
+    .pf-mh-top {
+        display: flex;
+        align-items: flex-start;
+        gap: 16px;
+    }
+    .pf-mh-back {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 40px;
+        height: 40px;
+        color: #111827;
+        text-decoration: none;
+    }
+    .pf-mh-icon {
+        width: 52px;
+        height: 52px;
+        background: linear-gradient(135deg, #60a5fa, #3b82f6);
+        color: white;
+        border-radius: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        box-shadow: 0 4px 10px rgba(59, 130, 246, 0.3);
+    }
+    .pf-mh-title {
+        flex: 1;
+    }
+    .pf-mh-title h1 {
+        font-size: 1.4rem;
+        font-weight: 800;
+        margin: 0 0 6px 0;
+        color: #111827;
+    }
+    .pf-mh-title p {
+        font-size: 0.85rem;
+        color: #6b7280;
+        margin: 0;
+        line-height: 1.4;
+    }
+    .pf-mh-bell {
+        width: 44px;
+        height: 44px;
+        border: 1px solid #e5e7eb;
+        border-radius: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #4b5563;
+        position: relative;
+        background: #fff;
+        flex-shrink: 0;
+    }
+    .pf-bell-dot {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        width: 10px;
+        height: 10px;
+        background: #ef4444;
+        border-radius: 50%;
+        border: 2px solid #fff;
+    }
+
+    .payfees-stats-grid {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        padding-bottom: 0;
+        margin-bottom: 24px;
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+    }
+    .payfees-stats-grid::-webkit-scrollbar {
+        display: none;
+    }
+    .payfees-stat-card {
+        width: 100%;
+        flex-direction: row;
+        align-items: center;
+        padding: 20px;
+        gap: 20px;
+    }
+    .pf-stat-icon {
+        width: 54px;
+        height: 54px;
+        font-size: 1.6rem;
+        border-radius: 16px;
+    }
+    .pf-stat-content {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+    }
+    .pf-stat-content h3 {
+        font-size: 1.6rem;
+        margin-top: 0;
+    }
+    .pf-stat-content p {
+        font-size: 0.9rem;
+        margin-bottom: 4px;
+    }
+
+    .payfees-section-header {
+        padding: 16px;
+    }
+    .payfees-section-title {
+        font-size: 1.1rem;
+    }
+
+    .pf-mobile-list {
+        display: flex;
+        flex-direction: column;
+        padding: 16px;
+        background: #ffffff;
+    }
+    .pf-mobile-empty {
+        text-align: center;
+        padding: 24px;
+        color: #6b7280;
+        font-size: 0.9rem;
+    }
+    .pf-mobile-card {
+        background: #ffffff;
+        border: 1px solid #e5e7eb;
+        border-radius: 16px;
+        padding: 18px;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.03);
+        margin-bottom: 16px;
+    }
+    .pf-mobile-card:last-child {
+        margin-bottom: 0;
+    }
+    .pf-mc-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        border-bottom: 1px dashed #e5e7eb;
+        padding-bottom: 12px;
+        margin-bottom: 12px;
+    }
+    .pf-mc-title-box h4 {
+        margin: 0 0 4px 0;
+        font-size: 1.05rem;
+        color: #111827;
+        font-weight: 700;
+    }
+    .pf-mc-title-box p {
+        margin: 0;
+        font-size: 0.85rem;
+        color: #6b7280;
+    }
+    .pf-mc-middle {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        flex-wrap: wrap;
+    }
+    .pf-mc-due {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        min-width: 100px;
+    }
+    .pf-mc-due .label { font-size: 0.75rem; color: #6b7280; }
+    .pf-mc-due .val { font-size: 0.9rem; font-weight: 600; color: #111827; }
+    .pf-mc-due .overdue-text { font-size: 0.75rem; color: #ef4444; }
+    
+    .pf-mc-amounts {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        font-size: 0.85rem;
+        color: #6b7280;
+    }
+    .pf-mc-amounts strong { color: #111827; }
+    
+    .pf-mc-badge-box {
+        width: 100%;
+        display: flex;
+        justify-content: flex-end;
+        margin-top: 8px;
+    }
+    
+    .pf-mobile-card.hist-card {
+        padding: 12px 16px;
+    }
+    .pf-mc-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    .pf-mc-col {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+    }
+    .pf-mc-col .label { font-size: 0.7rem; color: #6b7280; text-transform: uppercase; }
+    .pf-mc-col .val { font-size: 0.85rem; font-weight: 600; color: #111827; }
+    .pf-mc-col .sub { font-size: 0.75rem; color: #9ca3af; }
 }
+
+.mobile-only {
+    display: none;
+}
+

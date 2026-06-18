@@ -164,7 +164,7 @@ function PayFees() {
 
     return (
         <div className="payfees-container">
-            <div className="st-header">
+            <div className="st-header desktop-only">
                 <div className="st-header-top-row">
                     <div className="st-header-left">
                         <h1>Pay Fees</h1>
@@ -182,12 +182,30 @@ function PayFees() {
                 </div>
             </div>
 
+            {/* Mobile Header matching img1 */}
+            <div className="pf-mobile-header mobile-only">
+                <div className="pf-mh-top">
+                    <Link to="/student/dashboard" className="pf-mh-back">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+                    </Link>
+                    <div className="pf-mh-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4Z"/></svg></div>
+                    <div className="pf-mh-title">
+                        <h1>Pay Fees</h1>
+                        <p>View your fee structures and make secure online payments.</p>
+                    </div>
+                    <div className="pf-mh-bell">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+                        <span className="pf-bell-dot"></span>
+                    </div>
+                </div>
+            </div>
+
             {error && <div style={{ color: "red", padding: "10px", marginBottom: "1rem", backgroundColor: "#ffebeb", borderRadius: "5px" }}>{error}</div>}
 
             <div className="payfees-stats-grid">
                 <div className="payfees-stat-card">
                     <div className="pf-stat-icon total">
-                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4Z"/></svg>
+                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4Z"/></svg>
                     </div>
                     <div className="pf-stat-content">
                         <p>Total Fees Assigned</p>
@@ -196,7 +214,7 @@ function PayFees() {
                 </div>
                 <div className="payfees-stat-card">
                     <div className="pf-stat-icon paid">
-                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
                     </div>
                     <div className="pf-stat-content">
                         <p>Total Paid</p>
@@ -205,7 +223,7 @@ function PayFees() {
                 </div>
                 <div className="payfees-stat-card">
                     <div className={`pf-stat-icon due ${balanceDue <= 0 ? 'zero' : ''}`}>
-                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
+                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
                     </div>
                     <div className="pf-stat-content">
                         <p>Balance Due</p>
@@ -222,7 +240,7 @@ function PayFees() {
                         <span style={{ color: '#6366f1', fontSize: '1.2rem' }}>📄</span> Pending Fee Structures
                     </h3>
                 </div>
-                <div className="payfees-table-container">
+                <div className="payfees-table-container desktop-only">
                     <table className="payfees-table">
                         <thead>
                             <tr>
@@ -286,6 +304,53 @@ function PayFees() {
                         </tbody>
                     </table>
                 </div>
+                {/* Mobile View for Pending Fees */}
+                <div className="mobile-only pf-mobile-list">
+                    {feeStructures.length === 0 ? (
+                        <div className="pf-mobile-empty">No fees assigned to your account yet.</div>
+                    ) : (
+                        feeStructures.map((fee) => {
+                            const finalAmount = parseFloat(fee.final_amount) || 0;
+                            const paidAmount = parseFloat(fee.paid_amount) || 0;
+                            const balance = parseFloat(fee.due_amount) || 0;
+                            const isPaidOff = fee.status === 'paid' || balance <= 0;
+
+                            return (
+                                <div key={fee.id} className="pf-mobile-card">
+                                    <div className="pf-mc-top">
+                                        <div className="pf-mc-title-box">
+                                            <h4>{fee.FeesStructure?.fee_type || 'General Fee'}</h4>
+                                            <p>{fee.FeesStructure?.Subject ? `Subject: ${fee.FeesStructure.Subject.name}` : "Full Course / General"}</p>
+                                        </div>
+                                    </div>
+                                    <div className="pf-mc-middle">
+                                        <div className="pf-mc-due">
+                                            <span className="label">Due Date</span>
+                                            <span className="val">{fee.FeesStructure?.due_date ? new Date(fee.FeesStructure.due_date).toLocaleDateString('en-GB') : '-'}</span>
+                                            {balance > 0 && fee.FeesStructure?.due_date && (
+                                                <span className="overdue-text">
+                                                    {Math.ceil((new Date(fee.FeesStructure.due_date) - new Date()) / (1000 * 60 * 60 * 24)) > 0 
+                                                        ? `(Due in ${Math.ceil((new Date(fee.FeesStructure.due_date) - new Date()) / (1000 * 60 * 60 * 24))} days)` 
+                                                        : '(Overdue)'}
+                                                </span>
+                                            )}
+                                        </div>
+                                        <div className="pf-mc-amounts">
+                                            <div>Total: <strong>${finalAmount.toFixed(2)}</strong></div>
+                                            <div>Paid: <span>${paidAmount.toFixed(2)}</span></div>
+                                            <div>Due: <strong style={{ color: balance > 0 ? '#ef4444' : '#10b981' }}>${balance.toFixed(2)}</strong></div>
+                                        </div>
+                                        <div className="pf-mc-badge-box">
+                                            <span className={`pf-badge ${isPaidOff ? 'paid' : paidAmount > 0 ? 'partial' : 'pending'}`}>
+                                                {isPaidOff ? 'Paid' : paidAmount > 0 ? 'Partial' : 'Pending'}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            );
+                        })
+                    )}
+                </div>
             </div>
 
             <div className="payfees-section">
@@ -294,7 +359,7 @@ function PayFees() {
                         <span style={{ color: '#6366f1', fontSize: '1.2rem' }}>🕒</span> Payment History
                     </h3>
                 </div>
-                <div className="payfees-table-container">
+                <div className="payfees-table-container desktop-only">
                     <table className="payfees-table">
                         <thead>
                             <tr>
@@ -340,6 +405,35 @@ function PayFees() {
                             )}
                         </tbody>
                     </table>
+                </div>
+                {/* Mobile View for Payment History */}
+                <div className="mobile-only pf-mobile-list">
+                    {payments.length === 0 ? (
+                        <div className="pf-mobile-empty">No payment history found.</div>
+                    ) : (
+                        payments.map((payment) => (
+                            <div key={payment.id} className="pf-mobile-card hist-card">
+                                <div className="pf-mc-row">
+                                    <div className="pf-mc-col">
+                                        <span className="label">TXN ID</span>
+                                        <span className="val" style={{color: '#4f46e5'}}>{payment.payment_method?.toLowerCase() === 'cash' ? 'N/A' : payment.transaction_id}</span>
+                                    </div>
+                                    <div className="pf-mc-col">
+                                        <span className="label">Date & Time</span>
+                                        <span className="val">{new Date(payment.payment_date).toLocaleDateString('en-GB')}</span>
+                                        <span className="sub">{new Date(payment.payment_date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                                    </div>
+                                    <div className="pf-mc-col" style={{alignItems: 'flex-end'}}>
+                                        <span className="label">Amount</span>
+                                        <span className="val" style={{fontSize: '1.1rem'}}>${parseFloat(payment.amount_paid).toFixed(2)}</span>
+                                        <span className={`pf-badge ${payment.status === 'success' ? 'success' : 'danger'}`} style={{marginTop: '4px'}}>
+                                            {payment.status}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        ))
+                    )}
                 </div>
             </div>
 
