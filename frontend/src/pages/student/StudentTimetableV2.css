@@ -359,15 +359,9 @@
     }
     .tt-v2-pills {
         justify-content: flex-start;
-        flex-wrap: nowrap;
-        overflow-x: auto;
+        flex-wrap: wrap;
         width: 100%;
-        padding-bottom: 4px;
-        -ms-overflow-style: none;
-        scrollbar-width: none;
-    }
-    .tt-v2-pills::-webkit-scrollbar {
-        display: none;
+        gap: 0.5rem;
     }
     .tt-v2-academic-card {
         margin-right: 0;

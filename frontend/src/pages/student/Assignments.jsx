@@ -413,7 +413,7 @@ export default function StudentAssignments() {
                                         accept=".pdf,.docx,.doc,.zip,.jpg,.png"
                                         onChange={e => setFile(e.target.files[0])}
                                     />
-                                    <div style={{ marginLeft: 'auto', paddingLeft: '24px' }}>
+                                    <div className="asg-v2-upload-action" style={{ marginLeft: 'auto', paddingLeft: '24px' }}>
                                         {file ? (
                                             <button 
                                                 style={{ 
@@ -528,6 +528,7 @@ export default function StudentAssignments() {
 
                     {/* FILTER BAR */}
                     <div className="asg-v2-filter-bar">
+                        {isMobile && <div style={{width: '100%', fontSize: '0.9rem', fontWeight: 700, color: '#0f172a', marginBottom: '8px'}}>Filter</div>}
                         <div className="asg-v2-filter-tabs">
                             {TAB_LIST.map(t => (
                                 <button
@@ -540,7 +541,7 @@ export default function StudentAssignments() {
                             ))}
                         </div>
                         <div className="asg-v2-sort-container">
-                            Sort by: 
+                            {!isMobile && <span>Sort by: </span>}
                             <select className="asg-v2-sort-dropdown" value={sortFilter} onChange={(e) => setSortFilter(e.target.value)}>
                                 <option value="newest">Latest Due Date</option>
                                 <option value="oldest">Oldest First</option>
@@ -640,6 +641,14 @@ export default function StudentAssignments() {
                         )}
                     </div>
 
+                    {/* MOBILE CALENDAR & DEADLINES */}
+                    {isMobile && (
+                        <div className="asg-v3-sidebar-mobile">
+                            <MiniCalendar assignments={assignments} />
+                            <UpcomingDeadlines pendingAssignments={pending} />
+                        </div>
+                    )}
+
                     {/* Help Banner */}
                     <div className="asg-v3-help-banner">
                         <div className="asg-v3-help-left">
@@ -656,11 +665,13 @@ export default function StudentAssignments() {
 
                 </div>
 
-                {/* RIGHT SIDEBAR */}
-                <div className="asg-v3-sidebar">
-                    <MiniCalendar assignments={assignments} />
-                    <UpcomingDeadlines pendingAssignments={pending} />
-                </div>
+                {/* RIGHT SIDEBAR (Desktop) */}
+                {!isMobile && (
+                    <div className="asg-v3-sidebar">
+                        <MiniCalendar assignments={assignments} />
+                        <UpcomingDeadlines pendingAssignments={pending} />
+                    </div>
+                )}
             </div>
         </div>
     );
