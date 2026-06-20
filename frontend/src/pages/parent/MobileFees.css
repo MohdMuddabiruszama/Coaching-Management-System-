@@ -1,0 +1,249 @@
+/* MobileFees.css */
+
+.mp-fees-container {
+    background-color: #f8fafc;
+    min-height: 100vh;
+    font-family: 'Inter', sans-serif;
+    padding-bottom: 80px;
+}
+
+/* Header */
+.mp-fees-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+    padding: 24px 20px 16px;
+    background: #fff;
+    border-bottom: 1px solid #f1f5f9;
+}
+.mp-fees-title-area {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+.mp-fees-title-icon {
+    width: 52px;
+    height: 52px;
+    background: linear-gradient(135deg, #60a5fa, #3b82f6);
+    color: white;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    box-shadow: 0 4px 10px rgba(59, 130, 246, 0.3);
+}
+.mp-fees-title-icon svg {
+    width: 24px;
+    height: 24px;
+}
+.mp-fees-title-text h1 {
+    font-size: 20px;
+    font-weight: 800;
+    color: #0f172a;
+    margin: 0 0 2px 0;
+}
+.mp-fees-title-text p {
+    font-size: 13px;
+    color: #64748b;
+    margin: 0;
+}
+
+/* Stats Cards */
+.mp-fees-stats {
+    padding: 0 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 24px;
+}
+
+.mp-fees-stat-card {
+    background: #ffffff;
+    border-radius: 16px;
+    padding: 16px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.03);
+    border: 1px solid #e5e7eb;
+}
+.mp-fees-stat-icon {
+    width: 52px;
+    height: 52px;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    flex-shrink: 0;
+}
+.mp-fees-stat-icon svg {
+    width: 24px;
+    height: 24px;
+}
+.mp-fees-stat-icon.total {
+    background: linear-gradient(135deg, #60a5fa, #3b82f6);
+    box-shadow: 0 4px 10px rgba(59, 130, 246, 0.25);
+}
+.mp-fees-stat-icon.paid {
+    background: linear-gradient(135deg, #a78bfa, #8b5cf6);
+    box-shadow: 0 4px 10px rgba(139, 92, 246, 0.25);
+}
+.mp-fees-stat-icon.due {
+    background: linear-gradient(135deg, #fbbf24, #f59e0b);
+    box-shadow: 0 4px 10px rgba(245, 158, 11, 0.25);
+}
+.mp-fees-stat-icon.due.zero {
+    background: linear-gradient(135deg, #34d399, #10b981);
+    box-shadow: 0 4px 10px rgba(16, 185, 129, 0.25);
+}
+
+.mp-fees-stat-content {
+    flex: 1;
+}
+.mp-fees-stat-content p {
+    margin: 0 0 4px 0;
+    font-size: 13px;
+    color: #64748b;
+    font-weight: 500;
+}
+.mp-fees-stat-content h3 {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 800;
+    color: #111827;
+}
+
+/* Pending Fees Section */
+.mp-fees-section-wrap {
+    background: #ffffff;
+    border-radius: 20px;
+    border: 1px solid #f3f4f6;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.02);
+    margin: 0 16px;
+    overflow: hidden;
+}
+
+.mp-fees-section-header {
+    padding: 16px;
+    border-bottom: 1px solid #f3f4f6;
+}
+.mp-fees-section-title {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 0;
+    font-size: 16px;
+    font-weight: 700;
+    color: #111827;
+}
+
+.mp-fees-list {
+    display: flex;
+    flex-direction: column;
+    padding: 16px;
+    background: #ffffff;
+}
+
+.mp-fees-empty {
+    text-align: center;
+    padding: 24px;
+    color: #6b7280;
+    font-size: 14px;
+}
+
+.mp-fees-card {
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 16px;
+    padding: 18px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.03);
+    margin-bottom: 16px;
+}
+.mp-fees-card:last-child {
+    margin-bottom: 0;
+}
+
+.mp-fees-mc-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    border-bottom: 1px dashed #e5e7eb;
+    padding-bottom: 12px;
+    margin-bottom: 12px;
+}
+.mp-fees-mc-title-box h4 {
+    margin: 0 0 4px 0;
+    font-size: 16px;
+    color: #111827;
+    font-weight: 700;
+}
+.mp-fees-mc-title-box p {
+    margin: 0;
+    font-size: 13px;
+    color: #6b7280;
+}
+
+.mp-fees-mc-middle {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+.mp-fees-mc-due {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 100px;
+}
+.mp-fees-mc-due .label { font-size: 12px; color: #6b7280; }
+.mp-fees-mc-due .val { font-size: 14px; font-weight: 600; color: #111827; }
+.mp-fees-mc-due .overdue-text { font-size: 12px; color: #ef4444; }
+
+.mp-fees-mc-amounts {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-size: 13px;
+    color: #6b7280;
+}
+.mp-fees-mc-amounts strong { color: #111827; }
+
+.mp-fees-mc-actions {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 8px;
+}
+
+.mp-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 6px 12px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+}
+.mp-badge.paid { background: #dcfce7; color: #166534; }
+.mp-badge.partial { background: #fef9c3; color: #854d0e; }
+.mp-badge.pending { background: #fee2e2; color: #991b1b; }
+
+.mp-pay-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: linear-gradient(135deg, #8b5cf6, #6d28d9);
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 10px;
+    font-weight: 700;
+    font-size: 13px;
+    cursor: pointer;
+    box-shadow: 0 4px 10px rgba(109, 40, 217, 0.25);
+}

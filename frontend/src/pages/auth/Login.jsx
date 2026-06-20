@@ -127,8 +127,6 @@ function Login() {
         default: navigate("/");
       }
     } catch (err) {
-      const msg = err.response?.data?.message || "Login failed. Please check your credentials.";
-
       const scrollToErr = () => {
         setTimeout(() => {
           const firstErrorElement = document.querySelector(".auth-input--error, .auth-alert");
@@ -137,6 +135,16 @@ function Login() {
           }
         }, 50);
       };
+
+      // Handle network errors (server down / unreachable)
+      if (!err.response) {
+        setErrors({ general: "Cannot connect to server. Please check your internet connection or try again later." });
+        scrollToErr();
+        setLoading(false);
+        return;
+      }
+
+      const msg = err.response?.data?.message || "Login failed. Please check your credentials.";
 
       if (msg.toLowerCase().includes("not found") || msg.toLowerCase().includes("email")) {
         setErrors({ email: "Email not registered. Please check again." });

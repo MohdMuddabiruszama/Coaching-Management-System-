@@ -27,6 +27,12 @@ export function useMobileInit() {
             import("../styles/parent-mobile.css").catch(() => {});
         } else if (APP_TYPE === "faculty") {
             import("../styles/faculty-mobile.css").catch(() => {});
+        } else if (APP_TYPE === "universal") {
+            // Universal build supports all three roles — load all variant CSS.
+            // Each is caught individually so a missing file doesn't break the others.
+            import("../styles/student-mobile.css").catch(() => {});
+            import("../styles/parent-mobile.css").catch(() => {});
+            import("../styles/faculty-mobile.css").catch(() => {});
         }
 
         /* HTML-level flags & touch settings */

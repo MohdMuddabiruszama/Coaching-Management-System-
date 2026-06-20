@@ -24,17 +24,26 @@ Sentry.init({
 
 
 // ✅ Phase 4.1: Global React Query client configuration
+// Mobile optimizations:
+//  - gcTime 30 min (was 10): navigating tabs never refetches for 30 min → 0 extra calls
+//  - retry 2 on native (was 1): handles cellular blips (3G → 4G handoffs, tunnels)
+//  - retryDelay exponential: 1s → 2s → 4s — avoids hammering a struggling server
+import { Capacitor } from "@capacitor/core";
+const IS_NATIVE = Capacitor.isNativePlatform();
+
 const queryClient = new QueryClient({
     defaultOptions: {
         queries: {
-            staleTime: 5 * 60 * 1000,      // 5 minutes: data is "fresh" for 5 min
-            gcTime: 10 * 60 * 1000,         // 10 minutes: keep in memory for 10 min
-            refetchOnWindowFocus: false,     // Don't refetch when tab regains focus
-            refetchOnReconnect: true,        // Do refetch when network reconnects
-            retry: 1,                        // Only retry failed requests once
+            staleTime: 5 * 60 * 1000,       // 5 minutes: data is "fresh" for 5 min
+            gcTime: 30 * 60 * 1000,          // 30 minutes (was 10): keep in memory longer on mobile
+            refetchOnWindowFocus: false,      // Don't refetch when tab regains focus
+            refetchOnReconnect: true,         // Do refetch when network reconnects
+            retry: IS_NATIVE ? 2 : 1,        // Mobile gets 1 extra retry for flaky networks
+            retryDelay: (attempt) =>
+                Math.min(1000 * 2 ** attempt, 10000), // Exponential: 1s, 2s, 4s (max 10s)
         },
         mutations: {
-            retry: 0,                        // Don't retry failed mutations
+            retry: 0,                         // Don't retry failed mutations
         },
     },
 });

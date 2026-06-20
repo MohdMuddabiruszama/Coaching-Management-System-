@@ -3,19 +3,27 @@
  * Bottom tab navigation for Parent native app.
  */
 
-import { useRef, useCallback } from "react";
+import { useRef, useCallback, useContext } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
+import { AuthContext } from "../../context/AuthContext";
+import InstituteLogo from "../common/InstituteLogo";
 import "./MobileParentLayout.css";
 
 const TABS = [
-    { id: "dashboard",   label: "Home",       icon: "🏠", path: "/parent/dashboard"   },
-    { id: "timetable",   label: "Schedule",   icon: "📆", path: "/parent/timetable"   },
-    { id: "assignments", label: "Tasks",      icon: "📋", path: "/parent/assignments" },
-    { id: "chat",        label: "Messages",   icon: "💬", path: "/parent/chat"        },
-    { id: "profile",     label: "Profile",    icon: "👤", path: "/parent/profile"     },
+    { id: "dashboard",     label: "Home",          icon: "🏠", path: "/parent/dashboard"     },
+    { id: "timetable",     label: "Schedule",      icon: "📆", path: "/parent/timetable"     },
+    { id: "attendance",    label: "Attendance",    icon: "📋", path: "/parent/attendance"    },
+    { id: "marks",         label: "Marks",         icon: "📈", path: "/parent/marks"         },
+    { id: "performance",   label: "Performance",   icon: "📊", path: "/parent/performance"   },
+    { id: "fees",          label: "Fees",          icon: "💳", path: "/parent/fees"          },
+    { id: "assignments",   label: "Assignments",   icon: "📝", path: "/parent/assignments"   },
+    { id: "announcements", label: "Announcements", icon: "📢", path: "/parent/announcements" },
+    { id: "chat",          label: "Messages",      icon: "💬", path: "/parent/chat"          },
+    { id: "profile",       label: "Profile",       icon: "👤", path: "/parent/profile"       },
 ];
 
-const MobileParentLayout = () => {
+const MobileParentLayout = ({ children }) => {
+    const { user, logout } = useContext(AuthContext);
     const location = useLocation();
     const navigate = useNavigate();
     const touchStartX = useRef(null);
@@ -47,8 +55,33 @@ const MobileParentLayout = () => {
 
     return (
         <div className="mpl-layout">
+            {/* Global Header */}
+            <header className="mpl-header">
+                <div className="mpl-inst-brand">
+                    <InstituteLogo size="sm" />
+                    <div className="mpl-inst-text">
+                        <h1 className="mpl-inst-name">{user?.institute_name || "IT Hub"}</h1>
+                        <p className="mpl-inst-portal">Parent Portal</p>
+                    </div>
+                </div>
+                <div className="mpl-header-actions">
+                    <div className="mpl-bell-action">
+                        <svg viewBox="0 0 24 24" fill="#e2e8f0" stroke="#cbd5e1" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+                    </div>
+                    <div className="mpl-avatar-action">
+                        <div className="mpl-avatar-circle">
+                            {user?.name ? user.name.charAt(0).toUpperCase() : "A"}
+                        </div>
+                        <span className="mpl-online-dot"></span>
+                    </div>
+                    <button className="mpl-logout-action" onClick={() => { logout(); navigate('/login'); }}>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+                    </button>
+                </div>
+            </header>
+
             <main className="mpl-content" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
-                <Outlet />
+                {children || <Outlet />}
             </main>
 
             <nav className="mpl-bottom-nav" role="navigation" aria-label="Parent navigation">

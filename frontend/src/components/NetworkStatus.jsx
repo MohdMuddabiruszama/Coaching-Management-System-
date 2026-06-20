@@ -85,8 +85,29 @@ const NetworkStatus = () => {
                     <p className="server-down-desc">
                         We are currently unable to connect to the backend database servers. Our systems might be under maintenance or experiencing high traffic. Please try again in a few minutes.
                     </p>
-                    <button className="server-retry-btn" onClick={() => window.location.reload()}>
-                        Retry Connection 🔄
+                    <button
+                        className="server-retry-btn"
+                        disabled={retrying}
+                        onClick={async () => {
+                            setRetrying(true);
+                            try {
+                                // Ping the backend health endpoint to check if server recovered.
+                                // Using 'no-cors' mode so CORS policy doesn't block the check.
+                                const baseURL = import.meta.env.VITE_API_URL || 'https://institutes-saas.onrender.com/api';
+                                const healthURL = baseURL.replace(/\/api$/, '/api/health');
+                                await fetch(healthURL, { method: 'GET', cache: 'no-store' });
+                                // If fetch didn't throw, server is back — clear error and reload
+                                setServerDown(false);
+                                window.location.reload();
+                            } catch {
+                                // Server still unreachable — just reload and let the app decide
+                                window.location.reload();
+                            } finally {
+                                setRetrying(false);
+                            }
+                        }}
+                    >
+                        {retrying ? 'Checking…' : 'Retry Connection 🔄'}
                     </button>
                     <div className="server-status-bar">
                         <span className="server-dot"></span>

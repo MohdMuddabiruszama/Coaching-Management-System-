@@ -1,4 +1,3 @@
-import { Preferences } from '@capacitor/preferences';
 import api from './api';
 
 /**
@@ -6,9 +5,29 @@ import api from './api';
  * ─────────────────────────────────────────────────────────────────────────────
  * Stores failed mutations (like attendance marks) while offline.
  * Automatically attempts to replay them when connection is restored.
+ *
+ * Performance fix: @capacitor/preferences is lazy-loaded (not top-level imported)
+ * to avoid crashing on web builds and to reduce initial bundle parse time.
  */
 
 const QUEUE_KEY = 'offline_mutation_queue';
+
+// ── Lazy Preferences loader ────────────────────────────────────────────────
+// Mirrors the pattern used in secureStorage.js — only loads the native plugin
+// when actually needed (native platform only).
+let _Preferences = null;
+const getPreferences = async () => {
+    if (_Preferences) return _Preferences;
+    try {
+        const { Capacitor } = await import('@capacitor/core');
+        if (!Capacitor.isNativePlatform()) return null;
+        const mod = await import('@capacitor/preferences');
+        _Preferences = mod.Preferences;
+        return _Preferences;
+    } catch {
+        return null;
+    }
+};
 
 /**
  * Add a failed request to the offline queue
@@ -16,6 +35,9 @@ const QUEUE_KEY = 'offline_mutation_queue';
  */
 export const addToQueue = async (request) => {
     try {
+        const Preferences = await getPreferences();
+        if (!Preferences) return; // No-op on web (no native storage available)
+
         const { value } = await Preferences.get({ key: QUEUE_KEY });
         const queue = value ? JSON.parse(value) : [];
         
@@ -41,6 +63,9 @@ export const addToQueue = async (request) => {
  */
 export const flushQueue = async () => {
     try {
+        const Preferences = await getPreferences();
+        if (!Preferences) return; // No-op on web
+
         const { value } = await Preferences.get({ key: QUEUE_KEY });
         if (!value) return;
 

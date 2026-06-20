@@ -1,0 +1,240 @@
+/* MobileAssignments.css */
+
+.mpa-container {
+    background-color: #f8fafc;
+    min-height: 100vh;
+    font-family: 'Inter', sans-serif;
+    padding-bottom: 80px;
+    padding-top: env(safe-area-inset-top);
+}
+
+/* Stats Grid */
+.mpa-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+    padding: 16px;
+    background: #fff;
+}
+.mpa-stat-card {
+    background: #fff;
+    border: 1px solid #f1f5f9;
+    border-radius: 12px;
+    padding: 12px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+}
+.mpa-stat-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    margin-bottom: 8px;
+}
+.mpa-stat-val {
+    font-size: 1.4rem;
+    font-weight: 700;
+    margin-bottom: 2px;
+}
+.mpa-stat-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #1e293b;
+    margin-bottom: 2px;
+}
+.mpa-stat-sub {
+    font-size: 0.65rem;
+    color: #94a3b8;
+}
+
+/* Header Banner */
+.mpa-header-banner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px;
+    background: #fff;
+    border-top: 1px solid #f1f5f9;
+    border-bottom: 1px solid #f1f5f9;
+    margin-bottom: 16px;
+}
+.mpa-header-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+.mpa-header-avatar {
+    width: 36px;
+    height: 36px;
+    background: #e0e7ff;
+    color: #4f46e5;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+}
+.mpa-header-title {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #0f172a;
+}
+.mpa-header-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.mpa-filter-select {
+    padding: 6px 10px;
+    font-size: 0.75rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    background: #fff;
+    color: #475569;
+}
+.mpa-total-badge {
+    font-size: 0.75rem;
+    color: #64748b;
+}
+
+/* Assignment Card */
+.mpa-list {
+    padding: 0 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+.mpa-card {
+    background: #fff;
+    border: 1px solid #f1f5f9;
+    border-radius: 16px;
+    padding: 16px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+}
+.mpa-card-top {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+.mpa-card-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: #fef3c7;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    flex-shrink: 0;
+}
+.mpa-card-content {
+    flex: 1;
+}
+.mpa-badge {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+}
+.mpa-badge.not-submitted { background: #fef3c7; color: #d97706; }
+.mpa-badge.submitted { background: #dbeafe; color: #2563eb; }
+.mpa-badge.graded { background: #dcfce7; color: #16a34a; }
+.mpa-badge.resubmit { background: #f3e8ff; color: #9333ea; }
+
+.mpa-card-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #0f172a;
+    margin: 0 0 8px 0;
+}
+.mpa-card-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.75rem;
+    color: #64748b;
+    margin-bottom: 6px;
+    flex-wrap: wrap;
+}
+.mpa-meta-divider { color: #cbd5e1; }
+
+.mpa-card-divider {
+    height: 1px;
+    background: #f1f5f9;
+    margin: 16px 0;
+}
+
+.mpa-status-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 12px;
+}
+.mpa-row-label {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: #1e293b;
+}
+.mpa-status-right {
+    text-align: right;
+}
+.mpa-status-pill {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    background: #eff6ff;
+    color: #3b82f6;
+    margin-bottom: 4px;
+}
+.mpa-status-sub {
+    font-size: 0.65rem;
+    color: #64748b;
+}
+
+.mpa-grade-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+.mpa-grade-val {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #0f172a;
+}
+
+.mpa-feedback-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 16px;
+}
+.mpa-feedback-val {
+    font-size: 0.8rem;
+    font-style: italic;
+    color: #64748b;
+    text-align: right;
+    max-width: 60%;
+}
+
+.mpa-btn-view {
+    width: 100%;
+    background: #f5f3ff;
+    color: #7c3aed;
+    border: none;
+    border-radius: 8px;
+    padding: 12px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}

@@ -53,6 +53,7 @@ function ParentDashboard() {
     const [selectedStudent, setSelectedStudent] = useState(null);
 
     // Detailed states
+    const [enrolledSubjects, setEnrolledSubjects] = useState([]);
     const [attendance, setAttendance] = useState(null);
     const [results, setResults] = useState([]);
     const [fees, setFees] = useState([]);
@@ -60,7 +61,7 @@ function ParentDashboard() {
     const [assignments, setAssignments] = useState([]);
     const [assignmentFilter, setAssignmentFilter] = useState('all');
     const [activeTab, setActiveTab] = useState("overview");
-    const [attendanceSubjectFilter, setAttendanceSubjectFilter] = useState("All");
+    const [attendanceSubjectFilter, setAttendanceSubjectFilter] = useState("All Subjects");
     const [examFilter, setExamFilter] = useState('All');
     const [detailLoading, setDetailLoading] = useState(false);
     const [reminderPopup, setReminderPopup] = useState(null);
@@ -199,6 +200,7 @@ function ParentDashboard() {
         // Use cached data if available to increase speed and reduce API calls
         if (studentCache.current[student.id]) {
             const cached = studentCache.current[student.id];
+            setEnrolledSubjects(cached.enrolledSubjects || []);
             setAttendance(cached.attendance);
             setResults(cached.results);
             setFees(cached.fees);
@@ -211,16 +213,24 @@ function ParentDashboard() {
         setDetailLoading(true);
         try {
             const classId = student.Classes?.[0]?.id;
-            const [attData, resData, feeData, perfData, asgData, slotsData, ttData] = await Promise.all([
+            
+            let subjectsPromise = Promise.resolve({ data: { data: student.Subjects || [] } });
+            if (student.is_full_course && classId) {
+                subjectsPromise = api.get(`/subjects?class_id=${classId}`).catch(() => ({ data: { data: student.Subjects || [] } }));
+            }
+
+            const [attData, resData, feeData, perfData, asgData, slotsData, ttData, subData] = await Promise.all([
                 parentService.getLinkedStudentAttendance(student.id).catch(() => ({ data: null })),
                 markService.getParentChild(student.id).catch(() => []),
                 parentService.getLinkedStudentFees(student.id).catch(() => ({ data: [] })),
                 performanceService.getChildPerformance(student.id).catch(() => null),
                 parentService.getLinkedStudentAssignments(student.id).catch(() => ({ assignments: [] })),
                 api.get("/timetable/slots").catch(() => ({ data: { data: [] } })),
-                classId ? api.get(`/timetable/class/${classId}`).catch(() => ({ data: { data: [] } })) : Promise.resolve({ data: { data: [] } })
+                classId ? api.get(`/timetable/class/${classId}`).catch(() => ({ data: { data: [] } })) : Promise.resolve({ data: { data: [] } }),
+                subjectsPromise
             ]);
             
+            const fetchedSubjects = subData?.data?.data || student.Subjects || [];
             const fetchedAttendance = attData?.data;
             const fetchedResults = Array.isArray(resData) ? resData : (resData?.data || []);
             const fetchedFees = feeData?.data || [];
@@ -232,6 +242,7 @@ function ParentDashboard() {
             
             // Save to cache
             studentCache.current[student.id] = {
+                enrolledSubjects: fetchedSubjects,
                 attendance: fetchedAttendance,
                 results: fetchedResults,
                 fees: fetchedFees,
@@ -240,6 +251,7 @@ function ParentDashboard() {
                 timetableData: fetchedTimetableData
             };
 
+            setEnrolledSubjects(fetchedSubjects);
             setAttendance(fetchedAttendance);
             setResults(fetchedResults);
             setFees(fetchedFees);
@@ -310,15 +322,20 @@ function ParentDashboard() {
             
             let pct = 0;
             if (working > 0) {
-                pct = ((present + late + (halfDay * 0.5)) / working) * 100;
+                pct = Number((((present + late + (halfDay * 0.5)) / working) * 100).toFixed(2));
             }
             totalPct += pct;
             totalWorkingDays += working;
-            totalPresentDays += (present + late + halfDay);
+            totalPresentDays += (present + late + (halfDay * 0.5));
         });
 
+        let averagePercentage = 0;
+        if (totalWorkingDays > 0) {
+            averagePercentage = Number(((totalPresentDays / totalWorkingDays) * 100).toFixed(2));
+        }
+
         return {
-            averagePercentage: subjects.length > 0 ? Math.round(totalPct / subjects.length) : 0,
+            averagePercentage,
             totalWorkingDays,
             totalPresent: totalPresentDays
         };
@@ -332,20 +349,43 @@ function ParentDashboard() {
 
     // Attendance Subject Filtering Logic
     const uniqueAttendanceSubjects = useMemo(() => {
-        if (!attendance?.records) return [];
         const subjects = new Set();
-        attendance.records.forEach(r => {
-            const subName = r.Subject?.name || r.Class?.name;
-            if (subName) subjects.add(subName);
-        });
-        return Array.from(subjects).sort();
-    }, [attendance]);
+        subjects.add("All Subjects");
+        
+        // Add enrolled subjects
+        if (enrolledSubjects && enrolledSubjects.length > 0) {
+            enrolledSubjects.forEach(s => subjects.add(s.name));
+        } else if (selectedStudent?.Classes?.length > 0) {
+            selectedStudent.Classes.forEach(cls => {
+                if (cls.Subjects && cls.Subjects.length > 0) {
+                    cls.Subjects.forEach(sub => subjects.add(sub.name));
+                }
+            });
+        }
+        
+        // Add subjects from attendance records as fallback
+        if (attendance?.records) {
+            attendance.records.forEach(r => {
+                const subName = r.Subject?.name || r.Class?.name;
+                if (subName) subjects.add(subName);
+            });
+        }
+        
+        const subjectsArray = Array.from(subjects);
+        // Ensure "All Subjects" is always first
+        const allSubjIndex = subjectsArray.indexOf("All Subjects");
+        if (allSubjIndex > -1) {
+            subjectsArray.splice(allSubjIndex, 1);
+        }
+        return ["All Subjects", ...subjectsArray.sort()];
+    }, [attendance, enrolledSubjects, selectedStudent]);
 
     // Calculate Enrolled Subject Performance for Overview Tab
     const enrolledSubjectPerformance = useMemo(() => {
         let subjectsList = [];
-        // Extract subjects from student's enrolled classes
-        if (selectedStudent?.Classes?.length > 0) {
+        if (enrolledSubjects && enrolledSubjects.length > 0) {
+            subjectsList = enrolledSubjects.map(s => s.name);
+        } else if (selectedStudent?.Classes?.length > 0) {
             selectedStudent.Classes.forEach(cls => {
                 if (cls.Subjects && cls.Subjects.length > 0) {
                     cls.Subjects.forEach(sub => {
@@ -356,8 +396,8 @@ function ParentDashboard() {
         }
         
         // Fallback: If no explicit Subjects are found, use attendance unique subjects
-        if (subjectsList.length === 0 && uniqueAttendanceSubjects?.length > 0) {
-            subjectsList = [...uniqueAttendanceSubjects];
+        if (subjectsList.length === 0 && uniqueAttendanceSubjects?.length > 1) {
+            subjectsList = uniqueAttendanceSubjects.filter(s => s !== "All Subjects");
         }
 
         // Ultimate fallback if absolutely no data
@@ -378,18 +418,17 @@ function ParentDashboard() {
                 color: belowPassing ? '#ef4444' : colors[i % colors.length]
             };
         });
-    }, [selectedStudent, uniqueAttendanceSubjects, performance]);
+    }, [selectedStudent, uniqueAttendanceSubjects, performance, enrolledSubjects]);
 
     const filteredAttendanceRecords = useMemo(() => {
         if (!attendance?.records) return [];
-        if (!attendanceSubjectFilter) return [];
+        if (!attendanceSubjectFilter || attendanceSubjectFilter === "All Subjects") return attendance.records;
         return attendance.records.filter(r => (r.Subject?.name || r.Class?.name) === attendanceSubjectFilter);
     }, [attendance, attendanceSubjectFilter]);
 
     const filteredSummary = useMemo(() => {
-        if (!attendanceSubjectFilter || !attendance?.records) {
-            return attendance?.summary;
-        }
+        if (!attendance?.records) return null;
+        
         const records = filteredAttendanceRecords;
         const present = records.filter(r => r.status === 'present').length;
         const absent = records.filter(r => r.status === 'absent').length;
@@ -399,8 +438,9 @@ function ParentDashboard() {
         
         let pct = 0;
         if (totalWorking > 0) {
-            pct = Math.round(((present + late + (halfDay * 0.5)) / totalWorking) * 100);
+            pct = Number((((present + late + (halfDay * 0.5)) / totalWorking) * 100).toFixed(2));
         }
+        
         return {
             working_days: totalWorking,
             present_days: present + late + halfDay,
@@ -408,7 +448,7 @@ function ParentDashboard() {
             attendance_percentage: pct,
             holiday_days: 0
         };
-    }, [attendance, filteredAttendanceRecords, attendanceSubjectFilter]);
+    }, [attendance, filteredAttendanceRecords]);
 
     // Use filtered summary for attPct in the tab
     const filteredAttPct = filteredSummary?.attendance_percentage || 0;
@@ -416,7 +456,7 @@ function ParentDashboard() {
     useEffect(() => {
         if (uniqueAttendanceSubjects.length > 0) {
             if (!attendanceSubjectFilter || !uniqueAttendanceSubjects.includes(attendanceSubjectFilter)) {
-                setAttendanceSubjectFilter(uniqueAttendanceSubjects[0]);
+                setAttendanceSubjectFilter("All Subjects");
             }
         }
     }, [uniqueAttendanceSubjects, attendanceSubjectFilter]);

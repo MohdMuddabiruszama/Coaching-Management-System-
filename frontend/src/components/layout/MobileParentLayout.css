@@ -13,7 +13,110 @@
     overflow-x: hidden;
     -webkit-overflow-scrolling: touch;
     padding-bottom: calc(68px + env(safe-area-inset-bottom));
-    padding-top: env(safe-area-inset-top);
+    /* push down to clear the fixed global header */
+    padding-top: calc(75px + env(safe-area-inset-top, 0px));
+}
+
+/* ── Global Header (Fixed) ───────────────────────────────── */
+.mpl-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 1000;
+    background-color: #ffffff;
+    padding: calc(16px + env(safe-area-inset-top, 0px)) 20px 16px;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.mpl-inst-brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.mpl-inst-text {
+    display: flex;
+    flex-direction: column;
+}
+
+.mpl-inst-name {
+    font-size: 16px;
+    font-weight: 800;
+    color: #0f172a;
+    margin: 0;
+    line-height: 1.2;
+}
+
+.mpl-inst-portal {
+    font-size: 11px;
+    color: #64748b;
+    margin: 0;
+}
+
+.mpl-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.mpl-bell-action {
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.mpl-bell-action svg {
+    width: 20px;
+    height: 20px;
+}
+
+.mpl-avatar-action {
+    position: relative;
+    display: flex;
+}
+
+.mpl-avatar-circle {
+    width: 34px;
+    height: 34px;
+    background: #8b5cf6;
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 16px;
+}
+
+.mpl-online-dot {
+    position: absolute;
+    bottom: 0;
+    right: -2px;
+    width: 10px;
+    height: 10px;
+    background: #10b981;
+    border: 2px solid white;
+    border-radius: 50%;
+}
+
+.mpl-logout-action {
+    background: transparent;
+    border: none;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+
+.mpl-logout-action svg {
+    width: 22px;
+    height: 22px;
 }
 .mpl-bottom-nav {
     position: fixed;
@@ -24,14 +127,22 @@
     border-top: 1px solid rgba(0,0,0,0.08);
     display: flex;
     align-items: center;
-    justify-content: space-around;
+    justify-content: flex-start;
+    overflow-x: auto;
+    white-space: nowrap;
+    padding-left: 10px;
+    padding-right: 10px;
     z-index: 9999;
     box-shadow: 0 -4px 20px rgba(0,0,0,0.08);
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
 }
+.mpl-bottom-nav::-webkit-scrollbar {
+    display: none;
+}
 .mpl-nav-item {
-    flex: 1;
+    flex: 0 0 auto;
+    min-width: 72px;
     display: flex;
     flex-direction: column;
     align-items: center;

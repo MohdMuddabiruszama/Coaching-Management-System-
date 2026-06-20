@@ -14,7 +14,7 @@
     "build:mobile:student": "node scripts/patch-capacitor-app.cjs student && cross-env VITE_APP_VARIANT=student vite build --mode mobile.student --base ./ && npx cap sync",
     "build:mobile:parent": "node scripts/patch-capacitor-app.cjs parent && cross-env VITE_APP_VARIANT=parent vite build --base ./ && npx cap sync",
     "build:mobile:faculty": "node scripts/patch-capacitor-app.cjs faculty && cross-env VITE_APP_VARIANT=faculty vite build --base ./ && npx cap sync",
-    "build:mobile:universal": "node scripts/patch-capacitor-app.cjs universal && cross-env VITE_APP_VARIANT=universal vite build --mode mobile.student --base ./ && npx cap sync",
+    "build:mobile:universal": "node scripts/patch-capacitor-app.cjs universal && cross-env VITE_APP_VARIANT=universal vite build --mode mobile.universal --base ./ && npx cap sync",
     "rebuild:student": "node scripts/patch-capacitor-app.cjs student && cross-env VITE_APP_VARIANT=student vite build --mode mobile.student --base ./ && npx cap sync android",
     "cap:open:android": "npx cap open android",
     "cap:sync": "npx cap sync"

@@ -47,13 +47,23 @@ const getBaseURL = () => {
 
 /**
  * Axios Instance
+ *
+ * Performance notes (mobile):
+ *  - withCredentials=false on native: JWT is in Bearer header; cookies unused.
+ *    Disabling avoids CORS preflight (OPTIONS) before every API call,
+ *    cutting ~50% of HTTP round-trips on Capacitor.
+ *  - timeout: 15 s — generous enough for Render cold starts, fast enough
+ *    to give users a recoverable error instead of an infinite spinner.
  */
 const api = axios.create({
     baseURL: getBaseURL(),
+    timeout: 15000, // 15 s — fail fast on slow/dead connections
     headers: {
         "Content-Type": "application/json",
     },
-    withCredentials: true, // useful for cookies (optional)
+    // On native Capacitor auth is Bearer-token only; withCredentials causes
+    // unnecessary CORS preflight (OPTIONS) requests — skip it on native.
+    withCredentials: !Capacitor.isNativePlatform(),
 });
 
 /**
@@ -131,7 +141,16 @@ api.interceptors.response.use(
         // 🌐 Network error (Server Unreachable)
         if (!response) {
             console.error("🚫 Network error:", error.message);
-            window.dispatchEvent(new Event('offline_api_error'));
+
+            // ── Gate: Only show "Platform Unreachable" when the user IS logged in.
+            // On a fresh install or after logout, there's no session — the error
+            // is expected (no profile to fetch) and must NOT block the login screen.
+            // This was the root cause of the permanent "Platform Unreachable" loop.
+            const hasSession = Boolean(sessionStorage.getItem("token"));
+            if (hasSession) {
+                window.dispatchEvent(new Event('offline_api_error'));
+            }
+
             return Promise.reject(error);
         }
 

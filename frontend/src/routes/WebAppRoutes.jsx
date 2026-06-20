@@ -2,7 +2,7 @@
  * Full web + all roles (loaded only when VITE_APP_VARIANT is web / unset).
  */
 
-import { Routes, Route, Navigate, useNavigate } from "react-router-dom";
+import { Routes, Route, Navigate, useNavigate, Outlet } from "react-router-dom";
 import { lazy, Suspense, useEffect } from "react";
 import ProtectedRoute from "./ProtectedRoute";
 import LoadingSpinner from "../components/common/LoadingSpinner";
@@ -62,11 +62,23 @@ const AdminPublicPage = lazy(() => import("../pages/admin/PublicPage"));
 const LifetimeAccess = lazy(() => import("../pages/admin/LifetimeAccess"));
 const AdminPerformance = lazy(() => import("../pages/admin/Performance"));
 const FacultyViewAttendance = lazy(() => import("../pages/faculty/ViewAttendance"));
-const AdminLayout = lazy(() => import("../components/layout/AdminLayout"));
-const StudentLayout = lazy(() => import("../components/layout/StudentLayout"));
-const FacultyLayout = lazy(() => import("../components/layout/FacultyLayout"));
+import { Capacitor } from "@capacitor/core";
 
-const FacultyDashboard = lazy(() => import("../pages/faculty/Dashboard"));
+const isNativeEnv  = Capacitor.isNativePlatform();
+
+const AdminLayout = lazy(() => import("../components/layout/AdminLayout"));
+const StudentLayout = isNativeEnv 
+  ? lazy(() => import("../components/layout/MobileStudentLayout"))
+  : lazy(() => import("../components/layout/StudentLayout"));
+const FacultyLayout = isNativeEnv
+  ? lazy(() => import("../components/layout/MobileFacultyLayout"))
+  : lazy(() => import("../components/layout/FacultyLayout"));
+const MobileParentLayout = lazy(() => import("../components/layout/MobileParentLayout"));
+const ParentLayout = isNativeEnv ? MobileParentLayout : ({ children }) => children || <Outlet />;
+
+const FacultyDashboard = isNativeEnv
+  ? lazy(() => import("../pages/faculty/MobileDashboard"))
+  : lazy(() => import("../pages/faculty/Dashboard"));
 const MarkAttendance = lazy(() => import("../pages/faculty/MarkAttendance"));
 const EnterMarks = lazy(() => import("../pages/faculty/EnterMarks"));
 const ViewStudents = lazy(() => import("../pages/faculty/ViewStudents"));
@@ -80,8 +92,12 @@ const ChatApp = lazy(() => import("../pages/chat/ChatApp"));
 const FacultyClassPerformance = lazy(() => import("../pages/faculty/ClassPerformance"));
 const MySalarySlips = lazy(() => import("../pages/faculty/MySalarySlips"));
 
-const StudentDashboard = lazy(() => import("../pages/student/Dashboard"));
-const ViewAttendance = lazy(() => import("../pages/student/ViewAttendance"));
+const StudentDashboard = isNativeEnv
+  ? lazy(() => import("../pages/student/MobileDashboard"))
+  : lazy(() => import("../pages/student/Dashboard"));
+const ViewAttendance = isNativeEnv
+  ? lazy(() => import("../pages/student/MobileAttendance"))
+  : lazy(() => import("../pages/student/ViewAttendance"));
 const ViewMarks = lazy(() => import("../pages/student/ViewMarks"));
 const ViewAnnouncements = lazy(() => import("../pages/student/ViewAnnouncements"));
 const PayFees = lazy(() => import("../pages/student/PayFees"));
@@ -91,14 +107,20 @@ const StudentNotes = lazy(() => import("../pages/student/StudentNotes"));
 const StudentAssignments = lazy(() => import("../pages/student/Assignments"));
 const StudentPerformance = lazy(() => import("../pages/student/Performance"));
 
-const ParentDashboard = lazy(() => import("../pages/parent/Dashboard"));
+const ParentDashboard = isNativeEnv
+  ? lazy(() => import("../pages/parent/MobileDashboard"))
+  : lazy(() => import("../pages/parent/Dashboard"));
 const ParentTimetable = lazy(() => import("../pages/parent/Timetable"));
 const ParentAssignments = lazy(() => import("../pages/parent/Assignments"));
+const ParentMobileAttendance = lazy(() => import("../pages/parent/MobileAttendance"));
+const ParentMobileMarks = lazy(() => import("../pages/parent/MobileMarks"));
+const ParentMobilePerformance = lazy(() => import("../pages/parent/MobilePerformance"));
+const ParentMobileFees = lazy(() => import("../pages/parent/MobileFees"));
+const ParentMobileTimetable = lazy(() => import("../pages/parent/MobileTimetable"));
+const ParentMobileAssignments = lazy(() => import("../pages/parent/MobileAssignments"));
 
 const NotFound = lazy(() => import("../pages/common/NotFound"));
 const Unauthorized = lazy(() => import("../pages/common/Unauthorized"));
-
-import { Capacitor } from "@capacitor/core";
 
 import { useSubdomain } from "../hooks/useSubdomain";
 
@@ -284,15 +306,21 @@ export default function WebAppRoutes() {
           path="/parent/*"
           element={
             <ProtectedRoute allowedRoles={["parent"]}>
-              <Routes>
-                <Route path="dashboard" element={<ParentDashboard />} />
-                <Route path="timetable" element={<ParentTimetable />} />
-                <Route path="assignments" element={<ParentAssignments />} />
-                <Route path="announcements" element={<ViewAnnouncements />} />
-                <Route path="chat" element={<ChatApp />} />
-                <Route path="profile" element={<Profile />} />
-                <Route path="*" element={<Navigate to="/parent/dashboard" />} />
-              </Routes>
+              <ParentLayout>
+                <Routes>
+                  <Route path="dashboard" element={<ParentDashboard />} />
+                  <Route path="timetable" element={isNativeEnv ? <ParentMobileTimetable /> : <ParentTimetable />} />
+                  <Route path="assignments" element={isNativeEnv ? <ParentMobileAssignments /> : <ParentAssignments />} />
+                  <Route path="attendance" element={isNativeEnv ? <ParentMobileAttendance /> : <Navigate to="/parent/dashboard" />} />
+                  <Route path="marks" element={isNativeEnv ? <ParentMobileMarks /> : <Navigate to="/parent/dashboard" />} />
+                  <Route path="performance" element={isNativeEnv ? <ParentMobilePerformance /> : <Navigate to="/parent/dashboard" />} />
+                  <Route path="fees" element={isNativeEnv ? <ParentMobileFees /> : <Navigate to="/parent/dashboard" />} />
+                  <Route path="announcements" element={<ViewAnnouncements />} />
+                  <Route path="chat" element={<ChatApp />} />
+                  <Route path="profile" element={<Profile />} />
+                  <Route path="*" element={<Navigate to="/parent/dashboard" />} />
+                </Routes>
+              </ParentLayout>
             </ProtectedRoute>
           }
         />

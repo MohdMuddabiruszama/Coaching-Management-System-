@@ -68,8 +68,31 @@ export const AuthProvider = ({ children }) => {
            logout();
         }
       } catch (err) {
-        console.error("Session verification failed:", err.message);
-        logout();
+        // ── Smart session handling on error ──────────────────────────────────
+        // Auth errors (server responded with 401/403): clear session, force re-login.
+        // Network errors (no server response): preserve cached session for offline use.
+        // This distinction allows the app to work offline for returning users.
+        if (err.response) {
+          // Server responded with an error → credentials are invalid → clear session
+          console.error("Session verification failed (auth error):", err.response?.status, err.message);
+          logout();
+        } else {
+          // Network error (timeout, no connection, CORS on native, etc.)
+          // Keep the cached user so offline navigation still works.
+          console.warn("Session verification failed (network error) — keeping cached session:", err.message);
+          const cachedUser = sessionStorage.getItem("user");
+          if (cachedUser) {
+            try {
+              const parsedUser = JSON.parse(cachedUser);
+              setBranding(parsedUser);
+              setUser(parsedUser);
+            } catch {
+              // Corrupted cache — must re-login
+              logout();
+            }
+          }
+          // Don't call logout() — leave the session intact for offline use
+        }
       } finally {
         setIsInitializing(false);
       }
