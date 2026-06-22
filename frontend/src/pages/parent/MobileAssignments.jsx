@@ -1,10 +1,13 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useContext } from "react";
 import { Link } from "react-router-dom";
 import * as parentService from "../../services/parent.service";
+import { markParentAssignmentsSeen } from "../../hooks/useParentBadges";
+import { AuthContext } from "../../context/AuthContext";
 import "./MobileAssignments.css";
 import "./MobileDashboard.css";
 
 export default function MobileAssignments() {
+    const { user } = useContext(AuthContext);
     const [students, setStudents] = useState([]);
     const [selectedStudentId, setSelectedStudentId] = useState("");
     const [assignments, setAssignments] = useState([]);
@@ -45,6 +48,11 @@ export default function MobileAssignments() {
         try {
             const res = await parentService.getLinkedStudentAssignments(studentId);
             setAssignments(res.assignments || []);
+            
+            // Mark assignments as seen so the dashboard badge clears
+            if (user?.id && studentId) {
+                markParentAssignmentsSeen(user.id, studentId);
+            }
         } catch (error) {
             console.error("Error fetching assignments", error);
         } finally {
@@ -95,7 +103,7 @@ export default function MobileAssignments() {
             </div>
 
             {/* ── Student Selector (Matching specific layout) ── */}
-            <div className="mpd-student-scroll" style={{ padding: '16px 20px', background: '#fff', borderTop: '1px solid #f1f5f9', borderBottom: '1px solid #f1f5f9', marginBottom: '0' }}>
+            <div className="mpd-student-scroll" style={{ padding: '0 16px', marginBottom: '16px' }}>
                 {students.map((student, idx) => {
                     const isSelected = selectedStudentId === student.id.toString();
                     const initials = student.User?.name?.substring(0,2).toUpperCase() || 'ST';
@@ -107,7 +115,6 @@ export default function MobileAssignments() {
                                 sessionStorage.setItem("parentSelectedStudentId", student.id.toString());
                                 setSelectedStudentId(student.id.toString());
                             }}
-                            style={{ minWidth: '180px', padding: '12px' }}
                         >
                             <div className="mpd-student-avatar-circle" style={{ width: '36px', height: '36px', fontSize: '14px' }}>
                                 {initials}
@@ -155,14 +162,27 @@ export default function MobileAssignments() {
                     <div className="mpa-header-avatar">👤</div>
                     <div className="mpa-header-title">{firstName}'s Assignments</div>
                 </div>
-                <div className="mpa-header-right">
-                    <select className="mpa-filter-select" value={filter} onChange={e => setFilter(e.target.value)}>
-                        <option value="all">All Assignments</option>
-                        <option value="pending">Pending</option>
-                        <option value="submitted">Submitted</option>
-                        <option value="graded">Graded</option>
-                    </select>
-                    <span className="mpa-total-badge">{assignments.length} total</span>
+                <div className="mpa-header-right" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <div style={{ position: 'relative', display: 'flex', alignItems: 'center', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '8px 12px', gap: '8px', boxShadow: '0 1px 2px rgba(0,0,0,0.02)' }}>
+                        <span style={{ fontSize: '13px', color: '#64748b', fontWeight: '600' }}>⚗️ Filter:</span>
+                        <span style={{ fontSize: '13px', fontWeight: '700', color: '#3b82f6' }}>
+                            {filter === 'all' ? 'All' : filter.charAt(0).toUpperCase() + filter.slice(1)}
+                        </span>
+                        <span style={{ fontSize: '10px', color: '#94a3b8', marginLeft: '2px' }}>⌄</span>
+                        <select 
+                            value={filter} 
+                            onChange={e => setFilter(e.target.value)}
+                            style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', opacity: 0, appearance: 'none', border: 'none', padding: 0, margin: 0 }}
+                        >
+                            <option value="all">All Assignments</option>
+                            <option value="pending">Pending</option>
+                            <option value="submitted">Submitted</option>
+                            <option value="graded">Graded</option>
+                        </select>
+                    </div>
+                    <span style={{ background: '#fff', border: '1px solid #e2e8f0', color: '#0f172a', padding: '8px 10px', borderRadius: '10px', fontSize: '12px', fontWeight: '700', boxShadow: '0 1px 2px rgba(0,0,0,0.02)' }}>
+                        {assignments.length} Total
+                    </span>
                 </div>
             </div>
 
@@ -244,9 +264,6 @@ export default function MobileAssignments() {
                                     </div>
                                 </div>
 
-                                <button className="mpa-btn-view">
-                                    <span>👁</span> View Details
-                                </button>
                             </div>
                         );
                     })

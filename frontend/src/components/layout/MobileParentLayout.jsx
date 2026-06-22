@@ -3,15 +3,17 @@
  * Bottom tab navigation for Parent native app.
  */
 
-import { useRef, useCallback, useContext } from "react";
+import { useRef, useCallback, useContext, useState, useEffect } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { AuthContext } from "../../context/AuthContext";
+import { useParentDashboard } from "../../hooks/useMobileDashboard";
 import InstituteLogo from "../common/InstituteLogo";
+import AnnouncementBell from "../AnnouncementBell";
 import "./MobileParentLayout.css";
 
 const TABS = [
     { id: "dashboard",     label: "Home",          icon: "🏠", path: "/parent/dashboard"     },
-    { id: "timetable",     label: "Schedule",      icon: "📆", path: "/parent/timetable"     },
+    { id: "timetable",     label: "Timetable",     icon: "📆", path: "/parent/timetable"     },
     { id: "attendance",    label: "Attendance",    icon: "📋", path: "/parent/attendance"    },
     { id: "marks",         label: "Marks",         icon: "📈", path: "/parent/marks"         },
     { id: "performance",   label: "Performance",   icon: "📊", path: "/parent/performance"   },
@@ -32,6 +34,21 @@ const MobileParentLayout = ({ children }) => {
     const activeTab = TABS.find(t =>
         location.pathname === t.path || location.pathname.startsWith(t.path + "/")
     )?.id ?? "dashboard";
+
+    const [headerBgColor, setHeaderBgColor] = useState('normal');
+    const [dismissedReminders, setDismissedReminders] = useState([]);
+    const [selectedGlobalChildId, setSelectedGlobalChildId] = useState(sessionStorage.getItem("parentSelectedStudentId"));
+    // NOTE: Fee Reminder popup is managed by MobileDashboard.jsx (once-per-session via sessionStorage)
+    const { data: dashboardRes } = useParentDashboard();
+    
+    // ── Header background is now controlled purely by MobileDashboard via Context ────
+    
+    const getHeaderBackground = () => {
+        if (headerBgColor === 'red') return 'linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%)';
+        if (headerBgColor === 'orange') return 'linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%)';
+        return '#ffffff';
+    };
+
 
     const handleTabPress = useCallback((tab) => { navigate(tab.path); }, [navigate]);
 
@@ -56,7 +73,7 @@ const MobileParentLayout = ({ children }) => {
     return (
         <div className="mpl-layout">
             {/* Global Header */}
-            <header className="mpl-header">
+            <header className="mpl-header" style={{ background: getHeaderBackground(), transition: 'background 0.3s ease' }}>
                 <div className="mpl-inst-brand">
                     <InstituteLogo size="sm" />
                     <div className="mpl-inst-text">
@@ -66,9 +83,9 @@ const MobileParentLayout = ({ children }) => {
                 </div>
                 <div className="mpl-header-actions">
                     <div className="mpl-bell-action">
-                        <svg viewBox="0 0 24 24" fill="#e2e8f0" stroke="#cbd5e1" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+                        {user?.features?.announcements !== false && <AnnouncementBell size="medium" />}
                     </div>
-                    <div className="mpl-avatar-action">
+                    <div className="mpl-avatar-action" onClick={() => navigate('/parent/profile')} style={{ cursor: 'pointer' }}>
                         <div className="mpl-avatar-circle">
                             {user?.name ? user.name.charAt(0).toUpperCase() : "A"}
                         </div>
@@ -81,7 +98,7 @@ const MobileParentLayout = ({ children }) => {
             </header>
 
             <main className="mpl-content" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
-                {children || <Outlet />}
+                {children || <Outlet context={{ dismissedReminders, setDismissedReminders, setSelectedGlobalChildId, setHeaderBgColor }} />}
             </main>
 
             <nav className="mpl-bottom-nav" role="navigation" aria-label="Parent navigation">
@@ -103,6 +120,8 @@ const MobileParentLayout = ({ children }) => {
                     );
                 })}
             </nav>
+
+            {/* Fee Reminder Modal is rendered inside MobileDashboard.jsx (once-per-session) */}
         </div>
     );
 };

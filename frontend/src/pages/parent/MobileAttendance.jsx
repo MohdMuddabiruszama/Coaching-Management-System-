@@ -2,6 +2,7 @@ import React, { useState, useEffect, useContext, useMemo } from "react";
 import { AuthContext } from "../../context/AuthContext";
 import * as parentService from "../../services/parent.service";
 import LoadingSpinner from "../../components/common/LoadingSpinner";
+import { advanceParentAttendanceBadge } from "../../hooks/useParentBadges";
 import "../student/MobileAttendance.css"; // Reuse exact same styling
 import "./MobileDashboard.css"; // For student selector styling
 
@@ -70,7 +71,13 @@ export default function MobileAttendance() {
             setSubjects(stuSubjects);
 
             const attData = await parentService.getLinkedStudentAttendance(student.id);
-            setFullRecords(attData?.data?.records || []);
+            const records = attData?.data?.records || [];
+            setFullRecords(records);
+            
+            // Advance the attendance badge snapshot so the dashboard badge clears
+            if (user?.id && student.id && records.length !== undefined) {
+                advanceParentAttendanceBadge(user.id, student.id, records.length);
+            }
         } catch (error) {
             console.error("Error fetching attendance details", error);
         } finally {
@@ -166,7 +173,7 @@ export default function MobileAttendance() {
             </div>
 
             {/* Student Selector */}
-            <div className="mpd-student-scroll" style={{ padding: '0 20px 16px', background: 'transparent' }}>
+            <div className="mpd-student-scroll" style={{ marginBottom: '16px' }}>
                 {students.map((student, idx) => {
                     const isSelected = selectedStudent?.id === student.id;
                     const initials = student.User?.name?.substring(0,2).toUpperCase() || 'ST';
@@ -175,7 +182,6 @@ export default function MobileAttendance() {
                             key={student.id} 
                             className={`mpd-student-card ${isSelected ? 'active' : ''} ${idx % 2 !== 0 && !isSelected ? 'white-bg' : ''}`}
                             onClick={() => selectStudent(student)}
-                            style={{ minWidth: '180px', padding: '12px' }}
                         >
                             <div className="mpd-student-avatar-circle" style={{ width: '36px', height: '36px', fontSize: '14px' }}>
                                 {initials}
@@ -284,21 +290,39 @@ export default function MobileAttendance() {
                             <h3>📅 Attendance Records</h3>
                         </div>
                         
-                        <div className="ma-date-filters">
-                            <input 
-                                type="date" 
-                                value={startDate} 
-                                onChange={e => { setStartDate(e.target.value); setCurrentPage(1); }} 
-                            />
-                            <span>-</span>
-                            <input 
-                                type="date" 
-                                value={endDate} 
-                                onChange={e => { setEndDate(e.target.value); setCurrentPage(1); }} 
-                            />
+                        <div className="ma-date-filters" style={{ display: 'flex', gap: '12px', alignItems: 'flex-end', marginBottom: '20px', width: '100%' }}>
+                            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                <label style={{ fontSize: '11px', fontWeight: '700', color: '#64748b', marginLeft: '4px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Start Date</label>
+                                <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                                    <input 
+                                        type="date" 
+                                        value={startDate} 
+                                        onChange={e => { setStartDate(e.target.value); setCurrentPage(1); }} 
+                                        style={{ width: '100%', padding: '12px 12px 12px 38px', border: '1px solid #e2e8f0', borderRadius: '12px', fontSize: '13px', color: startDate ? '#0f172a' : '#94a3b8', background: '#f8fafc', boxSizing: 'border-box', boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.02)' }}
+                                    />
+                                    <span style={{ position: 'absolute', left: '12px', fontSize: '15px', pointerEvents: 'none', filter: 'grayscale(100%)', opacity: 0.5 }}>📅</span>
+                                </div>
+                            </div>
+                            
+                            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                <label style={{ fontSize: '11px', fontWeight: '700', color: '#64748b', marginLeft: '4px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>End Date</label>
+                                <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                                    <input 
+                                        type="date" 
+                                        value={endDate} 
+                                        onChange={e => { setEndDate(e.target.value); setCurrentPage(1); }} 
+                                        style={{ width: '100%', padding: '12px 12px 12px 38px', border: '1px solid #e2e8f0', borderRadius: '12px', fontSize: '13px', color: endDate ? '#0f172a' : '#94a3b8', background: '#f8fafc', boxSizing: 'border-box', boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.02)' }}
+                                    />
+                                    <span style={{ position: 'absolute', left: '12px', fontSize: '15px', pointerEvents: 'none', filter: 'grayscale(100%)', opacity: 0.5 }}>📅</span>
+                                </div>
+                            </div>
+
                             {(startDate || endDate) && (
-                                <button className="ma-clear-btn" onClick={clearDateFilter}>
-                                    Clear
+                                <button 
+                                    onClick={clearDateFilter}
+                                    style={{ height: '42px', width: '42px', padding: '0', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#fee2e2', color: '#ef4444', borderRadius: '12px', border: 'none', cursor: 'pointer', flexShrink: 0 }}
+                                >
+                                    <span style={{ fontSize: '16px', fontWeight: 'bold' }}>✕</span>
                                 </button>
                             )}
                         </div>

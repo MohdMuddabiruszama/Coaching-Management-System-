@@ -40,81 +40,63 @@ body {
 
 /* User Banner */
 .mpd-user-banner {
-  background: #634bea; /* Solid purple from image */
-  border-radius: 20px;
-  padding: 16px 20px;
+  padding: 10px 0 20px 0;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  box-shadow: 0 4px 15px rgba(99, 75, 234, 0.2);
-  position: relative;
+  background: transparent;
+  box-shadow: none;
 }
 .mpd-user-content {
   display: flex;
   align-items: center;
   gap: 16px;
 }
-.mpd-user-avatar {
-  width: 50px;
-  height: 50px;
-  background: #fde047;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
-  border: 2px solid rgba(255,255,255,0.8);
-}
-.mpd-user-avatar img {
-  width: 100%;
-  height: 100%;
-}
 .mpd-welcome {
-  color: rgba(255,255,255,0.9);
-  font-size: 12px;
+  color: var(--mpd-text-light);
+  font-size: 14px;
   margin: 0 0 2px;
 }
 .mpd-user-name {
-  color: white;
-  font-size: 16px;
+  color: var(--mpd-text-dark);
+  font-size: 20px;
   font-weight: 800;
   margin: 0 0 4px;
 }
 .mpd-student-context {
-  color: rgba(255,255,255,0.8);
-  font-size: 12px;
+  color: var(--mpd-text-light);
+  font-size: 13px;
   margin: 0;
 }
 .mpd-logout-btn {
-  background: #ef4444; /* Solid red */
-  border: 1px solid rgba(255,255,255,0.2);
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
   border-radius: 8px;
-  padding: 6px 10px;
-  color: white;
-  font-size: 11px;
+  padding: 8px 12px;
+  color: #ef4444;
+  font-size: 12px;
   font-weight: 700;
   display: flex;
   align-items: center;
   gap: 4px;
-  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.4);
   cursor: pointer;
+  box-shadow: none;
 }
 
 /* Student Scroll */
 .mpd-student-scroll {
   display: flex;
+  flex-direction: column;
   gap: 12px;
-  overflow-x: auto;
-  padding-bottom: 8px;
-  scrollbar-width: none;
+  padding: 0 0 16px;
 }
-.mpd-student-scroll::-webkit-scrollbar { display: none; }
 
 .mpd-student-card {
-  min-width: 200px;
+  width: 100%;
+  box-sizing: border-box;
   flex-shrink: 0;
   border-radius: var(--mpd-radius);
-  padding: 16px;
+  padding: 12px 16px;
   display: flex;
   align-items: center;
   gap: 12px;
@@ -182,37 +164,109 @@ body {
   box-shadow: 0 4px 20px rgba(0,0,0,0.03);
   margin-bottom: 8px;
 }
-.mpd-quick-actions {
+.msd-quick-actions {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
   gap: 20px 8px;
 }
-.mpd-action-item {
+.msd-action-btn {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 8px;
+  background: none;
+  border: none;
+  padding: 0;
   cursor: pointer;
+  position: relative;
+  text-decoration: none;
   -webkit-tap-highlight-color: transparent;
 }
-.mpd-action-icon {
+.msd-action-icon {
   width: 44px;
   height: 44px;
+  border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
+  background: transparent;
 }
-.mpd-action-item span {
+.msd-action-label {
   font-size: 10px;
   font-weight: 600;
   color: #475569;
+  text-align: center;
 }
-.mpd-action-item.active-tab span {
+.msd-action-btn.active-tab .msd-action-label {
   color: #4f46e5;
   font-weight: 800;
   border-bottom: 2px solid #4f46e5;
   padding-bottom: 2px;
 }
+
+/* ============================================================
+   QUICK ACTION BUTTON — Premium Badge System
+   ============================================================ */
+.msd-action-btn--has-badge .msd-action-icon {
+    animation: msd-qa-glow-pulse 2.5s ease-in-out infinite;
+}
+
+@keyframes msd-qa-glow-pulse {
+    0%, 100% { transform: scale(1);    }
+    50%       { transform: scale(1.03); }
+}
+
+.msd-qa-badge {
+    position: absolute;
+    border: 2px solid #fff;
+    z-index: 2;
+}
+
+.msd-qa-badge--count {
+    top: -7px;
+    right: -7px;
+    min-width: 20px;
+    height: 20px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 4px;
+    font-size: 10px;
+    font-weight: 800;
+    color: #fff;
+    line-height: 1;
+    animation: msd-qa-badge-pop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+.msd-qa-badge--dot {
+    top: -5px;
+    right: -5px;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    animation: msd-qa-badge-pop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both,
+               msd-qa-dot-ripple 2.2s ease-in-out 0.5s infinite;
+}
+
+@keyframes msd-qa-badge-pop {
+    0%   { transform: scale(0) rotate(-20deg); opacity: 0; }
+    55%  { transform: scale(1.25) rotate(6deg);  opacity: 1; }
+    75%  { transform: scale(0.92) rotate(-2deg); opacity: 1; }
+    100% { transform: scale(1)    rotate(0deg);  opacity: 1; }
+}
+
+@keyframes msd-qa-dot-ripple {
+    0%   { box-shadow: 0 0 0 0px var(--ripple-color, rgba(59,130,246,0.5)); }
+    70%  { box-shadow: 0 0 0 9px rgba(0,0,0,0); }
+    100% { box-shadow: 0 0 0 0px rgba(0,0,0,0); }
+}
+
+.msd-action-btn:active .msd-action-icon {
+    transform: scale(0.92);
+    transition: transform 0.1s ease;
+}
+
 
 /* Overview Content */
 .mpd-overview-content {
@@ -323,6 +377,7 @@ body {
   font-size: 12px;
   color: var(--mpd-primary);
   font-weight: 700;
+  cursor: pointer;
 }
 
 /* Subject Performance Rows */

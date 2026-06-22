@@ -91,7 +91,7 @@ export default function MobilePerformance() {
             </div>
 
             {/* Student Selector */}
-            <div className="mpd-student-scroll" style={{ padding: '0 20px 16px', background: 'transparent' }}>
+            <div className="mpd-student-scroll" style={{ padding: '0 16px', marginBottom: '16px' }}>
                 {students.map((student, idx) => {
                     const isSelected = selectedStudent?.id === student.id;
                     const initials = student.User?.name?.substring(0,2).toUpperCase() || 'ST';
@@ -100,7 +100,6 @@ export default function MobilePerformance() {
                             key={student.id} 
                             className={`mpd-student-card ${isSelected ? 'active' : ''} ${idx % 2 !== 0 && !isSelected ? 'white-bg' : ''}`}
                             onClick={() => selectStudent(student)}
-                            style={{ minWidth: '180px', padding: '12px' }}
                         >
                             <div className="mpd-student-avatar-circle" style={{ width: '36px', height: '36px', fontSize: '14px' }}>
                                 {initials}

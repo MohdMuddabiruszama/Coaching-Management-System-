@@ -1,5 +1,5 @@
 import { useContext, useState, useEffect, useMemo } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { AuthContext } from "../../context/AuthContext";
 import announcementService from "../../services/announcement.service";
 import "./StudentAnnouncementsV2.css";
@@ -35,6 +35,8 @@ const getAuthorName = (ann) => {
 function ViewAnnouncements() {
     const { user } = useContext(AuthContext);
     const navigate = useNavigate();
+    const location = useLocation();
+    const isParent = location.pathname.startsWith('/parent');
     const [announcements, setAnnouncements] = useState([]);
     const [loading, setLoading] = useState(true);
     
@@ -91,6 +93,12 @@ function ViewAnnouncements() {
             result = result.filter(a => getCategoryInfo(a).class === 'event');
         } else if (activeTab === 'Academics') {
             result = result.filter(a => getCategoryInfo(a).class === 'academic');
+        } else if (activeTab === 'urgent') {
+            result = result.filter(a => a.priority === 'urgent');
+        } else if (activeTab === 'high') {
+            result = result.filter(a => a.priority === 'high');
+        } else if (activeTab === 'normal') {
+            result = result.filter(a => a.priority === 'normal' || !a.priority);
         }
 
         if (searchQuery.trim()) {
@@ -198,16 +206,29 @@ function ViewAnnouncements() {
                         ))}
                     </div>
                     <div className="ann-v2-search-sort">
-                        <div className="ann-v2-search-input-wrapper">
-                            <svg className="ann-v2-search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-                            <input 
-                                type="text" 
-                                className="ann-v2-search-input" 
-                                placeholder="Search announcements..." 
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                            />
-                        </div>
+                        {isParent ? (
+                            <div className="mobile-only" style={{ position: 'relative', display: 'flex', alignItems: 'center', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '12px 16px', boxShadow: '0 1px 2px rgba(0,0,0,0.02)', width: '100%', boxSizing: 'border-box' }}>
+                                <span style={{ fontSize: '15px', marginRight: '8px' }}>🔍</span>
+                                <input 
+                                    type="text" 
+                                    placeholder="Search announcements..." 
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    style={{ flex: 1, border: 'none', background: 'transparent', outline: 'none', fontSize: '14px', color: '#1e293b', width: '100%' }}
+                                />
+                            </div>
+                        ) : (
+                            <div className="ann-v2-search-input-wrapper">
+                                <svg className="ann-v2-search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                                <input 
+                                    type="text" 
+                                    className="ann-v2-search-input" 
+                                    placeholder="Search announcements..." 
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                />
+                            </div>
+                        )}
                         <select 
                             className="ann-v2-select desktop-only" 
                             value={sortOrder}
@@ -218,18 +239,39 @@ function ViewAnnouncements() {
                         </select>
                         
                         {/* Mobile Priority Dropdown replacing pills and sort */}
-                        <select 
-                            className="ann-v2-select mobile-only" 
-                            value={activeTab}
-                            onChange={(e) => setActiveTab(e.target.value)}
-                        >
-                            <option value="All Announcements">All Priorities</option>
-                            <option value="Important">High Priority</option>
-                            <option value="General">Normal Priority</option>
-                            <option value="Events">Events</option>
-                            <option value="Academics">Academics</option>
-                            <option value="Unread">Unread</option>
-                        </select>
+                        {isParent ? (
+                            <div className="mobile-only" style={{ position: 'relative', display: 'flex', alignItems: 'center', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '12px 16px', gap: '8px', boxShadow: '0 1px 2px rgba(0,0,0,0.02)', width: '100%', marginTop: '12px' }}>
+                                <span style={{ fontSize: '15px' }}>⚗️</span>
+                                <span style={{ fontSize: '14px', color: '#64748b', fontWeight: '600' }}>Filter:</span>
+                                <span style={{ fontSize: '14px', fontWeight: '700', color: '#3b82f6', flex: 1 }}>
+                                    {activeTab === 'All Announcements' ? 'All Priorities' : activeTab.charAt(0).toUpperCase() + activeTab.slice(1)}
+                                </span>
+                                <span style={{ fontSize: '12px', color: '#94a3b8' }}>⌄</span>
+                                <select 
+                                    value={activeTab}
+                                    onChange={(e) => setActiveTab(e.target.value)}
+                                    style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', opacity: 0, appearance: 'none', border: 'none' }}
+                                >
+                                    <option value="All Announcements">All Priorities</option>
+                                    <option value="urgent">Urgent</option>
+                                    <option value="high">High</option>
+                                    <option value="normal">Normal</option>
+                                </select>
+                            </div>
+                        ) : (
+                            <select 
+                                className="ann-v2-select mobile-only" 
+                                value={activeTab}
+                                onChange={(e) => setActiveTab(e.target.value)}
+                            >
+                                <option value="All Announcements">All Priorities</option>
+                                <option value="Important">High Priority</option>
+                                <option value="General">Normal Priority</option>
+                                <option value="Events">Events</option>
+                                <option value="Academics">Academics</option>
+                                <option value="Unread">Unread</option>
+                            </select>
+                        )}
                     </div>
                 </div>
 

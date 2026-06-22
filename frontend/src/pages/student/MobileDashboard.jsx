@@ -5,6 +5,7 @@
  */
 
 import { useStudentDashboard } from "../../hooks/useMobileDashboard";
+import { useStudentBadges } from "../../hooks/useStudentBadges";
 import { useContext, useState, useEffect } from "react";
 
 let overduePopupShown = false;
@@ -25,13 +26,83 @@ function formatTime(timeStr) {
     return `${h12}:${mm} ${ampm}`;
 }
 
+/**
+ * QuickActionBtn — Premium action card with animated section badges.
+ *
+ * Props:
+ *   icon        — emoji string or JSX element
+ *   label       — button label text
+ *   badge       — { count, type } | null   (from useStudentBadges)
+ *   badgeVariant — 'count-purple' | 'count-green' | 'dot-blue' | 'dot-amber'
+ *   onClick     — handler (should call clearBadge then navigate)
+ */
+function QuickActionBtn({ icon, label, badge, badgeVariant = 'count-purple', onClick }) {
+    const hasCount  = badge && (badge.type === 'number') && badge.count > 0;
+    const hasDot    = badge && (badge.type === 'dot');
+    const hasAny    = hasCount || hasDot;
+
+    // Color maps for each variant
+    const variantStyles = {
+        'count-purple': { bg: '#6366f1', shadow: 'rgba(99,102,241,0.45)', glow: 'rgba(99,102,241,0.12)', border: 'rgba(99,102,241,0.3)' },
+        'count-green':  { bg: '#10b981', shadow: 'rgba(16,185,129,0.45)', glow: 'rgba(16,185,129,0.12)', border: 'rgba(16,185,129,0.3)' },
+        'dot-blue':     { bg: '#3b82f6', shadow: 'rgba(59,130,246,0.5)',  glow: 'rgba(59,130,246,0.10)', border: 'rgba(59,130,246,0.25)' },
+        'dot-amber':    { bg: '#f59e0b', shadow: 'rgba(245,158,11,0.5)',  glow: 'rgba(245,158,11,0.10)', border: 'rgba(245,158,11,0.3)'  },
+    };
+    const vs = variantStyles[badgeVariant] || variantStyles['count-purple'];
+
+    return (
+        <button
+            className={`msd-action-btn${hasAny ? ' msd-action-btn--has-badge' : ''}`}
+            onClick={onClick}
+            style={hasAny ? { '--qa-glow': vs.glow, '--qa-border': vs.border } : {}}
+        >
+            {/* Icon card */}
+            <div className="msd-action-icon" style={hasAny ? {
+                borderColor: vs.border,
+                boxShadow: `0 0 0 2px ${vs.glow}, 0 4px 14px rgba(0,0,0,0.06)`,
+            } : {}}>
+                {typeof icon === 'string' ? <span>{icon}</span> : icon}
+
+                {/* Numeric badge */}
+                {hasCount && (
+                    <span className="msd-qa-badge msd-qa-badge--count" style={{
+                        background: vs.bg,
+                        boxShadow: `0 2px 8px ${vs.shadow}`,
+                    }}>
+                        {badge.count > 99 ? '99+' : badge.count}
+                    </span>
+                )}
+
+                {/* Dot badge with ripple */}
+                {hasDot && (
+                    <span className="msd-qa-badge msd-qa-badge--dot" style={{
+                        background: vs.bg,
+                        boxShadow: `0 0 0 0 ${vs.shadow}`,
+                        '--ripple-color': vs.shadow,
+                    }} />
+                )}
+            </div>
+
+            {/* Label */}
+            <span className="msd-action-label">{label}</span>
+        </button>
+    );
+}
+
+
 export default function MobileDashboard() {
     const { user } = useContext(AuthContext);
     const { logo, name } = useContext(BrandingContext);
     const { toggleSidebar } = useContext(AnnouncementSidebarContext);
     const navigate = useNavigate();
-    const { dismissedReminders, setDismissedReminders } = useOutletContext() || { dismissedReminders: [], setDismissedReminders: () => {} };
+    const { dismissedReminders, setDismissedReminders, advanceAttendanceCount: layoutAdvance } = useOutletContext() || { dismissedReminders: [], setDismissedReminders: () => {}, advanceAttendanceCount: null };
     const { data: response, isLoading, isError } = useStudentDashboard();
+
+    // ── Section badges — zero extra API calls, derived from cached dashboard data ──
+    const { badges, clearBadge, advanceAttendanceCount } = useStudentBadges(response?.data, user?.id);
+
+    // Use either version of advanceAttendanceCount (hook or layout context)
+    const doAdvanceAttendance = layoutAdvance || advanceAttendanceCount;
 
     const [showOverdueModal, setShowOverdueModal] = useState(false);
     const [overdueModalClosing, setOverdueModalClosing] = useState(false);
@@ -483,60 +554,83 @@ export default function MobileDashboard() {
                     <h3>Quick Actions</h3>
                 </div>
                 <div className="msd-quick-actions">
-                    <button className="msd-action-btn" onClick={() => navigate('/student/attendance')}>
-                        <div className="msd-action-icon">
-                            <span>🗓️</span>
-                        </div>
-                        <span>Attendance</span>
-                    </button>
-                    <button className="msd-action-btn" onClick={() => navigate('/student/exams')}>
-                        <div className="msd-action-icon">
-                            <span style={{ color: '#2563eb', fontWeight: 800, fontSize: '20px' }}>A+</span>
-                        </div>
-                        <span>Marks</span>
-                    </button>
-                    <button className="msd-action-btn" onClick={() => navigate('/student/performance')}>
-                        <div className="msd-action-icon">
-                            <span>📊</span>
-                        </div>
-                        <span>Performance</span>
-                    </button>
-                    <button className="msd-action-btn" onClick={() => navigate('/student/timetable')}>
-                        <div className="msd-action-icon">
-                            <span>📆</span>
-                        </div>
-                        <span>Timetable</span>
-                    </button>
-                    
-                    <button className="msd-action-btn" onClick={() => navigate('/student/assignments')}>
-                        <div className="msd-action-icon">
-                            <span>📋</span>
-                        </div>
-                        <span>Assignments</span>
-                        {data.pendingAssignments > 0 && <span className="msd-badge">{data.pendingAssignments}</span>}
-                    </button>
-                    {needsFeeAttention && (
-                        <button className="msd-action-btn" onClick={() => navigate('/student/fees')}>
-                            <div className="msd-action-icon">
-                                <span>💳</span>
-                            </div>
-                            <span>Pay Fees</span>
-                            <span className="msd-badge">!</span>
-                        </button>
-                    )}
-                    <button className="msd-action-btn" onClick={() => navigate('/student/notes')}>
-                        <div className="msd-action-icon">
-                            <span>📓</span>
-                        </div>
-                        <span>Notes</span>
-                    </button>
-                    <button className="msd-action-btn" onClick={() => navigate('/student/chat')}>
-                        <div className="msd-action-icon">
-                            <span>💬</span>
-                        </div>
-                        <span>Chat</span>
-                        {data.unreadChatCount > 0 && <span className="msd-badge">{data.unreadChatCount}</span>}
-                    </button>
+
+                    {/* Attendance */}
+                    <QuickActionBtn
+                        icon="🗓️"
+                        label="Attendance"
+                        badge={badges.attendance}
+                        badgeVariant="dot-blue"
+                        onClick={() => {
+                            clearBadge('attendance');
+                            // Also advance the snapshot with current month total
+                            // so badge only returns when faculty adds MORE records.
+                            if (doAdvanceAttendance && data?.attendance?.total !== undefined) {
+                                doAdvanceAttendance(data.attendance.total);
+                            }
+                            navigate('/student/attendance');
+                        }}
+                    />
+
+                    {/* Marks */}
+                    <QuickActionBtn
+                        icon={<span style={{ color: '#2563eb', fontWeight: 800, fontSize: '20px' }}>A+</span>}
+                        label="Marks"
+                        badge={badges.exams}
+                        badgeVariant="count-purple"
+                        onClick={() => { clearBadge('exams'); navigate('/student/exams'); }}
+                    />
+
+                    {/* Performance */}
+                    <QuickActionBtn
+                        icon="📊"
+                        label="Performance"
+                        badge={badges.performance}
+                        badgeVariant="dot-blue"
+                        onClick={() => { clearBadge('performance'); navigate('/student/performance'); }}
+                    />
+
+                    {/* Timetable */}
+                    <QuickActionBtn
+                        icon="📆"
+                        label="Timetable"
+                        onClick={() => navigate('/student/timetable')}
+                    />
+
+                    {/* Assignments */}
+                    <QuickActionBtn
+                        icon="📋"
+                        label="Assignments"
+                        badge={badges.assignments}
+                        badgeVariant="count-purple"
+                        onClick={() => { clearBadge('assignments'); navigate('/student/assignments'); }}
+                    />
+
+                    {/* Pay Fees — always visible with amber badge if pending */}
+                    <QuickActionBtn
+                        icon="💳"
+                        label="Pay Fees"
+                        badge={badges.fees || (needsFeeAttention ? { count: '!', type: 'dot' } : null)}
+                        badgeVariant="dot-amber"
+                        onClick={() => { clearBadge('fees'); navigate('/student/fees'); }}
+                    />
+
+                    {/* Notes */}
+                    <QuickActionBtn
+                        icon="📓"
+                        label="Notes"
+                        onClick={() => navigate('/student/notes')}
+                    />
+
+                    {/* Chat */}
+                    <QuickActionBtn
+                        icon="💬"
+                        label="Chat"
+                        badge={badges.chat || (data.unreadChatCount > 0 ? { count: data.unreadChatCount, type: 'number' } : null)}
+                        badgeVariant="count-green"
+                        onClick={() => { clearBadge('chat'); navigate('/student/chat'); }}
+                    />
+
                 </div>
             </div>
 

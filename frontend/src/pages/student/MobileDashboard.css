@@ -410,3 +410,87 @@
     color: var(--msd-text-muted);
     margin: 0;
 }
+
+/* ============================================================
+   QUICK ACTION BUTTON — Premium Badge System
+   ============================================================ */
+
+/* When a badge is present, the whole button glows subtly */
+.msd-action-btn--has-badge .msd-action-icon {
+    animation: msd-qa-glow-pulse 2.5s ease-in-out infinite;
+}
+
+@keyframes msd-qa-glow-pulse {
+    0%, 100% { transform: scale(1);    }
+    50%       { transform: scale(1.03); }
+}
+
+/* Base badge — positioned in top-right corner of the icon card */
+.msd-qa-badge {
+    position: absolute;
+    border: 2px solid #fff;
+    z-index: 2;
+}
+
+/* Numeric count badge */
+.msd-qa-badge--count {
+    top: -7px;
+    right: -7px;
+    min-width: 20px;
+    height: 20px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 4px;
+    font-size: 10px;
+    font-weight: 800;
+    color: #fff;
+    line-height: 1;
+    /* Spring pop-in on mount */
+    animation: msd-qa-badge-pop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+/* Dot badge */
+.msd-qa-badge--dot {
+    top: -5px;
+    right: -5px;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    /* Pop-in then continuous ripple */
+    animation: msd-qa-badge-pop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both,
+               msd-qa-dot-ripple 2.2s ease-in-out 0.5s infinite;
+}
+
+/* Label under icon */
+.msd-action-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--msd-text-main);
+    text-align: center;
+    line-height: 1.2;
+}
+
+/* ── Keyframes ─────────────────────────────────────────────── */
+
+/* Spring pop on badge mount */
+@keyframes msd-qa-badge-pop {
+    0%   { transform: scale(0) rotate(-20deg); opacity: 0; }
+    55%  { transform: scale(1.25) rotate(6deg);  opacity: 1; }
+    75%  { transform: scale(0.92) rotate(-2deg); opacity: 1; }
+    100% { transform: scale(1)    rotate(0deg);  opacity: 1; }
+}
+
+/* Ripple ring for dot badges — uses currentColor shadow trick via CSS var */
+@keyframes msd-qa-dot-ripple {
+    0%   { box-shadow: 0 0 0 0px var(--ripple-color, rgba(59,130,246,0.5)); }
+    70%  { box-shadow: 0 0 0 9px rgba(0,0,0,0); }
+    100% { box-shadow: 0 0 0 0px rgba(0,0,0,0); }
+}
+
+/* Active press feedback */
+.msd-action-btn:active .msd-action-icon {
+    transform: scale(0.92);
+    transition: transform 0.1s ease;
+}

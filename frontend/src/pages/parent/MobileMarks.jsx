@@ -67,10 +67,9 @@ export default function MobileMarks() {
         // For now, we apply client-side filtering on all records since the backend returns all.
         let filtered = [...fullResults];
         
-        // E.g., filter by term/type if needed
+        // Filter by term/type
         if (selectedTerm !== "All Terms") {
-            // Adjust based on how terms map to exam_type
-            // filtered = filtered.filter(r => r.exam_type === selectedTerm.toLowerCase());
+            filtered = filtered.filter(r => r.exam_type?.toLowerCase() === selectedTerm.toLowerCase() || r.exam_title?.toLowerCase().includes(selectedTerm.toLowerCase()));
         }
 
         let passed = 0;
@@ -123,7 +122,7 @@ export default function MobileMarks() {
             </div>
 
             {/* Student Selector */}
-            <div className="mpd-student-scroll" style={{ padding: '0 20px 16px', background: 'transparent' }}>
+            <div className="mpd-student-scroll" style={{ padding: '0 16px', marginBottom: '16px' }}>
                 {students.map((student, idx) => {
                     const isSelected = selectedStudent?.id === student.id;
                     const initials = student.User?.name?.substring(0,2).toUpperCase() || 'ST';
@@ -132,7 +131,6 @@ export default function MobileMarks() {
                             key={student.id} 
                             className={`mpd-student-card ${isSelected ? 'active' : ''} ${idx % 2 !== 0 && !isSelected ? 'white-bg' : ''}`}
                             onClick={() => selectStudent(student)}
-                            style={{ minWidth: '180px', padding: '12px' }}
                         >
                             <div className="mpd-student-avatar-circle" style={{ width: '36px', height: '36px', fontSize: '14px' }}>
                                 {initials}
@@ -159,12 +157,11 @@ export default function MobileMarks() {
                             <div className="mm-filter-content">
                                 <div className="mm-filter-label">Academic Year</div>
                                 <div className="mm-filter-value">
-                                    {selectedYear}
-                                    <span style={{fontSize:'10px', color:'#64748b'}}>⌄</span>
+                                    2025 - 2026
                                 </div>
                             </div>
                         </div>
-                        <div className="mm-filter-box">
+                        <div className="mm-filter-box" style={{ position: 'relative' }}>
                             <div className="mm-filter-icon gray-bg">
                                 <span style={{fontSize: '16px'}}>⚗️</span>
                             </div>
@@ -175,6 +172,17 @@ export default function MobileMarks() {
                                     <span style={{fontSize:'10px', color:'#64748b'}}>⌄</span>
                                 </div>
                             </div>
+                            <select 
+                                value={selectedTerm} 
+                                onChange={(e) => setSelectedTerm(e.target.value)}
+                                style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', opacity: 0, appearance: 'none', border: 'none' }}
+                            >
+                                <option value="All Terms">All Terms</option>
+                                <option value="First Term">First Term</option>
+                                <option value="Second Term">Second Term</option>
+                                <option value="Third Term">Third Term</option>
+                                <option value="Final Term">Final Term</option>
+                            </select>
                         </div>
                     </div>
 

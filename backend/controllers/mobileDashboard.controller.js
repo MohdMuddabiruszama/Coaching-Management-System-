@@ -601,7 +601,7 @@ exports.getParentDashboard = async (req, res) => {
                             status:       { [Op.in]: ["pending", "partial"] },
                         },
                         include: [{ model: FeesStructure, attributes: ["fee_type", "due_date"] }],
-                        attributes: ["id", "final_amount", "paid_amount"],
+                        attributes: ["id", "final_amount", "paid_amount", "reminder_date"],
                     }),
 
                     // Today's timetable
@@ -648,6 +648,13 @@ exports.getParentDashboard = async (req, res) => {
                         hasPendingFees: pendingFees.length > 0,
                         pendingCount:   pendingFees.length,
                         totalDue,
+                        pendingList:    pendingFees.map(f => ({
+                            id: f.id,
+                            feeType: f.FeesStructure?.fee_type || 'Fee',
+                            dueAmount: parseFloat(f.final_amount || 0) - parseFloat(f.paid_amount || 0),
+                            dueDate: f.FeesStructure?.due_date,
+                            reminderDate: f.reminder_date
+                        }))
                     },
                     todaySchedule: todaySchedule.map(t => ({
                         subject:   t.Subject?.name,
@@ -664,8 +671,9 @@ exports.getParentDashboard = async (req, res) => {
             where: {
                 institute_id: instituteId,
                 [Op.or]: [
-                    { target_role: "all" },
-                    { target_role: "parent" },
+                    { target_audience: "all" },
+                    { target_audience: "parent" },
+                    { target_audience: "parents" },
                 ],
             },
             order:  [["created_at", "DESC"]],

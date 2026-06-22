@@ -1,5 +1,5 @@
 import { useState, useEffect, useContext } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useOutletContext } from "react-router-dom";
 import { AuthContext } from "../../context/AuthContext";
 import api from "../../services/api";
 import { FiArrowLeft, FiFilter } from "react-icons/fi";
@@ -8,6 +8,11 @@ import "./MobileAttendance.css";
 function MobileAttendance() {
     const { user } = useContext(AuthContext);
     const navigate = useNavigate();
+
+    // Pull advanceAttendanceCount from Layout outlet context to clear the badge
+    // when the student actually views the attendance page.
+    const { advanceAttendanceCount } = useOutletContext() || {};
+
     const [report, setReport] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
@@ -45,7 +50,19 @@ function MobileAttendance() {
             }
 
             const attRes = await api.get(`/attendance/student/${stu.id}/report`);
-            setReport(attRes.data.data);
+            const reportData = attRes.data.data;
+            setReport(reportData);
+
+            // Advance the attendance snapshot so the dashboard badge is cleared.
+            // We use the TOTAL number of all-time records so any FUTURE additions
+            // can be detected by comparing against this count.
+            // The badge hook stores the month-total from the dashboard; we sync to
+            // the all-time count so the badge stays cleared until new records appear.
+            if (advanceAttendanceCount) {
+                const totalSeen = reportData?.records?.length ?? 0;
+                advanceAttendanceCount(totalSeen);
+            }
+
             setLoading(false);
         } catch (err) {
             console.error("Error fetching attendance:", err);

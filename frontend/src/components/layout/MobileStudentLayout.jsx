@@ -1,13 +1,14 @@
 /**
- * MobileStudentLayout — Phase 1B
+ * MobileStudentLayout — Phase 1B (Enhanced with Section Badges)
  * ─────────────────────────────────────────────────────────────────────────────
  * Native-only layout for the Student app variant.
  * Features:
- *  - Bottom tab navigation (5 tabs) with active indicator
+ *  - Bottom tab navigation with active indicator
  *  - Safe area insets for iOS notch / Android edge-to-edge
  *  - Swipe gesture detection for tab switching
- *  - Unread badges on Announcements tab
- *  - Zero desktop sidebar code (pure mobile-first)
+ *  - Section-level update badges (attendance, marks, chat, fees, assignments, etc.)
+ *    derived from the CACHED dashboard data — ZERO extra API calls.
+ *  - Badges auto-clear when user navigates to that section
  */
 
 import { useState, useContext, useEffect, useRef, useCallback } from "react";
@@ -17,6 +18,7 @@ import { BrandingContext } from "../../context/BrandingContext";
 import { AnnouncementSidebarContext } from "../../context/AnnouncementSidebarContext";
 import { FiLogOut } from "react-icons/fi";
 import { useStudentDashboard } from "../../hooks/useMobileDashboard";
+import { useStudentBadges } from "../../hooks/useStudentBadges";
 
 import api from "../../services/api";
 import "./MobileStudentLayout.css";
@@ -54,6 +56,9 @@ const MobileStudentLayout = () => {
 
     const { data: dashboardRes } = useStudentDashboard();
     const feesData = dashboardRes?.data?.fees;
+
+    // ── Section badges (zero extra API calls) ─────────────────────────────────────────────
+    const { badges, clearBadge, advanceAttendanceCount } = useStudentBadges(dashboardRes?.data, user?.id);
 
     useEffect(() => {
         if (!feesData?.pendingList) {
@@ -146,10 +151,11 @@ const MobileStudentLayout = () => {
         location.pathname === t.path || location.pathname.startsWith(t.path + "/")
     )?.id ?? "dashboard";
 
-    // Navigate on tab press
+    // Navigate on tab press + clear badge for that section
     const handleTabPress = useCallback((tab) => {
+        clearBadge(tab.id);
         navigate(tab.path);
-    }, [navigate]);
+    }, [navigate, clearBadge]);
 
     // ── Swipe gesture — left/right to change tabs ─────────────────────────────
     const handleTouchStart = useCallback((e) => {
@@ -166,14 +172,18 @@ const MobileStudentLayout = () => {
         if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.5) {
             const currentIdx = TABS.findIndex(t => t.id === activeTab);
             if (dx < 0 && currentIdx < TABS.length - 1) {
-                navigate(TABS[currentIdx + 1].path);
+                const nextTab = TABS[currentIdx + 1];
+                clearBadge(nextTab.id);
+                navigate(nextTab.path);
             } else if (dx > 0 && currentIdx > 0) {
-                navigate(TABS[currentIdx - 1].path);
+                const prevTab = TABS[currentIdx - 1];
+                clearBadge(prevTab.id);
+                navigate(prevTab.path);
             }
         }
         touchStartX.current = null;
         touchStartY.current = null;
-    }, [activeTab, navigate]);
+    }, [activeTab, navigate, clearBadge]);
 
     return (
         <div className="msl-layout">
@@ -263,7 +273,7 @@ const MobileStudentLayout = () => {
                 onTouchStart={handleTouchStart}
                 onTouchEnd={handleTouchEnd}
             >
-                <Outlet context={{ dismissedReminders, setDismissedReminders }} />
+                <Outlet context={{ dismissedReminders, setDismissedReminders, advanceAttendanceCount }} />
             </main>
 
             {/* Bottom Tab Bar */}
@@ -274,27 +284,48 @@ const MobileStudentLayout = () => {
                     if (tab.id === "announcements"  && !user?.features?.announcements) return null;
 
                     const isActive = activeTab === tab.id;
-                    const hasUnread = tab.id === "announcements" && unreadCount > 0;
+
+                    // Resolve badge for this tab.
+                    // For announcements tab, prefer the live-polled count.
+                    let tabBadge = badges[tab.id] || null;
+                    if (tab.id === "announcements" && unreadCount > 0) {
+                        tabBadge = { count: unreadCount, type: 'number' };
+                    }
+
+                    const hasNumberBadge = tabBadge?.type === 'number' && tabBadge.count > 0;
+                    const hasDotBadge    = tabBadge?.type === 'dot';
+                    const isChatTab      = tab.id === 'chat';
+                    const isUrgentBadge  = tab.id === 'announcements' && isUrgent;
 
                     return (
                         <button
                             key={tab.id}
                             id={`msl-tab-${tab.id}`}
-                            className={`msl-nav-item${isActive ? " active" : ""}`}
+                            className={`msl-nav-item${isActive ? " active" : ""}${tabBadge ? " has-badge" : ""}`}
                             onClick={() => handleTabPress(tab)}
                             aria-label={tab.label}
                             aria-current={isActive ? "page" : undefined}
                         >
                             <span className="msl-tab-icon">
                                 {tab.icon}
-                                {hasUnread && (
-                                    <span className="msl-unread-dot" style={{
-                                        background: badgeStyle.bg,
-                                        color: badgeStyle.color,
-                                        animation: isUrgent ? "pulse 1.5s infinite" : "none",
-                                    }}>
-                                        {unreadCount > 99 ? "99+" : unreadCount}
+
+                                {/* Numeric badge (chat count, marks count, assignments, announcements) */}
+                                {hasNumberBadge && (
+                                    <span
+                                        className={`msl-unread-dot msl-badge-number${isUrgentBadge ? " msl-badge-urgent" : ""}${isChatTab ? " msl-badge-chat" : ""}`}
+                                        style={
+                                            tab.id === "announcements"
+                                                ? { background: badgeStyle.bg, color: badgeStyle.color }
+                                                : undefined
+                                        }
+                                    >
+                                        {tabBadge.count > 99 ? "99+" : tabBadge.count}
                                     </span>
+                                )}
+
+                                {/* Dot badge (attendance updated today, fees due) */}
+                                {hasDotBadge && (
+                                    <span className={`msl-update-dot${tab.id === 'fees' ? " msl-update-dot-fees" : ""}`} />
                                 )}
                             </span>
                             <span className="msl-tab-label">{tab.label}</span>

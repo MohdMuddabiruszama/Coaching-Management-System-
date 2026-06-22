@@ -1,10 +1,12 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useContext } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import api from '../../services/api';
 import BackButton from '../../components/common/BackButton';
 import { resolveFileUrl } from '../../utils/resolveUrl';
 import { downloadRemoteFile } from '../../utils/capacitorPermissions';
 import { toast } from 'react-hot-toast';
+import { advanceStudentAssignmentsBadge } from '../../hooks/useStudentBadges';
+import { AuthContext } from '../../context/AuthContext';
 import './StudentAssignmentsV2.css';
 import '../admin/Dashboard.css';
 import '../admin/Students.css';
@@ -172,6 +174,7 @@ function GradeCircle({ marks, maxMarks }) {
 
 export default function StudentAssignments() {
     const navigate = useNavigate();
+    const { user } = useContext(AuthContext);
     const [assignments, setAssignments] = useState([]);
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState('all');
@@ -195,7 +198,13 @@ export default function StudentAssignments() {
             setLoading(true);
             api.post('/students/clear-unread-assignments').catch(() => {});
             const res = await api.get('/assignments/student/all');
-            setAssignments(res.data.assignments || []);
+            const asgList = res.data.assignments || [];
+            setAssignments(asgList);
+            
+            if (user?.id) {
+                const pendingCount = asgList.filter(a => !a.my_submission || a.my_submission?.status === 'pending').length;
+                advanceStudentAssignmentsBadge(user.id, pendingCount);
+            }
         } catch (e) {
             flash('Failed to load assignments: ' + (e.response?.data?.message || e.message), 'error');
         } finally { setLoading(false); }

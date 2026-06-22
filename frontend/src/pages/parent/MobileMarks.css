@@ -12,7 +12,7 @@
     align-items: center;
     justify-content: space-between;
     margin-bottom: 24px;
-    padding: 24px 20px 16px;
+    padding: 24px 16px 16px;
 }
 .mm-title-area {
     display: flex;
@@ -43,59 +43,14 @@
     margin: 0;
 }
 
-/* Student Selector (reused from Dashboard) */
-.mpd-student-scroll {
-    display: flex;
-    overflow-x: auto;
-    padding: 16px 20px;
-    gap: 12px;
-    background: transparent;
-    border-bottom: 1px solid #f1f5f9;
-}
-.mpd-student-scroll::-webkit-scrollbar {
-    display: none;
-}
-.mpd-student-card {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 12px 16px;
-    background: #f8fafc;
-    border-radius: 12px;
-    min-width: 180px;
-    border: 1px solid #e2e8f0;
-    transition: all 0.2s ease;
-}
-.mpd-student-card.active {
-    background: #634bea;
-    border-color: #634bea;
-    color: #ffffff;
-}
-.mpd-student-card.white-bg {
-    background: #ffffff;
-}
-.mpd-student-avatar-circle {
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    background: #fbbf24;
-    color: #ffffff;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: 700;
-    font-size: 14px;
-}
-.mpd-student-card.active .mpd-student-details p {
-    color: #e0e7ff;
-}
+
 
 /* Filters Row */
 .mm-filters-row {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 12px;
-    padding: 16px 20px;
+    padding: 16px;
 }
 .mm-filter-box {
     border: 1px solid #f1f5f9;
@@ -141,7 +96,7 @@
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 12px;
-    padding: 0 20px 20px;
+    padding: 0 16px 20px;
 }
 .mm-stat-card {
     border-radius: 16px;
@@ -215,7 +170,7 @@
 
 /* Results List */
 .mm-results-list {
-    padding: 0 20px 20px;
+    padding: 0 16px 20px;
     display: flex;
     flex-direction: column;
     gap: 16px;
@@ -339,7 +294,7 @@
     padding: 16px;
     display: flex;
     gap: 12px;
-    margin: 0 20px 20px;
+    margin: 0 16px 20px;
 }
 .mm-note-icon {
     width: 24px;

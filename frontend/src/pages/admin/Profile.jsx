@@ -228,17 +228,29 @@ function Profile() {
 
     return (
         <div className="profile-container">
-            <div className="profile-header-area">
-                <div className="profile-title-wrapper">
-                    <div className="profile-title-icon">
+            {user?.role === "parent" ? (
+                <div style={{ justifyContent: 'flex-start', padding: '16px', display: 'flex', alignItems: 'center', gap: '12px', background: '#fff', borderRadius: '16px', marginBottom: '20px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -2px rgba(0,0,0,0.05)', border: '1px solid #f1f5f9' }}>
+                    <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '10px', width: '48px', height: '48px', fontSize: '1.6rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                         👤
                     </div>
-                    <div className="profile-title-text">
-                        <h1>My Profile</h1>
-                        <p>Manage your personal information and account settings</p>
+                    <div>
+                        <h1 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 700, color: '#0f172a' }}>My Profile</h1>
+                        <p style={{ margin: '4px 0 0', fontSize: '0.75rem', color: '#64748b' }}>Manage your personal information and account settings</p>
                     </div>
                 </div>
-            </div>
+            ) : (
+                <div className="profile-header-area">
+                    <div className="profile-title-wrapper">
+                        <div className="profile-title-icon">
+                            👤
+                        </div>
+                        <div className="profile-title-text">
+                            <h1>My Profile</h1>
+                            <p>Manage your personal information and account settings</p>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {message.text && (
                 <div className={`alert alert-${message.type}`} style={{ padding: "15px", marginBottom: "20px", borderRadius: "8px", color: "#fff", backgroundColor: message.type === "success" ? "#10b981" : "#ef4444", fontWeight: "bold" }}>
@@ -249,7 +261,7 @@ function Profile() {
             <div className="profile-grid">
                 {/* LEFT CARD */}
                 <div className="profile-card-left">
-                    <div className="profile-avatar-wrapper" onClick={user?.role !== "student" ? handlePhotoUpdate : undefined} style={{ cursor: user?.role !== "student" ? 'pointer' : 'default', position: 'relative' }}>
+                    <div className="profile-avatar-wrapper" onClick={user?.role !== "student" && user?.role !== "parent" ? handlePhotoUpdate : undefined} style={{ cursor: user?.role !== "student" && user?.role !== "parent" ? 'pointer' : 'default', position: 'relative' }}>
                         <div className="profile-avatar">
                             {profile?.photo_url ? (
                                 <img src={profile.photo_url} alt="Profile" style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} />
@@ -257,7 +269,7 @@ function Profile() {
                                 getInitials(formData.name)
                             )}
                         </div>
-                        {user?.role !== "student" && (
+                        {user?.role !== "student" && user?.role !== "parent" && (
                             <div style={{ position: 'absolute', bottom: 0, right: 0, background: '#4f46e5', color: 'white', borderRadius: '50%', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 4px rgba(0,0,0,0.2)' }}>
                                 📷
                             </div>
@@ -326,8 +338,8 @@ function Profile() {
                                             ? (profile?.join_date || profile?.created_at || baseUser?.created_at)
                                                 ? new Date(profile.join_date || profile.created_at || baseUser.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
                                                 : 'N/A'
-                                            : (baseUser?.createdAt || baseUser?.created_at)
-                                                ? new Date(baseUser.createdAt || baseUser.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
+                                            : (baseUser?.createdAt || baseUser?.created_at || user?.createdAt || user?.created_at)
+                                                ? new Date(baseUser?.createdAt || baseUser?.created_at || user?.createdAt || user?.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
                                                 : 'N/A'
                                     }
                                 </p>

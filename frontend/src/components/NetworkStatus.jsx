@@ -60,87 +60,60 @@ const NetworkStatus = () => {
         };
     }, []);
 
-    // Phase 4: Retry handler for mobile offline screen
-    const handleRetry = useCallback(() => {
-        setRetrying(true);
-        // Give the network a moment to reconnect, then reload
-        setTimeout(() => {
-            if (navigator.onLine) {
-                window.location.reload();
-            } else {
-                setRetrying(false);
-            }
-        }, 1500);
-    }, []);
-
     if (serverDown) {
         return (
-            <div className="server-down-overlay">
-                <div className="server-down-card">
-                    <div className="server-down-icon-wrapper">
-                        <div className="server-down-icon">🔌</div>
-                        <div className="pulsing-ring"></div>
+            <div className="network-status-container offline" style={{ zIndex: 10000000 }}>
+                <div className="network-toast offline-toast card" style={{ background: '#1E293B', borderColor: '#334155' }}>
+                    <div className="network-icon">🔌</div>
+                    <div className="network-content" style={{ flex: 1, paddingRight: '12px' }}>
+                        <strong>Platform Unreachable</strong>
+                        <p style={{ fontSize: '0.8rem', opacity: 0.9 }}>Backend servers are unresponsive.</p>
                     </div>
-                    <h2 className="server-down-title">Platform Unreachable</h2>
-                    <p className="server-down-desc">
-                        We are currently unable to connect to the backend database servers. Our systems might be under maintenance or experiencing high traffic. Please try again in a few minutes.
-                    </p>
-                    <button
-                        className="server-retry-btn"
-                        disabled={retrying}
-                        onClick={async () => {
-                            setRetrying(true);
-                            try {
-                                // Ping the backend health endpoint to check if server recovered.
-                                // Using 'no-cors' mode so CORS policy doesn't block the check.
-                                const baseURL = import.meta.env.VITE_API_URL || 'https://institutes-saas.onrender.com/api';
-                                const healthURL = baseURL.replace(/\/api$/, '/api/health');
-                                await fetch(healthURL, { method: 'GET', cache: 'no-store' });
-                                // If fetch didn't throw, server is back — clear error and reload
-                                setServerDown(false);
-                                window.location.reload();
-                            } catch {
-                                // Server still unreachable — just reload and let the app decide
-                                window.location.reload();
-                            } finally {
-                                setRetrying(false);
-                            }
-                        }}
-                    >
-                        {retrying ? 'Checking…' : 'Retry Connection 🔄'}
-                    </button>
-                    <div className="server-status-bar">
-                        <span className="server-dot"></span>
-                        System Network Status: <span style={{color: '#ff4d4f', fontWeight: 'bold', marginLeft: '4px'}}>Offline</span>
-                    </div>
-                </div>
-            </div>
-        );
-    }
-
-    // Phase 4 (Mobile): Full-screen offline overlay for native platforms
-    if (IS_NATIVE && !isOnline) {
-        return (
-            <div className="mobile-offline-overlay">
-                <div className="mobile-offline-card">
-                    <div className="mobile-offline-icon-wrap">
-                        <div className="mobile-offline-icon">📡</div>
-                        <div className="mobile-offline-ring"></div>
-                    </div>
-                    <h2 className="mobile-offline-title">No Internet Connection</h2>
-                    <p className="mobile-offline-desc">
-                        You're currently offline. Please check your Wi-Fi or mobile data and try again.
-                    </p>
-                    <button
-                        className="mobile-offline-retry-btn"
-                        onClick={handleRetry}
-                        disabled={retrying}
-                    >
-                        {retrying ? "Checking…" : "Retry Connection 🔄"}
-                    </button>
-                    <div className="mobile-offline-status">
-                        <span className="mobile-offline-dot"></span>
-                        Network Status: <span style={{ color: "#ff4d4f", fontWeight: "700", marginLeft: "4px" }}>Offline</span>
+                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                        <button
+                            disabled={retrying}
+                            onClick={async () => {
+                                setRetrying(true);
+                                try {
+                                    const baseURL = import.meta.env.VITE_API_URL || 'https://institutes-saas.onrender.com/api';
+                                    const healthURL = baseURL.replace(/\/api$/, '/api/health');
+                                    await fetch(healthURL, { method: 'GET', cache: 'no-store' });
+                                    setServerDown(false);
+                                } catch {
+                                    // Stay in error state
+                                } finally {
+                                    setRetrying(false);
+                                }
+                            }}
+                            style={{
+                                background: '#3B82F6',
+                                border: 'none',
+                                color: 'white',
+                                padding: '6px 14px',
+                                borderRadius: '100px',
+                                fontSize: '0.85rem',
+                                fontWeight: '600',
+                                cursor: 'pointer',
+                                opacity: retrying ? 0.7 : 1
+                            }}
+                        >
+                            {retrying ? '...' : 'Retry'}
+                        </button>
+                        <button
+                            onClick={() => setServerDown(false)}
+                            style={{
+                                background: 'transparent',
+                                border: 'none',
+                                color: '#94A3B8',
+                                fontSize: '1.4rem',
+                                cursor: 'pointer',
+                                padding: '0 4px',
+                                lineHeight: '1'
+                            }}
+                            aria-label="Dismiss"
+                        >
+                            &times;
+                        </button>
                     </div>
                 </div>
             </div>
