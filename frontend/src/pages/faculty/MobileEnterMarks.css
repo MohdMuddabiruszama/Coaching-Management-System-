@@ -1,0 +1,556 @@
+/* MobileEnterMarks.css */
+
+.mem-container {
+    padding: 0 0 80px 0; /* Changed to 0 padding at top to let banner have its own margin */
+    background-color: #f8fafc;
+    min-height: 100vh;
+}
+
+/* Hero Banner */
+.mem-hero-banner {
+    background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+    border-radius: 12px;
+    margin: 16px;
+    padding: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: white;
+    box-shadow: 0 4px 14px rgba(99, 102, 241, 0.3);
+}
+
+.mem-hero-left {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    flex: 1;
+}
+
+.mem-hero-icon-wrapper {
+    width: 44px;
+    height: 44px;
+    background: white;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    color: #6366f1;
+}
+
+.mem-hero-text h2 {
+    margin: 0 0 4px 0;
+    font-size: 16px;
+    font-weight: 700;
+}
+
+.mem-hero-text p {
+    margin: 0;
+    font-size: 11px;
+    opacity: 0.9;
+    line-height: 1.4;
+    max-width: 180px;
+}
+
+.mem-hero-right {
+    flex-shrink: 0;
+}
+
+.mem-hero-graphic {
+    font-size: 44px;
+    line-height: 1;
+    position: relative;
+    right: -10px;
+    filter: drop-shadow(0 4px 6px rgba(0,0,0,0.2));
+}
+
+.mem-hero-graphic span {
+    position: absolute;
+    bottom: -5px;
+    right: -5px;
+    font-size: 24px;
+}
+
+/* Stats Row - Horizontally Scrollable on Mobile */
+.mem-stats-row {
+    display: flex;
+    overflow-x: auto;
+    gap: 12px;
+    padding: 0 16px 12px 16px;
+    margin-bottom: 4px;
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none;  /* IE 10+ */
+}
+
+.mem-stats-row::-webkit-scrollbar {
+    display: none; /* Safari and Chrome */
+}
+
+.mem-stat-card {
+    flex: 0 0 calc(50% - 6px); /* 2 cards visible per scroll */
+    min-width: 140px;
+    background: white;
+    border-radius: 12px;
+    padding: 16px;
+    border: 1px solid #f1f5f9;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.mem-stat-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.mem-stat-icon {
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+}
+
+.mem-stat-icon.purple { background: #f3e8ff; color: #9333ea; }
+.mem-stat-icon.green { background: #dcfce7; color: #16a34a; }
+.mem-stat-icon.blue { background: #e0f2fe; color: #0284c7; }
+.mem-stat-icon.orange { background: #ffedd5; color: #ea580c; }
+
+.mem-stat-title {
+    font-size: 11px;
+    color: #64748b;
+    font-weight: 600;
+}
+
+.mem-stat-value {
+    font-size: 20px;
+    font-weight: 700;
+    color: #1e293b;
+    margin-bottom: 4px;
+}
+
+.mem-stat-subtitle {
+    font-size: 10px;
+    color: #94a3b8;
+}
+
+/* Action Buttons Row */
+.mem-actions-row {
+    display: flex;
+    gap: 8px;
+    margin: 0 16px 20px 16px;
+}
+
+.mem-action-btn {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 10px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    background: white;
+}
+
+.mem-action-btn.pdf { border: 1px solid #fca5a5; color: #dc2626; }
+.mem-action-btn.excel { border: 1px solid #86efac; color: #16a34a; }
+.mem-action-btn.refresh { border: 1px solid #bfdbfe; color: #3b82f6; }
+
+/* Filters Card */
+.mem-filters-card {
+    background: white;
+    border-radius: 12px;
+    border: 1px solid #f1f5f9;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+    padding: 16px;
+    margin: 0 16px 20px 16px;
+}
+
+.mem-filters-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+}
+
+.mem-filter-group label {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    color: #334155;
+    margin-bottom: 6px;
+}
+
+.mem-filter-group label span {
+    color: #ef4444;
+}
+
+.mem-input {
+    width: 100%;
+    padding: 8px 12px;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+    font-size: 12px;
+    color: #334155;
+    background: white;
+    outline: none;
+    -webkit-appearance: none;
+    appearance: none;
+}
+
+.mem-input:disabled {
+    background: #f8fafc;
+    color: #94a3b8;
+}
+
+.mem-select-wrapper {
+    position: relative;
+}
+
+.mem-select-wrapper::after {
+    content: "▼";
+    font-size: 8px;
+    color: #64748b;
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    pointer-events: none;
+}
+
+/* Student List Section */
+.mem-list-card {
+    background: white;
+    border-radius: 12px;
+    border: 1px solid #f1f5f9;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+    overflow: hidden;
+    margin: 0 16px 20px 16px;
+}
+
+.mem-list-header {
+    padding: 16px;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.mem-search-row {
+    padding: 16px 16px 16px 16px;
+}
+
+.mem-search-box {
+    position: relative;
+    width: 100%;
+}
+
+.mem-search-icon {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #94a3b8;
+}
+
+.mem-search-box input {
+    width: 100%;
+    padding: 10px 10px 10px 36px;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+    font-size: 13px;
+    color: #334155;
+    background: white;
+    outline: none;
+    -webkit-appearance: none;
+    appearance: none;
+}
+
+.mem-search-box input:focus {
+    border-color: #6366f1;
+    box-shadow: 0 0 0 2px rgba(99,102,241,0.1);
+}
+
+.mem-list-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: #1e293b;
+    margin: 0 0 12px 0;
+}
+
+.mem-list-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.mem-btn-sm {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 6px 10px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+}
+
+.mem-btn-sm.present { background: #dcfce7; color: #16a34a; }
+.mem-btn-sm.absent { background: #fee2e2; color: #dc2626; }
+.mem-btn-sm.import { background: #f3e8ff; color: #9333ea; }
+
+/* Student Card Layout */
+.mem-students-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 0 16px 16px 16px;
+    background: white;
+}
+
+.mem-student-card {
+    background: white;
+    border-radius: 12px;
+    border: 1px solid #f1f5f9;
+    padding: 16px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+/* Card Header: Avatar, Name, Status */
+.mem-sc-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.mem-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: 700;
+    color: white;
+    flex-shrink: 0;
+}
+
+.mem-student-details {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-width: 0;
+}
+
+.mem-student-name {
+    font-size: 14px;
+    font-weight: 700;
+    color: #1e293b;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-bottom: 2px;
+}
+
+.mem-roll-no {
+    font-size: 11px;
+    font-weight: 600;
+    color: #64748b;
+}
+
+.mem-sc-status-wrap {
+    flex-shrink: 0;
+}
+
+.mem-status-select {
+    padding: 6px 10px;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+    font-size: 12px;
+    font-weight: 700;
+    outline: none;
+    -webkit-appearance: none;
+    background-image: url('data:image/svg+xml;utf8,<svg fill="%2394a3b8" height="16" viewBox="0 0 24 24" width="16" xmlns="http://www.w3.org/2000/svg"><path d="M7 10l5 5 5-5z"/></svg>');
+    background-repeat: no-repeat;
+    background-position: right 8px center;
+    padding-right: 24px;
+}
+
+.mem-status-select.present { color: #16a34a; background-color: #f0fdf4; border-color: #bbf7d0; }
+.mem-status-select.absent { color: #dc2626; background-color: #fef2f2; border-color: #fecaca; }
+
+/* Card Body: Marks Input, Grade, Action */
+.mem-sc-body {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: #f8fafc;
+    padding: 12px;
+    border-radius: 10px;
+    border: 1px solid #f1f5f9;
+}
+
+.mem-sc-marks {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.mem-sc-label {
+    font-size: 10px;
+    font-weight: 700;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.mem-mark-input {
+    width: 70px;
+    padding: 8px;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+    text-align: center;
+    font-size: 14px;
+    font-weight: 700;
+    color: #1e293b;
+    outline: none;
+    background: white;
+}
+
+.mem-mark-input:focus {
+    border-color: #6366f1;
+    box-shadow: 0 0 0 2px rgba(99,102,241,0.1);
+}
+
+.mem-mark-input:disabled {
+    background: #f1f5f9;
+    color: #94a3b8;
+}
+
+.mem-sc-grade {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+}
+
+.mem-sc-grade-val {
+    font-size: 16px;
+    font-weight: 800;
+}
+
+.mem-sc-grade-status {
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 6px;
+    border-radius: 4px;
+}
+
+.mem-sc-action {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.mem-action-button {
+    background: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.mem-action-button.save {
+    color: #6366f1;
+    border-color: #c7d2fe;
+    background: #e0e7ff;
+}
+
+.mem-action-button.saved {
+    color: #10b981;
+    border-color: #a7f3d0;
+    background: #d1fae5;
+}
+
+.mem-action-button.edit {
+    color: #8b5cf6;
+    border-color: #ddd6fe;
+    background: #ede9fe;
+}
+
+.mem-action-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Pagination */
+.mem-pagination {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px;
+    background: white;
+    border-top: 1px solid #f1f5f9;
+}
+
+.mem-pagination-text {
+    font-size: 11px;
+    color: #64748b;
+}
+
+.mem-pagination-controls {
+    display: flex;
+    gap: 4px;
+}
+
+.mem-page-btn {
+    padding: 4px 8px;
+    border-radius: 6px;
+    border: 1px solid #e2e8f0;
+    background: white;
+    font-size: 11px;
+    font-weight: 600;
+    color: #475569;
+}
+
+.mem-page-btn.active {
+    background: #6366f1;
+    color: white;
+    border-color: #6366f1;
+}
+
+/* Locked Banner */
+.mem-locked-banner {
+    position: fixed;
+    bottom: 60px; /* Above nav bar */
+    left: 16px;
+    right: 16px;
+    background: #ecfdf5;
+    border: 1px solid #a7f3d0;
+    border-radius: 8px;
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: #065f46;
+    font-size: 12px;
+    font-weight: 600;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    z-index: 50;
+}

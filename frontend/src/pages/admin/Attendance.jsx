@@ -26,6 +26,7 @@ function Attendance() {
     const [reportData, setReportData] = useState(null);
     const [currentPage, setCurrentPage] = useState(1);
     const [selectedStudentIds, setSelectedStudentIds] = useState([]);
+    const [searchQueryPending, setSearchQueryPending] = useState("");
     const [hasLoadedStudents, setHasLoadedStudents] = useState(false);
     const itemsPerPage = 10;
     // Phase 3: Sunday detection
@@ -63,6 +64,7 @@ function Attendance() {
         setAttendanceData({});
         setCurrentPage(1);
         setSelectedStudentIds([]);
+        setSearchQueryPending("");
         setHasLoadedStudents(false);
     }, [selectedClass, selectedSubject, selectedDate]);
 
@@ -279,7 +281,15 @@ function Attendance() {
         }
     };
 
-    const pendingStudents = students.filter(s => !s.attendance);
+    const basePendingStudentsList = students.filter(s => !s.attendance);
+    const pendingStudents = basePendingStudentsList.filter(student => {
+        const query = searchQueryPending.toLowerCase();
+        return (
+            (student.name && student.name.toLowerCase().includes(query)) ||
+            (student.roll_number && student.roll_number.toLowerCase().includes(query)) ||
+            (student.email && student.email.toLowerCase().includes(query))
+        );
+    });
     const markedStudents = students.filter(s => s.attendance);
 
     // Pagination calculations
@@ -505,8 +515,24 @@ function Attendance() {
                             <h2 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#0f172a' }}>📄 Mark Attendance</h2>
                             <p style={{ margin: '0.25rem 0 0 0', color: '#64748b', fontSize: '0.85rem' }}>Select status for each student</p>
                         </div>
-                        {pendingStudents.length > 0 && (
-                            <div className="st-table-actions">
+                        {basePendingStudentsList.length > 0 && (
+                            <div className="st-table-actions" style={{ display: "flex", gap: "10px", alignItems: "center", flexWrap: "wrap" }}>
+                                <div style={{ position: "relative" }}>
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ position: "absolute", left: "10px", top: "50%", transform: "translateY(-50%)" }}>
+                                        <circle cx="11" cy="11" r="8"></circle>
+                                        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                                    </svg>
+                                    <input 
+                                        type="text" 
+                                        placeholder="Search by name or roll no..." 
+                                        value={searchQueryPending}
+                                        onChange={(e) => {
+                                            setSearchQueryPending(e.target.value);
+                                            setCurrentPage(1);
+                                        }}
+                                        style={{ padding: "0.5rem 1rem 0.5rem 2.2rem", borderRadius: "8px", border: "1px solid #d1d5db", outline: "none", fontSize: "0.85rem", width: "220px", transition: "border-color 0.2s" }}
+                                    />
+                                </div>
                                 <button onClick={markAllPresent} type="button" className="st-btn" style={{background: '#10b981', color: 'white'}}>✓ All Present</button>
                                 <button onClick={markAllAbsent} type="button" className="st-btn" style={{background: '#ef4444', color: 'white'}}>× All Absent</button>
                                 <button onClick={markAllLate} type="button" className="st-btn" style={{background: '#f59e0b', color: 'white'}}>⏱ All Late</button>
@@ -546,10 +572,19 @@ function Attendance() {
                                                     <p style={{ margin: 0, fontSize: "0.9rem" }}>Please click the <strong>↻ Load Students</strong> button above to fetch the list.</p>
                                                 </td>
                                             </tr>
-                                        ) : currentPendingStudents.length === 0 ? (
+                                        ) : basePendingStudentsList.length === 0 ? (
                                             <tr>
-                                                <td colSpan="5" style={{ textAlign: "center", padding: "3rem", color: "#10b981", fontWeight: "bold" }}>
-                                                    Attendance already submitted for all students today. ✅
+                                                <td colSpan="5" style={{ textAlign: "center", padding: "3rem", color: "#10b981", fontWeight: "500", background: "white", borderRadius: "8px", border: "1px solid #e5e7eb" }}>
+                                                    <div style={{ fontSize: "2rem", marginBottom: "0.5rem" }}>✅</div>
+                                                    Attendance already submitted for all students today.
+                                                </td>
+                                            </tr>
+                                        ) : pendingStudents.length === 0 ? (
+                                            <tr>
+                                                <td colSpan="5" style={{ textAlign: "center", padding: "3rem", color: "#6b7280", fontWeight: "500", background: "white", borderRadius: "8px", border: "1px dashed #e5e7eb" }}>
+                                                    <div style={{ fontSize: "2.5rem", marginBottom: "0.5rem" }}>🔍</div>
+                                                    <div style={{ color: "#475569", fontSize: "1.1rem", fontWeight: "600", marginBottom: "4px" }}>No matching students found</div>
+                                                    <div style={{ fontSize: "0.9rem" }}>Try adjusting your search query.</div>
                                                 </td>
                                             </tr>
                                         ) : (

@@ -453,6 +453,7 @@ exports.getStudentLookup = async (req, res) => {
             ],
             order: [[User, "name", "ASC"]],
             limit: maxLimit,
+            subQuery: false,
         });
 
         res.status(200).json({

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useContext } from "react";
 import { Link } from "react-router-dom";
+import { Capacitor } from "@capacitor/core";
 import api from "../../services/api";
 import { AuthContext } from "../../context/AuthContext";
 import ThemeSelector from "../../components/ThemeSelector";
@@ -9,6 +10,7 @@ import autoTable from "jspdf-autotable";
 import * as XLSX from "xlsx";
 import { savePdfNative } from "../../utils/capacitorPermissions";
 import "../admin/Students.css"; // Reuse the modern styling from Students page
+import MobileViewAttendance from "./MobileViewAttendance";
 
 function ViewAttendance() {
     const { user } = useContext(AuthContext);
@@ -42,6 +44,9 @@ function ViewAttendance() {
     const [showExportModal, setShowExportModal] = useState(false);
     const [exportType, setExportType] = useState("");
     const [exportFilter, setExportFilter] = useState("all");
+
+    // Search Feature
+    const [searchQuery, setSearchQuery] = useState("");
 
     // Calculate days configuration based on chosen month
     const [y, m] = selectedMonth.split('-');
@@ -240,8 +245,129 @@ function ViewAttendance() {
         return <span style={{ color: '#9ca3af', backgroundColor: '#f3f4f6', padding: '2px 6px', borderRadius: '4px', fontSize: '10px', fontWeight: 'bold' }}>-</span>;
     };
 
-    const totalPages = Math.ceil(gridData.length / itemsPerPage);
-    const currentStudents = gridData.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+    const filteredGridData = React.useMemo(() => {
+        if (!searchQuery) return gridData;
+        const q = searchQuery.toLowerCase();
+        return gridData.filter(s => 
+            (s.name && s.name.toLowerCase().includes(q)) || 
+            (s.roll_number && String(s.roll_number).toLowerCase().includes(q)) || 
+            (s.student_id && String(s.student_id).includes(q)) ||
+            (s.email && s.email.toLowerCase().includes(q))
+        );
+    }, [gridData, searchQuery]);
+
+    const totalPages = Math.ceil(filteredGridData.length / itemsPerPage);
+    const currentStudents = filteredGridData.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
+    if (Capacitor.isNativePlatform()) {
+        return (
+            <>
+                <MobileViewAttendance
+                    loading={loading}
+                    classes={classes}
+                    subjects={subjects}
+                    selectedClass={selectedClass}
+                    setSelectedClass={setSelectedClass}
+                    selectedSubject={selectedSubject}
+                    setSelectedSubject={setSelectedSubject}
+                    selectedMonth={selectedMonth}
+                    setSelectedMonth={setSelectedMonth}
+                    fetchGridData={fetchGridData}
+                    stats={stats}
+                    gridData={filteredGridData}
+                    currentPage={currentPage}
+                    setCurrentPage={setCurrentPage}
+                    itemsPerPage={itemsPerPage}
+                    handleExport={handleExport}
+                    daysArray={daysArray}
+                    monthName={monthName}
+                    y={y}
+                    m={m}
+                    searchQuery={searchQuery}
+                    setSearchQuery={setSearchQuery}
+                />
+                {/* Export Selection Modal for Mobile */}
+                {showExportModal && (
+                    <div className="modal-overlay" style={{ backdropFilter: 'blur(4px)', backgroundColor: 'rgba(15, 23, 42, 0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'fixed', inset: 0, zIndex: 1000 }}>
+                        <div className="modal-content" style={{ maxWidth: '550px', width: '90%', maxHeight: '90vh', display: 'flex', flexDirection: 'column', borderRadius: '16px', overflow: 'hidden', padding: 0, border: 'none', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)', backgroundColor: '#fff', animation: 'modalSlideIn 0.3s ease-out' }}>
+                            <div className="modal-header" style={{ padding: '1.25rem 1.25rem 0.75rem 1.25rem', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#fff' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                    <div style={{ 
+                                        backgroundColor: exportType === 'PDF' ? '#ede9fe' : '#dcfce7', 
+                                        color: exportType === 'PDF' ? '#6366f1' : '#16a34a', 
+                                        width: '40px', height: '40px', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center' 
+                                    }}>
+                                        {exportType === 'PDF' ? (
+                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                                        ) : (
+                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="8" y1="13" x2="16" y2="17"></line><line x1="8" y1="17" x2="16" y2="13"></line></svg>
+                                        )}
+                                    </div>
+                                    <div>
+                                        <h2 style={{ margin: 0, fontSize: '1.1rem', color: '#0f172a', fontWeight: 700 }}>Export {exportType}</h2>
+                                    </div>
+                                </div>
+                                <button onClick={() => setShowExportModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', display: 'flex', padding: '0.25rem' }}>
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                                </button>
+                            </div>
+                            
+                            <div className="modal-body" style={{ padding: '1.25rem', backgroundColor: '#fff', overflowY: 'auto', flex: 1 }}>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                    {[
+                                        { id: 'all', title: 'All Students', color: '#6366f1', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg> },
+                                        { id: 'present', title: 'Present (≥ 1 day)', color: '#10b981', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><polyline points="17 11 19 13 23 9"></polyline></svg> },
+                                        { id: 'absent', title: 'Absent (≥ 1 day)', color: '#ef4444', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><line x1="18" y1="8" x2="23" y2="13"></line><line x1="23" y1="8" x2="18" y2="13"></line></svg> },
+                                        { id: 'late', title: 'Late (≥ 1 day)', color: '#f59e0b', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg> },
+                                    ].map(opt => {
+                                        const isSelected = exportFilter === opt.id;
+                                        return (
+                                            <div 
+                                                key={opt.id}
+                                                onClick={() => setExportFilter(opt.id)}
+                                                style={{
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    padding: '0.75rem 1rem',
+                                                    border: isSelected ? `2px solid ${opt.color}` : '1px solid #e2e8f0',
+                                                    borderRadius: '10px',
+                                                    cursor: 'pointer',
+                                                    backgroundColor: isSelected ? `${opt.color}10` : '#fff',
+                                                    gap: '0.75rem'
+                                                }}
+                                            >
+                                                <div style={{ color: opt.color, display: 'flex' }}>
+                                                    {opt.icon}
+                                                </div>
+                                                <div style={{ flex: 1, color: isSelected ? opt.color : '#334155', fontSize: '0.9rem', fontWeight: 600 }}>
+                                                    {opt.title}
+                                                </div>
+                                                <div style={{
+                                                    width: '16px',
+                                                    height: '16px',
+                                                    borderRadius: '50%',
+                                                    border: isSelected ? `5px solid ${opt.color}` : '2px solid #cbd5e1',
+                                                    backgroundColor: '#fff',
+                                                }}></div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                            <div className="modal-footer" style={{ padding: '1rem', backgroundColor: '#fff', borderTop: '1px solid #f1f5f9', display: 'flex', gap: '0.75rem' }}>
+                                <button onClick={() => setShowExportModal(false)} style={{ padding: '0.6rem 1rem', borderRadius: '8px', border: '1px solid #cbd5e1', backgroundColor: '#fff', color: '#475569', fontWeight: 600, flex: 1 }}>
+                                    Cancel
+                                </button>
+                                <button onClick={confirmExport} style={{ padding: '0.6rem 1rem', borderRadius: '8px', border: 'none', backgroundColor: exportType === 'PDF' ? '#6366f1' : '#16a34a', color: '#fff', fontWeight: 600, flex: 1 }}>
+                                    Download
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+            </>
+        );
+    }
 
     return (
         <div className="students-container">
@@ -413,10 +539,31 @@ function ViewAttendance() {
 
             {/* ── Grid Area ── */}
             <div className="st-table-container">
-                <div className="st-table-header" style={{ marginBottom: "1rem" }}>
-                    <h2 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#0f172a' }}>Monthly Attendance Grid</h2>
+                <div style={{ backgroundColor: '#fff', borderRadius: '16px', boxShadow: '0 2px 10px rgba(0,0,0,0.02)', border: '1px solid #e2e8f0', overflow: 'hidden', marginBottom: '40px' }}>
+                <div style={{ padding: '1.5rem', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
+                    <h3 style={{ margin: 0, fontSize: '1.1rem', color: '#0f172a' }}>Monthly Attendance Grid</h3>
+                    <div style={{ position: 'relative', width: '100%', maxWidth: '350px' }}>
+                        <div style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }}>🔍</div>
+                        <input 
+                            type="text" 
+                            placeholder="Search by name, roll no, or email..." 
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            style={{ 
+                                width: '100%', 
+                                padding: '0.6rem 1rem 0.6rem 2.5rem', 
+                                borderRadius: '8px', 
+                                border: '1px solid #cbd5e1', 
+                                fontSize: '0.9rem', 
+                                outline: 'none',
+                                transition: 'border-color 0.2s',
+                            }}
+                            onFocus={(e) => e.target.style.borderColor = '#6366f1'}
+                            onBlur={(e) => e.target.style.borderColor = '#cbd5e1'}
+                        />
+                    </div>
                 </div>
-                <div style={{ overflowX: "auto" }}>
+                <div style={{ overflowX: 'auto' }}>
                     <table className="st-table" style={{ minWidth: "1200px" }}>
                         <thead>
                             <tr>
@@ -458,6 +605,14 @@ function ViewAttendance() {
                                         <p style={{ margin: 0, fontSize: "0.9rem" }}>Please select Class, Subject, and Month, then click <strong>Apply Filters</strong>.</p>
                                     </td>
                                 </tr>
+                            ) : currentStudents.length === 0 ? (
+                                <tr>
+                                    <td colSpan={daysInMonth + 1} style={{ textAlign: "center", padding: "4rem", color: '#64748b' }}>
+                                        <div style={{ fontSize: "2rem", marginBottom: "0.5rem" }}>🔍</div>
+                                        <h3 style={{ margin: "0 0 0.5rem 0", color: "#334155", fontSize: "1.1rem" }}>No matching students found</h3>
+                                        <p style={{ margin: 0, fontSize: "0.9rem" }}>We couldn't find any student matching "<strong>{searchQuery}</strong>".<br/>Try adjusting your search query.</p>
+                                    </td>
+                                </tr>
                             ) : (
                                 currentStudents.map(student => (
                                     <tr key={student.student_id}>
@@ -494,10 +649,10 @@ function ViewAttendance() {
                         </tbody>
                     </table>
                 </div>
-                {gridData.length > itemsPerPage && (
+                {filteredGridData.length > itemsPerPage && (
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "1.5rem 1rem", borderBottom: "1px solid #e2e8f0" }}>
                         <span style={{ fontSize: "0.875rem", color: "#64748b" }}>
-                            Showing {(currentPage - 1) * itemsPerPage + 1} to {Math.min(currentPage * itemsPerPage, gridData.length)} of {gridData.length} students
+                            Showing {(currentPage - 1) * itemsPerPage + 1} to {Math.min(currentPage * itemsPerPage, filteredGridData.length)} of {filteredGridData.length} students
                         </span>
                         <div style={{ display: "flex", gap: "0.5rem" }}>
                             <button 
@@ -539,6 +694,7 @@ function ViewAttendance() {
                     </div>
                 </div>
             </div>
+        </div>
 
             {/* Export Selection Modal */}
             {showExportModal && (

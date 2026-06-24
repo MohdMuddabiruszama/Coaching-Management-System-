@@ -19,13 +19,13 @@ const Unauthorized = lazy(() => import("../pages/common/Unauthorized"));
 const FacultyDashboard = lazy(() => import("../pages/faculty/Dashboard"));
 const MarkAttendance = lazy(() => import("../pages/faculty/MarkAttendance"));
 const FacultyViewAttendance = lazy(() => import("../pages/faculty/ViewAttendance"));
-const FacultySmartAttendance = lazy(() => import("../pages/admin/SmartAttendance"));
+const FacultySmartAttendance = lazy(() => import("../pages/faculty/MobileSmartAttendance"));
 const ScanFacultyQR = lazy(() => import("../pages/faculty/ScanFacultyQR"));
 const EnterMarks = lazy(() => import("../pages/faculty/EnterMarks"));
 const ViewStudents = lazy(() => import("../pages/faculty/ViewStudents"));
 const FacultyAnnouncements = lazy(() => import("../pages/faculty/Announcements"));
 const FacultySchedule = lazy(() => import("../pages/faculty/MySchedule"));
-const FacultyNotes = lazy(() => import("../pages/faculty/FacultyNotes"));
+const FacultyNotes = lazy(() => import("../pages/faculty/MobileFacultyNotes"));
 const FacultyAssignments = lazy(() => import("../pages/faculty/Assignments"));
 
 const PageLoader = () => (

@@ -1,8 +1,10 @@
 import { useState, useEffect, useContext } from "react";
 import { Link } from "react-router-dom";
+import { Capacitor } from "@capacitor/core";
 import api from "../../services/api";
 import { AuthContext } from "../../context/AuthContext";
 import { addToQueue } from "../../services/offlineQueue";
+import MobileMarkAttendance from "./MobileMarkAttendance";
 import "../admin/Dashboard.css";
 
 const getLocalDate = () => {
@@ -42,6 +44,10 @@ function MarkAttendance() {
     const [dashboardStats, setDashboardStats] = useState(null);
     const [showReport, setShowReport] = useState(false);
     const [reportData, setReportData] = useState(null);
+    const [currentPagePending, setCurrentPagePending] = useState(1);
+    const [searchQueryPending, setSearchQueryPending] = useState("");
+    const [currentPageMarked, setCurrentPageMarked] = useState(1);
+    const studentsPerPage = 10;
 
     useEffect(() => {
         fetchClasses();
@@ -59,6 +65,8 @@ function MarkAttendance() {
 
     useEffect(() => {
         if (selectedClass && selectedSubject && selectedDate) {
+            setCurrentPagePending(1);
+            setCurrentPageMarked(1);
             fetchClassAttendance();
         } else {
             setStudents([]);
@@ -290,6 +298,31 @@ function MarkAttendance() {
         setAttendanceData(newData);
     };
 
+    const basePendingStudentsList = students.filter(s => !attendanceData[s.student_id]?.isExisting);
+    const pendingStudentsList = basePendingStudentsList.filter(student => {
+        const query = searchQueryPending.toLowerCase();
+        return (
+            (student.name && student.name.toLowerCase().includes(query)) ||
+            (student.roll_number && student.roll_number.toLowerCase().includes(query)) ||
+            (student.email && student.email.toLowerCase().includes(query))
+        );
+    });
+
+    const indexOfLastPending = currentPagePending * studentsPerPage;
+    const indexOfFirstPending = indexOfLastPending - studentsPerPage;
+    const currentPendingStudents = pendingStudentsList.slice(indexOfFirstPending, indexOfLastPending);
+    const totalPagesPending = Math.ceil(pendingStudentsList.length / studentsPerPage);
+
+    const markedStudentsList = students.filter(s => attendanceData[s.student_id]?.isExisting);
+    const indexOfLastMarked = currentPageMarked * studentsPerPage;
+    const indexOfFirstMarked = indexOfLastMarked - studentsPerPage;
+    const currentMarkedStudents = markedStudentsList.slice(indexOfFirstMarked, indexOfLastMarked);
+    const totalPagesMarked = Math.ceil(markedStudentsList.length / studentsPerPage);
+
+    if (Capacitor.isNativePlatform()) {
+        return <MobileMarkAttendance />;
+    }
+
     return (
         <div className="dashboard-container">
             <div className="dashboard-header" style={{ marginBottom: "2rem", borderBottom: "none", paddingBottom: "0" }}>
@@ -480,9 +513,25 @@ function MarkAttendance() {
                     <div className="card" style={{ marginBottom: "2rem", borderRadius: "12px", border: "1px solid #e5e7eb", boxShadow: "0 1px 3px rgba(0,0,0,0.05)", background: "white" }}>
                         <div className="card-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "1.25rem 1.5rem", borderBottom: "1px solid #f3f4f6", background: "white", borderRadius: "12px 12px 0 0" }}>
                             <h3 className="card-title" style={{ display: "flex", alignItems: "center", gap: "10px", margin: 0, fontSize: "1.1rem", color: "#111827" }}>
-                                <span>⏳</span> Pending Students ({students.filter(s => !attendanceData[s.student_id]?.isExisting).length} students)
+                                <span>⏳</span> Pending Students ({pendingStudentsList.length} students)
                             </h3>
-                            <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
+                            <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", alignItems: "center" }}>
+                                <div style={{ position: "relative", marginRight: "10px" }}>
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ position: "absolute", left: "10px", top: "50%", transform: "translateY(-50%)" }}>
+                                        <circle cx="11" cy="11" r="8"></circle>
+                                        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                                    </svg>
+                                    <input 
+                                        type="text" 
+                                        placeholder="Search by name or roll no..." 
+                                        value={searchQueryPending}
+                                        onChange={(e) => {
+                                            setSearchQueryPending(e.target.value);
+                                            setCurrentPagePending(1);
+                                        }}
+                                        style={{ padding: "0.5rem 1rem 0.5rem 2.2rem", borderRadius: "8px", border: "1px solid #d1d5db", outline: "none", fontSize: "0.85rem", width: "220px", transition: "border-color 0.2s" }}
+                                    />
+                                </div>
                                 <button onClick={markAllPresent} className="btn btn-sm" type="button" style={{ background: "#dcfce7", color: "#15803d", border: "1px solid #bbf7d0", fontWeight: "600", display: "flex", alignItems: "center", gap: "6px", padding: "0.5rem 1rem", borderRadius: "6px", cursor: "pointer" }}>
                                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
                                     Mark All Present
@@ -516,15 +565,23 @@ function MarkAttendance() {
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            {students.filter(s => !attendanceData[s.student_id]?.isExisting).length === 0 ? (
+                                            {basePendingStudentsList.length === 0 ? (
                                                 <tr>
                                                     <td colSpan="4" style={{ textAlign: "center", padding: "3rem", color: "#10b981", fontWeight: "500", background: "white", borderRadius: "8px", border: "1px solid #e5e7eb" }}>
                                                         <div style={{ fontSize: "2rem", marginBottom: "0.5rem" }}>✅</div>
                                                         Attendance already submitted for all students today.
                                                     </td>
                                                 </tr>
+                                            ) : pendingStudentsList.length === 0 ? (
+                                                <tr>
+                                                    <td colSpan="4" style={{ textAlign: "center", padding: "3rem", color: "#6b7280", fontWeight: "500", background: "white", borderRadius: "8px", border: "1px dashed #e5e7eb" }}>
+                                                        <div style={{ fontSize: "2.5rem", marginBottom: "0.5rem" }}>🔍</div>
+                                                        <div style={{ color: "#475569", fontSize: "1.1rem", fontWeight: "600", marginBottom: "4px" }}>No matching students found</div>
+                                                        <div style={{ fontSize: "0.9rem" }}>Try adjusting your search query.</div>
+                                                    </td>
+                                                </tr>
                                             ) : (
-                                                students.filter(s => !attendanceData[s.student_id]?.isExisting).map((student) => (
+                                                currentPendingStudents.map((student) => (
                                                     <tr key={student.student_id} style={{ background: "white", boxShadow: "0 1px 2px rgba(0,0,0,0.03)", borderRadius: "8px", border: "1px solid #f3f4f6" }}>
                                                         <td style={{ padding: "16px", borderBottom: "1px solid #f3f4f6", borderTopLeftRadius: "8px", borderBottomLeftRadius: "8px", color: "#4b5563", fontWeight: "600", fontSize: "0.9rem", verticalAlign: "middle" }}>
                                                             {student.roll_number}
@@ -570,7 +627,36 @@ function MarkAttendance() {
                                     </table>
                                 </div>
 
-                                {students.filter(s => !attendanceData[s.student_id]?.isExisting).length > 0 && (
+                                {pendingStudentsList.length > studentsPerPage && (
+                                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "1rem 1.5rem", borderTop: "1px solid #f3f4f6", background: "white" }}>
+                                        <span style={{ fontSize: "0.85rem", color: "#6b7280" }}>
+                                            Showing {indexOfFirstPending + 1} to {Math.min(indexOfLastPending, pendingStudentsList.length)} of {pendingStudentsList.length} students
+                                        </span>
+                                        <div style={{ display: "flex", gap: "5px" }}>
+                                            <button 
+                                                type="button"
+                                                disabled={currentPagePending === 1}
+                                                onClick={() => setCurrentPagePending(prev => prev - 1)}
+                                                style={{ padding: "6px 12px", border: "1px solid #e5e7eb", background: "white", borderRadius: "6px", cursor: currentPagePending === 1 ? "not-allowed" : "pointer", fontSize: "0.85rem", color: "#374151", fontWeight: "500" }}
+                                            >
+                                                Prev
+                                            </button>
+                                            <span style={{ padding: "6px 12px", fontSize: "0.85rem", color: "#374151", fontWeight: "500", display: "flex", alignItems: "center" }}>
+                                                Page {currentPagePending} of {totalPagesPending}
+                                            </span>
+                                            <button 
+                                                type="button"
+                                                disabled={currentPagePending === totalPagesPending}
+                                                onClick={() => setCurrentPagePending(prev => prev + 1)}
+                                                style={{ padding: "6px 12px", border: "1px solid #e5e7eb", background: "white", borderRadius: "6px", cursor: currentPagePending === totalPagesPending ? "not-allowed" : "pointer", fontSize: "0.85rem", color: "#374151", fontWeight: "500" }}
+                                            >
+                                                Next
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {pendingStudentsList.length > 0 && (
                                     <div style={{ padding: "1.5rem", borderTop: "1px solid #f3f4f6", display: "flex", justifyContent: "flex-end", background: "white", borderRadius: "0 0 12px 12px" }}>
                                         <button type="submit" className="btn" style={{ background: "#4f46e5", color: "white", minWidth: "200px", padding: "0.75rem 2rem", borderRadius: "8px", fontWeight: "600", display: "flex", justifyContent: "center", alignItems: "center", gap: "8px", border: "none", cursor: "pointer", boxShadow: "0 2px 4px rgba(79, 70, 229, 0.2)" }}>
                                             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
@@ -583,11 +669,11 @@ function MarkAttendance() {
                     </div>
 
                     {/* Marked Attendance Table */}
-                    {students.filter(s => attendanceData[s.student_id]?.isExisting).length > 0 && (
+                    {markedStudentsList.length > 0 && (
                         <div className="card" style={{ marginBottom: "2rem", borderRadius: "12px", border: "1px solid #e5e7eb", boxShadow: "0 1px 3px rgba(0,0,0,0.05)", background: "white" }}>
                             <div className="card-header" style={{ padding: "1.25rem 1.5rem", borderBottom: "1px solid #f3f4f6", background: "white", borderRadius: "12px 12px 0 0" }}>
                                 <h3 className="card-title" style={{ display: "flex", alignItems: "center", gap: "10px", margin: 0, fontSize: "1.1rem", color: "#111827" }}>
-                                    <span>✅</span> Marked Attendance ({students.filter(s => attendanceData[s.student_id]?.isExisting).length} students)
+                                    <span>✅</span> Marked Attendance ({markedStudentsList.length} students)
                                 </h3>
                             </div>
                             <div className="table-container" style={{ padding: "1rem 1.5rem" }}>
@@ -601,7 +687,7 @@ function MarkAttendance() {
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {students.filter(s => attendanceData[s.student_id]?.isExisting).map((student) => (
+                                        {currentMarkedStudents.map((student) => (
                                             <tr key={student.student_id} style={{ background: "white", boxShadow: "0 1px 2px rgba(0,0,0,0.03)", borderRadius: "8px", border: "1px solid #f3f4f6" }}>
                                                 <td style={{ padding: "16px", borderBottom: "1px solid #f3f4f6", borderTopLeftRadius: "8px", borderBottomLeftRadius: "8px", color: "#4b5563", fontWeight: "600", fontSize: "0.9rem", verticalAlign: "middle" }}>
                                                     {student.roll_number}
@@ -634,6 +720,35 @@ function MarkAttendance() {
                                     </tbody>
                                 </table>
                             </div>
+
+                            {markedStudentsList.length > studentsPerPage && (
+                                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "1rem 1.5rem", borderTop: "1px solid #f3f4f6", background: "white", borderRadius: "0 0 12px 12px" }}>
+                                    <span style={{ fontSize: "0.85rem", color: "#6b7280" }}>
+                                        Showing {indexOfFirstMarked + 1} to {Math.min(indexOfLastMarked, markedStudentsList.length)} of {markedStudentsList.length} students
+                                    </span>
+                                    <div style={{ display: "flex", gap: "5px" }}>
+                                        <button 
+                                            type="button"
+                                            disabled={currentPageMarked === 1}
+                                            onClick={() => setCurrentPageMarked(prev => prev - 1)}
+                                            style={{ padding: "6px 12px", border: "1px solid #e5e7eb", background: "white", borderRadius: "6px", cursor: currentPageMarked === 1 ? "not-allowed" : "pointer", fontSize: "0.85rem", color: "#374151", fontWeight: "500" }}
+                                        >
+                                            Prev
+                                        </button>
+                                        <span style={{ padding: "6px 12px", fontSize: "0.85rem", color: "#374151", fontWeight: "500", display: "flex", alignItems: "center" }}>
+                                            Page {currentPageMarked} of {totalPagesMarked}
+                                        </span>
+                                        <button 
+                                            type="button"
+                                            disabled={currentPageMarked === totalPagesMarked}
+                                            onClick={() => setCurrentPageMarked(prev => prev + 1)}
+                                            style={{ padding: "6px 12px", border: "1px solid #e5e7eb", background: "white", borderRadius: "6px", cursor: currentPageMarked === totalPagesMarked ? "not-allowed" : "pointer", fontSize: "0.85rem", color: "#374151", fontWeight: "500" }}
+                                        >
+                                            Next
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     )}
                 </>

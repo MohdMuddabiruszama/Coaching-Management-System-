@@ -7,18 +7,28 @@ import { useState, useContext, useEffect, useRef, useCallback } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { AuthContext } from "../../context/AuthContext";
 import api from "../../services/api";
+import InstituteLogo from "../common/InstituteLogo";
+import AnnouncementBell from "../AnnouncementBell";
 import "./MobileFacultyLayout.css";
 
 const TABS = [
     { id: "dashboard",    label: "Home",       icon: "🏠", path: "/faculty/dashboard"    },
+    { id: "students",     label: "Students",   icon: "👥", path: "/faculty/students"     },
     { id: "attendance",   label: "Attendance", icon: "📋", path: "/faculty/attendance"   },
+    { id: "view-attendance", label: "View Att.", icon: "📊", path: "/faculty/view-attendance" },
+    { id: "smart-attendance", label: "Scan QR",   icon: "🔳", path: "/faculty/smart-attendance" },
     { id: "marks",        label: "Marks",      icon: "📝", path: "/faculty/marks"        },
+    { id: "class-performance", label: "Perform.", icon: "🎯", path: "/faculty/class-performance" },
     { id: "timetable",    label: "Schedule",   icon: "📆", path: "/faculty/timetable"    },
+    { id: "announcements",label: "Announce",   icon: "📢", path: "/faculty/announcements"},
+    { id: "notes",        label: "Notes",      icon: "📓", path: "/faculty/notes"        },
+    { id: "assignments",  label: "Assignments",icon: "📄", path: "/faculty/assignments"  },
+    { id: "chat",         label: "Chat",       icon: "💬", path: "/faculty/chat"         },
     { id: "profile",      label: "Profile",    icon: "👤", path: "/faculty/profile"      },
 ];
 
 const MobileFacultyLayout = () => {
-    const { user } = useContext(AuthContext);
+    const { user, logout } = useContext(AuthContext);
     const location = useLocation();
     const navigate = useNavigate();
     const [chatUnread, setChatUnread] = useState(0);
@@ -59,6 +69,31 @@ const MobileFacultyLayout = () => {
 
     return (
         <div className="mfl-layout">
+            {/* Global Header */}
+            <header className="mfl-header">
+                <div className="mfl-inst-brand">
+                    <InstituteLogo size="sm" />
+                    <div className="mfl-inst-text">
+                        <h1 className="mfl-inst-name">{user?.institute_name || "IT Hub"}</h1>
+                        <p className="mfl-inst-portal">Faculty Portal</p>
+                    </div>
+                </div>
+                <div className="mfl-header-actions">
+                    <div className="mfl-bell-action">
+                        {user?.features?.announcements !== false && <AnnouncementBell size="medium" />}
+                    </div>
+                    <div className="mfl-avatar-action" onClick={() => navigate('/faculty/profile')} style={{ cursor: 'pointer' }}>
+                        <div className="mfl-avatar-circle">
+                            {user?.name ? user.name.charAt(0).toUpperCase() : "F"}
+                        </div>
+                        <span className="mfl-online-dot"></span>
+                    </div>
+                    <button className="mfl-logout-action" onClick={() => { logout(); navigate('/login'); }}>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+                    </button>
+                </div>
+            </header>
+
             <main className="mfl-content" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
                 <Outlet />
             </main>
@@ -97,3 +132,4 @@ const MobileFacultyLayout = () => {
 };
 
 export default MobileFacultyLayout;
+

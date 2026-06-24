@@ -7,6 +7,7 @@ import autoTable from 'jspdf-autotable';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
 import '../student/Performance.css';
 import './ViewStudents.css';
+import './ClassPerformance.css';
 
 function FacultyClassPerformance() {
     const navigate = useNavigate();
@@ -150,14 +151,27 @@ function FacultyClassPerformance() {
     const highestStudent = data?.students?.length > 0 ? data.students[0].student_name : 'N/A';
 
     return (
-        <div className="fvs-container">
+        <div className="fvs-container cp-container">
             {/* Header */}
-            <div className="fvs-header">
-                <div className="fvs-title-area">
-                    <div className="fvs-title-icon">📊</div>
-                    <div className="fvs-title-text">
+            <div className="fvs-header cp-header">
+                <div className="fvs-title-area cp-hero-left">
+                    <div className="fvs-title-icon cp-hero-icon">
+                        <span className="desktop-only">📊</span>
+                        <svg className="mobile-only" width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+                            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                            <line x1="16" y1="2" x2="16" y2="6"></line>
+                            <line x1="8" y1="2" x2="8" y2="6"></line>
+                            <line x1="3" y1="10" x2="21" y2="10"></line>
+                        </svg>
+                    </div>
+                    <div className="fvs-title-text cp-hero-text">
                         <h1>Class Performance</h1>
                         <p>Monitor and identify at-risk students to take timely action.</p>
+                    </div>
+                </div>
+                <div className="cp-hero-right mobile-only">
+                    <div className="cp-hero-graphic">
+                        🎯<span>📈</span>
                     </div>
                 </div>
             </div>
@@ -182,9 +196,9 @@ function FacultyClassPerformance() {
             {data && (
                 <>
                     {/* Top 4 Stats Cards */}
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1.5rem', marginBottom: '2rem' }}>
+                    <div className="cp-stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1.5rem', marginBottom: '2rem' }}>
                         {/* Average Score */}
-                        <div style={{ background: 'white', borderRadius: '16px', padding: '1.5rem', display: 'flex', alignItems: 'center', gap: '1rem', border: '1px solid #f1f5f9', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.02)' }}>
+                        <div className="cp-stat-card" style={{ background: 'white', borderRadius: '16px', padding: '1.5rem', display: 'flex', alignItems: 'center', gap: '1rem', border: '1px solid #f1f5f9', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.02)' }}>
                             <div style={{ width: '50px', height: '50px', borderRadius: '12px', background: '#f3e8ff', color: '#7e22ce', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><path d="M9 21V9"></path></svg>
                             </div>
@@ -196,7 +210,7 @@ function FacultyClassPerformance() {
                         </div>
 
                         {/* Pass Rate */}
-                        <div style={{ background: 'white', borderRadius: '16px', padding: '1.5rem', display: 'flex', alignItems: 'center', gap: '1rem', border: '1px solid #f1f5f9', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.02)' }}>
+                        <div className="cp-stat-card" style={{ background: 'white', borderRadius: '16px', padding: '1.5rem', display: 'flex', alignItems: 'center', gap: '1rem', border: '1px solid #f1f5f9', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.02)' }}>
                             <div style={{ width: '50px', height: '50px', borderRadius: '12px', background: '#dcfce7', color: '#16a34a', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
                             </div>
@@ -208,7 +222,7 @@ function FacultyClassPerformance() {
                         </div>
 
                         {/* Highest Score */}
-                        <div style={{ background: 'white', borderRadius: '16px', padding: '1.5rem', display: 'flex', alignItems: 'center', gap: '1rem', border: '1px solid #f1f5f9', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.02)' }}>
+                        <div className="cp-stat-card" style={{ background: 'white', borderRadius: '16px', padding: '1.5rem', display: 'flex', alignItems: 'center', gap: '1rem', border: '1px solid #f1f5f9', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.02)' }}>
                             <div style={{ width: '50px', height: '50px', borderRadius: '12px', background: '#fef3c7', color: '#d97706', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                                 <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
                             </div>
@@ -220,7 +234,7 @@ function FacultyClassPerformance() {
                         </div>
 
                         {/* At-Risk Students */}
-                        <div style={{ background: 'white', borderRadius: '16px', padding: '1.5rem', display: 'flex', alignItems: 'center', gap: '1rem', border: '1px solid #f1f5f9', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.02)' }}>
+                        <div className="cp-stat-card" style={{ background: 'white', borderRadius: '16px', padding: '1.5rem', display: 'flex', alignItems: 'center', gap: '1rem', border: '1px solid #f1f5f9', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.02)' }}>
                             <div style={{ width: '50px', height: '50px', borderRadius: '12px', background: '#fee2e2', color: '#dc2626', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
                             </div>
@@ -234,18 +248,18 @@ function FacultyClassPerformance() {
 
                     {/* Needs Immediate Attention Banner */}
                     {data.at_risk?.length > 0 && (
-                        <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '12px', padding: '1.5rem', marginBottom: '2rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
-                                <div style={{ display: 'flex', flexDirection: 'column', borderRight: '1px solid #fca5a5', paddingRight: '1.5rem' }}>
+                        <div className="cp-risk-banner" style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '12px', padding: '1.5rem', marginBottom: '2rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                            <div className="cp-risk-banner-inner" style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', width: '100%' }}>
+                                <div className="cp-risk-header" style={{ display: 'flex', flexDirection: 'column', borderRight: '1px solid #fca5a5', paddingRight: '1.5rem' }}>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#b91c1c', fontWeight: '600', fontSize: '1.1rem' }}>
                                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
                                         Needs Immediate Attention
                                     </div>
                                     <span style={{ color: '#dc2626', fontSize: '0.85rem', marginTop: '0.25rem' }}>{data.stats.at_risk_count} student{data.stats.at_risk_count !== 1 ? 's are' : ' is'} performing below 50%.</span>
                                 </div>
-                                <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+                                <div className="cp-risk-students" style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
                                     {data.at_risk.map(s => (
-                                        <div key={s.student_id} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', background: '#fee2e2', padding: '0.5rem 1rem', borderRadius: '8px' }}>
+                                        <div key={s.student_id} className="cp-risk-student-card" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', background: '#fee2e2', padding: '0.5rem 1rem', borderRadius: '8px' }}>
                                             <div style={{ background: '#dc2626', color: 'white', width: '32px', height: '32px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: 'bold' }}>
                                                 {s.student_name.split(' ').map(n=>n[0]).join('').substring(0,2)}
                                             </div>
@@ -261,10 +275,10 @@ function FacultyClassPerformance() {
                     )}
 
                     {/* Main Grid: Chart & Table */}
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '1.5rem', alignItems: 'start' }}>
+                    <div className="cp-main-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '1.5rem', alignItems: 'start' }}>
                         
                         {/* Left Col: Grade Distribution Donut */}
-                        <div style={{ background: 'white', border: '1px solid #f1f5f9', borderRadius: '16px', padding: '1.5rem', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.02)' }}>
+                        <div className="cp-grade-dist" style={{ background: 'white', border: '1px solid #f1f5f9', borderRadius: '16px', padding: '1.5rem', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.02)' }}>
                             <h3 style={{ margin: '0 0 1.5rem 0', color: '#0f172a', fontSize: '1.1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6366f1" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15.46L13.73 21a2 2 0 0 1-2.46 0L4 15.46"></path><path d="M21 8.54L13.73 3a2 2 0 0 0-2.46 0L4 8.54"></path><path d="M12 22V12"></path><path d="M12 12V2"></path><path d="M20 16L12 12"></path><path d="M4 16L12 12"></path><path d="M20 8L12 12"></path><path d="M4 8L12 12"></path></svg>
                                 Grade Distribution
@@ -306,13 +320,13 @@ function FacultyClassPerformance() {
                         </div>
 
                         {/* Right Col: Class Rankings Table */}
-                        <div style={{ background: 'white', border: '1px solid #f1f5f9', borderRadius: '16px', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.02)', display: 'flex', flexDirection: 'column', height: '100%' }}>
-                            <div style={{ padding: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #f1f5f9' }}>
+                        <div className="cp-rankings" style={{ background: 'white', border: '1px solid #f1f5f9', borderRadius: '16px', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.02)', display: 'flex', flexDirection: 'column', height: '100%' }}>
+                            <div className="cp-rankings-header" style={{ padding: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #f1f5f9' }}>
                                 <h3 style={{ margin: 0, color: '#0f172a', fontSize: '1.1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#d97706" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
                                     Class Rankings
                                 </h3>
-                                <div style={{ display: 'flex', gap: '0.75rem' }}>
+                                <div className="desktop-only" style={{ display: 'flex', gap: '0.75rem' }}>
                                     <button onClick={exportToExcel} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', padding: '0.5rem 0.8rem', background: '#ecfdf5', color: '#10b981', border: '1px solid #a7f3d0', borderRadius: '6px', fontWeight: '600', fontSize: '0.8rem', cursor: 'pointer' }}>
                                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="12" y1="18" x2="12" y2="12"></line><line x1="9" y1="15" x2="15" y2="15"></line></svg>
                                         Export Excel
@@ -324,18 +338,18 @@ function FacultyClassPerformance() {
                                 </div>
                             </div>
                             
-                            <div style={{ flex: 1, overflowX: 'auto', padding: '0 1.5rem' }}>
+                            <div className="cp-rankings-table-container" style={{ flex: 1, overflowX: 'auto', padding: '0 1.5rem' }}>
                                 <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '1rem', textAlign: 'left', minWidth: '600px' }}>
                                     <thead>
                                         <tr style={{ color: '#64748b', fontSize: '0.8rem', fontWeight: '600', borderBottom: '1px solid #e2e8f0' }}>
                                             <th style={{ padding: '0.75rem 0.5rem' }}>Rank</th>
-                                            <th style={{ padding: '0.75rem 0.5rem' }}>Roll No.</th>
+                                            <th className="cp-hide-mobile" style={{ padding: '0.75rem 0.5rem' }}>Roll No.</th>
                                             <th style={{ padding: '0.75rem 0.5rem' }}>Student Name</th>
                                             <th style={{ padding: '0.75rem 0.5rem' }}>Score</th>
                                             <th style={{ padding: '0.75rem 0.5rem', textAlign: 'center' }}>Grade</th>
-                                            <th style={{ padding: '0.75rem 0.5rem', textAlign: 'center' }}>Marks %</th>
-                                            <th style={{ padding: '0.75rem 0.5rem', textAlign: 'center' }}>Attendance</th>
-                                            <th style={{ padding: '0.75rem 0.5rem', textAlign: 'center' }}>Status</th>
+                                            <th className="cp-hide-mobile" style={{ padding: '0.75rem 0.5rem', textAlign: 'center' }}>Marks %</th>
+                                            <th style={{ padding: '0.75rem 0.5rem', textAlign: 'center' }}><span className="desktop-only">Attendance</span><span className="mobile-only">Att.</span></th>
+                                            <th className="cp-hide-mobile" style={{ padding: '0.75rem 0.5rem', textAlign: 'center' }}>Status</th>
                                         </tr>
                                     </thead>
                                     <tbody style={{ fontSize: '0.9rem', color: '#1e293b' }}>
@@ -353,7 +367,7 @@ function FacultyClassPerformance() {
                                             return (
                                                 <tr key={s.student_id} style={{ borderBottom: '1px solid #f1f5f9' }}>
                                                     <td style={{ padding: '1rem 0.5rem', fontWeight: isTop3 ? '700' : '600', color: rankColor }}>#{s.rank}</td>
-                                                    <td style={{ padding: '1rem 0.5rem', color: '#64748b', fontSize: '0.85rem' }}>{s.roll_number}</td>
+                                                    <td className="cp-hide-mobile" style={{ padding: '1rem 0.5rem', color: '#64748b', fontSize: '0.85rem' }}>{s.roll_number}</td>
                                                     <td style={{ padding: '1rem 0.5rem', fontWeight: '600' }}>{s.student_name}</td>
                                                     <td style={{ padding: '1rem 0.5rem', fontWeight: '500' }}>{s.score}/100</td>
                                                     <td style={{ padding: '1rem 0.5rem', textAlign: 'center' }}>
@@ -361,9 +375,9 @@ function FacultyClassPerformance() {
                                                             {s.grade}
                                                         </div>
                                                     </td>
-                                                    <td style={{ padding: '1rem 0.5rem', textAlign: 'center', color: '#475569' }}>{s.marks_pct}%</td>
+                                                    <td className="cp-hide-mobile" style={{ padding: '1rem 0.5rem', textAlign: 'center', color: '#475569' }}>{s.marks_pct}%</td>
                                                     <td style={{ padding: '1rem 0.5rem', textAlign: 'center', color: '#475569' }}>{s.att_pct}%</td>
-                                                    <td style={{ padding: '1rem 0.5rem', textAlign: 'center' }}>
+                                                    <td className="cp-hide-mobile" style={{ padding: '1rem 0.5rem', textAlign: 'center' }}>
                                                         <span style={{ background: statusBg, color: statusCol, padding: '0.25rem 0.6rem', borderRadius: '20px', fontSize: '0.75rem', fontWeight: '600' }}>
                                                             {s.status.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
                                                         </span>
@@ -381,7 +395,7 @@ function FacultyClassPerformance() {
                     </div>
 
                     {/* Footer Tip */}
-                    <div style={{ marginTop: '2rem', background: '#eff6ff', borderRadius: '12px', padding: '1rem 1.5rem', display: 'flex', alignItems: 'center', gap: '0.75rem', border: '1px solid #bfdbfe' }}>
+                    <div className="cp-footer-tip" style={{ marginTop: '2rem', background: '#eff6ff', borderRadius: '12px', padding: '1rem 1.5rem', display: 'flex', alignItems: 'center', gap: '0.75rem', border: '1px solid #bfdbfe' }}>
                         <div style={{ width: '20px', height: '20px', borderRadius: '50%', background: '#3b82f6', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem', fontWeight: 'bold', flexShrink: 0 }}>i</div>
                         <p style={{ margin: 0, color: '#1e3a8a', fontSize: '0.9rem', fontWeight: '500' }}>
                             <span style={{ fontWeight: '600' }}>Tip:</span> Click on any student to view detailed performance analytics and individual subject breakdown.

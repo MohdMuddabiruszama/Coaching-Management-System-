@@ -84,10 +84,13 @@ const EnterMarks = lazy(() => import("../pages/faculty/EnterMarks"));
 const ViewStudents = lazy(() => import("../pages/faculty/ViewStudents"));
 const FacultySmartAttendance = lazy(() => import("../pages/admin/SmartAttendance"));
 const FacultyAnnouncements = lazy(() => import("../pages/faculty/Announcements"));
+const FacultyMobileAnnouncements = lazy(() => import("../pages/faculty/MobileAnnouncements"));
 const FacultySchedule = lazy(() => import("../pages/faculty/MySchedule"));
 const ScanFacultyQR = lazy(() => import("../pages/faculty/ScanFacultyQR"));
 const FacultyNotes = lazy(() => import("../pages/faculty/FacultyNotes"));
+const FacultyMobileNotes = lazy(() => import("../pages/faculty/MobileFacultyNotes"));
 const FacultyAssignments = lazy(() => import("../pages/faculty/Assignments"));
+const FacultyMobileTimetable = lazy(() => import("../pages/faculty/MobileTimetable"));
 const ChatApp = lazy(() => import("../pages/chat/ChatApp"));
 const FacultyClassPerformance = lazy(() => import("../pages/faculty/ClassPerformance"));
 const MySalarySlips = lazy(() => import("../pages/faculty/MySalarySlips"));
@@ -267,9 +270,9 @@ export default function WebAppRoutes() {
           <Route path="scan-attendance" element={<ScanFacultyQR />} />
           <Route path="marks" element={<EnterMarks />} />
           <Route path="students" element={<ViewStudents />} />
-          <Route path="announcements" element={<FacultyAnnouncements />} />
-          <Route path="timetable" element={<FacultySchedule />} />
-          <Route path="notes" element={<FacultyNotes />} />
+          <Route path="announcements" element={isNativeEnv ? <FacultyMobileAnnouncements /> : <FacultyAnnouncements />} />
+          <Route path="timetable" element={isNativeEnv ? <FacultyMobileTimetable /> : <FacultySchedule />} />
+          <Route path="notes" element={isNativeEnv ? <FacultyMobileNotes /> : <FacultyNotes />} />
           <Route path="assignments" element={<FacultyAssignments />} />
           <Route path="chat" element={<ChatApp />} />
           <Route path="profile" element={<Profile />} />

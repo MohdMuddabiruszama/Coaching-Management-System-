@@ -57,6 +57,12 @@ function ChatApp() {
     const activeRoomRef = useRef(null);
     const pollingRef = useRef(false); // For deduplication
     
+    // Student Search States
+    const [studentSearchQuery, setStudentSearchQuery] = useState("");
+    const [studentSearchResults, setStudentSearchResults] = useState([]);
+    const [isSearchingStudents, setIsSearchingStudents] = useState(false);
+    const searchTimeoutRef = useRef(null);
+
     // Pagination states
     const [hasMore, setHasMore] = useState(false);
     const [loadingOlder, setLoadingOlder] = useState(false);
@@ -398,6 +404,63 @@ function ChatApp() {
     };
 
     /** Mobile: go back to room list */
+    // Start a direct chat
+    const startDirectChat = async (target_user_id) => {
+        try {
+            const createRes = await api.post("/chat/room/get-or-create", { type: "direct", target_user_id });
+            if (createRes.data.success) {
+                const newRoom = createRes.data.room;
+                
+                // Clear search
+                setStudentSearchQuery("");
+                setStudentSearchResults([]);
+
+                // Add to rooms if not exists
+                setRooms(prev => {
+                    const exists = prev.find(r => r.id === newRoom.id);
+                    if (exists) return prev;
+                    return [newRoom, ...prev];
+                });
+                selectRoom(newRoom);
+            }
+        } catch (err) {
+            toast.error("Could not start direct chat");
+        }
+    };
+
+    const handleStudentSearch = (e) => {
+        const query = e.target.value;
+        setStudentSearchQuery(query);
+
+        if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
+
+        if (!query.trim()) {
+            setStudentSearchResults([]);
+            return;
+        }
+
+        searchTimeoutRef.current = setTimeout(async () => {
+            setIsSearchingStudents(true);
+            try {
+                const res = await api.get(`/students/lookup?search=${encodeURIComponent(query)}&limit=5`);
+                if (res.data.success) {
+                    setStudentSearchResults(res.data.data || []);
+                }
+            } catch (err) {
+                console.error("Student search error", err);
+            } finally {
+                setIsSearchingStudents(false);
+            }
+        }, 300);
+    };
+
+    const handleRoomScroll = (e) => {
+        setActiveRoom(null);
+        setMessages([]);
+        setParticipants([]);
+    };
+
+    /** Mobile: go back to room list */
     const handleMobileBack = () => {
         setActiveRoom(null);
         setMessages([]);
@@ -453,7 +516,7 @@ function ChatApp() {
         if (room.type === "direct") {
             if (user?.role === "faculty" && room.ChatParticipants) {
                 const studentP = room.ChatParticipants.find(p => p.role === "student" || p.User?.role === "student" || p.role === "parent" || p.User?.role === "parent");
-                if (studentP && studentP.User) return `${studentP.User.name} - Direct Chat`;
+                if (studentP && studentP.User) return studentP.User.name;
             }
             if (user?.role === "student" || user?.role === "parent") {
                 const subject = enrolledSubjects.find(s => s.id === room.subject_id);
@@ -499,6 +562,37 @@ function ChatApp() {
                         <span style={{ fontSize: '1.4rem' }}>💬</span> Academic Chat
                     </h3>
                     <p>Connect with your faculty and classmates</p>
+                    
+                    {/* Action Buttons */}
+                    {(user?.role === "faculty" || user?.role === "admin" || user?.role === "owner" || user?.role === "manager") && (
+                        <button 
+                            className="create-room-btn"
+                            onClick={() => setShowCreateModal(true)}
+                            style={{ 
+                                marginTop: '16px', 
+                                width: '100%', 
+                                background: 'linear-gradient(135deg, #7e22ce 0%, #6b21a8 100%)', 
+                                color: '#fff', 
+                                border: 'none', 
+                                padding: '12px', 
+                                borderRadius: '10px', 
+                                fontSize: '0.95rem', 
+                                fontWeight: 600, 
+                                cursor: 'pointer', 
+                                display: 'flex', 
+                                alignItems: 'center', 
+                                justifyContent: 'center', 
+                                gap: '8px',
+                                boxShadow: '0 4px 12px rgba(126, 34, 206, 0.25)',
+                                transition: 'transform 0.2s, box-shadow 0.2s'
+                            }}
+                            onMouseOver={(e) => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 6px 16px rgba(126, 34, 206, 0.35)'; }}
+                            onMouseOut={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(126, 34, 206, 0.25)'; }}
+                        >
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                            Create New Room
+                        </button>
+                    )}
 
                     {chatUsage && (user?.role === "admin" || user?.role === "owner" || user?.role === "manager") && (
                         <div style={{ marginTop: '15px', padding: '12px', background: '#f8fafc', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
@@ -570,6 +664,57 @@ function ChatApp() {
                             <div className="chat-list-section-header">
                                 <span>Chats</span>
                             </div>
+
+                            {/* Faculty Student Search Bar */}
+                            {(user?.role === "faculty" || user?.role === "admin" || user?.role === "owner" || user?.role === "manager") && (
+                                <div style={{ position: 'relative', margin: '0 12px 12px 12px' }}>
+                                    <div style={{ position: 'relative' }}>
+                                        <input 
+                                            type="text" 
+                                            placeholder="Search student to chat..." 
+                                            value={studentSearchQuery}
+                                            onChange={handleStudentSearch}
+                                            style={{ width: '100%', padding: '10px 14px 10px 36px', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '0.9rem', outline: 'none' }}
+                                        />
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ position: 'absolute', left: 12, top: 11 }}>
+                                            <circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                                        </svg>
+                                        {isSearchingStudents && (
+                                            <div style={{ position: 'absolute', right: 12, top: 11 }}>
+                                                <div className="search-spinner" style={{ width: 14, height: 14, border: '2px solid #e2e8f0', borderTopColor: '#7e22ce', borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div>
+                                            </div>
+                                        )}
+                                    </div>
+                                    
+                                    {/* Search Results Dropdown */}
+                                    {studentSearchQuery.trim() && studentSearchResults.length > 0 && (
+                                        <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, marginTop: 4, background: '#fff', borderRadius: 8, boxShadow: '0 4px 12px rgba(0,0,0,0.1)', zIndex: 10, border: '1px solid #e2e8f0', overflow: 'hidden' }}>
+                                            {studentSearchResults.map(student => (
+                                                <div 
+                                                    key={student.id} 
+                                                    onClick={() => startDirectChat(student.User?.id)}
+                                                    style={{ padding: '10px 12px', display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', borderBottom: '1px solid #f1f5f9', background: '#fff' }}
+                                                    onMouseOver={(e) => e.currentTarget.style.background = '#f8fafc'}
+                                                    onMouseOut={(e) => e.currentTarget.style.background = '#fff'}
+                                                >
+                                                    <div style={{ width: 28, height: 28, borderRadius: '50%', background: '#e8dbfa', color: '#7e22ce', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 600, fontSize: '0.8rem' }}>
+                                                        {student.User?.name?.charAt(0).toUpperCase() || 'S'}
+                                                    </div>
+                                                    <div>
+                                                        <div style={{ fontSize: '0.9rem', fontWeight: 600, color: '#1e293b' }}>{student.User?.name}</div>
+                                                        <div style={{ fontSize: '0.75rem', color: '#64748b' }}>{student.Classes?.[0]?.name || 'Student'} • Roll: {student.roll_number}</div>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                    {studentSearchQuery.trim() && studentSearchResults.length === 0 && !isSearchingStudents && (
+                                        <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, marginTop: 4, background: '#fff', borderRadius: 8, boxShadow: '0 4px 12px rgba(0,0,0,0.1)', zIndex: 10, padding: '12px', textAlign: 'center', color: '#64748b', fontSize: '0.85rem', border: '1px solid #e2e8f0' }}>
+                                            No students found
+                                        </div>
+                                    )}
+                                </div>
+                            )}
                             
                             {(user?.role === "student" || user?.role === "parent") && buildStudentSubjectItems().map((room, idx) => {
                                 const displayName = getRoomLabel(room);
@@ -606,11 +751,57 @@ function ChatApp() {
                                 </div>
                             )})}
 
+                            {rooms.filter(r => r.type === "direct").length > 0 && (
+                                <>
+                                    <div className="section-label">
+                                        DIRECT CHATS
+                                    </div>
+                                    {rooms.filter(r => r.type === "direct").map((room, idx) => {
+                                        const timeStr = room.last_message_at ? (() => {
+                                            const d = new Date(room.last_message_at);
+                                            const now = new Date();
+                                            if(d.toDateString() === now.toDateString()) return d.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                                            now.setDate(now.getDate() - 1);
+                                            if(d.toDateString() === now.toDateString()) return 'Yesterday';
+                                            return Math.floor((new Date() - d) / (1000*60*60*24)) + ' days ago';
+                                        })() : '';
+
+                                        const colors = ['purple', 'blue', 'green', 'orange'];
+                                        const colorClass = colors[idx % colors.length];
+
+                                        return (
+                                        <div
+                                            key={room.id}
+                                            className={`chat-room-item ${activeRoom?.id === room.id ? "active" : ""}`}
+                                            onClick={() => selectRoom(room)}
+                                        >
+                                            <div className={`room-avatar ${colorClass}`}>
+                                                {getRoomInitial(room)}
+                                            </div>
+                                            <div className="room-details">
+                                                <div className="room-details-top">
+                                                    <h4 className="room-name">{getRoomLabel(room)}</h4>
+                                                    <span className="room-time">{timeStr}</span>
+                                                </div>
+                                                <div className="room-details-bottom">
+                                                    <p className="room-subtitle">
+                                                        {room.last_message_text ? room.last_message_text : getRoomSubLabel(room)}
+                                                    </p>
+                                                    {room.unread_count > 0 && (
+                                                        <span className="msg-count-badge green">{room.unread_count}</span>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )})}
+                                </>
+                            )}
+
                             <div className="section-label">
                                 GROUP ROOMS
                             </div>
                             
-                            {rooms.filter(r => (user?.role === "student" || user?.role === "parent") ? r.type !== "direct" : true).map((room, idx) => {
+                            {rooms.filter(r => r.type !== "direct").map((room, idx) => {
                                 const timeStr = room.last_message_at ? (() => {
                                     const d = new Date(room.last_message_at);
                                     const now = new Date();

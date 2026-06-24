@@ -11,6 +11,12 @@ const FacultyLayout = () => {
     const navigate = useNavigate();
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [desktopCollapsed, setDesktopCollapsed] = useState(false);
+    const [openMenus, setOpenMenus] = useState({});
+
+    const toggleMenu = (key, e) => {
+        if (e) e.preventDefault();
+        setOpenMenus(prev => ({ ...prev, [key]: !prev[key] }));
+    };
     
     const [chatUnreadCount, setChatUnreadCount] = useState(0);
     const [announcementsUnreadCount, setAnnouncementsUnreadCount] = useState(0);
@@ -80,21 +86,38 @@ const FacultyLayout = () => {
 
                     {user?.features?.attendance !== 'none' && (
                         <div className="fl-nav-dropdown">
-                            <Link to="/faculty/attendance" className={navLinkClass('/faculty/attendance')} onClick={handleNavClick}>
+                            <button className={`fl-nav-link ${openMenus['attendance'] ? 'dropdown-open' : ''}`} onClick={(e) => toggleMenu('attendance', e)} style={{ width: '100%', background: 'transparent', border: 'none', cursor: 'pointer' }}>
                                 <span className="fl-nav-icon">📋</span>
                                 Attendance
-                                <span style={{marginLeft: 'auto', fontSize: '10px'}}>▼</span>
-                            </Link>
+                                <span style={{marginLeft: 'auto', fontSize: '10px', transform: openMenus['attendance'] ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s'}}>▼</span>
+                            </button>
+                            {openMenus['attendance'] && (
+                                <div className="fl-nav-submenu" style={{ display: 'flex', flexDirection: 'column', paddingLeft: '32px', gap: '4px', marginTop: '4px' }}>
+                                    <Link to="/faculty/attendance" className={navLinkClass('/faculty/attendance')} onClick={handleNavClick}>
+                                        <span className="fl-nav-icon" style={{ fontSize: '14px' }}>📝</span> Mark Attendance
+                                    </Link>
+                                    <Link to="/faculty/view-attendance" className={navLinkClass('/faculty/view-attendance')} onClick={handleNavClick}>
+                                        <span className="fl-nav-icon" style={{ fontSize: '14px' }}>👀</span> Attendance Tracker
+                                    </Link>
+                                </div>
+                            )}
                         </div>
                     )}
                     
                     {user?.features?.exams && (
                         <div className="fl-nav-dropdown">
-                            <Link to="/faculty/marks" className={navLinkClass('/faculty/marks')} onClick={handleNavClick}>
+                            <button className={`fl-nav-link ${openMenus['marks'] ? 'dropdown-open' : ''}`} onClick={(e) => toggleMenu('marks', e)} style={{ width: '100%', background: 'transparent', border: 'none', cursor: 'pointer' }}>
                                 <span className="fl-nav-icon">📄</span>
                                 Marks
-                                <span style={{marginLeft: 'auto', fontSize: '10px'}}>▼</span>
-                            </Link>
+                                <span style={{marginLeft: 'auto', fontSize: '10px', transform: openMenus['marks'] ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s'}}>▼</span>
+                            </button>
+                            {openMenus['marks'] && (
+                                <div className="fl-nav-submenu" style={{ display: 'flex', flexDirection: 'column', paddingLeft: '32px', gap: '4px', marginTop: '4px' }}>
+                                    <Link to="/faculty/marks" className={navLinkClass('/faculty/marks')} onClick={handleNavClick}>
+                                        <span className="fl-nav-icon" style={{ fontSize: '14px' }}>✏️</span> Enter Marks
+                                    </Link>
+                                </div>
+                            )}
                         </div>
                     )}
 

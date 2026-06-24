@@ -1,9 +1,15 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
+import { Capacitor } from "@capacitor/core";
 import api from "../../services/api";
+import MobileViewStudents from "./MobileViewStudents";
 import "./ViewStudents.css";
 
 function ViewStudents() {
+    if (Capacitor.isNativePlatform()) {
+        return <MobileViewStudents />;
+    }
+
     const [students, setStudents] = useState([]);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState("");

@@ -1,0 +1,201 @@
+/* Desktop First, then Mobile Overrides */
+
+/* Utilities */
+.mobile-only {
+    display: none !important;
+}
+
+@media (max-width: 768px) {
+    .desktop-only {
+        display: none !important;
+    }
+    
+    .mobile-only {
+        display: flex !important;
+    }
+
+    /* Top Stats Grid */
+    .cp-stats-grid {
+        grid-template-columns: 1fr 1fr !important;
+        gap: 0.75rem !important;
+        margin-bottom: 1rem !important;
+    }
+
+    .cp-stat-card {
+        padding: 1rem 0.75rem !important;
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        gap: 0.5rem !important;
+    }
+
+    .cp-stat-card h2 {
+        font-size: 1.2rem !important;
+    }
+
+    .cp-stat-card p {
+        font-size: 0.7rem !important;
+    }
+
+    /* Needs Immediate Attention */
+    .cp-risk-banner {
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        padding: 1rem !important;
+        gap: 1rem !important;
+    }
+
+    .cp-risk-header {
+        border-right: none !important;
+        padding-right: 0 !important;
+        border-bottom: 1px solid #fca5a5;
+        padding-bottom: 1rem;
+        width: 100%;
+    }
+
+    .cp-risk-students {
+        flex-wrap: nowrap !important;
+        overflow-x: auto;
+        width: 100%;
+        padding-bottom: 0.5rem;
+    }
+
+    .cp-risk-student-card {
+        min-width: 200px;
+        flex-shrink: 0;
+    }
+
+    /* Export Buttons - Mobile */
+    .cp-mobile-export-btns {
+        display: flex !important;
+        gap: 0.75rem;
+        margin-bottom: 1.5rem;
+        width: 100%;
+    }
+
+    .cp-mobile-export-btns button {
+        flex: 1;
+        justify-content: center;
+        padding: 0.75rem !important;
+    }
+
+    /* Main Grid */
+    .cp-main-grid {
+        grid-template-columns: 1fr !important;
+        gap: 1rem !important;
+    }
+
+    .cp-grade-dist {
+        padding: 1rem !important;
+    }
+
+    .cp-rankings {
+        padding: 0 !important;
+    }
+
+    .cp-rankings-header {
+        padding: 1rem !important;
+    }
+
+    .cp-rankings-table-container {
+        padding: 0 0.5rem !important;
+    }
+
+    .cp-rankings-table-container table {
+        min-width: unset !important;
+        font-size: 0.8rem;
+    }
+
+    .cp-rankings-table-container th, 
+    .cp-rankings-table-container td {
+        padding: 0.75rem 0.25rem !important;
+    }
+
+    /* Hide less important columns on mobile to fit the screen */
+    .cp-hide-mobile {
+        display: none !important;
+    }
+
+    /* Footer Tip */
+    .cp-footer-tip {
+        flex-direction: column !important;
+        text-align: center;
+        padding: 1rem !important;
+        gap: 0.5rem !important;
+    }
+
+    /* Hero Banner Mobile Styling */
+    .cp-container .cp-header {
+        background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%) !important;
+        border-radius: 12px !important;
+        margin: 16px 0 !important;
+        padding: 20px !important;
+        display: flex !important;
+        flex-direction: row !important;
+        justify-content: space-between !important;
+        align-items: center !important;
+        color: white !important;
+        box-shadow: 0 4px 14px rgba(99, 102, 241, 0.3) !important;
+        border: none !important;
+    }
+
+    .cp-container .cp-hero-left {
+        display: flex !important;
+        align-items: flex-start !important;
+        gap: 12px !important;
+        flex: 1 !important;
+        flex-direction: row !important;
+    }
+
+    .cp-container .cp-hero-icon {
+        width: 44px !important;
+        height: 44px !important;
+        background: white !important;
+        border-radius: 12px !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        flex-shrink: 0 !important;
+        color: #6366f1 !important;
+        margin-right: 0 !important;
+    }
+
+    .cp-container .cp-hero-text {
+        display: flex !important;
+        flex-direction: column !important;
+    }
+
+    .cp-container .cp-hero-text h1 {
+        margin: 0 0 4px 0 !important;
+        font-size: 16px !important;
+        font-weight: 700 !important;
+        color: white !important;
+    }
+
+    .cp-container .cp-hero-text p {
+        margin: 0 !important;
+        font-size: 11px !important;
+        opacity: 0.9 !important;
+        line-height: 1.4 !important;
+        max-width: 180px !important;
+        color: white !important;
+    }
+
+    .cp-container .cp-hero-right {
+        flex-shrink: 0 !important;
+    }
+
+    .cp-container .cp-hero-graphic {
+        font-size: 44px !important;
+        line-height: 1 !important;
+        position: relative !important;
+        right: -10px !important;
+        filter: drop-shadow(0 4px 6px rgba(0,0,0,0.2)) !important;
+    }
+
+    .cp-container .cp-hero-graphic span {
+        position: absolute !important;
+        bottom: -5px !important;
+        right: -5px !important;
+        font-size: 24px !important;
+    }
+}

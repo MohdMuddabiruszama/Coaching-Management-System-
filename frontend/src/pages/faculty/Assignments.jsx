@@ -5,7 +5,9 @@ import { resolveFileUrl } from '../../utils/resolveUrl';
 import { downloadRemoteFile } from '../../utils/capacitorPermissions';
 import { toast } from 'react-hot-toast';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
+import { Capacitor } from '@capacitor/core';
 import '../admin/Dashboard.css';
+import './AssignmentsMobile.css';
 
 const STATUS_CONFIG = {
     draft: { label: 'Draft', color: '#64748b', bg: '#f1f5f9' },
@@ -49,6 +51,7 @@ export default function FacultyAssignments() {
     const [submissionTab, setSubmissionTab] = useState('Overview');
     const [submissionsPage, setSubmissionsPage] = useState(1);
     const [openMenuId, setOpenMenuId] = useState(null);
+    const [showMobileWarning, setShowMobileWarning] = useState(false);
 
     const [form, setForm] = useState({
         title: '', description: '', class_id: '', subject_id: '',
@@ -56,6 +59,7 @@ export default function FacultyAssignments() {
         allow_late_submission: true, status: 'draft'
     });
     const [referenceFile, setReferenceFile] = useState(null);
+    const [mobileStep, setMobileStep] = useState(1);
 
     const flash = (text, type = 'success') => { setMsg({ text, type }); setTimeout(() => setMsg(null), 3500); };
 
@@ -189,6 +193,10 @@ export default function FacultyAssignments() {
     };
 
     const openSubmissions = async (asg) => {
+        if (Capacitor.isNativePlatform()) {
+            setShowMobileWarning(true);
+            return;
+        }
         setView('submissions');
         await fetchSubmissions(asg.id);
     };
@@ -248,27 +256,49 @@ export default function FacultyAssignments() {
                 </div>
             )}
 
+            {showMobileWarning && (
+                <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.5rem' }}>
+                    <div style={{ background: 'white', padding: '2rem 1.5rem', borderRadius: '20px', textAlign: 'center', maxWidth: '340px', width: '100%', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)', animation: 'slideUp 0.3s ease-out' }}>
+                        <div style={{ background: '#fee2e2', width: '64px', height: '64px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.25rem', color: '#ef4444' }}>
+                            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+                        </div>
+                        <h3 style={{ margin: '0 0 0.75rem 0', color: '#0f172a', fontSize: '1.25rem', fontWeight: '700' }}>Action Required</h3>
+                        <p style={{ color: '#64748b', fontSize: '0.95rem', marginBottom: '1.5rem', lineHeight: '1.5' }}>
+                            Student submission and grade perform in the official website.
+                        </p>
+                        <button onClick={() => setShowMobileWarning(false)} style={{ background: '#ef4444', color: 'white', border: 'none', padding: '0.85rem 2rem', borderRadius: '12px', fontWeight: '600', width: '100%', cursor: 'pointer', fontSize: '1rem', boxShadow: '0 4px 6px rgba(239, 68, 68, 0.2)' }}>
+                            Got it
+                        </button>
+                    </div>
+                </div>
+            )}
+
             {/* Header Area */}
             {view === 'list' && (
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '2rem' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                        <div style={{ background: 'white', padding: '0.75rem', borderRadius: '12px', color: '#4f46e5', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+                <div className="asg-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '2rem' }}>
+                    <div className="asg-header-left" style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                        <div className="asg-title-icon" style={{ background: 'white', padding: '0.75rem', borderRadius: '12px', color: '#4f46e5', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
                             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
                         </div>
-                        <div>
+                        <div className="asg-title-text" style={{ flex: 1 }}>
                             <h1 style={{ margin: 0, fontSize: '1.75rem', color: '#0f172a', fontWeight: '700' }}>Assignments</h1>
                             <p style={{ margin: 0, color: '#64748b', fontSize: '0.95rem', marginTop: '0.2rem' }}>Create, manage, and grade student assignments</p>
                         </div>
+                        <div className="asg-hero-right mobile-only">
+                            <div className="asg-hero-graphic">
+                                📝<span>⏳</span>
+                            </div>
+                        </div>
                     </div>
-                    <div style={{ display: 'flex', gap: '1rem' }}>
+                    <div className="asg-header-right" style={{ display: 'flex', gap: '1rem' }}>
                         {view === 'list' && (
-                            <button onClick={() => setView('create')} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.6rem 1.2rem', background: '#6366f1', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: '600', fontSize: '0.9rem', boxShadow: '0 2px 4px rgba(99,102,241,0.3)' }}>
+                            <button className="asg-create-btn" onClick={() => setView('create')} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.6rem 1.2rem', background: '#6366f1', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: '600', fontSize: '0.9rem', boxShadow: '0 2px 4px rgba(99,102,241,0.3)' }}>
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
                                 Create Assignment
                             </button>
                         )}
                         {view === 'create' && (
-                            <button onClick={() => { setView('list'); setSelected(null); fetchAll(); }} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.6rem 1.2rem', background: 'white', color: '#4f46e5', border: '1px solid #e0e7ff', borderRadius: '8px', cursor: 'pointer', fontWeight: '600', fontSize: '0.9rem', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
+                            <button className="asg-create-btn" onClick={() => { setView('list'); setSelected(null); fetchAll(); }} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.6rem 1.2rem', background: 'white', color: '#4f46e5', border: '1px solid #e0e7ff', borderRadius: '8px', cursor: 'pointer', fontWeight: '600', fontSize: '0.9rem', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
                                 Back to List
                             </button>
@@ -281,59 +311,59 @@ export default function FacultyAssignments() {
             {view === 'list' && (
                 <>
                     {/* Top Stats Cards */}
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1.5rem', marginBottom: '2rem' }}>
+                    <div className="asg-stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1.5rem', marginBottom: '2rem' }}>
                         {/* Active Assignments */}
-                        <div style={{ background: 'white', borderRadius: '16px', padding: '1.5rem', display: 'flex', alignItems: 'center', gap: '1rem', border: '1px solid #f1f5f9', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.02)' }}>
-                            <div style={{ width: '50px', height: '50px', borderRadius: '12px', background: '#f5f3ff', color: '#8b5cf6', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                        <div className="asg-stat-card" style={{ background: 'white', borderRadius: '16px', padding: '1.5rem', display: 'flex', alignItems: 'center', gap: '1rem', border: '1px solid #f1f5f9', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.02)' }}>
+                            <div className="asg-stat-icon-wrapper" style={{ width: '50px', height: '50px', borderRadius: '12px', background: '#f5f3ff', color: '#8b5cf6', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
                             </div>
-                            <div>
-                                <h2 style={{ margin: 0, fontSize: '1.5rem', color: '#8b5cf6', fontWeight: '700' }}>{totalPublished}</h2>
-                                <p style={{ margin: 0, fontSize: '0.85rem', color: '#0f172a', fontWeight: '600' }}>Active Assignments</p>
-                                <p style={{ margin: 0, fontSize: '0.75rem', color: '#64748b' }}>Currently running</p>
+                            <div className="asg-stat-text-container">
+                                <h2 className="asg-stat-number" style={{ margin: 0, fontSize: '1.5rem', color: '#8b5cf6', fontWeight: '700' }}>{totalPublished}</h2>
+                                <p className="asg-stat-title" style={{ margin: 0, fontSize: '0.85rem', color: '#0f172a', fontWeight: '600' }}>Active Assignments</p>
+                                <p className="asg-stat-subtitle" style={{ margin: 0, fontSize: '0.75rem', color: '#64748b' }}>Currently running</p>
                             </div>
                         </div>
 
                         {/* Pending Grading */}
-                        <div style={{ background: 'white', borderRadius: '16px', padding: '1.5rem', display: 'flex', alignItems: 'center', gap: '1rem', border: '1px solid #f1f5f9', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.02)' }}>
-                            <div style={{ width: '50px', height: '50px', borderRadius: '12px', background: '#fffbeb', color: '#f59e0b', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                        <div className="asg-stat-card" style={{ background: 'white', borderRadius: '16px', padding: '1.5rem', display: 'flex', alignItems: 'center', gap: '1rem', border: '1px solid #f1f5f9', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.02)' }}>
+                            <div className="asg-stat-icon-wrapper" style={{ width: '50px', height: '50px', borderRadius: '12px', background: '#fffbeb', color: '#f59e0b', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 21L3 21"></path><path d="M21 3L3 3"></path><path d="M15 21L15 15C15 13.3431 13.6569 12 12 12C10.3431 12 9 13.3431 9 15L9 21"></path><path d="M15 3L15 9C15 10.6569 13.6569 12 12 12C10.3431 12 9 10.6569 9 9L9 3"></path></svg>
                             </div>
-                            <div>
-                                <h2 style={{ margin: 0, fontSize: '1.5rem', color: '#f59e0b', fontWeight: '700' }}>{totalPending}</h2>
-                                <p style={{ margin: 0, fontSize: '0.85rem', color: '#0f172a', fontWeight: '600' }}>Pending Grading</p>
-                                <p style={{ margin: 0, fontSize: '0.75rem', color: '#64748b' }}>Submissions to review</p>
+                            <div className="asg-stat-text-container">
+                                <h2 className="asg-stat-number" style={{ margin: 0, fontSize: '1.5rem', color: '#f59e0b', fontWeight: '700' }}>{totalPending}</h2>
+                                <p className="asg-stat-title" style={{ margin: 0, fontSize: '0.85rem', color: '#0f172a', fontWeight: '600' }}>Pending Grading</p>
+                                <p className="asg-stat-subtitle" style={{ margin: 0, fontSize: '0.75rem', color: '#64748b' }}>Submissions to review</p>
                             </div>
                         </div>
 
                         {/* Graded */}
-                        <div style={{ background: 'white', borderRadius: '16px', padding: '1.5rem', display: 'flex', alignItems: 'center', gap: '1rem', border: '1px solid #f1f5f9', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.02)' }}>
-                            <div style={{ width: '50px', height: '50px', borderRadius: '12px', background: '#ecfdf5', color: '#10b981', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                        <div className="asg-stat-card" style={{ background: 'white', borderRadius: '16px', padding: '1.5rem', display: 'flex', alignItems: 'center', gap: '1rem', border: '1px solid #f1f5f9', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.02)' }}>
+                            <div className="asg-stat-icon-wrapper" style={{ width: '50px', height: '50px', borderRadius: '12px', background: '#ecfdf5', color: '#10b981', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
                             </div>
-                            <div>
-                                <h2 style={{ margin: 0, fontSize: '1.5rem', color: '#10b981', fontWeight: '700' }}>{totalGraded}</h2>
-                                <p style={{ margin: 0, fontSize: '0.85rem', color: '#0f172a', fontWeight: '600' }}>Graded</p>
-                                <p style={{ margin: 0, fontSize: '0.75rem', color: '#64748b' }}>Completed</p>
+                            <div className="asg-stat-text-container">
+                                <h2 className="asg-stat-number" style={{ margin: 0, fontSize: '1.5rem', color: '#10b981', fontWeight: '700' }}>{totalGraded}</h2>
+                                <p className="asg-stat-title" style={{ margin: 0, fontSize: '0.85rem', color: '#0f172a', fontWeight: '600' }}>Graded</p>
+                                <p className="asg-stat-subtitle" style={{ margin: 0, fontSize: '0.75rem', color: '#64748b' }}>Completed</p>
                             </div>
                         </div>
 
                         {/* Drafts */}
-                        <div style={{ background: 'white', borderRadius: '16px', padding: '1.5rem', display: 'flex', alignItems: 'center', gap: '1rem', border: '1px solid #f1f5f9', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.02)' }}>
-                            <div style={{ width: '50px', height: '50px', borderRadius: '12px', background: '#eff6ff', color: '#3b82f6', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                        <div className="asg-stat-card" style={{ background: 'white', borderRadius: '16px', padding: '1.5rem', display: 'flex', alignItems: 'center', gap: '1rem', border: '1px solid #f1f5f9', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.02)' }}>
+                            <div className="asg-stat-icon-wrapper" style={{ width: '50px', height: '50px', borderRadius: '12px', background: '#eff6ff', color: '#3b82f6', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
                             </div>
-                            <div>
-                                <h2 style={{ margin: 0, fontSize: '1.5rem', color: '#3b82f6', fontWeight: '700' }}>{totalDrafts}</h2>
-                                <p style={{ margin: 0, fontSize: '0.85rem', color: '#0f172a', fontWeight: '600' }}>Drafts</p>
-                                <p style={{ margin: 0, fontSize: '0.75rem', color: '#64748b' }}>Not published</p>
+                            <div className="asg-stat-text-container">
+                                <h2 className="asg-stat-number" style={{ margin: 0, fontSize: '1.5rem', color: '#3b82f6', fontWeight: '700' }}>{totalDrafts}</h2>
+                                <p className="asg-stat-title" style={{ margin: 0, fontSize: '0.85rem', color: '#0f172a', fontWeight: '600' }}>Drafts</p>
+                                <p className="asg-stat-subtitle" style={{ margin: 0, fontSize: '0.75rem', color: '#64748b' }}>Not published</p>
                             </div>
                         </div>
                     </div>
 
                     {/* Filter and Search Bar */}
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
-                        <div style={{ display: 'flex', gap: '0.5rem', background: 'white', padding: '0.4rem', borderRadius: '12px', boxShadow: '0 1px 2px rgba(0,0,0,0.05)', border: '1px solid #f1f5f9' }}>
+                    <div className="asg-search-wrapper" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
+                        <div className="asg-filter-tabs" style={{ display: 'flex', gap: '0.5rem', background: 'white', padding: '0.4rem', borderRadius: '12px', boxShadow: '0 1px 2px rgba(0,0,0,0.05)', border: '1px solid #f1f5f9' }}>
                             {['all', 'published', 'draft', 'closed'].map(s => {
                                 const isActive = filterStatus === s;
                                 const count = s === 'all' ? assignments.length : assignments.filter(a => a.status === s).length;
@@ -342,6 +372,7 @@ export default function FacultyAssignments() {
                                     <button
                                         key={s}
                                         onClick={() => setFilterStatus(s)}
+                                        className={`asg-filter-btn ${isActive ? 'active' : ''}`}
                                         style={{
                                             background: isActive ? '#6366f1' : 'transparent',
                                             color: isActive ? 'white' : '#64748b',
@@ -359,15 +390,15 @@ export default function FacultyAssignments() {
                                 );
                             })}
                         </div>
-                        <div style={{ display: 'flex', gap: '0.75rem' }}>
-                            <div style={{ position: 'relative' }}>
+                        <div className="asg-search-input-container" style={{ display: 'flex', gap: '0.75rem', flex: 1, minWidth: '250px' }}>
+                            <div style={{ position: 'relative', flex: 1 }}>
                                 <svg style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
                                 <input
                                     type="text"
                                     placeholder="Search assignments..."
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
-                                    style={{ padding: '0.6rem 1rem 0.6rem 2.2rem', borderRadius: '8px', border: '1px solid #e2e8f0', width: '250px', outline: 'none', fontSize: '0.9rem', color: '#1e293b' }}
+                                    style={{ padding: '0.6rem 1rem 0.6rem 2.2rem', borderRadius: '8px', border: '1px solid #e2e8f0', width: '100%', boxSizing: 'border-box', outline: 'none', fontSize: '0.9rem', color: '#1e293b' }}
                                 />
                             </div>
                             <button style={{ background: 'white', border: '1px solid #e2e8f0', padding: '0.6rem', borderRadius: '8px', cursor: 'pointer', color: '#64748b' }}>
@@ -392,12 +423,12 @@ export default function FacultyAssignments() {
                                 return (
                                     <div key={asg.id} style={{ background: 'white', borderRadius: '16px', border: '1px solid #f1f5f9', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.02)', display: 'flex', flexDirection: 'column' }}>
                                         {/* Card Header & Content */}
-                                        <div style={{ padding: '1.5rem', display: 'flex', justifyContent: 'space-between', gap: '2rem', borderBottom: '1px solid #f1f5f9' }}>
+                                        <div className="asg-card-top-row" style={{ padding: '1.5rem', display: 'flex', justifyContent: 'space-between', gap: '2rem', borderBottom: '1px solid #f1f5f9' }}>
                                             <div style={{ flex: 1 }}>
                                                 <StatusBadge status={asg.status} />
                                                 <h3 style={{ margin: '0.75rem 0 0.5rem 0', fontSize: '1.25rem', color: '#0f172a' }}>{asg.title}</h3>
                                                 
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', color: '#64748b', fontSize: '0.85rem', fontWeight: '500', marginBottom: '1rem' }}>
+                                                <div className="asg-info-tags" style={{ display: 'flex', alignItems: 'center', gap: '1rem', color: '#64748b', fontSize: '0.85rem', fontWeight: '500', marginBottom: '1rem' }}>
                                                     <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>{asg.Class?.name} {asg.Class?.section && `- Section ${asg.Class.section}`}</span>
                                                     <span>|</span>
                                                     <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>{asg.Subject?.name}</span>
@@ -414,7 +445,7 @@ export default function FacultyAssignments() {
 
                                                 {/* Internal Stats Row */}
                                                 {asg.status !== 'draft' && asg.stats && (
-                                                    <div style={{ display: 'flex', gap: '1.5rem', marginTop: '1.5rem', background: '#f8fafc', padding: '1rem', borderRadius: '12px', border: '1px solid #f1f5f9' }}>
+                                                    <div className="asg-internal-stats" style={{ display: 'flex', gap: '1.5rem', marginTop: '1.5rem', background: '#f8fafc', padding: '1rem', borderRadius: '12px', border: '1px solid #f1f5f9' }}>
                                                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                                                             <div style={{ background: '#f1f5f9', color: '#64748b', padding: '0.5rem', borderRadius: '8px' }}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg></div>
                                                             <div style={{ display: 'flex', flexDirection: 'column' }}>
@@ -454,7 +485,7 @@ export default function FacultyAssignments() {
                                                 )}
                                             </div>
 
-                                            <div style={{ minWidth: '220px', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '1.5rem' }}>
+                                            <div className="asg-card-right-col" style={{ minWidth: '220px', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '1.5rem' }}>
                                                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', position: 'relative' }}>
                                                     {asg.status === 'published' && <span style={{ color: statusColor, fontWeight: '600', fontSize: '0.85rem', background: isOverdue ? '#fef2f2' : '#ecfdf5', padding: '0.2rem 0.6rem', borderRadius: '4px' }}>{statusText}</span>}
                                                     <button onClick={() => setOpenMenuId(openMenuId === asg.id ? null : asg.id)} style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', padding: '0.25rem', borderRadius: '4px' }}><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="19" r="1"></circle></svg></button>
@@ -494,7 +525,7 @@ export default function FacultyAssignments() {
                                         </div>
 
                                         {/* Card Actions Bottom */}
-                                        <div style={{ padding: '1rem 1.5rem', display: 'flex', gap: '1rem' }}>
+                                        <div className="asg-card-actions" style={{ padding: '1rem 1.5rem', display: 'flex', gap: '1rem' }}>
                                             {asg.status !== 'draft' && (
                                                 <button onClick={() => openSubmissions(asg)} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', background: '#6366f1', color: 'white', border: 'none', padding: '0.6rem 1.2rem', borderRadius: '8px', fontWeight: '600', fontSize: '0.85rem', cursor: 'pointer', boxShadow: '0 2px 4px rgba(99,102,241,0.3)' }}>
                                                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
@@ -558,93 +589,161 @@ export default function FacultyAssignments() {
                         </button>
                     </div>
 
-                    <div style={{ background: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', borderTop: '4px solid #8b5cf6', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)', padding: '2rem' }}>
-                        <h3 style={{ margin: '0 0 1.5rem 0', color: '#6d28d9', fontSize: '1.1rem', fontWeight: '600', paddingBottom: '1rem', borderBottom: '1px solid #e2e8f0' }}>Assignment Details</h3>
+                    {/* Stepper (Mobile Only) */}
+                    <div className="asg-stepper-container mobile-only">
+                        <div className={`asg-step ${mobileStep >= 1 ? 'active' : ''}`}>
+                            <div className="step-circle">{mobileStep > 1 ? '✓' : '1'}</div>
+                            <span className="step-label">Details</span>
+                        </div>
+                        <div className="step-line"></div>
+                        <div className={`asg-step ${mobileStep >= 2 ? 'active' : ''}`}>
+                            <div className="step-circle">{mobileStep > 2 ? '✓' : '2'}</div>
+                            <span className="step-label">Settings</span>
+                        </div>
+                        <div className="step-line"></div>
+                        <div className={`asg-step ${mobileStep >= 3 ? 'active' : ''}`}>
+                            <div className="step-circle">3</div>
+                            <span className="step-label">Review</span>
+                        </div>
+                    </div>
+
+                    <div className={`asg-create-form-card asg-mobile-step-${mobileStep}`} style={{ background: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', borderTop: '4px solid #8b5cf6', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)', padding: '2rem' }}>
+                        
+                        <div className="mobile-only asg-mobile-title">
+                            <div className="asg-mobile-title-icon">
+                                {mobileStep === 1 && <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>}
+                                {mobileStep === 2 && <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>}
+                                {mobileStep === 3 && <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>}
+                            </div>
+                            <div className="asg-mobile-title-text">
+                                <h3>{mobileStep === 1 ? 'Assignment Details' : mobileStep === 2 ? 'Assignment Settings' : 'Review Assignment'}</h3>
+                                <p>{mobileStep === 1 ? 'Provide the basic information about this assignment.' : mobileStep === 2 ? 'Configure additional settings for this assignment.' : 'Please review all details before creating the assignment.'}</p>
+                            </div>
+                        </div>
+
+                        <h3 className="desktop-only" style={{ margin: '0 0 1.5rem 0', color: '#6d28d9', fontSize: '1.1rem', fontWeight: '600', paddingBottom: '1rem', borderBottom: '1px solid #e2e8f0' }}>Assignment Details</h3>
+                        
                         <form onSubmit={handleCreate}>
                             
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem', marginBottom: '1.5rem' }}>
-                                {/* Title (Left) */}
-                                <div className="form-group">
-                                    <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600', color: '#334155', fontSize: '0.9rem' }}>Title *</label>
-                                    <div style={{ position: 'relative' }}>
-                                        <input name="title" value={form.title} onChange={handleFormChange} required placeholder="Enter assignment title" style={{ width: '100%', padding: '0.8rem 1rem', borderRadius: '8px', border: '1px solid #cbd5e1', outline: 'none', fontSize: '0.95rem', boxSizing: 'border-box' }} />
+                            <div data-step="1" className="asg-step-wrapper">
+                                <div className="asg-grid-row" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem', marginBottom: '1.5rem' }}>
+                                    {/* Title (Left) */}
+                                    <div className="form-group">
+                                        <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600', color: '#334155', fontSize: '0.9rem' }}>Title *</label>
+                                        <div style={{ position: 'relative' }}>
+                                            <input name="title" value={form.title} onChange={handleFormChange} required placeholder="Enter assignment title" style={{ width: '100%', padding: '0.8rem 1rem', borderRadius: '8px', border: '1px solid #cbd5e1', outline: 'none', fontSize: '0.95rem', boxSizing: 'border-box' }} />
+                                        </div>
+                                    </div>
+                                    {/* Description (Right) */}
+                                    <div className="form-group">
+                                        <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600', color: '#334155', fontSize: '0.9rem' }}>Description / Instructions *</label>
+                                        <div style={{ position: 'relative' }}>
+                                            <textarea name="description" value={form.description} onChange={handleFormChange} required rows={3} placeholder="Provide detailed instructions for students..." style={{ width: '100%', padding: '0.8rem 1rem', borderRadius: '8px', border: '1px solid #cbd5e1', outline: 'none', resize: 'vertical', fontSize: '0.95rem', boxSizing: 'border-box' }} />
+                                            <div style={{ position: 'absolute', bottom: '-20px', right: 0, fontSize: '0.75rem', color: '#94a3b8' }}>{form.description?.length || 0} / 1000</div>
+                                        </div>
                                     </div>
                                 </div>
-                                {/* Description (Right) */}
-                                <div className="form-group">
-                                    <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600', color: '#334155', fontSize: '0.9rem' }}>Description / Instructions *</label>
-                                    <div style={{ position: 'relative' }}>
-                                        <textarea name="description" value={form.description} onChange={handleFormChange} required rows={3} placeholder="Provide detailed instructions for students..." style={{ width: '100%', padding: '0.8rem 1rem', borderRadius: '8px', border: '1px solid #cbd5e1', outline: 'none', resize: 'vertical', fontSize: '0.95rem', boxSizing: 'border-box' }} />
-                                        <div style={{ position: 'absolute', bottom: '-20px', right: 0, fontSize: '0.75rem', color: '#94a3b8' }}>{form.description?.length || 0} / 1000</div>
+
+                                <div className="asg-grid-row" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem', marginBottom: '1.5rem' }}>
+                                    <div className="form-group">
+                                        <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600', color: '#334155', fontSize: '0.9rem' }}>Class *</label>
+                                        <select name="class_id" value={form.class_id} onChange={handleFormChange} required style={{ width: '100%', padding: '0.8rem 1rem', borderRadius: '8px', border: '1px solid #cbd5e1', outline: 'none', fontSize: '0.95rem', appearance: 'none', background: 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'16\' height=\'16\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'%2364748b\' stroke-width=\'2\' stroke-linecap=\'round\' stroke-linejoin=\'round\'%3E%3Cpolyline points=\'6 9 12 15 18 9\'%3E%3C/polyline%3E%3C/svg%3E") no-repeat right 1rem center/16px', boxSizing: 'border-box' }}>
+                                            <option value="">Select Class</option>
+                                            {classes.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                                        </select>
+                                    </div>
+                                    <div className="form-group">
+                                        <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600', color: '#334155', fontSize: '0.9rem' }}>Subject *</label>
+                                        <select name="subject_id" value={form.subject_id} onChange={handleFormChange} required disabled={!form.class_id} style={{ width: '100%', padding: '0.8rem 1rem', borderRadius: '8px', border: '1px solid #cbd5e1', outline: 'none', fontSize: '0.95rem', appearance: 'none', background: 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'16\' height=\'16\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'%2364748b\' stroke-width=\'2\' stroke-linecap=\'round\' stroke-linejoin=\'round\'%3E%3Cpolyline points=\'6 9 12 15 18 9\'%3E%3C/polyline%3E%3C/svg%3E") no-repeat right 1rem center/16px', boxSizing: 'border-box' }}>
+                                            <option value="">Select Subject</option>
+                                            {subjects.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                                        </select>
                                     </div>
                                 </div>
-                            </div>
-
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem', marginBottom: '1.5rem' }}>
-                                <div className="form-group">
-                                    <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600', color: '#334155', fontSize: '0.9rem' }}>Class *</label>
-                                    <select name="class_id" value={form.class_id} onChange={handleFormChange} required style={{ width: '100%', padding: '0.8rem 1rem', borderRadius: '8px', border: '1px solid #cbd5e1', outline: 'none', fontSize: '0.95rem', appearance: 'none', background: 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'16\' height=\'16\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'%2364748b\' stroke-width=\'2\' stroke-linecap=\'round\' stroke-linejoin=\'round\'%3E%3Cpolyline points=\'6 9 12 15 18 9\'%3E%3C/polyline%3E%3C/svg%3E") no-repeat right 1rem center/16px', boxSizing: 'border-box' }}>
-                                        <option value="">Select Class</option>
-                                        {classes.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                                    </select>
-                                </div>
-                                <div className="form-group">
-                                    <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600', color: '#334155', fontSize: '0.9rem' }}>Subject *</label>
-                                    <select name="subject_id" value={form.subject_id} onChange={handleFormChange} required disabled={!form.class_id} style={{ width: '100%', padding: '0.8rem 1rem', borderRadius: '8px', border: '1px solid #cbd5e1', outline: 'none', fontSize: '0.95rem', appearance: 'none', background: 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'16\' height=\'16\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'%2364748b\' stroke-width=\'2\' stroke-linecap=\'round\' stroke-linejoin=\'round\'%3E%3Cpolyline points=\'6 9 12 15 18 9\'%3E%3C/polyline%3E%3C/svg%3E") no-repeat right 1rem center/16px', boxSizing: 'border-box' }}>
-                                        <option value="">Select Subject</option>
-                                        {subjects.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-                                    </select>
+                                <div className="mobile-only asg-mobile-actions">
+                                    <button type="button" className="btn-cancel" onClick={() => { setView('list'); resetForm(); }}>Cancel</button>
+                                    <button type="button" className="btn-next" onClick={() => setMobileStep(2)}>Next →</button>
                                 </div>
                             </div>
 
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem', marginBottom: '1.5rem' }}>
-                                <div className="form-group">
-                                    <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600', color: '#334155', fontSize: '0.9rem' }}>Due Date & Time *</label>
-                                    <div style={{ position: 'relative' }}>
-                                        <input type="datetime-local" name="due_date" value={form.due_date} onChange={handleFormChange} required min={new Date(Date.now() + 3600000).toISOString().slice(0, 16)} style={{ width: '100%', padding: '0.8rem 1rem', borderRadius: '8px', border: '1px solid #cbd5e1', outline: 'none', fontSize: '0.95rem', boxSizing: 'border-box' }} />
+                            <div data-step="2" className="asg-step-wrapper">
+                                <div className="asg-grid-row" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem', marginBottom: '1.5rem' }}>
+                                    <div className="form-group">
+                                        <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600', color: '#334155', fontSize: '0.9rem' }}>Due Date & Time *</label>
+                                        <div style={{ position: 'relative' }}>
+                                            <input type="datetime-local" name="due_date" value={form.due_date} onChange={handleFormChange} required min={new Date(Date.now() + 3600000).toISOString().slice(0, 16)} style={{ width: '100%', padding: '0.8rem 1rem', borderRadius: '8px', border: '1px solid #cbd5e1', outline: 'none', fontSize: '0.95rem', boxSizing: 'border-box' }} />
+                                        </div>
+                                    </div>
+                                    <div className="form-group">
+                                        <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600', color: '#334155', fontSize: '0.9rem' }}>Max Marks *</label>
+                                        <input type="number" name="max_marks" value={form.max_marks} onChange={handleFormChange} min={1} max={500} required placeholder="Enter maximum marks" style={{ width: '100%', padding: '0.8rem 1rem', borderRadius: '8px', border: '1px solid #cbd5e1', outline: 'none', fontSize: '0.95rem', boxSizing: 'border-box' }} />
                                     </div>
                                 </div>
-                                <div className="form-group">
-                                    <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600', color: '#334155', fontSize: '0.9rem' }}>Max Marks *</label>
-                                    <input type="number" name="max_marks" value={form.max_marks} onChange={handleFormChange} min={1} max={500} required placeholder="Enter maximum marks" style={{ width: '100%', padding: '0.8rem 1rem', borderRadius: '8px', border: '1px solid #cbd5e1', outline: 'none', fontSize: '0.95rem', boxSizing: 'border-box' }} />
-                                </div>
-                            </div>
 
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem', marginBottom: '1.5rem' }}>
-                                <div className="form-group">
-                                    <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600', color: '#334155', fontSize: '0.9rem' }}>Max File Size (MB)</label>
-                                    <input type="number" name="max_file_size_mb" value={form.max_file_size_mb} onChange={handleFormChange} min={1} max={50} placeholder="Enter max file size (e.g., 10)" style={{ width: '100%', padding: '0.8rem 1rem', borderRadius: '8px', border: '1px solid #cbd5e1', outline: 'none', fontSize: '0.95rem', boxSizing: 'border-box' }} />
-                                    <span style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.25rem', display: 'block' }}>Maximum file size students can upload</span>
+                                <div className="asg-grid-row" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem', marginBottom: '1.5rem' }}>
+                                    <div className="form-group">
+                                        <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600', color: '#334155', fontSize: '0.9rem' }}>Max File Size (MB)</label>
+                                        <input type="number" name="max_file_size_mb" value={form.max_file_size_mb} onChange={handleFormChange} min={1} max={50} placeholder="Enter max file size (e.g., 10)" style={{ width: '100%', padding: '0.8rem 1rem', borderRadius: '8px', border: '1px solid #cbd5e1', outline: 'none', fontSize: '0.95rem', boxSizing: 'border-box' }} />
+                                        <span style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.25rem', display: 'block' }}>Maximum file size students can upload</span>
+                                    </div>
+                                    <div className="form-group">
+                                        <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600', color: '#334155', fontSize: '0.9rem' }}>Save As *</label>
+                                        <select name="status" value={form.status} onChange={handleFormChange} style={{ width: '100%', padding: '0.8rem 1rem', borderRadius: '8px', border: '1px solid #cbd5e1', outline: 'none', fontSize: '0.95rem', appearance: 'none', background: 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'16\' height=\'16\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'%2364748b\' stroke-width=\'2\' stroke-linecap=\'round\' stroke-linejoin=\'round\'%3E%3Cpolyline points=\'6 9 12 15 18 9\'%3E%3C/polyline%3E%3C/svg%3E") no-repeat right 1rem center/16px', boxSizing: 'border-box' }}>
+                                            <option value="draft">Draft (save privately)</option>
+                                            <option value="published">Publish (visible to students)</option>
+                                        </select>
+                                        <span style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.25rem', display: 'block' }}>Students won't see this until published</span>
+                                    </div>
                                 </div>
-                                <div className="form-group">
-                                    <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600', color: '#334155', fontSize: '0.9rem' }}>Save As</label>
-                                    <select name="status" value={form.status} onChange={handleFormChange} style={{ width: '100%', padding: '0.8rem 1rem', borderRadius: '8px', border: '1px solid #cbd5e1', outline: 'none', fontSize: '0.95rem', appearance: 'none', background: 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'16\' height=\'16\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'%2364748b\' stroke-width=\'2\' stroke-linecap=\'round\' stroke-linejoin=\'round\'%3E%3Cpolyline points=\'6 9 12 15 18 9\'%3E%3C/polyline%3E%3C/svg%3E") no-repeat right 1rem center/16px', boxSizing: 'border-box' }}>
-                                        <option value="draft">Draft (save privately)</option>
-                                        <option value="published">Publish (visible to students)</option>
-                                    </select>
-                                    <span style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.25rem', display: 'block' }}>Students won't see this until published</span>
-                                </div>
-                            </div>
 
-                            <div className="form-group" style={{ marginBottom: '1.5rem' }}>
-                                <label style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem', cursor: 'pointer' }}>
-                                    <input type="checkbox" name="allow_late_submission" checked={form.allow_late_submission} onChange={handleFormChange} style={{ width: '20px', height: '20px', accentColor: '#6366f1', marginTop: '2px' }} />
+                                <div className="form-group" style={{ marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                     <div style={{ display: 'flex', flexDirection: 'column' }}>
                                         <span style={{ fontWeight: '600', color: '#334155', fontSize: '0.95rem' }}>Allow late submission</span>
                                         <span style={{ fontSize: '0.8rem', color: '#64748b' }}>Students can submit after the due date</span>
                                     </div>
-                                </label>
-                            </div>
-
-                            <div className="form-group" style={{ marginBottom: '2.5rem' }}>
-                                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600', color: '#334155', fontSize: '0.9rem' }}>Reference File (Optional)</label>
-                                <div style={{ border: '1px solid #cbd5e1', borderRadius: '8px', padding: '0.5rem', display: 'flex', alignItems: 'center' }}>
-                                    <input type="file" accept=".pdf,.docx,.doc,.zip,.jpg,.png" onChange={e => setReferenceFile(e.target.files[0])} style={{ width: '100%', outline: 'none' }} />
+                                    <label className="asg-toggle-switch">
+                                        <input type="checkbox" name="allow_late_submission" checked={form.allow_late_submission} onChange={handleFormChange} />
+                                        <span className="asg-toggle-slider"></span>
+                                    </label>
                                 </div>
-                                <span style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.4rem', display: 'block' }}>PDF, DOCX, ZIP, Image accepted (max 50 MB)</span>
+
+                                <div className="form-group" style={{ marginBottom: '2.5rem' }}>
+                                    <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600', color: '#334155', fontSize: '0.9rem' }}>Reference File (Optional)</label>
+                                    <div style={{ border: '1px solid #cbd5e1', borderRadius: '8px', padding: '0.5rem', display: 'flex', alignItems: 'center' }}>
+                                        <input type="file" accept=".pdf,.docx,.doc,.zip,.jpg,.png" onChange={e => setReferenceFile(e.target.files[0])} style={{ width: '100%', outline: 'none' }} />
+                                    </div>
+                                    <span style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.4rem', display: 'block' }}>PDF, DOCX, ZIP, Image accepted (max 50 MB)</span>
+                                </div>
+
+                                <div className="mobile-only asg-mobile-actions">
+                                    <button type="button" className="btn-cancel" onClick={() => setMobileStep(1)}>← Back</button>
+                                    <button type="button" className="btn-next" onClick={() => setMobileStep(3)}>Next →</button>
+                                </div>
                             </div>
 
-                            <div style={{ display: 'flex', gap: '1rem', paddingTop: '1.5rem', borderTop: '1px solid #e2e8f0' }}>
+                            <div data-step="3" className="asg-step-wrapper mobile-only">
+                                <div className="asg-review-card">
+                                    <div className="asg-review-row"><span className="label">Title</span><span className="value">{form.title || '-'}</span></div>
+                                    <div className="asg-review-row"><span className="label">Description</span><span className="value">{form.description || '-'}</span></div>
+                                    <div className="asg-review-row"><span className="label">Due Date</span><span className="value">{formatDate(form.due_date)}</span></div>
+                                    <div className="asg-review-row"><span className="label">Max Marks</span><span className="value">{form.max_marks}</span></div>
+                                    <div className="asg-review-row"><span className="label">Late Submission</span><span className="value">{form.allow_late_submission ? 'Allowed' : 'Not Allowed'}</span></div>
+                                    <div className="asg-review-row"><span className="label">Save As</span><span className="value">{form.status === 'draft' ? 'Draft' : 'Publish'}</span></div>
+                                </div>
+                                <div className="asg-review-alert">
+                                    <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+                                    <div>
+                                        <strong>Everything looks good!</strong>
+                                        <p>You can create the assignment now or go back to edit.</p>
+                                    </div>
+                                </div>
+                                <div className="asg-mobile-actions">
+                                    <button type="button" className="btn-cancel" onClick={() => setMobileStep(2)}>← Back</button>
+                                    <button type="submit" disabled={submitting} className="btn-next btn-create">✓ Create Assignment</button>
+                                </div>
+                            </div>
+
+                            <div className="desktop-only" style={{ display: 'flex', gap: '1rem', paddingTop: '1.5rem', borderTop: '1px solid #e2e8f0' }}>
                                 <button type="submit" disabled={submitting} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.75rem 2rem', background: '#6366f1', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '600', fontSize: '0.95rem', cursor: 'pointer', boxShadow: '0 2px 4px rgba(99,102,241,0.3)' }}>
                                     {submitting ? 'Saving...' : selected ? 'Save Changes' : 'Create Assignment'}
                                 </button>

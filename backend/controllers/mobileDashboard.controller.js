@@ -492,7 +492,7 @@ exports.getFacultyDashboard = async (req, res) => {
                     title:    a.title,
                     message:  a.content,
                     priority: a.priority,
-                    date:     a.created_at,
+                    date:     a.createdAt || a.created_at,
                 })),
                 stats: {
                     totalStudents:      parseInt(totalStudents[0]?.total || 0),
@@ -690,7 +690,7 @@ exports.getParentDashboard = async (req, res) => {
                     title:    a.title,
                     message:  a.content,
                     priority: a.priority,
-                    date:     a.created_at,
+                    date:     a.createdAt || a.created_at,
                 })),
             },
         });

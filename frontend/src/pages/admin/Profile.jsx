@@ -228,7 +228,24 @@ function Profile() {
 
     return (
         <div className="profile-container">
-            {user?.role === "parent" ? (
+            {Capacitor.isNativePlatform() ? (
+                <div style={{ background: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)', borderRadius: '12px', marginBottom: '1.5rem', padding: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: 'white', boxShadow: '0 4px 14px rgba(99, 102, 241, 0.3)' }}>
+                    <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', flex: 1 }}>
+                        <div style={{ width: '44px', height: '44px', background: 'white', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: '#6366f1' }}>
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                        </div>
+                        <div>
+                            <h2 style={{ margin: '0 0 4px 0', fontSize: '16px', fontWeight: '700' }}>My Profile</h2>
+                            <p style={{ margin: 0, fontSize: '11px', opacity: 0.9, lineHeight: 1.4, maxWidth: '180px' }}>Manage your personal information and account settings.</p>
+                        </div>
+                    </div>
+                    <div style={{ flexShrink: 0 }}>
+                        <div style={{ fontSize: '44px', lineHeight: 1, position: 'relative', right: '-10px', filter: 'drop-shadow(0 4px 6px rgba(0,0,0,0.2))' }}>
+                            👤<span style={{ position: 'absolute', bottom: '-5px', right: '-5px', fontSize: '24px' }}>✨</span>
+                        </div>
+                    </div>
+                </div>
+            ) : user?.role === "parent" ? (
                 <div style={{ justifyContent: 'flex-start', padding: '16px', display: 'flex', alignItems: 'center', gap: '12px', background: '#fff', borderRadius: '16px', marginBottom: '20px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -2px rgba(0,0,0,0.05)', border: '1px solid #f1f5f9' }}>
                     <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '10px', width: '48px', height: '48px', fontSize: '1.6rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                         👤

@@ -1,0 +1,401 @@
+.mva-container {
+    padding: 16px;
+    background-color: #f8fafc;
+    min-height: 100vh;
+    font-family: 'Inter', sans-serif;
+    padding-bottom: 80px; /* Space for bottom nav */
+}
+
+/* Header Banner */
+.mva-header-banner {
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    border-radius: 16px;
+    padding: 20px;
+    color: white;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 10px 15px -3px rgba(99, 102, 241, 0.3);
+}
+
+.mva-header-content {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    position: relative;
+    z-index: 2;
+}
+
+.mva-header-icon {
+    background: white;
+    color: #6366f1;
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    flex-shrink: 0;
+}
+
+.mva-header-text h1 {
+    margin: 0 0 4px 0;
+    font-size: 18px;
+    font-weight: 700;
+}
+
+.mva-header-text p {
+    margin: 0;
+    font-size: 12px;
+    opacity: 0.9;
+    line-height: 1.4;
+}
+
+.mva-header-illustration {
+    position: absolute;
+    right: 10px;
+    bottom: -10px;
+    width: 80px;
+    height: auto;
+    opacity: 0.8;
+    z-index: 1;
+}
+
+/* Action Buttons */
+.mva-action-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+.mva-action-btn {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    padding: 10px 4px;
+    background: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+
+.mva-action-btn.pdf {
+    color: #dc2626;
+}
+
+.mva-action-btn.excel {
+    color: #16a34a;
+}
+
+.mva-action-btn.refresh {
+    color: #6366f1;
+}
+
+/* Filters */
+.mva-filters-card {
+    background: white;
+    border-radius: 16px;
+    padding: 16px;
+    margin-bottom: 16px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+}
+
+.mva-filters-row {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.mva-filter-group {
+    flex: 1;
+}
+
+.mva-filter-group label {
+    display: block;
+    font-size: 11px;
+    font-weight: 600;
+    color: #64748b;
+    margin-bottom: 4px;
+}
+
+.mva-select, .mva-input {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    font-size: 13px;
+    color: #1e293b;
+    background-color: #f8fafc;
+    outline: none;
+    appearance: none;
+}
+
+.mva-select {
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    background-size: 16px;
+    padding-right: 32px;
+}
+
+.mva-apply-btn {
+    width: 100%;
+    background: #6366f1;
+    color: white;
+    border: none;
+    padding: 12px;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+/* Stat Cards */
+.mva-stats-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.mva-stat-card {
+    background: white;
+    border-radius: 16px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+}
+
+.mva-stat-icon {
+    font-size: 24px;
+    margin-bottom: 8px;
+}
+
+.mva-stat-card.purple .mva-stat-icon { color: #8b5cf6; }
+.mva-stat-card.green .mva-stat-icon { color: #10b981; }
+.mva-stat-card.orange .mva-stat-icon { color: #f59e0b; }
+.mva-stat-card.blue .mva-stat-icon { color: #3b82f6; }
+
+.mva-stat-value {
+    font-size: 20px;
+    font-weight: 700;
+    color: #1e293b;
+    margin-bottom: 2px;
+}
+
+.mva-stat-title {
+    font-size: 11px;
+    font-weight: 600;
+    color: #64748b;
+    margin-bottom: 4px;
+}
+
+.mva-stat-subtitle {
+    font-size: 10px;
+    color: #94a3b8;
+}
+
+/* Legend */
+.mva-legend-card {
+    background: white;
+    border-radius: 12px;
+    padding: 12px;
+    margin-bottom: 16px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+}
+
+.mva-legend-title {
+    font-size: 12px;
+    font-weight: 700;
+    color: #6366f1;
+    margin-bottom: 8px;
+}
+
+.mva-legend-items {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.mva-legend-item {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    color: #475569;
+}
+
+.mva-legend-badge {
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: bold;
+}
+
+.mva-legend-badge.present { background: #d1fae5; color: #10b981; }
+.mva-legend-badge.absent { background: #fee2e2; color: #ef4444; }
+.mva-legend-badge.late { background: #fef3c7; color: #f59e0b; }
+.mva-legend-badge.holiday { background: #dbeafe; color: #3b82f6; }
+.mva-legend-badge.notmarked { background: #f3f4f6; color: #9ca3af; }
+
+.mva-month-badge {
+    background: #d1fae5;
+    color: #10b981;
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+}
+
+/* Grid */
+.mva-grid-card {
+    background: white;
+    border-radius: 16px;
+    padding: 16px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    overflow: hidden;
+}
+
+.mva-grid-header {
+    font-size: 14px;
+    font-weight: 700;
+    color: #1e293b;
+    margin-bottom: 12px;
+}
+
+.mva-table-wrapper {
+    overflow-x: auto;
+    margin: 0 -16px;
+    padding: 0 16px;
+}
+
+.mva-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+.mva-table th, .mva-table td {
+    padding: 10px 8px;
+    text-align: center;
+    border-bottom: 1px solid #f1f5f9;
+    font-size: 12px;
+}
+
+.mva-table th {
+    font-weight: 600;
+    color: #64748b;
+    background: #f8fafc;
+}
+
+.mva-table td.sticky-col, .mva-table th.sticky-col {
+    position: sticky;
+    left: 0;
+    background: white;
+    z-index: 10;
+    text-align: left;
+    border-right: 1px solid #f1f5f9;
+    min-width: 140px;
+}
+
+.mva-table th.sticky-col {
+    background: #f8fafc;
+}
+
+.mva-student-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.mva-student-avatar {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 600;
+    flex-shrink: 0;
+}
+
+.mva-student-details {
+    display: flex;
+    flex-direction: column;
+}
+
+.mva-student-details span {
+    font-size: 9px;
+    color: #94a3b8;
+}
+
+.mva-student-details strong {
+    font-size: 11px;
+    color: #1e293b;
+}
+
+/* Pagination */
+.mva-pagination {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 16px;
+    font-size: 11px;
+    color: #64748b;
+}
+
+.mva-pagination-controls {
+    display: flex;
+    gap: 4px;
+}
+
+.mva-page-btn {
+    padding: 4px 8px;
+    border: 1px solid #e2e8f0;
+    background: white;
+    border-radius: 6px;
+    color: #64748b;
+    font-size: 11px;
+    cursor: pointer;
+}
+
+.mva-page-btn.active {
+    background: #6366f1;
+    color: white;
+    border-color: #6366f1;
+}
+
+/* Loading/Empty State */
+.mva-empty-state {
+    text-align: center;
+    padding: 32px 16px;
+    color: #64748b;
+}
+
+.mva-empty-icon {
+    font-size: 32px;
+    margin-bottom: 8px;
+}

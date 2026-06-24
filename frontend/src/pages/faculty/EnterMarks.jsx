@@ -3,6 +3,8 @@ import { Link, useNavigate } from 'react-router-dom';
 import api from '../../services/api';
 import examService from '../../services/exam.service';
 import markService from '../../services/mark.service';
+import { Capacitor } from '@capacitor/core';
+import MobileEnterMarks from './MobileEnterMarks';
 import '../admin/Dashboard.css';
 
 function getGrade(pct) {
@@ -198,6 +200,7 @@ function EnterMarks() {
     const [error, setError] = useState('');
     const [lockingExam, setLockingExam] = useState(false);
     const [showImportModal, setShowImportModal] = useState(false);
+    const [searchQuery, setSearchQuery] = useState("");
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 10;
     const navigate = useNavigate();
@@ -450,8 +453,57 @@ function EnterMarks() {
         }
     }
 
-    const totalPages = Math.ceil(students.length / itemsPerPage);
-    const currentStudents = students.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+    // Filtering logic
+    const filteredStudents = students.filter(student => {
+        const query = searchQuery.toLowerCase();
+        return (
+            (student.name && student.name.toLowerCase().includes(query)) ||
+            (student.User?.name && student.User.name.toLowerCase().includes(query)) ||
+            (student.roll_number && String(student.roll_number).toLowerCase().includes(query)) ||
+            (student.User?.roll_number && String(student.User.roll_number).toLowerCase().includes(query)) ||
+            (student.email && student.email.toLowerCase().includes(query)) ||
+            (student.User?.email && student.User.email.toLowerCase().includes(query))
+        );
+    });
+
+    const totalPages = Math.ceil(filteredStudents.length / itemsPerPage);
+    const currentStudents = filteredStudents.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
+    const isNativeEnv = Capacitor.isNativePlatform();
+
+    const handleRefresh = () => {
+        fetchExams();
+        const examObj = exams.find(e => e.id === Number(selectedExam));
+        if (examObj) fetchStudentsAndMarks(examObj);
+    };
+
+    if (isNativeEnv) {
+        return (
+            <MobileEnterMarks
+                exams={exams}
+                selectedExam={selectedExam}
+                setSelectedExam={setSelectedExam}
+                students={students}
+                marksData={marksData}
+                loading={loading}
+                error={error}
+                currentPage={currentPage}
+                setCurrentPage={setCurrentPage}
+                itemsPerPage={itemsPerPage}
+                handleRowChange={handleRowChange}
+                handleSaveMark={handleSaveMark}
+                markAllPresent={markAllPresent}
+                markAllAbsent={markAllAbsent}
+                handleImportClick={handleImportClick}
+                handleLock={handleLock}
+                lockingExam={lockingExam}
+                fileInputRef={fileInputRef}
+                handleFileChange={handleFileChange}
+                avg={avg}
+                handleRefresh={handleRefresh}
+            />
+        );
+    }
 
     return (
         <div className="dashboard-container">
@@ -607,6 +659,22 @@ function EnterMarks() {
                         </div>
                     </div>
 
+                    <div style={{ padding: "0 1.5rem", marginTop: "1rem" }}>
+                        <div style={{ position: "relative", width: "100%", maxWidth: "400px" }}>
+                            <svg style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", color: "#9ca3af" }} width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                            <input
+                                type="text"
+                                placeholder="Search by name, email, or roll no..."
+                                value={searchQuery}
+                                onChange={(e) => {
+                                    setSearchQuery(e.target.value);
+                                    setCurrentPage(1);
+                                }}
+                                style={{ width: "100%", padding: "10px 10px 10px 36px", borderRadius: "8px", border: "1px solid #e5e7eb", fontSize: "14px", color: "#374151", outline: "none", boxSizing: "border-box" }}
+                            />
+                        </div>
+                    </div>
+
                     {loading ? (
                         <div style={{ padding: '3rem', textAlign: 'center', color: '#6b7280' }}>
                             <div className="loading-spinner"></div>
@@ -634,6 +702,14 @@ function EnterMarks() {
                                                     No students found in this class.
                                                 </td>
                                             </tr>
+                                        ) : filteredStudents.length === 0 ? (
+                                            <tr>
+                                                <td colSpan="7" style={{ textAlign: "center", padding: "40px 20px", background: "white", borderRadius: "8px", border: "1px dashed #cbd5e1" }}>
+                                                    <div style={{ fontSize: "2.5rem", marginBottom: "12px" }}>🔍</div>
+                                                    <h4 style={{ color: "#475569", fontSize: "1.1rem", margin: "0 0 8px 0" }}>No matching students found</h4>
+                                                    <p style={{ color: "#94a3b8", fontSize: "0.9rem", margin: 0 }}>Try adjusting your search query.</p>
+                                                </td>
+                                            </tr>
                                         ) : (
                                             currentStudents.map(student => (
                                                 <MarkRow
@@ -653,8 +729,8 @@ function EnterMarks() {
                             {/* PAGINATION */}
                             {totalPages > 1 && (
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '1.5rem', padding: '1rem', background: '#f9fafb', borderRadius: '8px', border: '1px solid #e5e7eb' }}>
-                                    <div style={{ color: '#6b7280', fontSize: '0.9rem' }}>
-                                        Showing <strong>{(currentPage - 1) * itemsPerPage + 1}</strong> to <strong>{Math.min(currentPage * itemsPerPage, students.length)}</strong> of <strong>{students.length}</strong> students
+                                    <div style={{ fontSize: "0.85rem", color: "#6b7280" }}>
+                                        Showing {(currentPage - 1) * itemsPerPage + 1} to {Math.min(currentPage * itemsPerPage, filteredStudents.length)} of {filteredStudents.length} students
                                     </div>
                                     <div style={{ display: 'flex', gap: '0.5rem' }}>
                                         <button

@@ -7,8 +7,14 @@ import "./Students.css"; // Reuse the modern styling
 import ThemeSelector from "../../components/ThemeSelector";
 import { useScanSound } from "../../hooks/useScanSound";
 import { requestCameraPermission } from "../../utils/capacitorPermissions";
+import { Capacitor } from "@capacitor/core";
+import MobileSmartAttendance from "../faculty/MobileSmartAttendance";
 
 function SmartAttendance() {
+    if (Capacitor.isNativePlatform()) {
+        return <MobileSmartAttendance />;
+    }
+
     const { user } = useContext(AuthContext);
     const dashboardPath = user?.role === "admin" || user?.role === "superadmin" || user?.role === "super_admin" || user?.role === "manager"
         ? "/admin/dashboard"
@@ -230,7 +236,7 @@ function SmartAttendance() {
         try {
             setMessage({ type: "loading", text: "Marking attendance..." });
 
-            const response = await api.post("/attendance/mark-student-qr", {
+            const response = await api.post("/attendance/smart/mark-student", {
                 qr_code: decodedQR,
                 class_id: selectedClassRef.current,
                 subject_id: selectedSubjectRef.current,

@@ -621,19 +621,24 @@ exports.getRoomMessages = async (req, res) => {
 // 6. Get or Create Direct Room (Phase 3: Student starting direct chat)
 exports.getOrCreateRoom = async (req, res) => {
     try {
-        const { type, subject_id, class_id, faculty_user_id } = req.body;
+        const { type, subject_id, class_id, faculty_user_id, target_user_id } = req.body;
         const { id: userId, role: userRole, institute_id } = req.user;
 
         let room;
-        if (type === "direct" && (userRole === "student" || userRole === "parent")) {
-            let fid = faculty_user_id;
-            if (!fid && subject_id) {
-                const subject = await Subject.findOne({ where: { id: subject_id }, include: [{ model: Faculty }] });
-                if (subject && subject.Faculty) {
-                    fid = subject.Faculty.user_id;
+        if (type === "direct") {
+            if (userRole === "student" || userRole === "parent") {
+                let fid = faculty_user_id;
+                if (!fid && subject_id) {
+                    const subject = await Subject.findOne({ where: { id: subject_id }, include: [{ model: Faculty }] });
+                    if (subject && subject.Faculty) {
+                        fid = subject.Faculty.user_id;
+                    }
                 }
+                room = await getOrCreateDirectRoom(institute_id, userId, fid, subject_id, class_id);
+            } else {
+                // Faculty or other roles starting direct chat with a student target_user_id
+                room = await getOrCreateDirectRoom(institute_id, target_user_id, userId, subject_id, class_id);
             }
-            room = await getOrCreateDirectRoom(institute_id, userId, fid, subject_id, class_id);
         } else {
             let whereClause = { institute_id, type: type || "subject" };
             if (subject_id) whereClause.subject_id = subject_id;
