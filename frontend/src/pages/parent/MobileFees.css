@@ -50,6 +50,80 @@
     margin: 0;
 }
 
+/* Hero Banner */
+.mp-fees-hero-banner {
+    background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+    border-radius: 16px;
+    margin: 16px 16px 24px;
+    padding: 24px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: white;
+    box-shadow: 0 8px 20px rgba(99, 102, 241, 0.25);
+}
+
+.mp-fees-hero-left {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    flex: 1;
+}
+
+.mp-fees-hero-icon-wrapper {
+    width: 44px;
+    height: 44px;
+    background: white;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    color: #6366f1;
+    font-size: 20px;
+}
+
+.mp-fees-hero-text h2 {
+    margin: 0 0 4px 0;
+    font-size: 18px;
+    font-weight: 700;
+    color: white;
+}
+
+.mp-fees-hero-text p {
+    margin: 0;
+    font-size: 12px;
+    opacity: 0.9;
+    line-height: 1.4;
+    max-width: 180px;
+}
+
+.mp-fees-hero-right {
+    flex-shrink: 0;
+}
+
+.mp-fees-hero-graphic {
+    font-size: 44px;
+    line-height: 1;
+    position: relative;
+    right: -10px;
+    filter: drop-shadow(0 4px 6px rgba(0,0,0,0.2));
+}
+
+.mp-fees-hero-graphic span {
+    position: absolute;
+    bottom: -5px;
+    right: -5px;
+    font-size: 14px;
+    background: #10b981;
+    color: white;
+    border-radius: 8px;
+    padding: 4px 6px;
+    font-weight: 800;
+    line-height: 1;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
 /* Stats Cards */
 .mp-fees-stats {
     padding: 0 16px;

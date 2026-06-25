@@ -181,20 +181,47 @@ function StudentTimetable() {
     return (
         <div className="tt-v2-container">
             {/* ── Header ── */}
-            <div className="tt-v2-header" style={isMobile ? { display: 'flex', flexDirection: 'row', alignItems: 'center', width: '100%', marginBottom: '1rem', justifyContent: 'flex-start' } : { display: 'flex', flexDirection: 'row', alignItems: 'center', width: '100%', marginBottom: '1.5rem', justifyContent: 'space-between' }}>
-                <div className="tt-v2-header-left" style={{ display: 'flex', alignItems: 'center', gap: isMobile ? '0.75rem' : '1rem', width: '100%', textAlign: 'left' }}>
-                    {/* Calendar Icon */}
-                    <div className="tt-v2-header-icon" style={{ background: '#f8fafc', border: '1px solid #f1f5f9', borderRadius: '12px', padding: '10px', fontSize: '1.6rem', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 1px 2px rgba(0,0,0,0.02)', margin: 0 }}>
-                        📅
-                    </div>
-                    
-                    {/* Titles */}
-                    <div className="tt-v2-header-titles" style={{ flex: 1 }}>
-                        <h1 style={{ margin: 0, fontSize: isMobile ? '1.2rem' : '1.5rem', fontWeight: 700, color: '#0f172a' }}>My Class Timetable</h1>
-                        <p style={{ margin: '4px 0 0', fontSize: isMobile ? '0.75rem' : '0.85rem', color: '#64748b' }}>Your weekly class schedule for enrolled subjects.</p>
+            {!isMobile && (
+                <div className="tt-v2-header" style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', width: '100%', marginBottom: '1.5rem', justifyContent: 'space-between' }}>
+                    <div className="tt-v2-header-left" style={{ display: 'flex', alignItems: 'center', gap: '1rem', width: '100%', textAlign: 'left' }}>
+                        {/* Calendar Icon */}
+                        <div className="tt-v2-header-icon" style={{ background: '#f8fafc', border: '1px solid #f1f5f9', borderRadius: '12px', padding: '10px', fontSize: '1.6rem', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 1px 2px rgba(0,0,0,0.02)', margin: 0 }}>
+                            📅
+                        </div>
+                        
+                        {/* Titles */}
+                        <div className="tt-v2-header-titles" style={{ flex: 1 }}>
+                            <h1 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 700, color: '#0f172a' }}>My Class Timetable</h1>
+                            <p style={{ margin: '4px 0 0', fontSize: '0.85rem', color: '#64748b' }}>Your weekly class schedule for enrolled subjects.</p>
+                        </div>
                     </div>
                 </div>
-            </div>
+            )}
+
+            {/* ── Mobile Hero Banner ── */}
+            {isMobile && (
+                <div className="tt-v2-hero-banner">
+                    <div className="tt-v2-hero-left">
+                        <div className="tt-v2-hero-icon-wrapper">
+                            <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+                                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                                <line x1="16" y1="2" x2="16" y2="6"></line>
+                                <line x1="8" y1="2" x2="8" y2="6"></line>
+                                <line x1="3" y1="10" x2="21" y2="10"></line>
+                            </svg>
+                        </div>
+                        <div className="tt-v2-hero-text">
+                            <h2>My Timetable</h2>
+                            <p>Your weekly class schedule</p>
+                        </div>
+                    </div>
+                    <div className="tt-v2-hero-right">
+                        <div className="tt-v2-hero-graphic">
+                            📅<span>✨</span>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* ── Top Banner ── */}
             <div className="tt-v2-top-banner">

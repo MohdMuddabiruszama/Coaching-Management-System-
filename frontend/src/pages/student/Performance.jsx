@@ -229,14 +229,19 @@ function StudentPerformance() {
         <div className="perf-v2-dashboard">
 
             {/* Mobile Header (Visible only on mobile) */}
-            <div className="marks-mobile-header" style={{ justifyContent: 'flex-start' }}>
-                <div className="marks-mobile-header-left" style={{ display: 'flex', alignItems: 'center', gap: '12px', textAlign: 'left' }}>
-                    <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', padding: '6px', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6366f1" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
+            <div className="perf-hero-banner mobile-only">
+                <div className="perf-hero-left">
+                    <div className="perf-hero-icon-wrapper">
+                        📈
                     </div>
-                    <div className="marks-mobile-header-text">
-                        <h2 style={{ margin: 0 }}>My Performance</h2>
-                        <p style={{ marginTop: '2px', margin: 0 }}>Complete overview of your academic performance</p>
+                    <div className="perf-hero-text">
+                        <h2>My Performance</h2>
+                        <p>Complete academic overview</p>
+                    </div>
+                </div>
+                <div className="perf-hero-right">
+                    <div className="perf-hero-graphic">
+                        📊<span>★</span>
                     </div>
                 </div>
             </div>

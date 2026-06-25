@@ -301,20 +301,48 @@ export default function StudentAssignments() {
             </div>}
 
             {/* ── HEADER ── */}
-            <div className="asg-v2-header">
-                <div className="asg-v2-header-left" style={{ justifyContent: 'flex-start' }}>
-                    {/* Clipboard Icon */}
-                    <div className="asg-v2-header-icon" style={{ margin: 0 }}>
-                        📋
-                    </div>
-                    
-                    {/* Titles */}
-                    <div className="asg-v2-header-titles" style={{ textAlign: 'left' }}>
-                        <h1>My Assignments</h1>
-                        <p>View, submit, and track your assignment submissions</p>
+            {!isMobile && (
+                <div className="asg-v2-header">
+                    <div className="asg-v2-header-left" style={{ justifyContent: 'flex-start' }}>
+                        {/* Clipboard Icon */}
+                        <div className="asg-v2-header-icon" style={{ margin: 0 }}>
+                            📋
+                        </div>
+                        
+                        {/* Titles */}
+                        <div className="asg-v2-header-titles" style={{ textAlign: 'left' }}>
+                            <h1>My Assignments</h1>
+                            <p>View, submit, and track your assignment submissions</p>
+                        </div>
                     </div>
                 </div>
-            </div>
+            )}
+
+            {/* ── Mobile Hero Banner ── */}
+            {isMobile && (
+                <div className="asg-v2-hero-banner">
+                    <div className="asg-v2-hero-left">
+                        <div className="asg-v2-hero-icon-wrapper">
+                            <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                <polyline points="14 2 14 8 20 8"></polyline>
+                                <line x1="16" y1="13" x2="8" y2="13"></line>
+                                <line x1="16" y1="17" x2="8" y2="17"></line>
+                                <polyline points="10 9 9 9 8 9"></polyline>
+                            </svg>
+                        </div>
+                        <div className="asg-v2-hero-text">
+                            <h2>My Assignments</h2>
+                            <p>Track your assignment submissions</p>
+                        </div>
+                    </div>
+                    <div className="asg-v2-hero-right">
+                        <div className="asg-v2-hero-graphic">
+                            📝<span>★</span>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* ── DETAIL VIEW ── */}
             {detailAsg && (

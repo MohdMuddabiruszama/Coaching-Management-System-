@@ -73,14 +73,19 @@ export default function MobileFees() {
     return (
         <div className="mp-fees-container" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
             {/* Header */}
-            <div className="mp-fees-header">
-                <div className="mp-fees-title-area">
-                    <div className="mp-fees-title-icon">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4Z"/></svg>
+            <div className="mp-fees-hero-banner">
+                <div className="mp-fees-hero-left">
+                    <div className="mp-fees-hero-icon-wrapper">
+                        💳
                     </div>
-                    <div className="mp-fees-title-text">
-                        <h1>Pay Fees</h1>
-                        <p>View fee structures and payments.</p>
+                    <div className="mp-fees-hero-text">
+                        <h2>Pay Fees</h2>
+                        <p>View structures and payments</p>
+                    </div>
+                </div>
+                <div className="mp-fees-hero-right">
+                    <div className="mp-fees-hero-graphic">
+                        💲<span>★</span>
                     </div>
                 </div>
             </div>

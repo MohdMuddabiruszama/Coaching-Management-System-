@@ -111,12 +111,19 @@ export default function MobileMarks() {
     return (
         <div className="mm-container" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
             {/* Header */}
-            <div className="mm-header" style={{ paddingBottom: '0' }}>
-                <div className="mm-title-area">
-                    <div className="mm-title-icon">📊</div>
-                    <div className="mm-title-text">
-                        <h1>Marks</h1>
+            <div className="mm-hero-banner">
+                <div className="mm-hero-left">
+                    <div className="mm-hero-icon-wrapper">
+                        📊
+                    </div>
+                    <div className="mm-hero-text">
+                        <h2>Marks</h2>
                         <p>Academic performance overview</p>
+                    </div>
+                </div>
+                <div className="mm-hero-right">
+                    <div className="mm-hero-graphic">
+                        📈<span>★</span>
                     </div>
                 </div>
             </div>

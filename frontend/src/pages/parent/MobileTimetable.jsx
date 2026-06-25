@@ -203,14 +203,19 @@ export default function MobileTimetable() {
         <div className="tt-v2-container" style={{ paddingBottom: '80px', paddingTop: 'env(safe-area-inset-top)' }}>
             <div style={{ padding: '0 16px', paddingTop: '16px' }}>
                 {/* ── Header ── */}
-                <div className="tt-v2-header" style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', width: '100%', marginBottom: '1rem', justifyContent: 'flex-start' }}>
-                    <div className="tt-v2-header-left" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', width: '100%', textAlign: 'left' }}>
-                        <div className="tt-v2-header-icon" style={{ background: '#f8fafc', border: '1px solid #f1f5f9', borderRadius: '12px', padding: '10px', fontSize: '1.6rem', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 1px 2px rgba(0,0,0,0.02)', margin: 0 }}>
+                <div className="tt-v2-hero-banner">
+                    <div className="tt-v2-hero-left">
+                        <div className="tt-v2-hero-icon-wrapper">
                             📅
                         </div>
-                        <div className="tt-v2-header-titles" style={{ flex: 1 }}>
-                            <h1 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 700, color: '#0f172a' }}>Class Timetable</h1>
-                            <p style={{ margin: '4px 0 0', fontSize: '0.75rem', color: '#64748b' }}>Weekly class schedule for enrolled subjects.</p>
+                        <div className="tt-v2-hero-text">
+                            <h2>Class Timetable</h2>
+                            <p>Weekly schedule for subjects</p>
+                        </div>
+                    </div>
+                    <div className="tt-v2-hero-right">
+                        <div className="tt-v2-hero-graphic">
+                            🕒<span>★</span>
                         </div>
                     </div>
                 </div>

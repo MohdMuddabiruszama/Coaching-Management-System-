@@ -162,12 +162,19 @@ export default function MobileAttendance() {
         <div className="ma-container" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
             
             {/* Header */}
-            <div className="ma-header" style={{ paddingBottom: '0' }}>
-                <div className="ma-title-area">
-                    <div className="ma-title-icon">🗓️</div>
-                    <div className="ma-title-text">
-                        <h1>Attendance</h1>
+            <div className="ma-hero-banner">
+                <div className="ma-hero-left">
+                    <div className="ma-hero-icon-wrapper">
+                        📅
+                    </div>
+                    <div className="ma-hero-text">
+                        <h2>Attendance</h2>
                         <p>Track daily attendance</p>
+                    </div>
+                </div>
+                <div className="ma-hero-right">
+                    <div className="ma-hero-graphic">
+                        📋<span>★</span>
                     </div>
                 </div>
             </div>

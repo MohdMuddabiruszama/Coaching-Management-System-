@@ -92,13 +92,20 @@ export default function MobileAssignments() {
     return (
         <div className="mpa-container">
             {/* ── Page Header ── */}
-            <div className="mpa-header-left" style={{ justifyContent: 'flex-start', padding: '16px', display: 'flex', alignItems: 'center', gap: '12px', background: '#fff' }}>
-                <div className="mpa-header-icon" style={{ background: '#f8fafc', border: '1px solid #f1f5f9', borderRadius: '12px', padding: '10px', fontSize: '1.6rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    📋
+            <div className="mpa-hero-banner">
+                <div className="mpa-hero-left">
+                    <div className="mpa-hero-icon-wrapper">
+                        📋
+                    </div>
+                    <div className="mpa-hero-text">
+                        <h2>Assignments</h2>
+                        <p>View and track submissions</p>
+                    </div>
                 </div>
-                <div>
-                    <h1 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 700, color: '#0f172a' }}>Assignments</h1>
-                    <p style={{ margin: '4px 0 0', fontSize: '0.75rem', color: '#64748b' }}>View and track assignment submissions</p>
+                <div className="mpa-hero-right">
+                    <div className="mpa-hero-graphic">
+                        📚<span>★</span>
+                    </div>
                 </div>
             </div>
 

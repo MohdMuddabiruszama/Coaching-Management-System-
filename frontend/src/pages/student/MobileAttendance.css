@@ -5,52 +5,70 @@
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 }
 
-/* Header */
-.ma-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
+/* Hero Banner */
+.ma-hero-banner {
+    background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+    border-radius: 16px;
     margin-bottom: 24px;
+    padding: 24px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: white;
+    box-shadow: 0 8px 20px rgba(99, 102, 241, 0.25);
 }
 
-.ma-back-icon, .ma-filter-icon {
+.ma-hero-left {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    flex: 1;
+}
+
+.ma-hero-icon-wrapper {
+    width: 44px;
+    height: 44px;
     background: white;
-    border: 1px solid #edf2f7;
-    border-radius: 50%;
-    width: 40px;
-    height: 40px;
+    border-radius: 12px;
     display: flex;
     align-items: center;
     justify-content: center;
-    color: #1a202c;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-    cursor: pointer;
+    flex-shrink: 0;
+    color: #6366f1;
 }
 
-.ma-title-area {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-}
-
-.ma-title-icon {
-    background: #f0f4ff;
-    padding: 8px;
-    border-radius: 12px;
-    font-size: 20px;
-}
-
-.ma-title-text h1 {
+.ma-hero-text h2 {
+    margin: 0 0 4px 0;
     font-size: 18px;
     font-weight: 700;
-    color: #1a202c;
-    margin: 0;
+    color: white;
 }
 
-.ma-title-text p {
-    font-size: 12px;
-    color: #718096;
+.ma-hero-text p {
     margin: 0;
+    font-size: 12px;
+    opacity: 0.9;
+    line-height: 1.4;
+    max-width: 180px;
+}
+
+.ma-hero-right {
+    flex-shrink: 0;
+}
+
+.ma-hero-graphic {
+    font-size: 44px;
+    line-height: 1;
+    position: relative;
+    right: -10px;
+    filter: drop-shadow(0 4px 6px rgba(0,0,0,0.2));
+}
+
+.ma-hero-graphic span {
+    position: absolute;
+    bottom: -5px;
+    right: -5px;
+    font-size: 24px;
 }
 
 /* Subject Pills */

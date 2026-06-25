@@ -135,12 +135,19 @@ function ViewAnnouncements() {
             </div>
 
             {/* Mobile Header */}
-            <div className="ann-mobile-header mobile-only">
-                <div className="ann-mh-top" style={{ justifyContent: 'flex-start' }}>
-                    <div className="ann-mh-icon" style={{ margin: 0 }}>📢</div>
-                    <div className="ann-mh-title" style={{ textAlign: 'left' }}>
-                        <h1>Institute Announcements</h1>
-                        <p>Important updates and notifications from the institute and faculty.</p>
+            <div className="ann-hero-banner mobile-only">
+                <div className="ann-hero-left">
+                    <div className="ann-hero-icon-wrapper">
+                        📢
+                    </div>
+                    <div className="ann-hero-text">
+                        <h2>Institute Announcements</h2>
+                        <p>Important updates and notifications</p>
+                    </div>
+                </div>
+                <div className="ann-hero-right">
+                    <div className="ann-hero-graphic">
+                        🔔<span>★</span>
                     </div>
                 </div>
             </div>

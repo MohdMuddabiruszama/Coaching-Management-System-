@@ -207,29 +207,38 @@ function StudentNotes() {
             </div>
 
             {/* Mobile Header */}
-            <div className="notes-mobile-header mobile-only">
-                <div className="notes-mh-top" style={{ justifyContent: 'flex-start' }}>
-                    <div className="notes-mh-icon" style={{background: '#f3e8ff', fontSize: '24px', margin: 0}}>📘</div>
-                    <div className="notes-mh-title" style={{ textAlign: 'left' }}>
-                        <h1>Study Materials</h1>
-                        <p>Access notes and study materials shared by your faculty.</p>
+            <div className="notes-hero-banner mobile-only">
+                <div className="notes-hero-left">
+                    <div className="notes-hero-icon-wrapper">
+                        📘
+                    </div>
+                    <div className="notes-hero-text">
+                        <h2>Study Materials</h2>
+                        <p>Access notes shared by your faculty</p>
                     </div>
                 </div>
-                <div style={{ marginTop: '12px' }}>
-                    {subjects.length > 0 && (
-                        <select
-                            className="st-select"
-                            value={selectedSubject}
-                            onChange={e => setSelectedSubject(e.target.value)}
-                            style={{ width: '100%', padding: '10px 16px', fontSize: '0.95rem', borderRadius: '8px', border: '1px solid #e2e8f0', backgroundPosition: 'right 16px top 50%' }}
-                        >
-                            <option value="">All Subjects</option>
-                            {subjects.map(s => (
-                                <option key={s.id} value={s.id}>{s.name}</option>
-                            ))}
-                        </select>
-                    )}
+                <div className="notes-hero-right">
+                    <div className="notes-hero-graphic">
+                        📚<span>★</span>
+                    </div>
                 </div>
+            </div>
+
+            {/* Mobile Subject Filter */}
+            <div className="mobile-only" style={{ padding: '0 16px', marginBottom: '24px' }}>
+                {subjects.length > 0 && (
+                    <select
+                        className="st-select"
+                        value={selectedSubject}
+                        onChange={e => setSelectedSubject(e.target.value)}
+                        style={{ width: '100%', padding: '10px 16px', fontSize: '0.95rem', borderRadius: '8px', border: '1px solid #e2e8f0', backgroundPosition: 'right 16px top 50%', backgroundColor: '#fff' }}
+                    >
+                        <option value="">All Subjects</option>
+                        {subjects.map(s => (
+                            <option key={s.id} value={s.id}>{s.name}</option>
+                        ))}
+                    </select>
+                )}
             </div>
 
             {/* Stats Row */}

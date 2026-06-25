@@ -408,12 +408,25 @@ function ViewMarks() {
     return (
         <div className="marks-dashboard">
             {/* Mobile Header (Visible only on mobile) */}
-            <div className="marks-mobile-header" style={{ justifyContent: 'flex-start' }}>
-                <div className="marks-mobile-header-center" style={{ display: 'flex', alignItems: 'center', gap: '12px', textAlign: 'left' }}>
-                    <div className="marks-mobile-header-icon" style={{ margin: 0 }}>📋</div>
-                    <div className="marks-mobile-header-text">
-                        <h2 style={{ margin: 0 }}>My Exam Marks</h2>
-                        <p style={{ margin: 0 }}>View your performance across all exams</p>
+            <div className="marks-hero-banner mobile-only-flex">
+                <div className="marks-hero-left">
+                    <div className="marks-hero-icon-wrapper">
+                        <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                            <polyline points="14 2 14 8 20 8"></polyline>
+                            <line x1="16" y1="13" x2="8" y2="13"></line>
+                            <line x1="16" y1="17" x2="8" y2="17"></line>
+                            <polyline points="10 9 9 9 8 9"></polyline>
+                        </svg>
+                    </div>
+                    <div className="marks-hero-text">
+                        <h2>My Exam Marks</h2>
+                        <p>View your performance across all exams</p>
+                    </div>
+                </div>
+                <div className="marks-hero-right">
+                    <div className="marks-hero-graphic">
+                        📋<span>A+</span>
                     </div>
                 </div>
             </div>

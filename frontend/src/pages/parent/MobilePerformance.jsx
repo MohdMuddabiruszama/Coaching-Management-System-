@@ -80,12 +80,19 @@ export default function MobilePerformance() {
     return (
         <div className="mperf-container" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
             {/* Header */}
-            <div className="mperf-header">
-                <div className="mperf-title-area">
-                    <div className="mperf-title-icon">📊</div>
-                    <div className="mperf-title-text">
-                        <h1>Performance</h1>
+            <div className="mperf-hero-banner">
+                <div className="mperf-hero-left">
+                    <div className="mperf-hero-icon-wrapper">
+                        📊
+                    </div>
+                    <div className="mperf-hero-text">
+                        <h2>Performance</h2>
                         <p>Academic performance overview</p>
+                    </div>
+                </div>
+                <div className="mperf-hero-right">
+                    <div className="mperf-hero-graphic">
+                        🎯<span>★</span>
                     </div>
                 </div>
             </div>
