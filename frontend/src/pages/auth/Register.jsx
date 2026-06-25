@@ -129,7 +129,7 @@ function Register() {
     <div className="auth-container">
       <div className="auth-card">
         <div className="auth-header">
-          <h1 className="auth-title"><img src={zfLogo} alt="ZF Solution" style={{ height: '65px', width: '65px', objectFit: 'contain', verticalAlign: 'middle', marginRight: '8px' }} />ZF Solution</h1>
+          <h1 className="auth-title"><img src={zfLogo} alt="ZenithFlows" style={{ height: '65px', width: '65px', objectFit: 'contain', verticalAlign: 'middle', marginRight: '8px' }} />ZenithFlows</h1>
           <p className="auth-subtitle">Create your institute account</p>
         </div>
 

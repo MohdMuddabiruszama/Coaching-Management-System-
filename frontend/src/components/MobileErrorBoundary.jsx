@@ -1,5 +1,5 @@
 /**
- * MobileErrorBoundary — Global React error catcher for ZF Solution
+ * MobileErrorBoundary — Global React error catcher for ZenithFlows
  *
  * Catches any unhandled React render/lifecycle errors and displays a
  * professional crash screen with a reload button instead of a blank/white screen.

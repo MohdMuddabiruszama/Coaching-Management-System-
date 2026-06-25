@@ -61,7 +61,7 @@ export default function LandingPage() {
       <div style={{ marginBottom: "1.5rem", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <div>
           <h1 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <span>🌐</span> ZF Solution Landing Page
+            <span>🌐</span> ZenithFlows Landing Page
           </h1>
           <p style={{ color: "var(--text-secondary)", margin: 0 }}>
             Manage your global public-facing marketing page
@@ -136,7 +136,7 @@ export default function LandingPage() {
             <h3 style={{ marginTop: 0 }}>SEO & Meta Details</h3>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: ".75rem", fontSize: ".875rem" }}>
               {[
-                { label: "Meta Title", value: "ZF Solution - The Ultimate ERP" },
+                { label: "Meta Title", value: "ZenithFlows - The Ultimate ERP" },
                 { label: "Meta Description", value: "Automate your institute from admissions to alumni..." },
                 { label: "Target Audience", value: "Schools, Colleges, Universities" },
                 { label: "Index Status", value: "Indexed by Google" },

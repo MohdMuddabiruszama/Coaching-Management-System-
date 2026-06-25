@@ -10,7 +10,7 @@ export default function Testimonials() {
         <span className='lp-eyebrow'>Success Stories</span>
         <h2 className='lp-h2'>Trusted by Institute Directors</h2>
         <p className='lp-subtitle'>
-          Hear from the leaders who transformed their operations using ZF Solution.
+          Hear from the leaders who transformed their operations using ZenithFlows.
         </p>
       </div>
 

@@ -10,12 +10,13 @@
 
 import { useState, useCallback } from "react";
 import { resolveImgUrl } from "../utils/resolveUrl";
+import zfLogo from "../assets/zf-logo.png";
 
 const STORAGE_KEY = "app_branding";
 
 export const DEFAULT_BRANDING = {
-    logo: `${import.meta.env.BASE_URL}mobile-icon.png`,
-    name: "ZF SolutionPro",
+    logo: zfLogo,
+    name: "ZenithFlows",
     tagline: "Empowering Education",
     color: "#667eea",
     isDefault: true,

@@ -1,5 +1,5 @@
 /**
- * AuthContext Tests — ZF Solution Frontend
+ * AuthContext Tests — ZenithFlows Frontend
  * ==========================================
  * Covers:
  *  - login() success + token persistence

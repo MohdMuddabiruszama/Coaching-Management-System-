@@ -1,5 +1,5 @@
 # ─────────────────────────────────────────────────────
-# ZF Solution Backend — Production Dockerfile
+# ZenithFlows Backend — Production Dockerfile
 # Multi-stage build for minimal image size (~120MB)
 # ─────────────────────────────────────────────────────
 

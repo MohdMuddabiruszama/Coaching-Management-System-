@@ -270,7 +270,7 @@ if (!isCloudinaryReady) {
 app.get("/", (req, res) => {
   res.status(200).json({
     success: true,
-    message: "🎓 ZF Solution API is running",
+    message: "🎓 ZenithFlows API is running",
     version: "1.1.5",
     timestamp: new Date().toISOString(),
   });

@@ -1,5 +1,5 @@
 /**
- * MobileErrorBoundary Tests — ZF Solution Frontend
+ * MobileErrorBoundary Tests — ZenithFlows Frontend
  * ==================================================
  * Covers: crash screen rendering, reload button, error logging.
  */

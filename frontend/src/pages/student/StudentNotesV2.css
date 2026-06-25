@@ -707,7 +707,20 @@
     
     .notes-v2-pills {
         width: 100%;
-        padding-bottom: 4px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        padding-bottom: 0;
+        overflow: visible;
+    }
+    
+    .notes-v2-pill {
+        flex: 1 1 auto;
+        text-align: center;
+        padding: 10px 14px;
+        font-size: 0.85rem;
+        border-radius: 12px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.02);
     }
     
     .notes-v2-search-sort {

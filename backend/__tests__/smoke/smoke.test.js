@@ -21,7 +21,7 @@ describe("🟢 Smoke Tests — Health Check", () => {
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
     expect(res.body.version).toBeDefined();
-    expect(res.body.message).toMatch(/ZF Solution/i);
+    expect(res.body.message).toMatch(/ZenithFlows/i);
     expect(res.body.timestamp).toBeDefined();
   });
 

@@ -849,7 +849,7 @@ export default function InstitutePage({ subdomain }) {
         </div>
         <div className="pub-footer-bottom">
           <span>© {new Date().getFullYear()} {data.name}. All rights reserved.</span>
-          <span className="pub-powered-badge">Powered by ZF Solution</span>
+          <span className="pub-powered-badge">Powered by ZenithFlows</span>
         </div>
       </footer>
 

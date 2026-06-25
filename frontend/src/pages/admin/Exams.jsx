@@ -126,6 +126,7 @@ const EMPTY_FORM = {
     total_marks: '',
     passing_marks: '',
     exam_type: 'unit_test',
+    custom_exam_type: '',
     start_time: '', 
     duration_val: '', 
     duration_unit: 'Minutes', 
@@ -319,6 +320,8 @@ function Exams() {
 
     const openEditModal = (exam) => {
         setEditingExam(exam);
+        const predefinedTypes = ['unit_test', 'midterm', 'final', 'mock', 'practical'];
+        const isCustomType = exam.exam_type && !predefinedTypes.includes(exam.exam_type);
         setFormData({
             name:          exam.name,
             subject_id:    exam.subject_id || '',
@@ -326,7 +329,8 @@ function Exams() {
             exam_date:     exam.exam_date ? exam.exam_date.slice(0, 10) : '',
             total_marks:   exam.total_marks,
             passing_marks: exam.passing_marks,
-            exam_type:     exam.exam_type || 'unit_test',
+            exam_type:     isCustomType ? 'other' : (exam.exam_type || 'unit_test'),
+            custom_exam_type: isCustomType ? exam.exam_type : '',
             start_time:    '',
             duration_val:  '',
             duration_unit: 'Minutes',
@@ -343,6 +347,12 @@ function Exams() {
         if (!editingExam && subjectMode === 'single' && !formData.subject_id) { alert('Please select a subject.'); return; }
         if (!editingExam && subjectMode === 'all' && availableSubjects.length === 0) { alert('No subjects available for the selected class.'); return; }
 
+        const finalExamType = formData.exam_type === 'other' ? formData.custom_exam_type : formData.exam_type;
+        if (formData.exam_type === 'other' && (!finalExamType || !finalExamType.trim())) {
+            alert('Please specify the custom exam type.');
+            return;
+        }
+
         setSubmitting(true);
         try {
             if (editingExam) {
@@ -351,18 +361,18 @@ function Exams() {
                     exam_date:     formData.exam_date,
                     total_marks:   formData.total_marks,
                     passing_marks: formData.passing_marks,
-                    exam_type:     formData.exam_type,
+                    exam_type:     finalExamType,
                 });
                 alert('Exam updated successfully!');
             } else if (subjectMode === 'single') {
-                await api.post('/exams', formData);
+                await api.post('/exams', { ...formData, exam_type: finalExamType });
                 alert('Exam created successfully!');
             } else {
                 const errors = [];
                 const created = [];
                 for (const subject of availableSubjects) {
                     try {
-                        await api.post('/exams', { ...formData, subject_id: subject.id });
+                        await api.post('/exams', { ...formData, exam_type: finalExamType, subject_id: subject.id });
                         created.push(subject.name);
                     } catch (err) {
                         errors.push(`${subject.name}: ${err.response?.data?.message || 'Failed'}`);
@@ -821,6 +831,23 @@ function Exams() {
                                     </select>
                                     <p className="exams-field-desc">Choose the type of exam</p>
                                 </div>
+
+                                {formData.exam_type === 'other' && (
+                                    <div className="exams-form-group full-width custom-exam-type-anim">
+                                        <label>Specify Exam Type <span className="req">*</span></label>
+                                        <div className="exams-input-wrapper">
+                                            <input 
+                                                type="text" 
+                                                name="custom_exam_type" 
+                                                placeholder="e.g., Scholarship Test" 
+                                                value={formData.custom_exam_type} 
+                                                onChange={handleChange} 
+                                                required={formData.exam_type === 'other'} 
+                                            />
+                                            <div className="exams-input-icon"><TextIcon /></div>
+                                        </div>
+                                    </div>
+                                )}
 
                                 <div className="exams-form-group full-width">
                                     <label>Class <span className="req">*</span></label>

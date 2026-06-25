@@ -1,5 +1,5 @@
 /**
- * NetworkStatus Tests — ZF Solution Frontend
+ * NetworkStatus Tests — ZenithFlows Frontend
  * ============================================
  * Tests the online/offline/server-down state logic.
  *

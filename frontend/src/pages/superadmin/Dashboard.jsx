@@ -1,7 +1,7 @@
 /**
  * Super Admin Dashboard
  * Phase 1: Fixed Revenue, Added new stats (Features, Private Schools, Free Trial Users, Managers)
- * Phase 4: ZF Solution Landing Page preview section
+ * Phase 4: ZenithFlows Landing Page preview section
  */
 
 import { useState, useEffect, useContext } from "react";
@@ -120,13 +120,13 @@ function SuperAdminDashboard() {
                 ))}
             </div>
 
-            {/* ── ZF Solution Landing Page Monitor ── */}
+            {/* ── ZenithFlows Landing Page Monitor ── */}
             <div className="card" style={{ marginBottom: '24px', background: 'linear-gradient(135deg, #1e1b4b 0%, #312e81 100%)', color: '#fff', border: 'none' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
                     <div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px' }}>
                             <span style={{ fontSize: '28px' }}>🎓</span>
-                            <h2 style={{ margin: 0, fontSize: '20px', color: '#fff' }}>ZF Solution — Public Landing Page</h2>
+                            <h2 style={{ margin: 0, fontSize: '20px', color: '#fff' }}>ZenithFlows — Public Landing Page</h2>
                             <span style={{ background: '#22c55e', color: '#fff', fontSize: '11px', fontWeight: '700', padding: '3px 10px', borderRadius: '20px' }}>● LIVE</span>
                         </div>
                         <p style={{ margin: 0, color: '#a5b4fc', fontSize: '14px' }}>
@@ -230,7 +230,7 @@ function SuperAdminDashboard() {
                     <Link to="/superadmin/landing-page" className="action-card" style={{ textDecoration: 'none' }}>
                         <div className="action-icon">🌐</div>
                         <h3>Landing Page</h3>
-                        <p>Manage ZF Solution public site</p>
+                        <p>Manage ZenithFlows public site</p>
                     </Link>
                     <Link to="/superadmin/institute-limits" className="action-card" style={{ textDecoration: 'none' }}>
                         <div className="action-icon">🔧</div>

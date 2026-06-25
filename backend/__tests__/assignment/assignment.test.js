@@ -1,5 +1,5 @@
 /**
- * Assignment Tests — ZF Solution Backend
+ * Assignment Tests — ZenithFlows Backend
  * =======================================
  * Tests /api/assignments/* endpoints:
  *  - Auth enforcement (no token → 401)

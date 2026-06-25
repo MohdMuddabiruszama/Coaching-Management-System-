@@ -590,7 +590,7 @@ export default function StudentAssignments() {
                                 
                                 return (
                                     <div key={asg.id} className="asg-v3-card">
-                                        <div className="asg-v3-menu-dots">⋮</div>
+                                        {!isMobile && <div className="asg-v3-menu-dots">⋮</div>}
                                         
                                         {!isMobile && (
                                             <>

@@ -21,7 +21,7 @@ export const useRazorpayPayment = () => {
                 key: orderConfig.key, // from backend create-order
                 amount: orderConfig.amount,
                 currency: orderConfig.currency,
-                name: userConfig.institute_name || "ZF Solution App",
+                name: userConfig.institute_name || "ZenithFlows App",
                 description: userConfig.description || "Payment",
                 order_id: orderConfig.order_id,
                 handler: function (response) {

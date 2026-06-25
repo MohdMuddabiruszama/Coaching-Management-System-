@@ -84,7 +84,7 @@ export default function Hero() {
             {/* Sidebar */}
             <div className='lp-mockup-sidebar'>
               <div className='lp-mockup-logo' style={{ display: 'flex', justifyContent: 'center' }}>
-                 <img src={zfLogo} alt="ZF" style={{ height: '36px', width: 'auto', objectFit: 'contain' }} />
+                 <img src={zfLogo} alt="ZF" style={{ height: '36px', width: 'auto', objectFit: 'contain', borderRadius: '8px' }} />
               </div>
               <div className='lp-mockup-menu'>
                 <div className='lp-mockup-menu-item active'>📊 Dashboard</div>

@@ -421,7 +421,7 @@ function StudentNotes() {
                                             <button className="notes-v2-dl-btn nmc-dl-btn-top" onClick={() => handleDownload(note)}>
                                                 <span style={{ fontSize: '1rem', color: '#8b5cf6', marginRight: '4px' }}>⬇</span> Download
                                             </button>
-                                            <button className="notes-v2-more-btn nmc-more-btn-top">⋮</button>
+
                                         </div>
                                     </div>
                                     <div className="nmc-meta-row">

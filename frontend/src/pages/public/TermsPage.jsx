@@ -76,7 +76,7 @@ export default function TermsPage() {
 
           <h3 style={legalStyle.h2}>1. Acceptance of Terms</h3>
           <p style={legalStyle.p}>
-            By accessing or using the ZF Solution platform ("Service"), you agree to be bound by these Terms of Service. If you disagree with any part of the terms, then you do not have permission to access the Service.
+            By accessing or using the ZenithFlows platform ("Service"), you agree to be bound by these Terms of Service. If you disagree with any part of the terms, then you do not have permission to access the Service.
           </p>
 
           <h3 style={legalStyle.h2}>2. Communications</h3>
@@ -99,7 +99,7 @@ export default function TermsPage() {
 
           <h3 style={legalStyle.h2}>5. Intellectual Property</h3>
           <p style={legalStyle.p}>
-            The Service and its original content, features, and functionality are and will remain the exclusive property of ZF Solution and its licensors. Our trademarks and trade dress may not be used in connection with any product or service without the prior written consent of ZF Solution.
+            The Service and its original content, features, and functionality are and will remain the exclusive property of ZenithFlows and its licensors. Our trademarks and trade dress may not be used in connection with any product or service without the prior written consent of ZenithFlows.
           </p>
 
           <h3 style={legalStyle.h2}>6. Termination</h3>
@@ -109,7 +109,7 @@ export default function TermsPage() {
 
           <h3 style={legalStyle.h2}>7. Limitation of Liability</h3>
           <p style={legalStyle.p}>
-            In no event shall ZF Solution, nor its directors, employees, partners, agents, suppliers, or affiliates, be liable for any indirect, incidental, special, consequential or punitive damages arising from your access to or inability to access or use the Service.
+            In no event shall ZenithFlows, nor its directors, employees, partners, agents, suppliers, or affiliates, be liable for any indirect, incidental, special, consequential or punitive damages arising from your access to or inability to access or use the Service.
           </p>
 
           <h3 style={legalStyle.h2}>8. Changes</h3>

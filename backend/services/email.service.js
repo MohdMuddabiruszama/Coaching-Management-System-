@@ -27,7 +27,7 @@ const createTransporter = () => {
  * Unified email sender that routes through Resend (Prod) or Nodemailer (Dev)
  */
 const sendEmail = async ({ to, subject, html }) => {
-    const from = process.env.EMAIL_FROM || "ZF Solution <noreply@yourdomain.com>";
+    const from = process.env.EMAIL_FROM || "ZenithFlows <noreply@yourdomain.com>";
     
     if (resend) {
         const { data, error } = await resend.emails.send({
@@ -50,8 +50,8 @@ exports.sendOtpEmail = async (to, otp, type) => {
   const isReset = type === 'password_reset';
 
   const subject = isReset
-    ? 'Password Reset OTP — ZF Solution'
-    : 'Verify Your Email — ZF Solution';
+    ? 'Password Reset OTP — ZenithFlows'
+    : 'Verify Your Email — ZenithFlows';
 
   const html = `
     <div style="font-family:Arial,sans-serif;max-width:520px;margin:auto;
@@ -72,7 +72,7 @@ exports.sendOtpEmail = async (to, otp, type) => {
       </p>
       <hr style="border:none;border-top:1px solid #e2e8f0;margin:20px 0;"/>
       <p style="color:#9CA3AF;font-size:12px;text-align:center;">
-        ZF Solution Platform — Automated Email
+        ZenithFlows Platform — Automated Email
       </p>
     </div>
   `;

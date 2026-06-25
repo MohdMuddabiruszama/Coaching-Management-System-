@@ -361,7 +361,7 @@
 
 @media (max-width: 767px) {
     .chat-container { height: 100% !important; min-height: 100vh !important; max-width: 100% !important; border-radius: 0 !important; border: none !important; flex-direction: column !important; margin-bottom: 0 !important; box-shadow: none !important; }
-    .chat-sidebar { width: 100% !important; border-right: none !important; }
+    .chat-sidebar { width: 100% !important; border-right: none !important; padding-bottom: 90px !important; }
     .chat-container:not(.room-open) .chat-main { display: none !important; }
     .chat-container:not(.room-open) .chat-sidebar { display: flex !important; flex: 1 !important; }
     .chat-container.room-open .chat-sidebar { display: none !important; }

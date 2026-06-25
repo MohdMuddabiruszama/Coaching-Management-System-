@@ -66,7 +66,7 @@ export default function Footer() {
           {/* Col 1 */}
           <div>
             <Link to='/' style={{ display: 'flex', alignItems: 'center', gap: '10px', textDecoration: 'none', color: 'var(--lp-text)', fontWeight: 800, fontSize: '1.4rem' }}>
-              <img src={zfLogo} alt="ZF Solution" style={{ height: '40px', width: '40px', objectFit: 'contain' }} /> ZF Solution
+              <img src={zfLogo} alt="ZenithFlows" style={{ height: '40px', width: '40px', objectFit: 'contain', borderRadius: '8px' }} /> ZenithFlows
             </Link>
             <p style={S.desc}>
               The all-in-one platform for coaching institutes. Manage students, attendance, fees, and exams seamlessly. Built for scale.
@@ -151,7 +151,7 @@ export default function Footer() {
 
         {/* Bottom Footer */}
         <div style={S.bottom}>
-          <span>© {new Date().getFullYear()} ZF Solution. All rights reserved.</span>
+          <span>© {new Date().getFullYear()} ZenithFlows. All rights reserved.</span>
           <span>Made with <span style={{ color: '#ef4444' }}>❤️</span> in Hyderabad, Telangana.</span>
         </div>
 

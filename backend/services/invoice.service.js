@@ -29,7 +29,7 @@ exports.generateInvoice = async ({
         .fontSize(24)
         .fillColor(primaryColor)
         .font('Helvetica-Bold')
-        .text("ZF Solution", 50, 50)
+        .text("ZenithFlows", 50, 50)
         .fontSize(10)
         .fillColor(lightText)
         .font('Helvetica')
@@ -164,7 +164,7 @@ exports.generateInvoice = async ({
         .fillColor(lightText)
         .fontSize(10)
         .font('Helvetica')
-        .text("Thank you for choosing ZF Solution!", 50, 700, { align: "center", width: 500 })
+        .text("Thank you for choosing ZenithFlows!", 50, 700, { align: "center", width: 500 })
         .text("This is an electronically generated invoice and requires no signature.", 50, 715, { align: "center", width: 500 });
     
     doc.end();

@@ -166,7 +166,7 @@ async function handleSubscriptionCharged(subscriptionData) {
                     <p><strong>Valid Until:</strong> ${new Date(subscriptionData.current_end * 1000).toLocaleDateString()}</p>
                     <p>Please find your invoice attached.</p>
                     <br>
-                    <p>Best regards,<br>ZF Solution Team</p>
+                    <p>Best regards,<br>ZenithFlows Team</p>
                 `
             );
         } catch (invoiceError) {

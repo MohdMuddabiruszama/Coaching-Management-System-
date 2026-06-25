@@ -797,48 +797,52 @@ function ChatApp() {
                                 </>
                             )}
 
-                            <div className="section-label">
-                                GROUP ROOMS
-                            </div>
-                            
-                            {rooms.filter(r => r.type !== "direct").map((room, idx) => {
-                                const timeStr = room.last_message_at ? (() => {
-                                    const d = new Date(room.last_message_at);
-                                    const now = new Date();
-                                    if(d.toDateString() === now.toDateString()) return d.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-                                    now.setDate(now.getDate() - 1);
-                                    if(d.toDateString() === now.toDateString()) return 'Yesterday';
-                                    return Math.floor((new Date() - d) / (1000*60*60*24)) + ' days ago';
-                                })() : '';
-
-                                const colors = ['blue', 'purple', 'green', 'orange'];
-                                const colorClass = colors[idx % colors.length];
-
-                                return (
-                                <div
-                                    key={room.id}
-                                    className={`chat-room-item ${activeRoom?.id === room.id ? "active" : ""}`}
-                                    onClick={() => selectRoom(room)}
-                                >
-                                    <div className={`room-avatar ${colorClass}`}>
-                                        {getRoomInitial(room)}
+                            {user?.role !== "parent" && (
+                                <>
+                                    <div className="section-label">
+                                        GROUP ROOMS
                                     </div>
-                                    <div className="room-details">
-                                        <div className="room-details-top">
-                                            <h4 className="room-name">{getRoomLabel(room)}</h4>
-                                            <span className="room-time">{timeStr}</span>
+                                    
+                                    {rooms.filter(r => r.type !== "direct").map((room, idx) => {
+                                        const timeStr = room.last_message_at ? (() => {
+                                            const d = new Date(room.last_message_at);
+                                            const now = new Date();
+                                            if(d.toDateString() === now.toDateString()) return d.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                                            now.setDate(now.getDate() - 1);
+                                            if(d.toDateString() === now.toDateString()) return 'Yesterday';
+                                            return Math.floor((new Date() - d) / (1000*60*60*24)) + ' days ago';
+                                        })() : '';
+
+                                        const colors = ['blue', 'purple', 'green', 'orange'];
+                                        const colorClass = colors[idx % colors.length];
+
+                                        return (
+                                        <div
+                                            key={room.id}
+                                            className={`chat-room-item ${activeRoom?.id === room.id ? "active" : ""}`}
+                                            onClick={() => selectRoom(room)}
+                                        >
+                                            <div className={`room-avatar ${colorClass}`}>
+                                                {getRoomInitial(room)}
+                                            </div>
+                                            <div className="room-details">
+                                                <div className="room-details-top">
+                                                    <h4 className="room-name">{getRoomLabel(room)}</h4>
+                                                    <span className="room-time">{timeStr}</span>
+                                                </div>
+                                                <div className="room-details-bottom">
+                                                    <p className="room-subtitle">
+                                                        {room.last_message_text ? room.last_message_text : getRoomSubLabel(room)}
+                                                    </p>
+                                                    {room.unread_count > 0 && (
+                                                        <span className="msg-count-badge green">{room.unread_count}</span>
+                                                    )}
+                                                </div>
+                                            </div>
                                         </div>
-                                        <div className="room-details-bottom">
-                                            <p className="room-subtitle">
-                                                {room.last_message_text ? room.last_message_text : getRoomSubLabel(room)}
-                                            </p>
-                                            {room.unread_count > 0 && (
-                                                <span className="msg-count-badge green">{room.unread_count}</span>
-                                            )}
-                                        </div>
-                                    </div>
-                                </div>
-                            )})}
+                                    )})}
+                                </>
+                            )}
 
                             {rooms.length === 0 && (user?.role !== "student" && user?.role !== "parent") && (
                                 <div className="chat-no-rooms">

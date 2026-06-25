@@ -12,5 +12,5 @@ module.exports = async () => {
   } catch (error) {
     console.log("   ❌ Error closing test DB connection:", error.message);
   }
-  console.log("\n🏁 ZF Solution — Test Suite Complete");
+  console.log("\n🏁 ZenithFlows — Test Suite Complete");
 };

@@ -537,7 +537,7 @@ function RegisterPage() {
                 <div className="auth-container" style={{ maxWidth: "560px" }}>
                     <div className="auth-card reg-card">
                         <div className="auth-header">
-                            <div className="auth-logo"><img src={zfLogo} alt="ZF Solution" style={{ height: '56px', width: '56px', objectFit: 'contain' }} /></div>
+                            <div className="auth-logo"><img src={zfLogo} alt="ZenithFlows" style={{ height: '56px', width: '56px', objectFit: 'contain' }} /></div>
                             <h1 className="auth-title">Register Your Institute</h1>
                             <p className="auth-subtitle">Join thousands of institutes. Start free, scale as you grow.</p>
 

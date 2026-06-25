@@ -7,7 +7,7 @@ const PublicNavbar = () => {
     return (
         <nav className="public-navbar">
             <Link to="/" className="nav-brand">
-                <img src={zfLogo} alt="ZF Solution" style={{ height: '60px', width: '60px', objectFit: 'contain', verticalAlign: 'middle', marginRight: '6px' }} />ZF Solution
+                <img src={zfLogo} alt="ZenithFlows" style={{ height: '60px', width: '60px', objectFit: 'contain', verticalAlign: 'middle', marginRight: '6px' }} />ZenithFlows
             </Link>
             <div className="nav-links">
                 <Link to="/" className="nav-link">Home</Link>

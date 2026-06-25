@@ -246,39 +246,24 @@ function ViewAnnouncements() {
                         </select>
                         
                         {/* Mobile Priority Dropdown replacing pills and sort */}
-                        {isParent ? (
-                            <div className="mobile-only" style={{ position: 'relative', display: 'flex', alignItems: 'center', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '12px 16px', gap: '8px', boxShadow: '0 1px 2px rgba(0,0,0,0.02)', width: '100%', marginTop: '12px' }}>
-                                <span style={{ fontSize: '15px' }}>⚗️</span>
-                                <span style={{ fontSize: '14px', color: '#64748b', fontWeight: '600' }}>Filter:</span>
-                                <span style={{ fontSize: '14px', fontWeight: '700', color: '#3b82f6', flex: 1 }}>
-                                    {activeTab === 'All Announcements' ? 'All Priorities' : activeTab.charAt(0).toUpperCase() + activeTab.slice(1)}
-                                </span>
-                                <span style={{ fontSize: '12px', color: '#94a3b8' }}>⌄</span>
-                                <select 
-                                    value={activeTab}
-                                    onChange={(e) => setActiveTab(e.target.value)}
-                                    style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', opacity: 0, appearance: 'none', border: 'none' }}
-                                >
-                                    <option value="All Announcements">All Priorities</option>
-                                    <option value="urgent">Urgent</option>
-                                    <option value="high">High</option>
-                                    <option value="normal">Normal</option>
-                                </select>
-                            </div>
-                        ) : (
+                        <div className="mobile-only" style={{ position: 'relative', display: 'flex', alignItems: 'center', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '12px 16px', gap: '8px', boxShadow: '0 1px 2px rgba(0,0,0,0.02)', width: '100%', marginTop: '12px' }}>
+                            <span style={{ fontSize: '15px' }}>⚗️</span>
+                            <span style={{ fontSize: '14px', color: '#64748b', fontWeight: '600' }}>Filter:</span>
+                            <span style={{ fontSize: '14px', fontWeight: '700', color: '#3b82f6', flex: 1 }}>
+                                {activeTab === 'All Announcements' ? 'All Priorities' : activeTab.charAt(0).toUpperCase() + activeTab.slice(1)}
+                            </span>
+                            <span style={{ fontSize: '12px', color: '#94a3b8' }}>⌄</span>
                             <select 
-                                className="ann-v2-select mobile-only" 
                                 value={activeTab}
                                 onChange={(e) => setActiveTab(e.target.value)}
+                                style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', opacity: 0, appearance: 'none', border: 'none' }}
                             >
                                 <option value="All Announcements">All Priorities</option>
-                                <option value="Important">High Priority</option>
-                                <option value="General">Normal Priority</option>
-                                <option value="Events">Events</option>
-                                <option value="Academics">Academics</option>
-                                <option value="Unread">Unread</option>
+                                <option value="urgent">Urgent</option>
+                                <option value="high">High</option>
+                                <option value="normal">Normal</option>
                             </select>
-                        )}
+                        </div>
                     </div>
                 </div>
 
@@ -333,7 +318,7 @@ function ViewAnnouncements() {
                                         >
                                             View Details
                                         </button>
-                                        <button className="ann-v2-more-btn">⋮</button>
+                                        <button className="ann-v2-more-btn desktop-only">⋮</button>
                                     </div>
                                 </div>
                             );

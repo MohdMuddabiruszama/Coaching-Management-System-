@@ -11,7 +11,7 @@ module.exports = async () => {
   // Load test environment variables
   require("dotenv").config({ path: path.resolve(__dirname, "../../.env.test") });
 
-  console.log("\n🧪 ZF Solution — Test Suite Starting");
+  console.log("\n🧪 ZenithFlows — Test Suite Starting");
   console.log(`   DB : ${process.env.DATABASE_URL}`);
   console.log(`   ENV: ${process.env.NODE_ENV}\n`);
 

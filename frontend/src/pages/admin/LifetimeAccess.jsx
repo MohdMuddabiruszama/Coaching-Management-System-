@@ -76,7 +76,7 @@ function LifetimeAccess() {
                 key: razorpay_key,
                 amount: amount * 100,
                 currency: "INR",
-                name: "ZF Solution",
+                name: "ZenithFlows",
                 description: is_founding_member ? "💎 Founding Member — Lifetime Access" : "💎 Lifetime Access",
                 order_id: order_id,
                 prefill: {

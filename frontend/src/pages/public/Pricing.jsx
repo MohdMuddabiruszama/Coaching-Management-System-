@@ -70,7 +70,7 @@ const Pricing = () => {
             </section>
 
             <footer className="footer" style={{ background: "#1f2937", color: "white", padding: "2rem", textAlign: "center" }}>
-                <p>© 2026 ZF Solution. All rights reserved.</p>
+                <p>© 2026 ZenithFlows. All rights reserved.</p>
             </footer>
         </div>
     );

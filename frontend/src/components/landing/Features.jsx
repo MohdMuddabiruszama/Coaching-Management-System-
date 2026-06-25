@@ -63,7 +63,7 @@ export default function Features() {
         <span className='lp-eyebrow'>Why Choose Us</span>
         <h2 className='lp-h2'>Everything You Need to Run Your Institute</h2>
         <p className='lp-subtitle'>
-          Stop juggling 5 different apps. ZF Solution brings your attendance, fees, exams, and analytics together in one unified platform.
+          Stop juggling 5 different apps. ZenithFlows brings your attendance, fees, exams, and analytics together in one unified platform.
         </p>
       </div>
 

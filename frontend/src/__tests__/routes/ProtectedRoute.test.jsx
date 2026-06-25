@@ -1,5 +1,5 @@
 /**
- * ProtectedRoute Tests — ZF Solution Frontend
+ * ProtectedRoute Tests — ZenithFlows Frontend
  * ============================================
  * Covers all access-control scenarios:
  *  - Unauthenticated → /login

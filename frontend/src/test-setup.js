@@ -1,5 +1,5 @@
 /**
- * Vitest Global Test Setup — ZF Solution Frontend
+ * Vitest Global Test Setup — ZenithFlows Frontend
  * ================================================
  * Loaded before every test file via vite.config.js `test.setupFiles`.
  *

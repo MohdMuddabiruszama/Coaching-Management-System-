@@ -148,7 +148,7 @@ function PaymentPage() {
                         order_id: order.id,
                     },
                     userConfig: {
-                        institute_name: institute_name || instituteName || "ZF Solution",
+                        institute_name: institute_name || instituteName || "ZenithFlows",
                         description: `Subscription for ${plan.name}`,
                         name: "Institute Admin",
                         email: "admin@example.com",
@@ -244,8 +244,8 @@ function PaymentPage() {
                 <div className="checkout-panel checkout-left">
                     {/* Logo + Brand */}
                     <div className="checkout-brand">
-                        <img src={zfLogo} alt="ZF Solution" className="checkout-brand-icon" style={{ height: '40px', width: '40px', objectFit: 'contain', borderRadius: '8px' }} />
-                        <span className="checkout-brand-name">ZF Solution</span>
+                        <img src={zfLogo} alt="ZenithFlows" className="checkout-brand-icon" style={{ height: '40px', width: '40px', objectFit: 'contain', borderRadius: '8px' }} />
+                        <span className="checkout-brand-name">ZenithFlows</span>
                     </div>
 
                     {/* Plan Badge */}

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  Android Network Security Configuration — ZF Solution
+  Android Network Security Configuration — ZenithFlows
   ======================================================
   This file controls which domains can use HTTP (cleartext) traffic.
   All other domains default to HTTPS only.
