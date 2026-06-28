@@ -25,18 +25,18 @@ router.patch("/student/:id/resubmit", verifyToken, allowRoles("student"), upload
 router.get("/parent/child/:studentId", verifyToken, allowRoles("parent"), assignmentController.getParentAssignments);
 
 // ─── Faculty Routes ───────────────────────────────────────────────────────────
-router.post("/", verifyToken, allowRoles("faculty"), uploadAssignment.single("reference_file"), assignmentController.createAssignment);
+router.post("/", verifyToken, allowRoles("faculty", "admin", "owner", "manager"), uploadAssignment.single("reference_file"), assignmentController.createAssignment);
 router.get("/", verifyToken, allowRoles("faculty"), assignmentController.getFacultyAssignments);
 router.get("/:id/submissions", verifyToken, allowRoles("faculty", "admin", "owner", "manager"), assignmentController.getSubmissions);
 router.get("/:id/summary", verifyToken, allowRoles("faculty", "admin", "owner", "manager"), assignmentController.getAssignmentSummary);
-router.put("/:id", verifyToken, allowRoles("faculty"), assignmentController.updateAssignment);
-router.patch("/:id/publish", verifyToken, allowRoles("faculty"), assignmentController.publishAssignment);
+router.put("/:id", verifyToken, allowRoles("faculty", "admin", "owner", "manager"), assignmentController.updateAssignment);
+router.patch("/:id/publish", verifyToken, allowRoles("faculty", "admin", "owner", "manager"), assignmentController.publishAssignment);
 router.patch("/:id/close", verifyToken, allowRoles("faculty", "admin", "owner", "manager"), assignmentController.closeAssignment);
 router.delete("/:id", verifyToken, allowRoles("faculty", "admin", "owner", "manager"), assignmentController.deleteAssignment);
 router.get("/:id", verifyToken, allowRoles("faculty", "admin", "owner", "manager"), assignmentController.getAssignmentDetails);
 
 // ─── Grading Routes ───────────────────────────────────────────────────────────
-router.patch("/:asgId/submissions/:subId/grade", verifyToken, allowRoles("faculty"), assignmentController.gradeSubmission);
-router.patch("/:asgId/submissions/:subId/request-resubmit", verifyToken, allowRoles("faculty"), assignmentController.requestResubmit);
+router.patch("/:asgId/submissions/:subId/grade", verifyToken, allowRoles("faculty", "admin", "owner", "manager"), assignmentController.gradeSubmission);
+router.patch("/:asgId/submissions/:subId/request-resubmit", verifyToken, allowRoles("faculty", "admin", "owner", "manager"), assignmentController.requestResubmit);
 
 module.exports = router;

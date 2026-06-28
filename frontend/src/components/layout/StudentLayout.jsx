@@ -141,11 +141,6 @@ const StudentLayout = () => {
                 </div>
 
                 <div className="sl-sidebar-footer">
-                    <div className="sl-help-card">
-                        <h4><span className="sl-nav-icon" style={{width: 'auto'}}>❓</span> Need Help?</h4>
-                        <p>Have questions or need support?</p>
-                        <button className="sl-help-btn" onClick={() => navigate('/student/profile')}>Contact Support</button>
-                    </div>
                     <button className="sl-logout-btn" onClick={logout}>
                         <span className="sl-nav-icon">🚪</span> Logout
                     </button>

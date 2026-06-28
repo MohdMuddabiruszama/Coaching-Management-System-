@@ -165,6 +165,20 @@ export default function AdminAssignments() {
     const [overdue, setOverdue] = useState([]);
     const [classes, setClasses] = useState([]);
     const [subjects, setSubjects] = useState([]);
+    
+    // Modal States
+    const [showModal, setShowModal] = useState(false);
+    const [uploading, setUploading] = useState(false);
+    const [formData, setFormData] = useState({
+        title: "",
+        description: "",
+        class_id: "",
+        subject_id: "",
+        faculty_id: "",
+        due_date: "",
+        max_marks: "",
+        file: null
+    });
     const [faculty, setFaculty] = useState([]);
     const [loading, setLoading] = useState(true);
     const [exporting, setExporting] = useState(false);
@@ -184,16 +198,18 @@ export default function AdminAssignments() {
             if (filters.subject_id) params.subject_id = filters.subject_id;
             if (filters.faculty_id) params.faculty_id = filters.faculty_id;
 
-            const [asgRes, statsRes, classRes, facRes] = await Promise.all([
+            const [asgRes, statsRes, classRes, facRes, subRes] = await Promise.all([
                 api.get('/assignments/admin/all', { params }),
                 api.get('/assignments/admin/stats'),
                 api.get('/classes'),
                 api.get('/faculty'),
+                api.get('/subjects')
             ]);
             setAssignments(asgRes.data.assignments || []);
             setStats(statsRes.data.stats || {});
             setClasses(classRes.data.data || []);
             setFaculty(facRes.data.data || []);
+            setSubjects(subRes.data.data || []);
         } catch (e) { flash('Failed to load data', 'error'); }
         finally { setLoading(false); }
     }, [filters]);
@@ -293,6 +309,48 @@ export default function AdminAssignments() {
         return a.title?.toLowerCase().includes(q) || a.Class?.name?.toLowerCase().includes(q) || a.Subject?.name?.toLowerCase().includes(q) || a.faculty?.name?.toLowerCase().includes(q);
     });
 
+
+    const handleChange = (e) => {
+        const { name, value, files } = e.target;
+        if (name === "file") {
+            setFormData(f => ({ ...f, file: files[0] }));
+        } else {
+            setFormData(f => ({ ...f, [name]: value }));
+        }
+    };
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        if (!formData.faculty_id) { flash("Please select a faculty member", 'error'); return; }
+        
+        setUploading(true);
+        const data = new FormData();
+        data.append("title", formData.title);
+        data.append("description", formData.description);
+        data.append("class_id", formData.class_id);
+        data.append("subject_id", formData.subject_id);
+        data.append("faculty_id", formData.faculty_id);
+        data.append("due_date", formData.due_date);
+        data.append("max_marks", formData.max_marks);
+        data.append("status", "published");
+        if (formData.file) data.append("reference_file", formData.file);
+
+        try {
+            const res = await api.post("/assignments", data, { headers: { "Content-Type": "multipart/form-data" } });
+            if (res.data.success) {
+                flash("Assignment created successfully!", 'success');
+                setShowModal(false);
+                setFormData({ title: "", description: "", class_id: "", subject_id: "", faculty_id: "", due_date: "", max_marks: "", file: null });
+                fetchData();
+            }
+        } catch (err) {
+            flash(err.response?.data?.message || "Failed to save assignment", 'error');
+        } finally {
+            setUploading(false);
+        }
+    };
+
+
     if (loading) {
         return <SkeletonLoader />;
     }
@@ -326,7 +384,7 @@ export default function AdminAssignments() {
                             <button className="st-btn st-btn-outline" onClick={handleExport} disabled={exporting} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                                 <DownloadIcon /> {exporting ? 'Exporting...' : 'Export CSV'}
                             </button>
-                            <button className="st-btn st-btn-primary" onClick={() => window.location.href = '/admin/assignments/create'} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            <button className="st-btn st-btn-primary" onClick={() => { setFormData({ title: "", description: "", class_id: "", subject_id: "", faculty_id: "", due_date: "", max_marks: "", file: null }); setShowModal(true); }} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                                 + Add Assignment
                             </button>
                         </div>
@@ -707,6 +765,119 @@ export default function AdminAssignments() {
                             </div>
                         ))
                     )}
+                </div>
+            )}
+
+            {/* Create Modal */}
+            {showModal && (
+                <div className="modal-overlay" onClick={() => setShowModal(false)} style={{ background: 'rgba(15, 23, 42, 0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'fixed', inset: 0, zIndex: 1000, padding: '1rem' }}>
+                    <div className="modal-content" onClick={e => e.stopPropagation()} style={{ background: 'white', borderRadius: '16px', padding: '2rem', width: '100%', maxWidth: '600px', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)', overflowY: 'auto', maxHeight: '90vh' }}>
+                        
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem' }}>
+                            <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                                <div style={{ width: '48px', height: '48px', background: '#3b82f6', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', boxShadow: '0 4px 6px -1px rgba(59, 130, 246, 0.3)' }}>
+                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                                </div>
+                                <div>
+                                    <h2 style={{ margin: 0, fontSize: '1.25rem', color: '#0f172a', fontWeight: '800' }}>Add Assignment</h2>
+                                    <p style={{ margin: '0.2rem 0 0', color: '#64748b', fontSize: '0.85rem' }}>Create a new assignment for students.</p>
+                                </div>
+                            </div>
+                            <button type="button" onClick={() => setShowModal(false)} style={{ background: '#f1f5f9', border: 'none', borderRadius: '50%', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#64748b', cursor: 'pointer', transition: 'background 0.2s' }}>
+                                ✕
+                            </button>
+                        </div>
+
+                        <form onSubmit={handleSubmit}>
+                            <div className="form-group" style={{ marginBottom: '1.25rem' }}>
+                                <label style={{ fontSize: '0.85rem', fontWeight: '600', color: '#0f172a', display: 'block', marginBottom: '0.4rem' }}>Title <span style={{ color: '#ef4444' }}>*</span></label>
+                                <input type="text" name="title" placeholder="e.g. Chapter 3 - Photosynthesis" value={formData.title} onChange={handleChange} required maxLength="120" style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid #e2e8f0', outline: 'none', fontSize: '0.9rem', color: '#334155', boxSizing: 'border-box' }} />
+                            </div>
+
+                            <div className="form-group" style={{ marginBottom: '1.25rem' }}>
+                                <label style={{ fontSize: '0.85rem', fontWeight: '600', color: '#0f172a', display: 'block', marginBottom: '0.4rem' }}>Description</label>
+                                <textarea name="description" placeholder="Brief description or instructions..." value={formData.description} onChange={handleChange} maxLength="1000" rows={3} style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid #e2e8f0', outline: 'none', resize: 'vertical', fontSize: '0.9rem', color: '#334155', fontFamily: 'inherit', boxSizing: 'border-box' }} />
+                            </div>
+
+                            <div className="form-group" style={{ marginBottom: '1.25rem' }}>
+                                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '600', color: '#0f172a', marginBottom: '0.4rem' }}>Faculty Owner <span style={{ color: '#ef4444' }}>*</span></label>
+                                <select name="faculty_id" value={formData.faculty_id} onChange={handleChange} required style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid #e2e8f0', outline: 'none', fontSize: '0.9rem', background: 'white', color: formData.faculty_id ? '#334155' : '#94a3b8', boxSizing: 'border-box' }}>
+                                    <option value="" disabled hidden>Select Faculty</option>
+                                    {faculty.map(f => (
+                                        <option key={f.id} value={f.id} style={{ color: '#334155' }}>
+                                            {f.User?.name || f.User?.email}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.25rem' }}>
+                                <div className="form-group">
+                                    <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '600', color: '#0f172a', marginBottom: '0.4rem' }}>Class <span style={{ color: '#ef4444' }}>*</span></label>
+                                    <select name="class_id" value={formData.class_id} onChange={handleChange} required style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid #e2e8f0', outline: 'none', fontSize: '0.9rem', background: 'white', color: formData.class_id ? '#334155' : '#94a3b8', boxSizing: 'border-box' }}>
+                                        <option value="" disabled hidden>Select Class</option>
+                                        {classes.map(c => (
+                                            <option key={c.id} value={c.id} style={{ color: '#334155' }}>
+                                                {c.name} {c.section ? c.section : ''}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <div className="form-group">
+                                    <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '600', color: '#0f172a', marginBottom: '0.4rem' }}>Subject <span style={{ color: '#ef4444' }}>*</span></label>
+                                    <select name="subject_id" value={formData.subject_id} onChange={handleChange} required style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid #e2e8f0', outline: 'none', fontSize: '0.9rem', background: 'white', color: formData.subject_id ? '#334155' : '#94a3b8', boxSizing: 'border-box' }}>
+                                        <option value="" disabled hidden>Select Subject</option>
+                                        {subjects
+                                            .filter(s => formData.class_id ? (String(s.class_id) === String(formData.class_id) || String(s.Class?.id) === String(formData.class_id)) : true)
+                                            .map(s => (
+                                                <option key={s.id} value={s.id} style={{ color: '#334155' }}>{s.name}</option>
+                                            ))
+                                        }
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.25rem' }}>
+                                <div className="form-group">
+                                    <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '600', color: '#0f172a', marginBottom: '0.4rem' }}>Due Date <span style={{ color: '#ef4444' }}>*</span></label>
+                                    <input type="datetime-local" name="due_date" value={formData.due_date} onChange={handleChange} required style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid #e2e8f0', outline: 'none', fontSize: '0.9rem', background: 'white', color: '#334155', boxSizing: 'border-box' }} />
+                                </div>
+                                <div className="form-group">
+                                    <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '600', color: '#0f172a', marginBottom: '0.4rem' }}>Max Marks <span style={{ color: '#ef4444' }}>*</span></label>
+                                    <input type="number" name="max_marks" placeholder="e.g. 100" value={formData.max_marks} onChange={handleChange} required min="1" max="1000" style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid #e2e8f0', outline: 'none', fontSize: '0.9rem', background: 'white', color: '#334155', boxSizing: 'border-box' }} />
+                                </div>
+                            </div>
+
+                            <div className="form-group" style={{ marginBottom: '1.25rem' }}>
+                                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '600', color: '#0f172a', marginBottom: '0.4rem' }}>Reference File (Optional)</label>
+                                <div style={{ position: 'relative', border: '2px dashed #bfdbfe', borderRadius: '12px', background: '#eff6ff', padding: '2rem 1.5rem', textAlign: 'center', cursor: 'pointer' }}>
+                                    <input type="file" name="file" onChange={handleChange} accept=".pdf,.doc,.docx,.ppt,.pptx,.jpg,.jpeg,.png,.zip" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', opacity: 0, cursor: 'pointer' }} />
+                                    
+                                    {!formData.file ? (
+                                        <>
+                                            <div style={{ width: '40px', height: '40px', background: 'white', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 0.5rem', color: '#3b82f6', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
+                                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                                            </div>
+                                            <p style={{ margin: 0, fontSize: '0.9rem', color: '#334155', fontWeight: '600' }}>Drag & drop file here, or <span style={{ color: 'transparent' }}>click to browse</span></p>
+                                        </>
+                                    ) : (
+                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', color: '#0369a1' }}>
+                                            <span style={{ fontSize: '0.9rem', fontWeight: '600' }}>{formData.file.name}</span>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                            <div style={{ display: 'flex', gap: '1rem', marginTop: '2rem' }}>
+                                <button type="button" onClick={() => setShowModal(false)} disabled={uploading} style={{ flex: 1, padding: '0.75rem', borderRadius: '10px', border: '1px solid #e2e8f0', background: 'white', color: '#475569', fontSize: '0.95rem', fontWeight: '600', cursor: uploading ? 'not-allowed' : 'pointer' }}>
+                                    Cancel
+                                </button>
+                                <button type="submit" disabled={uploading} style={{ flex: 1, padding: '0.75rem', borderRadius: '10px', border: 'none', background: uploading ? '#93c5fd' : '#3b82f6', color: 'white', fontSize: '0.95rem', fontWeight: '600', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', cursor: uploading ? 'not-allowed' : 'pointer' }}>
+                                    {uploading ? "Saving..." : "Add Assignment"}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
                 </div>
             )}
         </div>

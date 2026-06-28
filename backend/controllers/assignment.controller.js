@@ -53,7 +53,14 @@ exports.createAssignment = async (req, res) => {
     try {
         const { title, description, class_id, subject_id, due_date, max_marks, allowed_file_types, max_file_size_mb, allow_late_submission, status } = req.body;
         const institute_id = req.user.institute_id;
-        const faculty_id = req.user.id;
+        
+        let faculty_id = req.user.id; // Default to the logged-in user (if faculty)
+        if (req.user.role === 'admin' || req.user.role === 'superadmin' || req.user.role === 'owner' || req.user.role === 'manager') {
+            if (!req.body.faculty_id) {
+                return res.status(400).json({ success: false, message: 'Faculty owner must be selected when created by admin' });
+            }
+            faculty_id = req.body.faculty_id;
+        }
 
         if (new Date(due_date) <= new Date(Date.now() + 60 * 60 * 1000) && status !== 'draft') {
             return res.status(400).json({ success: false, message: 'Due date must be at least 1 hour in the future' });
@@ -190,17 +197,38 @@ exports.updateAssignment = async (req, res) => {
     try {
         const { id } = req.params;
         const institute_id = req.user.institute_id;
+        const { title, description, class_id, subject_id, due_date, max_marks, allowed_file_types, max_file_size_mb, allow_late_submission } = req.body;
+        
         const assignment = await Assignment.findOne({ where: { id, institute_id } });
         if (!assignment) return res.status(404).json({ success: false, message: 'Assignment not found' });
+        
         if (req.user.role === 'faculty' && assignment.faculty_id !== req.user.id) {
-            return res.status(403).json({ success: false, message: 'Unauthorized' });
+            return res.status(403).json({ success: false, message: 'Not authorized to update this assignment' });
         }
+
+        const updateData = {
+            title: title || assignment.title,
+            description: description !== undefined ? description : assignment.description,
+            class_id: class_id || assignment.class_id,
+            subject_id: subject_id || assignment.subject_id,
+            due_date: due_date || assignment.due_date,
+            max_marks: max_marks !== undefined ? max_marks : assignment.max_marks,
+            allowed_file_types: allowed_file_types ? JSON.parse(allowed_file_types) : assignment.allowed_file_types,
+            max_file_size_mb: max_file_size_mb || assignment.max_file_size_mb,
+            allow_late_submission: allow_late_submission !== undefined ? (allow_late_submission === 'true' || allow_late_submission === true) : assignment.allow_late_submission,
+        };
+
+        if (req.user.role === 'admin' || req.user.role === 'superadmin' || req.user.role === 'owner' || req.user.role === 'manager') {
+            if (req.body.faculty_id) {
+                updateData.faculty_id = req.body.faculty_id;
+            }
+        }
+
         const submissionsCount = await AssignmentSubmission.count({ where: { assignment_id: id } });
         if (submissionsCount > 0) {
-            const { title, description } = req.body;
-            await assignment.update({ title, description });
+            await assignment.update({ title: updateData.title, description: updateData.description });
         } else {
-            await assignment.update(req.body);
+            await assignment.update(updateData);
         }
         res.status(200).json({ success: true, message: 'Assignment updated successfully', assignment });
     } catch (error) {
