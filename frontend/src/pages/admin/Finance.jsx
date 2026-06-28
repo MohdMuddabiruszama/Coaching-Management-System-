@@ -10,6 +10,9 @@ import { Link, useNavigate } from "react-router-dom";
 import api from "../../services/api";
 import { AuthContext } from "../../context/AuthContext";
 import "./Dashboard.css";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
+import { savePdfNative } from "../../utils/capacitorPermissions";
 
 // ── Recharts ─────────────────────────────────────────────────────────────────
 import {
@@ -171,6 +174,65 @@ function FinanceDashboard() {
 
   useEffect(() => { fetchAll(); }, [monthFilter]);
 
+  const handleDownloadReport = async () => {
+    if (!summary) return;
+    try {
+      const doc = new jsPDF();
+      const reportTitle = `Finance Dashboard Report - ${monthFilter || 'Overall'}`;
+      
+      // Title
+      doc.setFontSize(18);
+      doc.text(reportTitle, 14, 20);
+      doc.setFontSize(11);
+      doc.setTextColor(100);
+      doc.text(`Generated on: ${new Date().toLocaleString()}`, 14, 28);
+
+      // Financial Overview Summary Table
+      doc.setFontSize(14);
+      doc.setTextColor(0);
+      doc.text("Financial Overview", 14, 40);
+
+      const summaryData = [
+        ["Total Revenue", formatRupee(summary.revenue.total)],
+        ["Total Expenses", formatRupee(summary.expenses.total)],
+        ["Salaries Paid", formatRupee(summary.salaries.total)],
+        ["Net Profit", formatRupee(Math.abs(summary?.profit_loss?.amount || 0))],
+        ["Pending Fees", formatRupee(summary.pending.total)]
+      ];
+
+      autoTable(doc, {
+        startY: 45,
+        head: [["Metric", "Amount"]],
+        body: summaryData,
+        theme: 'striped',
+        headStyles: { fillColor: [126, 34, 206] }
+      });
+
+      // Expense Breakdown Table (if pieData exists)
+      if (pieData && pieData.length > 0) {
+        let finalY = doc.lastAutoTable.finalY || 45;
+        doc.setFontSize(14);
+        doc.text("Expense Breakdown", 14, finalY + 15);
+
+        const expBody = pieData.map(p => [p.name, formatRupee(p.value)]);
+        autoTable(doc, {
+          startY: finalY + 20,
+          head: [["Category", "Amount"]],
+          body: expBody,
+          theme: 'striped',
+          headStyles: { fillColor: [239, 68, 68] }
+        });
+      }
+
+      // Save PDF cross-platform
+      await savePdfNative(doc, `Finance_Report_${monthFilter || 'Overall'}.pdf`);
+
+    } catch (err) {
+      console.error("Error generating report:", err);
+      alert("Failed to generate report. Please try again.");
+    }
+  };
+
   // ── Guard: Manager cannot see this page unless permitted ───────────────
   if (!hasFinancePermission) {
     return (
@@ -264,7 +326,7 @@ function FinanceDashboard() {
                 style={{ padding: "0.6rem 2.5rem 0.6rem 1rem", fontSize: "0.95rem", borderRadius: "8px", border: "1px solid #e5e7eb", outline: "none", color: "#374151", background: "#fff" }}
               />
             </div>
-            <button style={{ padding: "0.6rem 1.25rem", borderRadius: "8px", border: "none", background: "#7e22ce", color: "#fff", fontWeight: "600", cursor: "pointer", display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.9rem", boxShadow: "0 4px 6px rgba(126,34,206,0.2)" }}>
+            <button onClick={handleDownloadReport} style={{ padding: "0.6rem 1.25rem", borderRadius: "8px", border: "none", background: "#7e22ce", color: "#fff", fontWeight: "600", cursor: "pointer", display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.9rem", boxShadow: "0 4px 6px rgba(126,34,206,0.2)" }}>
               📥 Download Report
             </button>
           </div>

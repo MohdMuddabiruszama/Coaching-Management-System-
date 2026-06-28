@@ -758,25 +758,7 @@ function AdminDashboard() {
                             <DACard icon="⚙️" bg="#f3f4f6" title="Settings" desc="System settings and preferences" path={`${basePath}/settings`} featureKey="settings" />
                         )}
                         
-                        {isAdmin && !planDetails?.institute?.is_lifetime_member && (
-                            <div
-                                onClick={() => handleNavigation(`${basePath}/lifetime`)}
-                                className="da-card"
-                                style={{ background: 'linear-gradient(135deg, #1a0533, #4c1d95)', color: '#fff', border: '1px solid rgba(167,139,250,0.4)' }}
-                            >
-                                <div className="da-card-top">
-                                    <div className="da-icon-box" style={{ background: 'rgba(255,255,255,0.1)' }}>💎</div>
-                                    <div className="da-text">
-                                        <h4 style={{ color: '#fff' }}>Lifetime Access</h4>
-                                        <p style={{ color: 'rgba(255,255,255,0.7)' }}>Upgrade to lifetime</p>
-                                    </div>
-                                    <div className="da-arrow" style={{ color: 'rgba(255,255,255,0.5)' }}>›</div>
-                                </div>
-                                <div className="da-card-bottom">
-                                    <span className="da-badge" style={{ background: '#f59e0b', color: '#000' }}>HOT</span>
-                                </div>
-                            </div>
-                        )}
+                        {/* Upgrade to lifetime card has been removed as per request */}
                         {isAdmin && planDetails?.institute?.is_lifetime_member && (
                             <div className="da-card disabled-card" style={{ background: 'linear-gradient(135deg, #1a0533, #4c1d95)', color: '#fff', border: '1px solid rgba(167,139,250,0.4)', opacity: 1, filter: 'none' }}>
                                 <div className="da-card-top">

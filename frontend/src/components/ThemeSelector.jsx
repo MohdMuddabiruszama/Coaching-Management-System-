@@ -6,6 +6,7 @@
 
 import { useState, useRef, useEffect, useContext } from "react";
 import { ThemeContext } from "../context/ThemeContext";
+import { AuthContext } from "../context/AuthContext";
 import { FiSun, FiMoon, FiStar, FiAperture } from "react-icons/fi";
 import "./ThemeSelector.css";
 
@@ -18,6 +19,10 @@ const THEMES = [
 
 function ThemeSelector({ loginMode = false }) {
     const { isDark, themeStyle, setTheme } = useContext(ThemeContext);
+    const { user } = useContext(AuthContext);
+
+    // Only allow super admins to see the theme selector
+    if (!user || user.role !== "super_admin") return null;
     const [open, setOpen] = useState(false);
     const wrapperRef = useRef(null);
 

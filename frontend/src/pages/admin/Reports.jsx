@@ -189,15 +189,21 @@ function Reports() {
         status: ""
     });
 
-    const fetchDashboardData = async (monthOverride = null) => {
+    const fetchDashboardData = async (monthOverride = null, classIdOverride = null) => {
         setLoading(true);
         try {
             const currentMonth = monthOverride !== null ? monthOverride : dashFilters.month;
-            const financeQuery = currentMonth ? `?month_year=${currentMonth}` : "";
+            const currentClass = classIdOverride !== null ? classIdOverride : dashFilters.class_id;
+            
+            const params = new URLSearchParams();
+            if (currentMonth) params.append('month_year', currentMonth);
+            if (currentClass) params.append('class_id', currentClass);
+            const queryStr = params.toString() ? `?${params.toString()}` : "";
+
             const [reportRes, sumRes, trendRes] = await Promise.all([
                 api.get("/reports/dashboard"),
-                api.get(`/finance/revenue/summary${financeQuery}`).catch(() => ({ data: { success: false } })),
-                api.get("/finance/revenue/monthly-trend").catch(() => ({ data: { success: false } }))
+                api.get(`/finance/revenue/summary${queryStr}`).catch(() => ({ data: { success: false } })),
+                api.get(`/finance/revenue/monthly-trend${queryStr}`).catch(() => ({ data: { success: false } }))
             ]);
             if (reportRes.data.success) setDashboardData(reportRes.data.data);
             if (sumRes.data?.success) setFinanceSummary(sumRes.data.data);
@@ -445,14 +451,17 @@ function Reports() {
                                     value={dashFilters.month}
                                     onChange={(e) => {
                                         setDashFilters({...dashFilters, month: e.target.value});
-                                        fetchDashboardData(e.target.value);
+                                        fetchDashboardData(e.target.value, dashFilters.class_id);
                                     }}
                                 />
                             </div>
                         </div>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 4, flex: 1 }}>
                             <label style={{ fontSize: 11, color: '#6b7280', fontWeight: 600 }}>Class</label>
-                            <select className="form-select" style={{ fontSize: 13 }} value={dashFilters.class_id} onChange={e => setDashFilters({...dashFilters, class_id: e.target.value})}>
+                            <select className="form-select" style={{ fontSize: 13 }} value={dashFilters.class_id} onChange={e => {
+                                setDashFilters({...dashFilters, class_id: e.target.value});
+                                fetchDashboardData(dashFilters.month, e.target.value);
+                            }}>
                                 <option value="">All Classes</option>
                                 {classes.map(c => <option key={c.id} value={c.id}>{c.name}{c.section ? ` - ${c.section}` : ''}</option>)}
                             </select>
@@ -460,7 +469,7 @@ function Reports() {
                         <div style={{ display: 'flex', alignItems: 'flex-end' }}>
                             <button className="btn btn-secondary" style={{ padding: '0.65rem 1.25rem', fontSize: 13, display: 'flex', alignItems: 'center', gap: 6, background: '#fff' }} onClick={() => {
                                 setDashFilters({ month: new Date().toISOString().slice(0, 7), class_id: "" });
-                                fetchDashboardData(new Date().toISOString().slice(0, 7));
+                                fetchDashboardData(new Date().toISOString().slice(0, 7), "");
                             }}>🔄 Reset</button>
                         </div>
                     </div>

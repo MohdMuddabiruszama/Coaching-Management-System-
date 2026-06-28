@@ -3,7 +3,7 @@
  * Revenue summary, P&L, monthly trends — Admin only
  */
 
-const { StudentFee, Expense, FacultySalary, Payment, Faculty, User, sequelize } = require("../models");
+const { StudentFee, Expense, FacultySalary, Payment, Faculty, User, Student, sequelize } = require("../models");
 const { Op, fn, col, literal } = require("sequelize");
 
 // ── Revenue Summary (KPI cards) — Admin only ─────────────────────────────────
@@ -14,10 +14,21 @@ exports.getRevenueSummary = async (req, res) => {
         }
 
         const institute_id = req.user.institute_id;
-        const { month_year } = req.query;
+        const { month_year, class_id } = req.query;
+
+        let studentIds = null;
+        if (class_id) {
+            const students = await Student.findAll({ 
+                where: { institute_id, class_id }, 
+                attributes: ['id'], 
+                raw: true 
+            });
+            studentIds = students.map(s => s.id);
+        }
 
         // Total Revenue — from Payment (cash collected)
         const payWhere = { institute_id, status: "success" };
+        if (studentIds) payWhere.student_id = { [Op.in]: studentIds };
         if (month_year) {
             const [y, m] = month_year.split("-");
             payWhere.payment_date = {
@@ -30,36 +41,45 @@ exports.getRevenueSummary = async (req, res) => {
         const totalRevenue = await Payment.sum("amount_paid", { where: payWhere }) || 0;
 
         // Total Expenses
-        const expWhere = { institute_id };
-        if (month_year) {
-            const [y, m] = month_year.split("-");
-            expWhere.date = {
-                [Op.between]: [
-                    new Date(y, m - 1, 1),
-                    new Date(y, m, 0, 23, 59, 59)
-                ]
-            };
+        let totalExpenses = 0;
+        let totalSalaries = 0;
+        let pendingSalaries = 0;
+        
+        if (!class_id) {
+            const expWhere = { institute_id };
+            if (month_year) {
+                const [y, m] = month_year.split("-");
+                expWhere.date = {
+                    [Op.between]: [
+                        new Date(y, m - 1, 1),
+                        new Date(y, m, 0, 23, 59, 59)
+                    ]
+                };
+            }
+            totalExpenses = await Expense.sum("amount", { where: expWhere }) || 0;
+
+            // Total Salaries Paid
+            const salWhere = { institute_id, status: "paid" };
+            if (month_year) salWhere.month_year = month_year;
+            totalSalaries = await FacultySalary.sum("net_salary", { where: salWhere }) || 0;
+
+            // Pending Salaries
+            const salPendingWhere = { institute_id, status: { [Op.ne]: "paid" } };
+            if (month_year) salPendingWhere.month_year = month_year;
+            pendingSalaries = await FacultySalary.sum("net_salary", { where: salPendingWhere }) || 0;
         }
-        const totalExpenses = await Expense.sum("amount", { where: expWhere }) || 0;
-
-        // Total Salaries Paid
-        const salWhere = { institute_id, status: "paid" };
-        if (month_year) salWhere.month_year = month_year;
-        const totalSalaries = await FacultySalary.sum("net_salary", { where: salWhere }) || 0;
-
-        // Pending Salaries
-        const salPendingWhere = { institute_id, status: { [Op.ne]: "paid" } };
-        if (month_year) salPendingWhere.month_year = month_year;
-        const pendingSalaries = await FacultySalary.sum("net_salary", { where: salPendingWhere }) || 0;
         
         const totalPayroll = parseFloat(totalSalaries) + parseFloat(pendingSalaries);
 
         // Pending Fees — from StudentFee
         const sfPendingWhere = { institute_id, status: ["pending", "partial"] };
+        if (studentIds) sfPendingWhere.student_id = { [Op.in]: studentIds };
         const totalPendingDue = await StudentFee.sum("due_amount", { where: sfPendingWhere }) || 0;
 
         // Total collected (from StudentFee paid_amount across all)
-        const totalCollected = await StudentFee.sum("paid_amount", { where: { institute_id } }) || 0;
+        const sfPaidWhere = { institute_id };
+        if (studentIds) sfPaidWhere.student_id = { [Op.in]: studentIds };
+        const totalCollected = await StudentFee.sum("paid_amount", { where: sfPaidWhere }) || 0;
 
         // P&L Calculation
         const totalCosts = parseFloat(totalExpenses) + parseFloat(totalSalaries);
@@ -106,38 +126,55 @@ exports.getMonthlyTrend = async (req, res) => {
             months.push(d.toISOString().slice(0, 7));
         }
 
+        const { class_id } = req.query;
+        let studentIds = null;
+        if (class_id) {
+            const students = await Student.findAll({ 
+                where: { institute_id, class_id }, 
+                attributes: ['id'], 
+                raw: true 
+            });
+            studentIds = students.map(s => s.id);
+        }
+
+        const payWhere = {
+            institute_id,
+            status: "success",
+            payment_date: {
+                [Op.gte]: new Date(months[0] + "-01")
+            }
+        };
+        if (studentIds) payWhere.student_id = { [Op.in]: studentIds };
+
         // Revenue per month (from Payments)
         const revenueRows = await Payment.findAll({
             attributes: [
                 [literal("TO_CHAR(payment_date, 'YYYY-MM')"), "month_year"],
                 [fn("SUM", col("amount_paid")), "total"]
             ],
-            where: {
-                institute_id,
-                status: "success",
-                payment_date: {
-                    [Op.gte]: new Date(months[0] + "-01")
-                }
-            },
+            where: payWhere,
             group: [literal("TO_CHAR(payment_date, 'YYYY-MM')")],
             order: [[literal("TO_CHAR(payment_date, 'YYYY-MM')"), "ASC"]],
             raw: true
         });
 
         // Expenses per month
-        const expenseRows = await Expense.findAll({
-            attributes: [
-                [literal("TO_CHAR(date, 'YYYY-MM')"), "month_year"],
-                [fn("SUM", col("amount")), "total"]
-            ],
-            where: {
-                institute_id,
-                date: { [Op.gte]: new Date(months[0] + "-01") }
-            },
-            group: [literal("TO_CHAR(date, 'YYYY-MM')")],
-            order: [[literal("TO_CHAR(date, 'YYYY-MM')"), "ASC"]],
-            raw: true
-        });
+        let expenseRows = [];
+        if (!class_id) {
+            expenseRows = await Expense.findAll({
+                attributes: [
+                    [literal("TO_CHAR(date, 'YYYY-MM')"), "month_year"],
+                    [fn("SUM", col("amount")), "total"]
+                ],
+                where: {
+                    institute_id,
+                    date: { [Op.gte]: new Date(months[0] + "-01") }
+                },
+                group: [literal("TO_CHAR(date, 'YYYY-MM')")],
+                order: [[literal("TO_CHAR(date, 'YYYY-MM')"), "ASC"]],
+                raw: true
+            });
+        }
 
         // Salaries per month
         const salaryRows = await FacultySalary.findAll({

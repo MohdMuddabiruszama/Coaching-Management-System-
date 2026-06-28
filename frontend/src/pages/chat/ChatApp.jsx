@@ -542,6 +542,13 @@ function ChatApp() {
 
     const isReadOnly = user?.role === "admin" || user?.role === "owner" || user?.role === "manager";
 
+    const isParticipantOnline = (p) => {
+        if (Number(p.user_id) === myUserId) return true;
+        if (!p.last_read_at) return false;
+        const diffInMs = new Date() - new Date(p.last_read_at);
+        return diffInMs < 120000;
+    };
+
     const facultyParticipants = participants.filter(p => p.User?.role === "faculty");
     const studentParticipants = participants.filter(p => p.User?.role === "student");
     const parentParticipants = participants.filter(p => p.User?.role === "parent");
@@ -875,9 +882,24 @@ function ChatApp() {
                                 </div>
                                 <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
                                     <h3>{getRoomLabel(activeRoom)}</h3>
-                                    <span style={{ fontSize: '0.8rem', color: '#10b981', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                        <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#10b981', display: 'inline-block' }}></span> Online
-                                    </span>
+                                    {(() => {
+                                        if (activeRoom.type === "direct") {
+                                            const otherP = participants.find(p => Number(p.user_id) !== myUserId);
+                                            const isOnline = otherP ? isParticipantOnline(otherP) : false;
+                                            return (
+                                                <span style={{ fontSize: '0.8rem', color: isOnline ? '#10b981' : '#64748b', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                                    <span style={{ width: 8, height: 8, borderRadius: '50%', background: isOnline ? '#10b981' : '#cbd5e1', display: 'inline-block' }}></span> {isOnline ? "Online" : "Offline"}
+                                                </span>
+                                            );
+                                        } else {
+                                            const onlineCount = participants.filter(p => Number(p.user_id) !== myUserId && isParticipantOnline(p)).length;
+                                            return (
+                                                <span style={{ fontSize: '0.8rem', color: onlineCount > 0 ? '#10b981' : '#64748b', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                                    <span style={{ width: 8, height: 8, borderRadius: '50%', background: onlineCount > 0 ? '#10b981' : '#cbd5e1', display: 'inline-block' }}></span> {onlineCount > 0 ? `${onlineCount} Online` : "Group Chat"}
+                                                </span>
+                                            );
+                                        }
+                                    })()}
                                 </div>
                                 {isReadOnly && (
                                     <div 
@@ -1045,7 +1067,7 @@ function ChatApp() {
                                                             </div>
                                                             <div className="participant-role">Faculty</div>
                                                         </div>
-                                                        <div className="status-dot online"></div>
+                                                        <div className={`status-dot ${isParticipantOnline(p) ? 'online' : 'offline'}`}></div>
                                                     </div>
                                                 ))}
                                             </div>
@@ -1067,7 +1089,7 @@ function ChatApp() {
                                                             </div>
                                                             <div className="participant-role">Student</div>
                                                         </div>
-                                                        <div className="status-dot offline"></div>
+                                                        <div className={`status-dot ${isParticipantOnline(p) ? 'online' : 'offline'}`}></div>
                                                     </div>
                                                 ))}
                                             </div>
@@ -1089,7 +1111,7 @@ function ChatApp() {
                                                             </div>
                                                             <div className="participant-role">Parent</div>
                                                         </div>
-                                                        <div className="status-dot offline"></div>
+                                                        <div className={`status-dot ${isParticipantOnline(p) ? 'online' : 'offline'}`}></div>
                                                     </div>
                                                 ))}
                                             </div>

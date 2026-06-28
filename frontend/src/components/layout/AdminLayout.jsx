@@ -198,9 +198,12 @@ const AdminLayout = () => {
     const getSearchableRoutes = () => {
         const routes = [
             { name: "Dashboard", path: "/admin/dashboard", icon: "🏠" },
-            { name: "My Profile", path: "/admin/profile", icon: "👤" },
-            { name: "Lifetime Access", path: "/admin/lifetime", icon: "💎" }
+            { name: "My Profile", path: "/admin/profile", icon: "👤" }
         ];
+        const isLifetime = user?.is_lifetime_member || user?.Institute?.is_lifetime_member;
+        if (isLifetime) {
+            routes.push({ name: "Lifetime Access", path: "/admin/lifetime", icon: "💎" });
+        }
         if (hasPermission('students')) {
             routes.push({ name: "Students", path: "/admin/students", icon: "👥" });
             routes.push({ name: "Parents", path: "/admin/parents", icon: "👨‍👩‍👧" });
@@ -533,14 +536,16 @@ const AdminLayout = () => {
                 </div>
 
                 <div className="al-sidebar-footer">
-                    <div className="al-lifetime-card" style={{marginBottom: '1rem'}}>
-                        <div className="al-lifetime-icon">💎</div>
-                        <div className="al-lifetime-content">
-                            <h4>Lifetime Member</h4>
-                            <p>No recurring billing — ever.</p>
-                            <Link to="/admin/lifetime" className="al-lifetime-btn">View Details</Link>
+                    {(user?.is_lifetime_member || user?.Institute?.is_lifetime_member) && (
+                        <div className="al-lifetime-card" style={{marginBottom: '1rem'}}>
+                            <div className="al-lifetime-icon">💎</div>
+                            <div className="al-lifetime-content">
+                                <h4>Lifetime Member</h4>
+                                <p>No recurring billing — ever.</p>
+                                <Link to="/admin/lifetime" className="al-lifetime-btn">View Details</Link>
+                            </div>
                         </div>
-                    </div>
+                    )}
                     <button onClick={logout} className="al-nav-link" style={{width: '100%', color: '#ef4444', justifyContent: 'center', background: '#fef2f2'}}>
                         <span className="al-nav-icon">🚪</span>
                         <span className="al-nav-text" style={{flex: 'none'}}>Logout</span>
