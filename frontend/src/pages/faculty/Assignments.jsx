@@ -649,7 +649,7 @@ export default function FacultyAssignments() {
                                         <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600', color: '#334155', fontSize: '0.9rem' }}>Class *</label>
                                         <select name="class_id" value={form.class_id} onChange={handleFormChange} required style={{ width: '100%', padding: '0.8rem 1rem', borderRadius: '8px', border: '1px solid #cbd5e1', outline: 'none', fontSize: '0.95rem', appearance: 'none', background: 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'16\' height=\'16\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'%2364748b\' stroke-width=\'2\' stroke-linecap=\'round\' stroke-linejoin=\'round\'%3E%3Cpolyline points=\'6 9 12 15 18 9\'%3E%3C/polyline%3E%3C/svg%3E") no-repeat right 1rem center/16px', boxSizing: 'border-box' }}>
                                             <option value="">Select Class</option>
-                                            {classes.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                                            {classes.map(c => <option key={c.id} value={c.id}>{c.name} {c.section ? c.section : ''}</option>)}
                                         </select>
                                     </div>
                                     <div className="form-group">

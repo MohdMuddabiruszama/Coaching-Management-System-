@@ -166,7 +166,7 @@ function FacultyMobileTimetable() {
                     >
                         <option value="all">All Classes</option>
                         {myClasses.map(cls => (
-                            <option key={cls.id} value={cls.id}>{cls.name}</option>
+                            <option key={cls.id} value={cls.id}>{cls.name} {cls.section ? cls.section : ''}</option>
                         ))}
                     </select>
                 </div>

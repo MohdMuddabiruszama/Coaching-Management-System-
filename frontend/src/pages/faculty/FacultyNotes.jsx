@@ -264,7 +264,7 @@ function FacultyNotes() {
                 <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
                     <select value={filterClass} onChange={e => setFilterClass(e.target.value)} style={{ padding: '0.7rem 1.2rem', borderRadius: '10px', border: '1px solid #cbd5e1', outline: 'none', background: 'white', color: '#475569', fontSize: '0.9rem', cursor: 'pointer', minWidth: '160px', boxShadow: '0 1px 2px rgba(0,0,0,0.02)' }}>
                         <option value="">All Classes</option>
-                        {classes.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
+                        {classes.map(c => <option key={c.id} value={c.name}>{c.name} {c.section ? c.section : ''}</option>)}
                     </select>
                     <select value={filterSubject} onChange={e => setFilterSubject(e.target.value)} style={{ padding: '0.7rem 1.2rem', borderRadius: '10px', border: '1px solid #cbd5e1', outline: 'none', background: 'white', color: '#475569', fontSize: '0.9rem', cursor: 'pointer', minWidth: '160px', boxShadow: '0 1px 2px rgba(0,0,0,0.02)' }}>
                         <option value="">All Subjects</option>
@@ -468,7 +468,7 @@ function FacultyNotes() {
                                         </span>
                                         <select name="class_id" value={formData.class_id} onChange={handleChange} required style={{ width: '100%', padding: '0.75rem 0.75rem 0.75rem 2.2rem', borderRadius: '8px', border: '1px solid #e2e8f0', outline: 'none', fontSize: '0.9rem', background: 'white', color: formData.class_id ? '#334155' : '#94a3b8', appearance: 'none', cursor: 'pointer', transition: 'border-color 0.2s' }} onFocus={e => e.target.style.borderColor = '#8b5cf6'} onBlur={e => e.target.style.borderColor = '#e2e8f0'}>
                                             <option value="" disabled hidden>Select Class</option>
-                                            {classes.map(c => <option key={c.id} value={c.id} style={{ color: '#334155' }}>{c.name}</option>)}
+                                            {classes.map(c => <option key={c.id} value={c.id} style={{ color: '#334155' }}>{c.name} {c.section ? c.section : ''}</option>)}
                                         </select>
                                         <span style={{ position: 'absolute', right: '0.8rem', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8', pointerEvents: 'none' }}>
                                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>

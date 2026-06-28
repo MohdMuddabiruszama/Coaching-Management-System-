@@ -60,8 +60,7 @@ function validateFacultyRow(row, seenEmails) {
   else if (seenEmails.has(row.email.toLowerCase()))         e.push('duplicate email in file');
   else                                                      seenEmails.add(row.email.toLowerCase());
   if (!row.phone?.trim())                                   e.push('phone required');
-  if (row.salary && isNaN(Number(row.salary)))              e.push('salary must be a number');
-  if (row.salary && Number(row.salary) < 0)                 e.push('salary must be positive');
+  if (row.address && row.address.length > 500)              e.push('address max 500 chars');
   if (row.password && row.password.length < 8)              e.push('password min 8 characters');
   return e;
 }

@@ -387,17 +387,21 @@ function EnterMarks() {
                 
                 const marksStr = columns[3];
                 const absentStr = columns[4] ? columns[4].toUpperCase() : 'N';
-                const isAbsent = absentStr === 'Y' || absentStr === 'YES';
+                let isAbsent = absentStr === 'Y' || absentStr === 'YES' || absentStr === 'A';
 
                 let parsedMarks = null;
-                if (!isAbsent) {
-                    if (marksStr === undefined || marksStr.trim() === '') {
-                        continue; // Skip rows where marks are completely empty and not absent
-                    }
+                const hasMarks = marksStr !== undefined && marksStr.trim() !== '';
+
+                if (hasMarks) {
                     parsedMarks = parseFloat(marksStr);
                     if (isNaN(parsedMarks)) {
                         throw new Error(`Invalid marks '${marksStr}' for Student ID ${studentId}. Marks must be a valid number.`);
                     }
+                    // Forgiving logic: if marks are explicitly provided, the student must be present.
+                    // This fixes user error where they type marks but also type 'Y' for Absent.
+                    isAbsent = false;
+                } else if (!isAbsent) {
+                    continue; // Skip rows where marks are completely empty and not marked absent
                 }
 
                 dataToImport.push({

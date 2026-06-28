@@ -153,7 +153,7 @@ function FacultySchedule() {
                         <select value={selectedClass} onChange={e => setSelectedClass(e.target.value)} style={{ padding: '0.6rem 2.5rem 0.6rem 1rem', borderRadius: '8px', border: '1px solid #cbd5e1', outline: 'none', background: 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'16\' height=\'16\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'%2364748b\' stroke-width=\'2\' stroke-linecap=\'round\' stroke-linejoin=\'round\'%3E%3Cpolyline points=\'6 9 12 15 18 9\'%3E%3C/polyline%3E%3C/svg%3E") no-repeat right 0.75rem center/16px', appearance: 'none', fontWeight: '500', color: '#334155', minWidth: '160px' }}>
                             <option value="all">All Classes</option>
                             {myClasses.map(c => (
-                                <option key={c.id} value={c.id}>{c.name}</option>
+                                <option key={c.id} value={c.id}>{c.name} {c.section ? c.section : ''}</option>
                             ))}
                         </select>
                     </div>

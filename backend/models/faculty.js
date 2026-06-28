@@ -5,7 +5,7 @@ const Faculty = sequelize.define("Faculty", {
     institute_id: DataTypes.INTEGER,
     user_id: DataTypes.INTEGER,
     designation: DataTypes.STRING,
-    salary: DataTypes.DECIMAL(10, 2),
+    address: DataTypes.STRING(500),
     join_date: DataTypes.DATEONLY
 }, {
     tableName: 'faculty',  // Explicitly set table name (database uses singular, not plural)

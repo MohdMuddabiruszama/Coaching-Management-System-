@@ -258,7 +258,7 @@ function AdminNotes() {
                 </div>
                 <select className="an-select-input" value={filterClass} onChange={e => setFilterClass(e.target.value)}>
                     <option value="all">All Classes</option>
-                    {classes.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                    {classes.map(c => <option key={c.id} value={c.id}>{c.name} {c.section ? c.section : ''}</option>)}
                 </select>
                 <select className="an-select-input" value={filterSubject} onChange={e => setFilterSubject(e.target.value)}>
                     <option value="all">All Subjects</option>

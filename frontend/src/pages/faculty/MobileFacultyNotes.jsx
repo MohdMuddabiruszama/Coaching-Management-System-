@@ -270,7 +270,7 @@ function MobileFacultyNotes() {
                     <div style={{ position: 'relative' }}>
                         <select value={filterClass} onChange={e => setFilterClass(e.target.value)} style={{ width: '100%', padding: '0.9rem 1.2rem', borderRadius: '12px', border: '1px solid #e2e8f0', outline: 'none', background: '#fff', color: '#0f172a', fontSize: '0.95rem', fontWeight: '600', appearance: 'none' }}>
                             <option value="">All Classes</option>
-                            {classes.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
+                            {classes.map(c => <option key={c.id} value={c.name}>{c.name} {c.section ? c.section : ''}</option>)}
                         </select>
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ position: 'absolute', right: '1.2rem', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }}><polyline points="6 9 12 15 18 9"></polyline></svg>
                     </div>
@@ -611,7 +611,7 @@ function MobileFacultyNotes() {
                         <div style={{ position: 'relative' }}>
                             <select name="class_id" value={formData.class_id} onChange={handleChange} required style={{ width: '100%', padding: '1rem 2.5rem 1rem 1rem', borderRadius: '12px', border: '1px solid #e2e8f0', outline: 'none', background: '#fff', fontSize: '0.95rem', color: formData.class_id ? '#0f172a' : '#94a3b8', appearance: 'none', boxSizing: 'border-box' }}>
                                 <option value="" disabled hidden>Select Class</option>
-                                {classes.map(c => <option key={c.id} value={c.id} style={{ color: '#334155' }}>{c.name}</option>)}
+                                {classes.map(c => <option key={c.id} value={c.id} style={{ color: '#334155' }}>{c.name} {c.section ? c.section : ''}</option>)}
                             </select>
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ position: 'absolute', right: '1rem', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }}><polyline points="6 9 12 15 18 9"></polyline></svg>
                         </div>

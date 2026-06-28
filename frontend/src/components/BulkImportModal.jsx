@@ -20,7 +20,7 @@ const LABEL_MAP = { students: 'Students', parents: 'Parents', faculty: 'Faculty'
 const COL_KEYS = {
   students: ['name', 'email', 'phone', 'roll_number', 'class_name', 'gender', 'date_of_birth'],
   parents:  ['name', 'email', 'phone', 'student_roll_number', 'relationship'],
-  faculty:  ['name', 'email', 'phone', 'designation', 'salary', 'join_date'],
+  faculty:  ['name', 'email', 'phone', 'designation', 'address', 'join_date'],
 };
 
 export default function BulkImportModal({

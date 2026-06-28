@@ -18,7 +18,7 @@ const createExam = {
         total_marks: Joi.number().positive().max(1000).required(),
         passing_marks: Joi.number().min(0).max(Joi.ref('total_marks')).required()
             .messages({ 'number.max': 'Passing marks cannot exceed total marks' }),
-        exam_type: Joi.string().valid(...EXAM_TYPES).default('unit_test').optional(),
+        exam_type: Joi.string().max(20).default('unit_test').optional(),
     }),
 };
 
@@ -68,7 +68,7 @@ const updateExam = {
         exam_date: dateISO.optional(),
         total_marks: Joi.number().positive().max(1000).optional(),
         passing_marks: Joi.number().min(0).optional(),
-        exam_type: Joi.string().valid(...EXAM_TYPES).optional(),
+        exam_type: Joi.string().max(20).optional(),
     }),
 };
 

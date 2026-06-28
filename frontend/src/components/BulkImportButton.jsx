@@ -31,7 +31,7 @@ export default function BulkImportButton({ type, onSuccess, customButton, label,
     } else if (type === 'parents') {
       dummyRow = { name: 'Jane Doe', email: 'jane@example.com', phone: '9876543210', student_roll_number: '101', relationship: 'mother' };
     } else if (type === 'faculty') {
-      dummyRow = { name: 'Dr. Smith', email: 'smith@example.com', phone: '9876543210', designation: 'Math Teacher', salary: '50000', join_date: '01/04/2023' };
+      dummyRow = { name: 'Dr. Smith', email: 'smith@example.com', phone: '9876543210', designation: 'Math Teacher', address: 'New York, USA', join_date: '01/04/2023' };
     }
 
     const headers = REQUIRED_HEADERS[type];

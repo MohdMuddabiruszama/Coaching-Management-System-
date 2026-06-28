@@ -54,8 +54,7 @@ function validateFacultyRow(row) {
   if (!row.name?.trim())                          e.push('name is required');
   if (!EMAIL_RE.test(row.email || ''))            e.push('invalid email format');
   if (!row.phone?.trim())                         e.push('phone is required');
-  if (row.salary && isNaN(Number(row.salary)))    e.push('salary must be a valid number');
-  if (row.salary && Number(row.salary) < 0)       e.push('salary must be a positive number');
+  if (row.address && row.address.length > 500)    e.push('address must be at most 500 characters');
   if (row.password && row.password.length < 8)    e.push('password must be at least 8 characters');
   return e;
 }

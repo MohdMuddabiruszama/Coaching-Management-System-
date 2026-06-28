@@ -91,7 +91,7 @@ exports.bulkImportFaculty = async (req, res) => {
           institute_id,
           user_id: user.id,
           designation: r.designation?.trim() || null,
-          salary: r.salary ? Number(r.salary) : null,
+          address: r.address?.trim() || null,
           join_date: parseExcelDate(r.join_date) || new Date(),
         }, { transaction: t });
       }

@@ -390,7 +390,9 @@ function Exams() {
             setFormData(EMPTY_FORM);
             fetchAll();
         } catch (error) {
-            alert(error.response?.data?.message || 'Something went wrong');
+            const msg = error.response?.data?.message || 'Something went wrong';
+            const details = error.response?.data?.errors?.map(e => e.message).join(', ') || '';
+            alert(details ? `${msg}: ${details}` : msg);
         } finally {
             setSubmitting(false);
         }

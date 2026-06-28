@@ -376,7 +376,7 @@ export default function AdminAssignments() {
                         </select>
                         <select className="aa-select-input" value={filters.class_id} onChange={e => setFilters(p => ({ ...p, class_id: e.target.value }))}>
                             <option value="">All Classes</option>
-                            {classes.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                            {classes.map(c => <option key={c.id} value={c.id}>{c.name} {c.section ? c.section : ''}</option>)}
                         </select>
                         <select className="aa-select-input" value={filters.faculty_id} onChange={e => setFilters(p => ({ ...p, faculty_id: e.target.value }))}>
                             <option value="">All Faculty</option>

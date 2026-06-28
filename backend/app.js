@@ -507,6 +507,11 @@ const syncDatabase = async () => {
       await sequelize.query(`ALTER TABLE subscriptions ADD COLUMN tax_amount DECIMAL(10,2) DEFAULT 0;`);
     } catch (e) { }
 
+    try {
+      await sequelize.query(`ALTER TABLE faculty ADD COLUMN IF NOT EXISTS address VARCHAR(500);`);
+      await sequelize.query(`ALTER TABLE faculty DROP COLUMN IF EXISTS salary;`);
+    } catch (e) { }
+
     // Biometric attendance columns (PostgreSQL-compatible â€” use VARCHAR instead of ENUM)
     try { await sequelize.query(`ALTER TABLE attendances ADD COLUMN marked_by_type VARCHAR(20) DEFAULT 'manual';`); } catch (e) { }
     try { await sequelize.query(`ALTER TABLE attendances ADD COLUMN biometric_punch_id BIGINT NULL;`); } catch (e) { }

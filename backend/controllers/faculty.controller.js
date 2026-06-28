@@ -65,7 +65,7 @@ exports.createFaculty = async (req, res) => {
             phone,
             password,
             designation,
-            salary,
+            address,
             join_date,
         } = req.body;
 
@@ -126,7 +126,7 @@ exports.createFaculty = async (req, res) => {
             institute_id,
             user_id: user.id,
             designation,
-            salary,
+            address,
             join_date: join_date || new Date(),
         });
 
@@ -307,7 +307,7 @@ exports.updateFaculty = async (req, res) => {
             email,
             phone,
             designation,
-            salary,
+            address,
             join_date,
             status,
         } = req.body;
@@ -344,7 +344,7 @@ exports.updateFaculty = async (req, res) => {
         // Update faculty details
         await faculty.update({
             designation: designation !== undefined ? designation : faculty.designation,
-            salary: salary !== undefined ? salary : faculty.salary,
+            address: address !== undefined ? address : faculty.address,
             join_date: join_date !== undefined ? join_date : faculty.join_date,
         });
 

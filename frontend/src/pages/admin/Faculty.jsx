@@ -295,7 +295,7 @@ function Faculty() {
         phone: "",
         password: "",
         designation: "",
-        salary: "",
+        address: "",
         join_date: "",
     });
 
@@ -387,7 +387,7 @@ function Faculty() {
             phone: facultyMember.User?.phone || "",
             password: "",
             designation: facultyMember.designation || "",
-            salary: facultyMember.salary || "",
+            address: facultyMember.address || "",
             join_date: facultyMember.join_date || "",
         });
         setEditMode(true);
@@ -426,7 +426,7 @@ function Faculty() {
             phone: "",
             password: "",
             designation: "",
-            salary: "",
+            address: "",
             join_date: "",
         });
         setEditMode(false);
@@ -490,10 +490,10 @@ function Faculty() {
             const dateA = new Date(a.join_date || 0);
             const dateB = new Date(b.join_date || 0);
             return dateB - dateA; // Newest first
-        } else if (sortBy === "salary") {
-            const salA = parseFloat(a.salary) || 0;
-            const salB = parseFloat(b.salary) || 0;
-            return salB - salA; // Highest first
+        } else if (sortBy === "address") {
+            const addrA = a.address || "";
+            const addrB = b.address || "";
+            return sortOrder === "asc" ? addrA.localeCompare(addrB) : addrB.localeCompare(addrA); // Highest first
         }
         return 0;
     });
@@ -701,7 +701,7 @@ function Faculty() {
                             >
                                 <option value="name">Name (A-Z)</option>
                                 <option value="join_date">Join Date</option>
-                                <option value="salary">Salary</option>
+                                <option value="address">Address</option>
                             </select>
                         </div>
                         <div style={{ display: 'flex', gap: '0.2rem', background: '#f1f5f9', padding: '0.2rem', borderRadius: '8px' }}>
@@ -776,7 +776,7 @@ function Faculty() {
                                 <th>PHONE</th>
                                 <th>SUBJECTS</th>
                                 <th>DESIGNATION</th>
-                                <th>SALARY</th>
+                                <th>ADDRESS</th>
                                 <th>JOIN DATE</th>
                                 <th>STATUS</th>
                                 <th>ACTIONS</th>
@@ -826,7 +826,7 @@ function Faculty() {
                                             <span className="st-text-main">{facultyMember.designation || "N/A"}</span>
                                         </td>
                                         <td>
-                                            <span className="st-text-main">₹{facultyMember.salary ? parseFloat(facultyMember.salary).toLocaleString('en-IN', { minimumFractionDigits: 2 }) : "N/A"}</span>
+                                            <span className="st-text-main">{facultyMember.address || "N/A"}</span>
                                         </td>
                                         <td>
                                             <span className="st-text-main">
@@ -1099,8 +1099,8 @@ function Faculty() {
                                             <input type="text" name="designation" className="form-input" placeholder="e.g., Senior Teacher, HOD" value={formData.designation} onChange={handleChange} />
                                         </div>
                                         <div className="form-group">
-                                            <label className="form-label" style={{ fontSize: '0.85rem', fontWeight: 600, color: '#475569', marginBottom: '0.4rem' }}>Salary (₹)</label>
-                                            <input type="number" name="salary" className="form-input" placeholder="Enter amount" value={formData.salary} onChange={handleChange} min="0" />
+                                            <label className="form-label" style={{ fontSize: '0.85rem', fontWeight: 600, color: '#475569', marginBottom: '0.4rem' }}>Address</label>
+                                            <textarea name="address" className="form-input" placeholder="Enter address" value={formData.address} onChange={handleChange} rows="2" style={{ resize: 'vertical' }} />
                                         </div>
                                         <div className="form-group">
                                             <label className="form-label" style={{ fontSize: '0.85rem', fontWeight: 600, color: '#475569', marginBottom: '0.4rem' }}>Join Date</label>
