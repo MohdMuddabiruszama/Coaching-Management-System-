@@ -87,6 +87,9 @@ function Subjects() {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        if (!formData.faculty_id) {
+            return alert("Please assign a faculty member to this subject");
+        }
         try {
             if (editMode) {
                 await api.put(`/subjects/${formData.id}`, formData);
@@ -750,7 +753,7 @@ function Subjects() {
                                 {/* Assign Faculty (Searchable List) */}
                                 <div>
                                     <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '600', color: '#334155', marginBottom: '0.5rem' }}>
-                                        Assign Faculty (Optional)
+                                        Assign Faculty <span style={{ color: '#ef4444' }}>*</span>
                                     </label>
                                     <div style={{ border: '1px solid #e2e8f0', borderRadius: '8px', overflow: 'hidden' }}>
                                         <div style={{ display: 'flex', alignItems: 'center', padding: '0.5rem 1rem', borderBottom: '1px solid #e2e8f0', backgroundColor: '#f8fafc' }}>

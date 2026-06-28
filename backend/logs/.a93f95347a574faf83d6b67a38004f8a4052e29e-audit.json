@@ -1,0 +1,15 @@
+{
+    "keep": {
+        "days": true,
+        "amount": 14
+    },
+    "auditLog": "D:\\Institute Managnment Sysytem\\pre-dep\\backend\\logs\\.a93f95347a574faf83d6b67a38004f8a4052e29e-audit.json",
+    "files": [
+        {
+            "date": 1782630549013,
+            "name": "D:\\Institute Managnment Sysytem\\pre-dep\\backend\\logs\\combined-2026-06-28.log",
+            "hash": "830a08140b4a432b94ebfdc8bfd2daee5807c1526ba939ca4f9037fd67222ecf"
+        }
+    ],
+    "hashType": "sha256"
+}
