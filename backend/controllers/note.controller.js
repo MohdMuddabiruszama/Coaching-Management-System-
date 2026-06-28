@@ -15,14 +15,22 @@ exports.uploadNote = async (req, res) => {
     try {
         const { user } = req;
 
-        // User must be a faculty to upload notes
-        if (user.role !== "faculty") {
-            return res.status(403).json({ success: false, message: "Only faculty can upload notes" });
-        }
+        let finalFacultyId = null;
 
-        const faculty = await Faculty.findOne({ where: { user_id: user.id } });
-        if (!faculty) {
-            return res.status(404).json({ success: false, message: "Faculty record not found" });
+        if (user.role === "admin" || user.role === "superadmin" || user.role === "owner" || user.role === "manager") {
+            const { faculty_id } = req.body;
+            if (!faculty_id) {
+                return res.status(400).json({ success: false, message: "Faculty must be selected when uploaded by admin" });
+            }
+            finalFacultyId = faculty_id;
+        } else if (user.role === "faculty") {
+            const faculty = await Faculty.findOne({ where: { user_id: user.id } });
+            if (!faculty) {
+                return res.status(404).json({ success: false, message: "Faculty record not found" });
+            }
+            finalFacultyId = faculty.id;
+        } else {
+            return res.status(403).json({ success: false, message: "Not authorized to upload notes" });
         }
 
         const { title, description, class_id, subject_id } = req.body;
@@ -38,7 +46,7 @@ exports.uploadNote = async (req, res) => {
 
         const newNote = await Note.create({
             institute_id: user.institute_id,
-            faculty_id: faculty.id,
+            faculty_id: finalFacultyId,
             class_id: class_id,
             subject_id: subject_id,
             title: title,
@@ -67,19 +75,25 @@ exports.updateNote = async (req, res) => {
         const { title, description, class_id, subject_id } = req.body;
         const { user } = req;
 
-        if (user.role !== "faculty") {
-            return res.status(403).json({ success: false, message: "Only faculty can edit notes" });
-        }
-
-        const faculty = await Faculty.findOne({ where: { user_id: user.id } });
         const note = await Note.findOne({ where: { id: id, institute_id: user.institute_id } });
 
         if (!note) {
             return res.status(404).json({ success: false, message: "Note not found" });
         }
 
-        if (note.faculty_id !== faculty.id) {
-            return res.status(403).json({ success: false, message: "You can only edit your own notes" });
+        if (user.role === "admin" || user.role === "superadmin" || user.role === "owner" || user.role === "manager") {
+            // Admins can edit any note in their institute, and optionally change the faculty owner
+            if (req.body.faculty_id) {
+                // If admin provided a new faculty_id, we can update it
+                note.faculty_id = req.body.faculty_id;
+            }
+        } else if (user.role === "faculty") {
+            const faculty = await Faculty.findOne({ where: { user_id: user.id } });
+            if (!faculty || note.faculty_id !== faculty.id) {
+                return res.status(403).json({ success: false, message: "You can only edit your own notes" });
+            }
+        } else {
+            return res.status(403).json({ success: false, message: "Not authorized to edit notes" });
         }
 
         // Prepare update data
