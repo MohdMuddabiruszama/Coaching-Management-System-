@@ -263,6 +263,10 @@ if (!isCloudinaryReady) {
 // API ROUTES
 // ============================================
 
+// ✅ Phase 10: Multi-tenant scope safety net — validate institute_id on every request
+const tenantScope = require("./middlewares/tenantScope.middleware");
+const verifyToken = require("./middlewares/auth.middleware");
+
 /**
  * Health Check Endpoint (Simple)
  * Returns server status
@@ -334,41 +338,44 @@ app.use("/api/auth", require("./routes/auth.routes"));
 app.use("/api/superadmin", require("./routes/superadmin.routes"));
 app.use("/api/admin", require("./routes/admin.routes"));
 app.use("/api/institutes", require("./routes/institute.routes"));
-app.use("/api/students", require("./routes/student.routes"));
-app.use("/api/faculty", require("./routes/faculty.routes"));
-app.use("/api/faculty-attendance", require("./routes/facultyAttendance.routes"));
-app.use("/api/classes", require("./routes/class.routes"));
-app.use("/api/subjects", require("./routes/subject.routes"));
-app.use("/api/attendance", require("./routes/attendance.routes"));
-app.use("/api/reports", require("./routes/reports.routes"));
-app.use("/api/exams", require("./routes/exam.routes"));
-app.use("/api/fees", require("./routes/fees.routes"));
-app.use("/api/announcements", require("./routes/announcement.routes"));
+
+// ✅ Phase 10: Core institute-scoped routes use tenantScope middleware
+// This ensures every request has a valid institute_id before hitting any controller
+app.use("/api/students", [verifyToken, tenantScope], require("./routes/student.routes"));
+app.use("/api/faculty", [verifyToken, tenantScope], require("./routes/faculty.routes"));
+app.use("/api/faculty-attendance", [verifyToken, tenantScope], require("./routes/facultyAttendance.routes"));
+app.use("/api/classes", [verifyToken, tenantScope], require("./routes/class.routes"));
+app.use("/api/subjects", [verifyToken, tenantScope], require("./routes/subject.routes"));
+app.use("/api/attendance", [verifyToken, tenantScope], require("./routes/attendance.routes"));
+app.use("/api/reports", [verifyToken, tenantScope], require("./routes/reports.routes"));
+app.use("/api/exams", [verifyToken, tenantScope], require("./routes/exam.routes"));
+app.use("/api/fees", [verifyToken, tenantScope], require("./routes/fees.routes"));
+app.use("/api/announcements", [verifyToken, tenantScope], require("./routes/announcement.routes"));
+app.use("/api/expenses", [verifyToken, tenantScope], require("./routes/expense.routes"));
+app.use("/api/transport-fees", [verifyToken, tenantScope], require("./routes/transportFee.routes"));
+app.use("/api/salary", [verifyToken, tenantScope], require("./routes/salary.routes"));
+app.use("/api/finance", [verifyToken, tenantScope], require("./routes/finance.routes"));
+app.use("/api/timetable", [verifyToken, tenantScope], require("./routes/timetable.routes"));
+app.use("/api/chat", [verifyToken, tenantScope], require("./routes/chat.routes"));
+app.use("/api/parents", [verifyToken, tenantScope], require("./routes/parent.routes"));
+app.use("/api/notes", [verifyToken, tenantScope], require("./routes/note.routes"));
+app.use("/api/assignments", [verifyToken, tenantScope], require("./routes/assignment.routes"));
+app.use("/api/performance", [verifyToken, tenantScope], require("./routes/performance.routes"));
+app.use("/api/biometric", [verifyToken, tenantScope], require("./routes/biometric.routes"));
+app.use("/api/mobile", [verifyToken, tenantScope], require("./routes/mobileDashboard.routes"));
+// Subscription, payment, plans — no tenantScope (cross-institute billing routes)
 app.use("/api/subscriptions", require("./routes/subscription.routes"));
-app.use("/api/plans", require("./routes/plan.routes"));
-app.use("/api/payment", require("./routes/payment.routes"));
-app.use("/api/invoices", require("./routes/invoice.routes"));
-app.use("/api/expenses", require("./routes/expense.routes"));
-app.use("/api/transport-fees", require("./routes/transportFee.routes"));
-app.use("/api/salary", require("./routes/salary.routes"));          // Faculty Salary Management
-app.use("/api/finance", require("./routes/finance.routes"));         // Finance Analytics (Admin Only)
-app.use("/api/manager", require("./routes/manager.routes"));
-app.use("/api/timetable", require("./routes/timetable.routes"));
-// Webhook route already mounted above
-app.use("/api/chat", require("./routes/chat.routes"));
-app.use("/api/parents", require("./routes/parent.routes"));
-app.use("/api/biometric", require("./routes/biometric.routes"));
-app.use("/api/notes", require("./routes/note.routes"));
-app.use("/api/assignments", require("./routes/assignment.routes"));
-app.use("/api/performance", require("./routes/performance.routes")); // ✅ Student Performance System
-app.use("/api/mobile", require("./routes/mobileDashboard.routes")); // ✅ Phase 2C: Bundled mobile dashboard APIs
+app.use("/api/plans",         require("./routes/plan.routes"));
+app.use("/api/payment",       require("./routes/payment.routes"));
+app.use("/api/invoices",      require("./routes/invoice.routes"));
+app.use("/api/manager",       require("./routes/manager.routes"));
 
 // Public Web Page routes
 app.use("/api/admin/public-page", require("./routes/publicPage.routes"));
-app.use("/api/admin/enquiries", require("./routes/enquiry.routes"));
-app.use("/api/public", require("./routes/publicSite.routes"));
-app.use("/api/leads", require("./routes/lead.routes"));
-app.use("/api/lifetime", require("./routes/lifetime.routes")); // Lifetime plan
+app.use("/api/admin/enquiries",   require("./routes/enquiry.routes"));
+app.use("/api/public",            require("./routes/publicSite.routes"));
+app.use("/api/leads",             require("./routes/lead.routes"));
+app.use("/api/lifetime",          require("./routes/lifetime.routes"));
 
 // ============================================
 // SENTRY TEST ENDPOINT
@@ -396,59 +403,18 @@ app.use((req, res) => {
 // GLOBAL ERROR HANDLER 
 // ============================================
 
-/**
- * Central Error Handling Middleware
- * Catches all errors and returns standardized response
- */
+// ============================================
+// ✅ PHASE 2: CENTRALIZED ERROR HANDLER
+// ============================================
+// Sentry MUST be registered before our custom error middleware
+// so Sentry captures errors before we format and send the response.
 const Sentry = require("@sentry/node");
-Sentry.setupExpressErrorHandler(app); // ✅ Setup Sentry Express Error Handler BEFORE custom error middleware
+Sentry.setupExpressErrorHandler(app);
 
-app.use((err, req, res, next) => {
-  console.error("âŒ Error:", err);
-
-  // Sequelize validation errors
-  if (err.name === "SequelizeValidationError") {
-    return res.status(400).json({
-      success: false,
-      message: "Validation error",
-      errors: err.errors.map((e) => ({
-        field: e.path,
-        message: e.message,
-      })),
-    });
-  }
-
-  // Sequelize unique constraint errors
-  if (err.name === "SequelizeUniqueConstraintError") {
-    return res.status(409).json({
-      success: false,
-      message: "Duplicate entry",
-      field: err.errors[0]?.path,
-    });
-  }
-
-  // JWT errors
-  if (err.name === "JsonWebTokenError") {
-    return res.status(401).json({
-      success: false,
-      message: "Invalid token",
-    });
-  }
-
-  if (err.name === "TokenExpiredError") {
-    return res.status(401).json({
-      success: false,
-      message: "Token expired",
-    });
-  }
-
-  // Default error response
-  res.status(err.status || 500).json({
-    success: false,
-    message: err.message || "Internal server error",
-    ...(process.env.NODE_ENV === "development" && { stack: err.stack }),
-  });
-});
+// Custom centralized error handler — handles AppError, Sequelize, JWT,
+// Multer, Joi, connection errors, and unexpected bugs with referenceId.
+const errorHandler = require("./middlewares/error.middleware");
+app.use(errorHandler);
 
 // ============================================
 // DATABASE SYNCHRONIZATION

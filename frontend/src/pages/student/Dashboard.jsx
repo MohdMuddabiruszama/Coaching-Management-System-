@@ -5,6 +5,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { AuthContext } from "../../context/AuthContext";
 import api from "../../services/api";
 import AnnouncementBell from "../../components/AnnouncementBell";
+import WidgetErrorBoundary from "../../components/common/WidgetErrorBoundary"; // ✅ Phase 7
 import "./StudentDashboard.css";
 
 // ── Pure helpers (outside component — no re-creation on render) ──────────────
@@ -860,6 +861,7 @@ function StudentDashboard() {
             <div className="sd-widgets">
                 {/* Recent Announcements */}
                 {user?.features?.announcements && (
+                    <WidgetErrorBoundary title="Recent Announcements">
                     <div className="sd-widget">
                         <div className="sd-widget-header">
                             <h3>Recent Announcements</h3>
@@ -892,9 +894,11 @@ function StudentDashboard() {
                             )}
                         </div>
                     </div>
+                    </WidgetErrorBoundary>
                 )}
 
                 {/* Upcoming Tasks */}
+                <WidgetErrorBoundary title="Upcoming Tasks">
                 <div className="sd-widget">
                     <div className="sd-widget-header">
                         <h3>Upcoming Tasks</h3>
@@ -929,8 +933,10 @@ function StudentDashboard() {
                         )}
                     </div>
                 </div>
+                </WidgetErrorBoundary>
 
                 {/* Today's Schedule */}
+                <WidgetErrorBoundary title="Today's Schedule">
                 <div className="sd-widget">
                     <div className="sd-widget-header">
                         <h3>📅 Today's Schedule</h3>
@@ -960,6 +966,7 @@ function StudentDashboard() {
                         )}
                     </div>
                 </div>
+                </WidgetErrorBoundary>
             </div>
         </div>
     );

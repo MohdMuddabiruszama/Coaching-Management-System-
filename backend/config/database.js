@@ -27,11 +27,11 @@ const commonOptions = {
         : false,
     benchmark: process.env.NODE_ENV === "development",
     pool: {
-        max: 5,
-        min: 0,
+        max:     parseInt(process.env.DB_POOL_MAX,  10) || 10,  // 10 for multi-tenant prod
+        min:     parseInt(process.env.DB_POOL_MIN,  10) || 0,
         acquire: 60000,
-        idle: 20000,
-        evict: 15000,
+        idle:    20000,
+        evict:   15000,
     },
     retry: {
         match: [
@@ -43,10 +43,15 @@ const commonOptions = {
             /SequelizeConnection/,
             /SequelizeHost/,
             /TimeoutError/,
+            /Deadlock/i,                      // ✅ Phase 4: Deadlock retry
+            /ER_LOCK_DEADLOCK/,              // MySQL deadlock
+            /40001/,                         // PostgreSQL serialization failure
+            /40P01/,                         // PostgreSQL deadlock detected
+            /SequelizeDatabaseError/,
         ],
-        name: "query",
-        max: 5,
-        backoffBase: 1000,
+        name:          "query",
+        max:           5,
+        backoffBase:   1000,
         backoffExponent: 1.5,
     },
     dialectOptions: {

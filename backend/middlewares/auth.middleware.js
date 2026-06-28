@@ -44,6 +44,8 @@ const clearInstituteCache = (instituteId) => statusCache.delete(instituteId);
 
 // ─── Main Auth Middleware ─────────────────────────────────────────────────────
 const verifyToken = async (req, res, next) => {
+    if (req.user) return next(); // Prevent duplicate execution if already verified by a higher-level router
+
     const authHeader = req.headers.authorization;
 
     if (!authHeader) {

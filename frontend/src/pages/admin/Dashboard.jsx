@@ -12,6 +12,7 @@ import ThemeSelector from "../../components/ThemeSelector";
 import BlockedScreen from "./BlockedScreen";
 import InstituteLogo from "../../components/common/InstituteLogo";
 import AdvancedStatCard from "../../components/common/AdvancedStatCard";
+import WidgetErrorBoundary from "../../components/common/WidgetErrorBoundary";
 import managerAvatarImg from "../../assets/manager_avatar.png";
 import blueDiamondImg from "../../assets/blue_diamond.png";
 import "./Dashboard.css";
@@ -612,6 +613,7 @@ function AdminDashboard() {
 
                 {/* STUDENT MANAGEMENT */}
                 {(hasPermission('students') || hasPermission('attendance')) && (
+                <WidgetErrorBoundary title="Student Management">
                 <div className="da-section">
                     <div className="da-section-header">
                         <h3>Student Management</h3>
@@ -635,10 +637,12 @@ function AdminDashboard() {
                         )}
                     </div>
                 </div>
+                </WidgetErrorBoundary>
                 )}
 
                 {/* FACULTY MANAGEMENT */}
                 {(hasPermission('faculty') || hasPermission('attendance') || hasPermission('salary')) && (
+                <WidgetErrorBoundary title="Faculty Management">
                 <div className="da-section">
                     <div className="da-section-header">
                         <h3>Faculty Management</h3>
@@ -662,10 +666,12 @@ function AdminDashboard() {
                         )}
                     </div>
                 </div>
+                </WidgetErrorBoundary>
                 )}
 
                 {/* ACADEMIC MANAGEMENT */}
                 {(hasPermission('classes') || hasPermission('subjects') || hasPermission('timetable') || hasPermission('exams') || hasPermission('assignments') || hasPermission('notes')) && (
+                <WidgetErrorBoundary title="Academic Management">
                 <div className="da-section">
                     <div className="da-section-header">
                         <h3>Academic Management</h3>
@@ -692,10 +698,12 @@ function AdminDashboard() {
                         )}
                     </div>
                 </div>
+                </WidgetErrorBoundary>
                 )}
 
                 {/* FINANCE & ACCOUNTS */}
                 {(hasPermission('fees') || hasPermission('collect_fees') || hasPermission('expenses') || hasPermission('finance') || hasPermission('reports') || hasPermission('performance_hub')) && (
+                <WidgetErrorBoundary title="Financial Management">
                 <div className="da-section">
                     <div className="da-section-header">
                         <h3>Finance & Accounts</h3>
@@ -719,10 +727,12 @@ function AdminDashboard() {
                         )}
                     </div>
                 </div>
+                </WidgetErrorBoundary>
                 )}
 
                 {/* SYSTEM & COMMUNICATION */}
                 {(isAdmin || hasPermission('announcements') || hasPermission('chat') || hasPermission('biometric')) && (
+                <WidgetErrorBoundary title="System & Communication">
                 <div className="da-section">
                     <div className="da-section-header">
                         <h3>System & Communication</h3>
@@ -780,6 +790,7 @@ function AdminDashboard() {
                         )}
                     </div>
                 </div>
+                </WidgetErrorBoundary>
                 )}
             </div>
 
