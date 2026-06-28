@@ -138,7 +138,7 @@ export default function SplashOverlay() {
             </div>
 
             {/* ── Version ── */}
-            <div className="splash-version">v 1.1.5</div>
+            <div className="splash-version">v 1.0.0</div>
         </div>
     );
 }

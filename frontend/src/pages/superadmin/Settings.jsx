@@ -453,7 +453,7 @@ function Settings() {
                 <div className="card" style={{ maxWidth: "600px", padding: "2rem" }}>
                     <h3 style={{ marginBottom: "1.5rem" }}>System Information</h3>
                     <div style={{ marginBottom: "1rem" }}>
-                        <strong>Platform Version:</strong> 1.1.2
+                        <strong>Platform Version:</strong> 1.0.0
                     </div>
                     <div style={{ marginBottom: "1rem" }}>
                         <strong>Node Environment:</strong> {import.meta.env.MODE || "development"}

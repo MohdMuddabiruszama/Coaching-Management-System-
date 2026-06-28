@@ -7,10 +7,10 @@ const path = require("path");
 
 const variant = (process.argv[2] || "student").toLowerCase();
 const map = {
-  student: { appId: "com.studentsaas.student", appName: "StudentSaaS-Student" },
-  parent: { appId: "com.studentsaas.parent", appName: "StudentSaaS-Parent" },
-  faculty: { appId: "com.studentsaas.faculty", appName: "StudentSaaS-Faculty" },
-  universal: { appId: "com.studentsaas.universal", appName: "StudentSaaS-Universal" },
+  student: { appId: "com.zenithflows.student", appName: "ZenithFlows-Student" },
+  parent: { appId: "com.zenithflows.parent", appName: "ZenithFlows-Parent" },
+  faculty: { appId: "com.zenithflows.faculty", appName: "ZenithFlows-Faculty" },
+  universal: { appId: "com.zenithflows.ims", appName: "ZenithFlows" },
 };
 
 const patch = map[variant];

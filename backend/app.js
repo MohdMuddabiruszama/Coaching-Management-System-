@@ -271,7 +271,7 @@ app.get("/", (req, res) => {
   res.status(200).json({
     success: true,
     message: "🎓 ZenithFlows API is running",
-    version: "1.1.5",
+    version: "1.0.0",
     timestamp: new Date().toISOString(),
   });
 });
@@ -287,7 +287,7 @@ app.get("/api/health", async (req, res) => {
     status: "ok",
     timestamp: new Date().toISOString(),
     uptime: Math.floor(process.uptime()),
-    version: "1.1.5",
+    version: "1.0.0",
     checks: {},
   };
 

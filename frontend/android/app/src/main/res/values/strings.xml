@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">StudentSaaS-Universal</string>
-    <string name="title_activity_main">StudentSaaS-Universal</string>
-    <string name="package_name">com.studentsaas.universal</string>
-    <string name="custom_url_scheme">com.studentsaas.universal</string>
+    <string name="app_name">ZenithFlows</string>
+    <string name="title_activity_main">ZenithFlows</string>
+    <string name="package_name">com.zenithflows.ims</string>
+    <string name="custom_url_scheme">com.zenithflows.ims</string>
 </resources>

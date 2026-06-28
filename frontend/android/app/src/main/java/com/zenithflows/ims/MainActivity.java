@@ -1,4 +1,4 @@
-package com.studentsaas.universal;
+package com.zenithflows.ims;
 
 import com.getcapacitor.BridgeActivity;
 

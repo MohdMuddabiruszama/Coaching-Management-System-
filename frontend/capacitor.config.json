@@ -1,19 +1,19 @@
 {
-  "appId": "com.studentsaas.universal",
-  "appName": "StudentSaaS-Universal",
+  "appId": "com.zenithflows.ims",
+  "appName": "ZenithFlows",
   "webDir": "dist",
   "server": {
-    "androidScheme": "http",
-    "cleartext": true
+    "hostname": "zenithflows.in",
+    "androidScheme": "https"
   },
   "android": {
-    "allowMixedContent": true
+    "allowMixedContent": false
   },
   "plugins": {
     "SplashScreen": {
-      "launchShowDuration": 0,
-      "launchAutoHide": false,
-      "launchFadeOutDuration": 400,
+      "launchShowDuration": 2000,
+      "launchAutoHide": true,
+      "launchFadeOutDuration": 300,
       "backgroundColor": "#667eea",
       "androidScaleType": "CENTER_CROP",
       "showSpinner": false,

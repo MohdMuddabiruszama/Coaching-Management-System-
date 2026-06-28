@@ -40,10 +40,6 @@ export default function Hero() {
         <div className='lp-hero-blob' />
 
         <div className='lp-hero-content'>
-          <div className='lp-hero-badge reveal'>
-            <span style={{marginRight: '6px', fontSize: '14px'}}>🎓</span>
-            Admissions Open for 2026
-          </div>
 
           <h1 className='lp-hero-h1 reveal' style={{ transitionDelay: '0.1s' }}>
             Manage Your Coaching Institute{' '}
@@ -121,7 +117,7 @@ export default function Hero() {
 
               <div style={{padding: '16px', display: 'flex', flexDirection: 'column', gap: '16px', flex: 1}}>
                 {/* Stats row */}
-                <div style={{display: 'flex', gap: '12px'}}>
+                <div className='lp-mockup-stats-row'>
                   <div className='lp-mockup-statcard'>
                     <div className='statcard-icon' style={{background: 'rgba(59, 130, 246, 0.1)', color: 'var(--lp-blue)'}}>👥</div>
                     <div>
@@ -157,7 +153,7 @@ export default function Hero() {
                 </div>
 
                 {/* Bottom Row */}
-                <div style={{display: 'flex', gap: '12px', flex: 1}}>
+                <div className='lp-mockup-bottom-row'>
                   {/* Chart area */}
                   <div className='lp-mockup-chartarea'>
                     <div style={{display: 'flex', justifyContent: 'space-between', marginBottom: '16px'}}>

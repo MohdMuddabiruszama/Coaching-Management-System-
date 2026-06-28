@@ -1,43 +1,41 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  Android Network Security Configuration — ZenithFlows
-  ======================================================
-  This file controls which domains can use HTTP (cleartext) traffic.
-  All other domains default to HTTPS only.
+  Android Network Security Configuration — ZenithFlows v1.0.0
+  =============================================================
+  Controls which domains may use cleartext (HTTP) vs HTTPS-only traffic.
 
-  Allowed cleartext domains:
-    - 10.0.2.2     → Android Emulator host machine (localhost:5000)
-    - 10.0.3.2     → Genymotion emulator host
-    - 192.168.x.x  → LAN IP for physical device testing
-    - localhost     → Local development fallback
-
-  Production API (institutes-saas.onrender.com) uses HTTPS automatically.
+  PRODUCTION rules:
+    - All production domains (onrender.com, zenithflows.in, cloudinary) → HTTPS enforced
+  DEVELOPMENT rules (remove before release if desired — harmless to keep):
+    - Local LAN IPs + emulator IPs → HTTP allowed for dev builds
 -->
 <network-security-config>
 
+    <!-- ── Production APIs: HTTPS only, no cleartext ever ── -->
+    <domain-config cleartextTrafficPermitted="false">
+        <domain includeSubdomains="true">onrender.com</domain>
+        <domain includeSubdomains="true">zenithflows.in</domain>
+        <domain includeSubdomains="true">cloudinary.com</domain>
+        <domain includeSubdomains="true">res.cloudinary.com</domain>
+        <domain includeSubdomains="true">vercel.app</domain>
+        <domain includeSubdomains="true">neon.tech</domain>
+    </domain-config>
+
     <!-- ── Development: Allow HTTP to local dev server ── -->
+    <!-- Safe to keep — only affects HTTP, not HTTPS. Remove for extra security. -->
     <domain-config cleartextTrafficPermitted="true">
         <!-- Android Emulator (AVD) host machine -->
         <domain includeSubdomains="false">10.0.2.2</domain>
         <!-- Genymotion emulator host -->
         <domain includeSubdomains="false">10.0.3.2</domain>
-        <!-- Common LAN ranges for physical device testing -->
-        <domain includeSubdomains="false">192.168.1.1</domain>
-        <domain includeSubdomains="false">192.168.0.1</domain>
-        <domain includeSubdomains="false">192.168.29.163</domain>
+        <!-- Physical device on LAN (current dev IP) -->
+        <domain includeSubdomains="false">192.168.29.62</domain>
         <!-- localhost fallback -->
         <domain includeSubdomains="false">localhost</domain>
     </domain-config>
 
-    <!-- ── Production API: HTTPS enforced (default, no cleartext) ── -->
-    <domain-config cleartextTrafficPermitted="false">
-        <domain includeSubdomains="true">onrender.com</domain>
-        <domain includeSubdomains="true">vercel.app</domain>
-        <domain includeSubdomains="true">neon.tech</domain>
-    </domain-config>
-
-    <!-- ── Default: Allow cleartext for Capacitor WebView internal assets ── -->
-    <base-config cleartextTrafficPermitted="true">
+    <!-- ── Default: HTTPS only for all other domains ── -->
+    <base-config cleartextTrafficPermitted="false">
         <trust-anchors>
             <certificates src="system" />
         </trust-anchors>

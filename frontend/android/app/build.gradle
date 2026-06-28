@@ -1,14 +1,14 @@
 apply plugin: 'com.android.application'
 
 android {
-    namespace "com.studentsaas.universal"
+    namespace "com.zenithflows.ims"
     compileSdk rootProject.ext.compileSdkVersion
     defaultConfig {
-        applicationId "com.studentsaas.universal"
+        applicationId "com.zenithflows.ims"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
-        versionName "1.0"
+        versionName "1.0.0"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
@@ -17,9 +17,15 @@ android {
         }
     }
     buildTypes {
-        release {
+        debug {
             minifyEnabled false
-            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+        release {
+            minifyEnabled true
+            shrinkResources true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            // TODO B20: Uncomment after generating keystore (zenithflows-upload.jks)
+            // signingConfig signingConfigs.release
         }
     }
 }
