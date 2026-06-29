@@ -4,6 +4,9 @@ const { RazorpayOrder, RazorpayPayment } = require('../models');
 
 // ── 1. Create Order ─────────────────────────────────────
 async function createOrder({ institute_id, amount_rupees, order_type, reference_id, notes = {} }) {
+  if (!razorpay) {
+      throw new Error("Razorpay is not configured");
+  }
   const amount_paise = Math.round(amount_rupees * 100);
   const receipt = `rcpt_${order_type}_${Date.now()}`;
 
@@ -40,9 +43,11 @@ async function createOrder({ institute_id, amount_rupees, order_type, reference_
 
 // ── 2. Verify Signature ─────────────────────────────────
 function verifySignature({ order_id, payment_id, signature }) {
+  const secret = process.env.RAZORPAY_KEY_SECRET;
+  if (!secret) return false;
   const body = order_id + '|' + payment_id;
   const expected = crypto
-    .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET)
+    .createHmac('sha256', secret)
     .update(body)
     .digest('hex');
   return expected === signature;  // returns true/false
@@ -50,8 +55,10 @@ function verifySignature({ order_id, payment_id, signature }) {
 
 // ── 3. Verify Webhook Signature ─────────────────────────
 function verifyWebhookSignature(rawBody, receivedSignature) {
+  const secret = process.env.RAZORPAY_WEBHOOK_SECRET;
+  if (!secret) return false;
   const expected = crypto
-    .createHmac('sha256', process.env.RAZORPAY_WEBHOOK_SECRET)
+    .createHmac('sha256', secret)
     .update(rawBody)
     .digest('hex');
   return expected === receivedSignature;

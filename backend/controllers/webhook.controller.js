@@ -16,6 +16,12 @@ const invoiceService = require("../services/invoice.service");
 exports.handleWebhook = async (req, res) => {
     try {
         const secret = process.env.RAZORPAY_WEBHOOK_SECRET;
+        if (!secret) {
+            return res.status(500).json({
+                success: false,
+                message: "Webhook secret missing",
+            });
+        }
         const signature = req.headers["x-razorpay-signature"];
         const rawBody = req.body; // Buffer because of express.raw()
         
