@@ -52,4 +52,10 @@ jobs:
           JWT_SECRET: super_secret_test_key_that_is_64_bytes_long_for_security_reasons
           JWT_REFRESH_SECRET: super_secret_refresh_key_that_is_64_bytes_long_for_security
           OTP_TEST_MODE: true
+          CLOUDINARY_CLOUD_NAME: ${{ secrets.CLOUDINARY_CLOUD_NAME }}
+          CLOUDINARY_API_KEY:    ${{ secrets.CLOUDINARY_API_KEY }}
+          CLOUDINARY_API_SECRET: ${{ secrets.CLOUDINARY_API_SECRET }}
+          RAZORPAY_KEY_ID: ${{ secrets.RAZORPAY_KEY_ID }}
+          RAZORPAY_KEY_SECRET: ${{ secrets.RAZORPAY_KEY_SECRET }}
+          RAZORPAY_WEBHOOK_SECRET: ${{ secrets.RAZORPAY_WEBHOOK_SECRET }}
         run: npm test

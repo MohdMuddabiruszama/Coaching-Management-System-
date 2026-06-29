@@ -68,9 +68,12 @@ jobs:
           DATABASE_URL: postgres://test_user:test_pass@localhost:5432/zf_test_db
           JWT_SECRET:   ci-test-jwt-secret-key-minimum-32-chars
           OTP_TEST_MODE: "true"
-          CLOUDINARY_CLOUD_NAME: test
-          CLOUDINARY_API_KEY:    test
-          CLOUDINARY_API_SECRET: test
+          CLOUDINARY_CLOUD_NAME: ${{ secrets.CLOUDINARY_CLOUD_NAME }}
+          CLOUDINARY_API_KEY:    ${{ secrets.CLOUDINARY_API_KEY }}
+          CLOUDINARY_API_SECRET: ${{ secrets.CLOUDINARY_API_SECRET }}
+          RAZORPAY_KEY_ID: ${{ secrets.RAZORPAY_KEY_ID }}
+          RAZORPAY_KEY_SECRET: ${{ secrets.RAZORPAY_KEY_SECRET }}
+          RAZORPAY_WEBHOOK_SECRET: ${{ secrets.RAZORPAY_WEBHOOK_SECRET }}
 
       - name: "📊 Upload backend coverage"
         uses: actions/upload-artifact@v4
