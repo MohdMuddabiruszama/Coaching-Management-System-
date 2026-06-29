@@ -184,6 +184,10 @@ jobs:
           VITE_API_URL:     https://institutes-saas.onrender.com/api
           VITE_APP_VARIANT: student
 
+      - name: "🔑 Give Gradle execute permission"
+        run: chmod +x gradlew
+        working-directory: frontend/android
+
       - name: "🔨 Build Debug APK (Gradle)"
         run: ./gradlew assembleDebug --no-daemon
         working-directory: frontend/android
