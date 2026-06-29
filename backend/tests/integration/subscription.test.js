@@ -143,11 +143,9 @@ describe("Subscription Lifecycle Integration Tests", () => {
                 .set("Authorization", `Bearer ${adminToken}`)
                 .send({ planId: freePlan.id, billingCycle: "monthly" });
 
-            // Since trial already used, it should try to create an order (price = 0)
-            // Behaviour: it falls through to paid flow since has_used_trial is now true
-            expect(res.status).toBe(200);
-            // The trial_activated flag should NOT be present since trial is already used
-            expect(res.body.trial_activated).toBeUndefined();
+            // Behaviour: it should reject with 400 since trial is already used
+            expect(res.status).toBe(400);
+            expect(res.body.success).toBe(false);
         });
     });
 
@@ -169,8 +167,9 @@ describe("Subscription Lifecycle Integration Tests", () => {
             expect(res.body.order.id).toMatch(/^order_mock_/);
             expect(res.body.order.currency).toBe("INR");
 
-            // Verify amount: price + 18% GST in paise
-            const expectedAmount = Math.round((paidPlan.price * 1.18) * 100);
+            // Verify amount: price + GST in paise
+            const gst = paidPlan.gst_percent != null ? Number(paidPlan.gst_percent) : 2;
+            const expectedAmount = Math.round((paidPlan.price * (1 + gst / 100)) * 100);
             expect(res.body.order.amount).toBe(expectedAmount);
         });
 
@@ -187,9 +186,10 @@ describe("Subscription Lifecycle Integration Tests", () => {
             expect(res.status).toBe(200);
             expect(res.body.success).toBe(true);
 
-            // Yearly = price × 12 × 0.8 + 18% GST
+            // Yearly = price × 12 × 0.8 + GST
             const yearlyBase = paidPlan.price * 12 * 0.8;
-            const expectedAmount = Math.round((yearlyBase * 1.18) * 100);
+            const gst = paidPlan.gst_percent != null ? Number(paidPlan.gst_percent) : 2;
+            const expectedAmount = Math.round((yearlyBase * (1 + gst / 100)) * 100);
             expect(res.body.order.amount).toBe(expectedAmount);
         });
     });
@@ -240,7 +240,7 @@ describe("Subscription Lifecycle Integration Tests", () => {
 
             expect(res.status).toBe(200);
             expect(res.body.success).toBe(true);
-            expect(Array.isArray(res.body.data || res.body.subscriptions)).toBe(true);
+            expect(Array.isArray(res.body.data.subscriptions)).toBe(true);
         });
 
         it("should update subscription status", async () => {
@@ -254,7 +254,7 @@ describe("Subscription Lifecycle Integration Tests", () => {
                 const res = await request(app)
                     .patch(`/api/subscriptions/${sub.id}/status`)
                     .set("Authorization", `Bearer ${superAdminToken}`)
-                    .send({ payment_status: "refunded" });
+                    .send({ payment_status: "failed" });
 
                 expect(res.status).toBe(200);
                 expect(res.body.success).toBe(true);

@@ -111,6 +111,8 @@ exports.initiatePayment = catchAsync(async (req, res) => {
       });
 
       return res.json({ success: true, trial_activated: true });
+    } else if (plan.is_free_trial && institute.has_used_trial) {
+      return res.status(400).json({ success: false, message: "Free trial already used" });
     }
 
     // Calculate amount for paid plans
