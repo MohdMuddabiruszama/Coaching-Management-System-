@@ -116,8 +116,9 @@ exports.initiatePayment = catchAsync(async (req, res) => {
     // Calculate amount for paid plans
     const amount = getPlanAmountForCycle(plan, billingCycle);
 
-    // Apply GST @ 2%
-    const tax_amount = amount * 0.02;
+    // Calculate GST based on plan
+    const gstPercent = plan.gst_percent != null ? Number(plan.gst_percent) : 2;
+    const tax_amount = amount * (gstPercent / 100);
     const total = amount + tax_amount;
 
     let orderInfo;
@@ -217,7 +218,8 @@ exports.verifyPayment = catchAsync(async (req, res) => {
       durationMonths = 12;
     }
 
-    const tax_amount = amount * 0.02;
+    const gstPercent = plan.gst_percent != null ? Number(plan.gst_percent) : 2;
+    const tax_amount = amount * (gstPercent / 100);
     const final_paid = amount + tax_amount;
 
     const startDate = new Date();
@@ -341,7 +343,8 @@ exports.verifyFailure = catchAsync(async (req, res) => {
     if (!plan) return res.status(404).json({ success: false, message: 'Plan not found' });
 
     const amount = getPlanAmountForCycle(plan, billingCycle);
-    const tax_amount = amount * 0.02;
+    const gstPercent = plan.gst_percent != null ? Number(plan.gst_percent) : 2;
+    const tax_amount = amount * (gstPercent / 100);
     const final_paid = amount + tax_amount;
 
     // Clean up any existing pending/failed subscriptions to avoid duplicates

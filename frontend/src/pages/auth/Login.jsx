@@ -30,6 +30,36 @@ function Login() {
   const [errors, setErrors] = useState({});
   const [showPass, setShowPass] = useState(false);
 
+  // Hidden dev menu state
+  const [logoClicks, setLogoClicks] = useState(0);
+  const [showEnvSwitcher, setShowEnvSwitcher] = useState(false);
+  const [customApiUrl, setCustomApiUrl] = useState(localStorage.getItem('API_BASE_URL_OVERRIDE') || "");
+
+  const handleLogoClick = () => {
+    setLogoClicks((prev) => {
+      const newCount = prev + 1;
+      if (newCount >= 5) {
+        setShowEnvSwitcher(true);
+        return 0;
+      }
+      // Reset clicks after 2 seconds
+      setTimeout(() => setLogoClicks(0), 2000);
+      return newCount;
+    });
+  };
+
+  const handleSaveEnv = (envType) => {
+    if (envType === 'live') {
+      localStorage.removeItem('API_BASE_URL_OVERRIDE');
+    } else if (envType === 'local-android') {
+      localStorage.setItem('API_BASE_URL_OVERRIDE', 'http://10.0.2.2:5000/api');
+    } else if (envType === 'custom') {
+      localStorage.setItem('API_BASE_URL_OVERRIDE', customApiUrl);
+    }
+    setShowEnvSwitcher(false);
+    window.location.reload();
+  };
+
 
   // Redirect if already logged in
   useEffect(() => {
@@ -163,6 +193,49 @@ function Login() {
 
   return (
     <div className="auth-page">
+      {/* Developer Environment Switcher (Hidden feature) */}
+      {showEnvSwitcher && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 99999, background: 'rgba(0,0,0,0.8)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.5rem'
+        }}>
+          <div style={{
+            background: isDark ? '#1e293b' : '#fff', borderRadius: '16px', padding: '1.5rem', width: '100%', maxWidth: '400px',
+            color: isDark ? '#fff' : '#0f172a', boxShadow: '0 20px 40px rgba(0,0,0,0.4)'
+          }}>
+            <h3 style={{ margin: '0 0 1rem', fontSize: '1.25rem' }}>🔧 Developer Options</h3>
+            <p style={{ margin: '0 0 1rem', fontSize: '0.85rem', opacity: 0.8 }}>
+              Override the API endpoint for testing. The app will reload upon saving.
+            </p>
+            
+            <button onClick={() => handleSaveEnv('live')} style={{ width: '100%', padding: '10px', marginBottom: '10px', background: '#3b82f6', color: '#fff', border: 'none', borderRadius: '8px', fontWeight: 'bold' }}>
+              🌍 Live Production Server
+            </button>
+            <button onClick={() => handleSaveEnv('local-android')} style={{ width: '100%', padding: '10px', marginBottom: '10px', background: '#10b981', color: '#fff', border: 'none', borderRadius: '8px', fontWeight: 'bold' }}>
+              📱 Android Emulator (10.0.2.2)
+            </button>
+            
+            <div style={{ marginTop: '1rem', borderTop: '1px solid rgba(128,128,128,0.2)', paddingTop: '1rem' }}>
+              <label style={{ display: 'block', marginBottom: '5px', fontSize: '0.85rem' }}>Custom API URL (e.g., LAN IP)</label>
+              <input 
+                type="text" 
+                value={customApiUrl} 
+                onChange={e => setCustomApiUrl(e.target.value)} 
+                placeholder="http://192.168.x.x:5000/api"
+                style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #ccc', marginBottom: '10px', background: isDark ? '#334155' : '#fff', color: isDark ? '#fff' : '#000' }}
+              />
+              <button onClick={() => handleSaveEnv('custom')} style={{ width: '100%', padding: '10px', background: '#6366f1', color: '#fff', border: 'none', borderRadius: '8px', fontWeight: 'bold' }}>
+                Save Custom URL
+              </button>
+            </div>
+            
+            <button onClick={() => setShowEnvSwitcher(false)} style={{ width: '100%', padding: '10px', marginTop: '1rem', background: 'transparent', color: isDark ? '#94a3b8' : '#64748b', border: '1px solid rgba(128,128,128,0.3)', borderRadius: '8px' }}>
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Animated background orbs */}
       <div className="auth-orb auth-orb--1" />
       <div className="auth-orb auth-orb--2" />
@@ -179,7 +252,7 @@ function Login() {
         <div className="auth-card">
           {/* Logo / Brand */}
           <div className="auth-header">
-            <div className="auth-logo">
+            <div className="auth-logo" onClick={handleLogoClick} style={{ cursor: 'pointer' }}>
                 <img 
                     src={branding.logo} 
                     alt={branding.name} 

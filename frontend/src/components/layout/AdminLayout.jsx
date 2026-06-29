@@ -536,7 +536,7 @@ const AdminLayout = () => {
                 </div>
 
                 <div className="al-sidebar-footer">
-                    {(user?.is_lifetime_member || user?.Institute?.is_lifetime_member) && (
+                    {(user?.is_lifetime_member || user?.Institute?.is_lifetime_member) ? (
                         <div className="al-lifetime-card" style={{marginBottom: '1rem'}}>
                             <div className="al-lifetime-icon">💎</div>
                             <div className="al-lifetime-content">
@@ -545,7 +545,19 @@ const AdminLayout = () => {
                                 <Link to="/admin/lifetime" className="al-lifetime-btn">View Details</Link>
                             </div>
                         </div>
-                    )}
+                    ) : (isAdmin && planDetails && planDetails.plan) ? (
+                        <div className="al-current-plan-card" style={{marginBottom: '1rem'}}>
+                            <div className="al-cp-icon">
+                                {planDetails.plan.name.toLowerCase().includes('pro') ? '🚀' :
+                                 planDetails.plan.name.toLowerCase().includes('premium') ? '💎' :
+                                 planDetails.plan.name.toLowerCase().includes('basic') ? '🌱' : '⭐'}
+                            </div>
+                            <div className="al-cp-content">
+                                <span className="al-cp-label">Current Plan</span>
+                                <h4>{planDetails.plan.name}</h4>
+                            </div>
+                        </div>
+                    ) : null}
                     <button onClick={logout} className="al-nav-link" style={{width: '100%', color: '#ef4444', justifyContent: 'center', background: '#fef2f2'}}>
                         <span className="al-nav-icon">🚪</span>
                         <span className="al-nav-text" style={{flex: 'none'}}>Logout</span>

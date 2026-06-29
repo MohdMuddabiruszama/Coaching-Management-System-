@@ -599,22 +599,24 @@ function ParentDashboard() {
                                     )}
                                     <div className="sd-secondary-stats" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))' }}>
                                         {/* Attendance */}
-                                        <div className="sd-stat-card">
-                                            <div className="sd-stat-card-header">
-                                                <div className={`sd-stat-card-icon ${attPct >= 75 ? 'icon-green' : 'icon-yellow'}`}>📋</div>
-                                                <span className="sd-stat-card-title">Attendance</span>
+                                        {user?.features?.attendance !== 'none' && (
+                                            <div className="sd-stat-card">
+                                                <div className="sd-stat-card-header">
+                                                    <div className={`sd-stat-card-icon ${attPct >= 75 ? 'icon-green' : 'icon-yellow'}`}>📋</div>
+                                                    <span className="sd-stat-card-title">Attendance</span>
+                                                </div>
+                                                <div className="sd-stat-card-value-row">
+                                                    <span className="sd-stat-card-value">{attPct}%</span>
+                                                </div>
+                                                <div className="sd-progress-bar">
+                                                    <div className="sd-progress-fill" style={{ width: `${attPct}%`, backgroundColor: attPct >= 75 ? '#10b981' : '#f59e0b' }} />
+                                                </div>
+                                                <div className="sd-stat-card-footer">
+                                                    <span>Present Days</span>
+                                                    <span>{overallAttendanceStats.totalPresent} / {overallAttendanceStats.totalWorkingDays}</span>
+                                                </div>
                                             </div>
-                                            <div className="sd-stat-card-value-row">
-                                                <span className="sd-stat-card-value">{attPct}%</span>
-                                            </div>
-                                            <div className="sd-progress-bar">
-                                                <div className="sd-progress-fill" style={{ width: `${attPct}%`, backgroundColor: attPct >= 75 ? '#10b981' : '#f59e0b' }} />
-                                            </div>
-                                            <div className="sd-stat-card-footer">
-                                                <span>Present Days</span>
-                                                <span>{overallAttendanceStats.totalPresent} / {overallAttendanceStats.totalWorkingDays}</span>
-                                            </div>
-                                        </div>
+                                        )}
 
                                         {/* Classes Enrolled */}
                                         <div className="sd-stat-card">
@@ -635,138 +637,150 @@ function ParentDashboard() {
                                         </div>
 
                                         {/* Assignments */}
-                                        <div className="sd-stat-card">
-                                            <div className="sd-stat-card-header">
-                                                <div className={`sd-stat-card-icon ${assignmentsPct >= 75 ? 'icon-green' : 'icon-blue'}`}>📋</div>
-                                                <span className="sd-stat-card-title">Assignments</span>
+                                        {user?.features?.notes && (
+                                            <div className="sd-stat-card">
+                                                <div className="sd-stat-card-header">
+                                                    <div className={`sd-stat-card-icon ${assignmentsPct >= 75 ? 'icon-green' : 'icon-blue'}`}>📋</div>
+                                                    <span className="sd-stat-card-title">Assignments</span>
+                                                </div>
+                                                <div className="sd-stat-card-value-row">
+                                                    <span className="sd-stat-card-value">{completedAssignments}</span>
+                                                    <span className="sd-stat-card-max">/ {totalAssignments}</span>
+                                                </div>
+                                                <div className="sd-progress-bar">
+                                                    <div className="sd-progress-fill" style={{ width: `${assignmentsPct}%`, backgroundColor: assignmentsPct >= 75 ? '#10b981' : '#3b82f6' }} />
+                                                </div>
+                                                <div className="sd-stat-card-footer">
+                                                    <span>Completed</span>
+                                                    <span>{assignmentsPct}%</span>
+                                                </div>
                                             </div>
-                                            <div className="sd-stat-card-value-row">
-                                                <span className="sd-stat-card-value">{completedAssignments}</span>
-                                                <span className="sd-stat-card-max">/ {totalAssignments}</span>
-                                            </div>
-                                            <div className="sd-progress-bar">
-                                                <div className="sd-progress-fill" style={{ width: `${assignmentsPct}%`, backgroundColor: assignmentsPct >= 75 ? '#10b981' : '#3b82f6' }} />
-                                            </div>
-                                            <div className="sd-stat-card-footer">
-                                                <span>Completed</span>
-                                                <span>{assignmentsPct}%</span>
-                                            </div>
-                                        </div>
+                                        )}
 
                                         {/* Pending Fees */}
-                                        <div className="sd-stat-card">
-                                            <div className="sd-stat-card-header">
-                                                <div className="sd-stat-card-icon icon-yellow">⏳</div>
-                                                <span className="sd-stat-card-title">Pending Fees</span>
-                                            </div>
-                                            <div className="sd-stat-card-value-row">
-                                                <span className="sd-stat-card-value">₹{totalPendingAmount.toLocaleString()}</span>
-                                            </div>
-                                            <div className="sd-progress-bar" style={{ opacity: 0 }}>
-                                                <div className="sd-progress-fill" style={{ width: '0%' }} />
-                                            </div>
-                                            <div className="sd-stat-card-footer">
-                                                <span>Status</span>
-                                                <span className={pendingFees.length > 0 ? "sd-text-danger" : ""}>{pendingFees.length} pending</span>
-                                            </div>
-                                        </div>
+                                        {user?.features?.fees && (
+                                            <>
+                                                <div className="sd-stat-card">
+                                                    <div className="sd-stat-card-header">
+                                                        <div className="sd-stat-card-icon icon-yellow">⏳</div>
+                                                        <span className="sd-stat-card-title">Pending Fees</span>
+                                                    </div>
+                                                    <div className="sd-stat-card-value-row">
+                                                        <span className="sd-stat-card-value">₹{totalPendingAmount.toLocaleString()}</span>
+                                                    </div>
+                                                    <div className="sd-progress-bar" style={{ opacity: 0 }}>
+                                                        <div className="sd-progress-fill" style={{ width: '0%' }} />
+                                                    </div>
+                                                    <div className="sd-stat-card-footer">
+                                                        <span>Status</span>
+                                                        <span className={pendingFees.length > 0 ? "sd-text-danger" : ""}>{pendingFees.length} pending</span>
+                                                    </div>
+                                                </div>
 
-                                        {/* Paid Fees */}
-                                        <div className="sd-stat-card">
-                                            <div className="sd-stat-card-header">
-                                                <div className="sd-stat-card-icon icon-green">✅</div>
-                                                <span className="sd-stat-card-title">Paid Fees</span>
-                                            </div>
-                                            <div className="sd-stat-card-value-row">
-                                                <span className="sd-stat-card-value">₹{totalPaidAmount.toLocaleString()}</span>
-                                            </div>
-                                            <div className="sd-progress-bar">
-                                                <div className="sd-progress-fill" style={{ width: `${totalFees > 0 ? (totalPaidAmount / totalFees) * 100 : 0}%`, backgroundColor: '#10b981' }} />
-                                            </div>
-                                            <div className="sd-stat-card-footer">
-                                                <span>Total Fees</span>
-                                                <span>₹{totalFees.toLocaleString()}</span>
-                                            </div>
-                                        </div>
+                                                {/* Paid Fees */}
+                                                <div className="sd-stat-card">
+                                                    <div className="sd-stat-card-header">
+                                                        <div className="sd-stat-card-icon icon-green">✅</div>
+                                                        <span className="sd-stat-card-title">Paid Fees</span>
+                                                    </div>
+                                                    <div className="sd-stat-card-value-row">
+                                                        <span className="sd-stat-card-value">₹{totalPaidAmount.toLocaleString()}</span>
+                                                    </div>
+                                                    <div className="sd-progress-bar">
+                                                        <div className="sd-progress-fill" style={{ width: `${totalFees > 0 ? (totalPaidAmount / totalFees) * 100 : 0}%`, backgroundColor: '#10b981' }} />
+                                                    </div>
+                                                    <div className="sd-stat-card-footer">
+                                                        <span>Total Fees</span>
+                                                        <span>₹{totalFees.toLocaleString()}</span>
+                                                    </div>
+                                                </div>
+                                            </>
+                                        )}
 
                                         {/* Exam Results */}
-                                        <div className="sd-stat-card">
-                                            <div className="sd-stat-card-header">
-                                                <div className="sd-stat-card-icon icon-purple">🎯</div>
-                                                <span className="sd-stat-card-title">Exam Results</span>
+                                        {user?.features?.exams && (
+                                            <div className="sd-stat-card">
+                                                <div className="sd-stat-card-header">
+                                                    <div className="sd-stat-card-icon icon-purple">🎯</div>
+                                                    <span className="sd-stat-card-title">Exam Results</span>
+                                                </div>
+                                                <div className="sd-stat-card-value-row">
+                                                    <span className="sd-stat-card-value">{results.filter(r => r.status === 'Pass').length}</span>
+                                                    <span className="sd-stat-card-max">/ {results.length}</span>
+                                                </div>
+                                                <div className="sd-progress-bar">
+                                                    <div className="sd-progress-fill" style={{ width: `${results.length > 0 ? (results.filter(r => r.status === 'Pass').length / results.length) * 100 : 0}%`, backgroundColor: '#8b5cf6' }} />
+                                                </div>
+                                                <div className="sd-stat-card-footer">
+                                                    <span>Pass Rate</span>
+                                                    <span className="sd-text-success">{results.length > 0 ? Math.round((results.filter(r => r.status === 'Pass').length / results.length) * 100) : 0}%</span>
+                                                </div>
                                             </div>
-                                            <div className="sd-stat-card-value-row">
-                                                <span className="sd-stat-card-value">{results.filter(r => r.status === 'Pass').length}</span>
-                                                <span className="sd-stat-card-max">/ {results.length}</span>
-                                            </div>
-                                            <div className="sd-progress-bar">
-                                                <div className="sd-progress-fill" style={{ width: `${results.length > 0 ? (results.filter(r => r.status === 'Pass').length / results.length) * 100 : 0}%`, backgroundColor: '#8b5cf6' }} />
-                                            </div>
-                                            <div className="sd-stat-card-footer">
-                                                <span>Pass Rate</span>
-                                                <span className="sd-text-success">{results.length > 0 ? Math.round((results.filter(r => r.status === 'Pass').length / results.length) * 100) : 0}%</span>
-                                            </div>
-                                        </div>
+                                        )}
                                     </div>
 
                                     {/* Light Accent Grid for Performance & Assignments */}
                                     <div className="light-accent-grid">
-                                        <div className="light-card">
-                                            <div className="light-card-header">
-                                                <h3><span style={{color: '#8b5cf6'}}>📊</span> Subject performance</h3>
-                                                <div className="view-all" onClick={() => setActiveTab('performance')}>View all</div>
-                                            </div>
-                                            <div>
-                                                {enrolledSubjectPerformance.map((sub, i) => (
-                                                    <div key={i} className="sp-row">
-                                                        <div className="sp-label">{sub.name}</div>
-                                                        <div className="sp-progress-bg">
-                                                            <div className="sp-progress-fill" style={{ width: `${sub.pct}%`, background: sub.color }}></div>
-                                                        </div>
-                                                        <div className="sp-pct">{sub.pct}%</div>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </div>
-                                        <div className="sd-widget" style={{ flex: 1, minWidth: '320px' }}>
-                                            <div className="sd-widget-header">
-                                                <h3>Recent Announcements</h3>
-                                                <div className="sd-view-all" style={{ cursor: 'pointer' }} onClick={() => toggleSidebar()}>View all</div>
-                                            </div>
-                                            <div className="sd-list">
-                                                {recentAnnouncements.length > 0 ? recentAnnouncements.map((ann, idx) => {
-                                                    const ICON_POOL = ['📢', '📝', '🗓️', '📌', '📣'];
-                                                    const COLOR_POOL = ['icon-purple', 'icon-green', 'icon-yellow', 'icon-blue', 'icon-purple'];
-                                                    const icon = ICON_POOL[idx % ICON_POOL.length];
-                                                    const color = COLOR_POOL[idx % COLOR_POOL.length];
-                                                    
-                                                    const formatTimeAgo = (dateStr) => {
-                                                        if (!dateStr) return '';
-                                                        const diff = Date.now() - new Date(dateStr).getTime();
-                                                        const mins = Math.floor(diff / 60000);
-                                                        if (mins < 1) return 'Just now';
-                                                        if (mins < 60) return `${mins} min ago`;
-                                                        const hrs = Math.floor(mins / 60);
-                                                        if (hrs < 24) return `${hrs} hour${hrs > 1 ? 's' : ''} ago`;
-                                                        const days = Math.floor(hrs / 24);
-                                                        return `${days} day${days > 1 ? 's' : ''} ago`;
-                                                    };
-                                                    
-                                                    return (
-                                                        <div className="sd-list-item" key={idx}>
-                                                            <div className={`sd-list-icon ${color}`}>{icon}</div>
-                                                            <div className="sd-list-content">
-                                                                <h4 className="sd-list-title" style={{ margin: 0, fontSize: '14px' }}>{ann.title}</h4>
-                                                                <p className="sd-list-desc" style={{ margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '280px' }}>{ann.content}</p>
-                                                                <span className="sd-time-ago" style={{ fontSize: '11px', color: '#94a3b8' }}>{formatTimeAgo(ann.createdAt || ann.created_at)}</span>
+                                        {user?.features?.exams && (
+                                            <div className="light-card">
+                                                <div className="light-card-header">
+                                                    <h3><span style={{color: '#8b5cf6'}}>📊</span> Subject performance</h3>
+                                                    <div className="view-all" onClick={() => setActiveTab('performance')}>View all</div>
+                                                </div>
+                                                <div>
+                                                    {enrolledSubjectPerformance.map((sub, i) => (
+                                                        <div key={i} className="sp-row">
+                                                            <div className="sp-label">{sub.name}</div>
+                                                            <div className="sp-progress-bg">
+                                                                <div className="sp-progress-fill" style={{ width: `${sub.pct}%`, background: sub.color }}></div>
                                                             </div>
+                                                            <div className="sp-pct">{sub.pct}%</div>
                                                         </div>
-                                                    );
-                                                }) : (
-                                                    <p className="sd-empty-state" style={{ margin: 0 }}>No recent announcements</p>
-                                                )}
+                                                    ))}
+                                                </div>
                                             </div>
-                                        </div>
+                                        )}
+                                        {user?.features?.announcements && (
+                                            <div className="sd-widget" style={{ flex: 1, minWidth: '320px' }}>
+                                                <div className="sd-widget-header">
+                                                    <h3>Recent Announcements</h3>
+                                                    <div className="sd-view-all" style={{ cursor: 'pointer' }} onClick={() => toggleSidebar()}>View all</div>
+                                                </div>
+                                                <div className="sd-list">
+                                                    {recentAnnouncements.length > 0 ? recentAnnouncements.map((ann, idx) => {
+                                                        const ICON_POOL = ['📢', '📝', '🗓️', '📌', '📣'];
+                                                        const COLOR_POOL = ['icon-purple', 'icon-green', 'icon-yellow', 'icon-blue', 'icon-purple'];
+                                                        const icon = ICON_POOL[idx % ICON_POOL.length];
+                                                        const color = COLOR_POOL[idx % COLOR_POOL.length];
+                                                        
+                                                        const formatTimeAgo = (dateStr) => {
+                                                            if (!dateStr) return '';
+                                                            const diff = Date.now() - new Date(dateStr).getTime();
+                                                            const mins = Math.floor(diff / 60000);
+                                                            if (mins < 1) return 'Just now';
+                                                            if (mins < 60) return `${mins} min ago`;
+                                                            const hrs = Math.floor(mins / 60);
+                                                            if (hrs < 24) return `${hrs} hour${hrs > 1 ? 's' : ''} ago`;
+                                                            const days = Math.floor(hrs / 24);
+                                                            return `${days} day${days > 1 ? 's' : ''} ago`;
+                                                        };
+                                                        
+                                                        return (
+                                                            <div className="sd-list-item" key={idx}>
+                                                                <div className={`sd-list-icon ${color}`}>{icon}</div>
+                                                                <div className="sd-list-content">
+                                                                    <h4 className="sd-list-title" style={{ margin: 0, fontSize: '14px' }}>{ann.title}</h4>
+                                                                    <p className="sd-list-desc" style={{ margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '280px' }}>{ann.content}</p>
+                                                                    <span className="sd-time-ago" style={{ fontSize: '11px', color: '#94a3b8' }}>{formatTimeAgo(ann.createdAt || ann.created_at)}</span>
+                                                                </div>
+                                                            </div>
+                                                        );
+                                                    }) : (
+                                                        <p className="sd-empty-state" style={{ margin: 0 }}>No recent announcements</p>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
 
                                     {/* Quick Actions */}

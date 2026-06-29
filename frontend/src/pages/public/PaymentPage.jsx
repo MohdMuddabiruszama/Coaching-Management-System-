@@ -196,27 +196,31 @@ function PaymentPage() {
     const isFree = plan?.is_free_trial && !hasUsedTrial;
     const isLifetime = plan?.is_lifetime;
 
+    const discountPercent = plan?.yearly_discount_percent != null ? Number(plan.yearly_discount_percent) : 0;
+    const discountMultiplier = discountPercent / 100;
+    const priceMultiplier = 1 - discountMultiplier;
+
     // Base price (before GST) — mirrors backend getPlanAmountForCycle logic
     // Force Number() to avoid string coercion when values come from the DB as strings
     const price = isFree ? 0
         : isLifetime ? Number(plan?.lifetime_price || plan?.price || 0)
         : billingCycle === "yearly"
-            ? Math.round(Number(plan?.price || 0) * 12 * 0.8)
+            ? Math.round(Number(plan?.price || 0) * 12 * priceMultiplier)
             : Number(plan?.price || 0);
 
-    // GST @ 2% (matches backend: amount * 0.02)
-    const GST_RATE = 0.02;
-    const gstAmount = isFree ? 0 : parseFloat((price * GST_RATE).toFixed(2));
+    const gstPercent = plan?.gst_percent != null ? Number(plan.gst_percent) : 2;
+    const gstRate = gstPercent / 100;
+    const gstAmount = isFree ? 0 : parseFloat((price * gstRate).toFixed(2));
     const totalWithGst = isFree ? 0 : parseFloat(((price + gstAmount)).toFixed(2));
 
     const monthlyEquiv = isFree ? 0
         : isLifetime ? 0
         : billingCycle === "yearly"
-            ? Math.round(Number(plan?.price || 0) * 0.8)
+            ? Math.round(Number(plan?.price || 0) * priceMultiplier)
             : Number(plan?.price || 0);
 
     const savings = !isFree && !isLifetime && billingCycle === "yearly"
-        ? Math.round(Number(plan?.price || 0) * 12 * 0.2)
+        ? Math.round(Number(plan?.price || 0) * 12 * discountMultiplier)
         : 0;
 
     if (loading) {
@@ -278,7 +282,9 @@ function PaymentPage() {
                                 onClick={() => setBillingCycle("yearly")}
                             >
                                 Yearly
-                                <span className="checkout-save-chip">Save 20%</span>
+                                {discountPercent > 0 && (
+                                    <span className="checkout-save-chip">Save {discountPercent}%</span>
+                                )}
                             </button>
                         </div>
                     )}
@@ -301,7 +307,7 @@ function PaymentPage() {
                         </div>
                         {!isFree && (
                             <div className="checkout-price-sub" style={{ color: 'rgba(255,255,255,0.75)', fontSize: '0.82rem', marginTop: '4px' }}>
-                                ₹{price.toLocaleString("en-IN")} + 2% GST (₹{gstAmount.toLocaleString("en-IN", { minimumFractionDigits: 2 })})
+                                ₹{price.toLocaleString("en-IN")} + {gstPercent}% GST (₹{gstAmount.toLocaleString("en-IN", { minimumFractionDigits: 2 })})
                             </div>
                         )}
                         {!isFree && billingCycle === "yearly" && (
@@ -382,9 +388,9 @@ function PaymentPage() {
                                     <span className="checkout-row-value">One-Time Payment</span>
                                 </div>
                             )}
-                            {!isFree && !isLifetime && billingCycle === "yearly" && savings > 0 && (
+                            {!isFree && !isLifetime && billingCycle === "yearly" && savings > 0 && discountPercent > 0 && (
                                 <div className="checkout-summary-row discount-row">
-                                    <span className="checkout-row-label">Annual discount (20%)</span>
+                                    <span className="checkout-row-label">Annual discount ({discountPercent}%)</span>
                                     <span className="checkout-row-value discount-value">-₹{savings.toLocaleString("en-IN")}</span>
                                 </div>
                             )}
@@ -396,7 +402,7 @@ function PaymentPage() {
                                     </div>
                                     <div className="checkout-summary-row gst-row">
                                         <span className="checkout-row-label">
-                                            GST (2%)
+                                            GST ({gstPercent}%)
                                             <span className="gst-badge">Govt. Tax</span>
                                         </span>
                                         <span className="checkout-row-value gst-value">
@@ -414,7 +420,7 @@ function PaymentPage() {
                             </div>
                             {!isFree && (
                                 <div className="checkout-gst-note">
-                                    * All prices are inclusive of 2% GST as applicable under Indian tax law
+                                    * All prices are inclusive of {gstPercent}% GST as applicable under Indian tax law
                                 </div>
                             )}
                         </div>

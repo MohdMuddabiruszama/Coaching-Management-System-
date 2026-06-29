@@ -76,7 +76,9 @@ function Plans() {
 
         razorpay_plan_id: "",
         is_popular: false,
-        is_hidden: false
+        is_hidden: false,
+        yearly_discount_percent: 0,
+        gst_percent: 2
     };
 
     const [formData, setFormData] = useState(initialFormState);
@@ -110,6 +112,8 @@ function Plans() {
             payload.max_chat_messages = payload.max_chat_messages !== "" && payload.max_chat_messages !== null ? parseInt(payload.max_chat_messages) : 500;
             payload.lifetime_price = payload.lifetime_price !== "" && payload.lifetime_price !== null ? parseFloat(payload.lifetime_price) : null;
             payload.lifetime_slots_total = payload.lifetime_slots_total !== "" && payload.lifetime_slots_total !== null ? parseInt(payload.lifetime_slots_total) : 100;
+            payload.yearly_discount_percent = payload.yearly_discount_percent !== "" && payload.yearly_discount_percent !== null ? parseInt(payload.yearly_discount_percent) : 0;
+            payload.gst_percent = payload.gst_percent !== "" && payload.gst_percent !== null ? parseInt(payload.gst_percent) : 2;
 
             if (editMode) {
                 await api.put(`/plans/${formData.id}`, payload);
@@ -365,6 +369,34 @@ function Plans() {
                                                 onChange={handleChange}
                                                 placeholder="e.g. 999"
                                                 required
+                                            />
+                                        </div>
+
+                                        <div className="form-group">
+                                            <label className="form-label">Annual Discount (%)</label>
+                                            <input
+                                                type="number"
+                                                name="yearly_discount_percent"
+                                                className="form-input"
+                                                value={formData.yearly_discount_percent}
+                                                onChange={handleChange}
+                                                placeholder="e.g. 20"
+                                                min="0"
+                                                max="100"
+                                            />
+                                        </div>
+
+                                        <div className="form-group">
+                                            <label className="form-label">GST (%)</label>
+                                            <input
+                                                type="number"
+                                                name="gst_percent"
+                                                className="form-input"
+                                                value={formData.gst_percent}
+                                                onChange={handleChange}
+                                                placeholder="e.g. 2"
+                                                min="0"
+                                                max="100"
                                             />
                                         </div>
                                     </div>

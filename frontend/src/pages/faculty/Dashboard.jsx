@@ -368,32 +368,34 @@ function FacultyDashboard() {
             {/* Split View */}
             <div className="fd-split-view">
                 {/* Today's Schedule */}
-                <div className="fd-panel">
-                    <div className="fd-panel-header">
-                        <h3>📅 Today's Schedule</h3>
-                        <Link to="/faculty/timetable" className="fd-view-all">View Full Schedule</Link>
-                    </div>
-                    <div className="fd-schedule-list">
-                        {todaySchedule.length > 0 ? todaySchedule.map((cls, idx) => (
-                            <div key={cls.id || idx} className="fd-schedule-item-clean">
-                                <div className="fd-schedule-time-col">
-                                    <span className="fd-schedule-start">{formatTime(cls.startTime)}</span>
-                                    <span className="fd-schedule-end">{formatTime(cls.endTime)}</span>
+                {user?.features?.timetable && (
+                    <div className="fd-panel">
+                        <div className="fd-panel-header">
+                            <h3>📅 Today's Schedule</h3>
+                            <Link to="/faculty/timetable" className="fd-view-all">View Full Schedule</Link>
+                        </div>
+                        <div className="fd-schedule-list">
+                            {todaySchedule.length > 0 ? todaySchedule.map((cls, idx) => (
+                                <div key={cls.id || idx} className="fd-schedule-item-clean">
+                                    <div className="fd-schedule-time-col">
+                                        <span className="fd-schedule-start">{formatTime(cls.startTime)}</span>
+                                        <span className="fd-schedule-end">{formatTime(cls.endTime)}</span>
+                                    </div>
+                                    <div className="fd-schedule-bar" style={{backgroundColor: cls.color + '20', borderLeft: `3px solid ${cls.color}`}}>
+                                        <div className="fd-schedule-subject" style={{color: cls.color}}>{cls.subject}</div>
+                                        <div className="fd-schedule-room">{cls.className}{cls.room ? ` • ${cls.room}` : ''}</div>
+                                        {cls.dayLabel && <div className="fd-schedule-daylabel">{cls.dayLabel}</div>}
+                                    </div>
+                                    <span className={`fd-schedule-badge fd-badge-${cls.status.toLowerCase()}`}>{cls.status}</span>
                                 </div>
-                                <div className="fd-schedule-bar" style={{backgroundColor: cls.color + '20', borderLeft: `3px solid ${cls.color}`}}>
-                                    <div className="fd-schedule-subject" style={{color: cls.color}}>{cls.subject}</div>
-                                    <div className="fd-schedule-room">{cls.className}{cls.room ? ` • ${cls.room}` : ''}</div>
-                                    {cls.dayLabel && <div className="fd-schedule-daylabel">{cls.dayLabel}</div>}
+                            )) : (
+                                <div className="fd-schedule-item" style={{ justifyContent: 'center', padding: '2rem 0', color: 'var(--text-secondary)', border: 'none' }}>
+                                    <p style={{margin:0, fontSize:'13px'}}>No classes scheduled. Enjoy your time!</p>
                                 </div>
-                                <span className={`fd-schedule-badge fd-badge-${cls.status.toLowerCase()}`}>{cls.status}</span>
-                            </div>
-                        )) : (
-                            <div className="fd-schedule-item" style={{ justifyContent: 'center', padding: '2rem 0', color: 'var(--text-secondary)', border: 'none' }}>
-                                <p style={{margin:0, fontSize:'13px'}}>No classes scheduled. Enjoy your time!</p>
-                            </div>
-                        )}
+                            )}
+                        </div>
                     </div>
-                </div>
+                )}
 
                 {/* Recent Announcements */}
                 {user?.features?.announcements && (

@@ -86,9 +86,9 @@ exports.createFaculty = async (req, res) => {
             }
         }
 
-        // Check if faculty email already exists
+        // Check if faculty email already exists anywhere (global uniqueness)
         const existingUser = await User.findOne({
-            where: { email, institute_id },
+            where: { email },
         });
 
         if (existingUser) {
@@ -147,9 +147,10 @@ exports.createFaculty = async (req, res) => {
         });
     } catch (error) {
         console.error("Create faculty error:", error);
+        const errorMessage = error.errors ? error.errors.map(e => e.message).join(', ') : error.message;
         res.status(500).json({
             success: false,
-            message: error.message,
+            message: errorMessage,
         });
     }
 };

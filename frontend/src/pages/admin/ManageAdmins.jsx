@@ -8,7 +8,7 @@ import "./ManageAdmins.css";
 import "./Students.css";
 
 // ─── Modules that support granular CRUD ───
-const CRUD_MODULES = [
+const ALL_CRUD_MODULES = [
     { val: 'students', label: 'Manage Students', icon: '👨‍🎓', desc: 'Student records management' },
     { val: 'faculty', label: 'Manage Faculty', icon: '👩‍🏫', desc: 'Faculty records management' },
     { val: 'classes', label: 'Manage Classes', icon: '📚', desc: 'Class records management' },
@@ -27,7 +27,7 @@ const CRUD_OPS = [
 ];
 
 // ─── Toggle-style (simple on/off) modules ───
-const TOGGLE_MODULES = [
+const ALL_TOGGLE_MODULES = [
     { val: 'notes', label: 'All Notes', icon: '📓', desc: 'Manage class notes' },
     { val: 'chat', label: 'Chat Monitor', icon: '💬', desc: 'Participate in subject chats' },
     { val: 'attendance', label: 'Attendance', icon: '📋', desc: 'Mark & view attendance' },
@@ -135,12 +135,12 @@ const activeCrudOps = (perms, mod) => {
 // Build a display label for a permission array (compact)
 const buildPermLabel = (perms) => {
     const labels = [];
-    for (const m of CRUD_MODULES) {
+    for (const m of ALL_CRUD_MODULES) {
         const ops = CRUD_OPS.filter(({ op }) => perms.includes(`${m.val}.${op}`)).map(o => o.label);
         if (perms.includes(m.val)) labels.push(`${m.icon} ${m.label} (All)`);
         else if (ops.length) labels.push(`${m.icon} ${m.label} (${ops.join(', ')})`);
     }
-    for (const t of TOGGLE_MODULES) {
+    for (const t of ALL_TOGGLE_MODULES) {
         if (perms.includes(t.val)) labels.push(`${t.icon} ${t.label}`);
     }
     return labels;
@@ -257,6 +257,44 @@ function CrudSelector({ mod, perms, onChange }) {
 function ManageAdmins() {
     const { user } = useContext(AuthContext);
     const navigate = useNavigate();
+
+    const features = user?.features || {};
+    const isLifetime = user?.is_lifetime_member || false;
+
+    // Filter CRUD modules
+    const CRUD_MODULES = ALL_CRUD_MODULES.filter(mod => {
+        if (isLifetime) return true;
+        switch (mod.val) {
+            case 'timetable': return features.timetable;
+            case 'fees': return features.fees;
+            case 'expenses': return features.expenses;
+            case 'salary': return features.salary;
+            default: return true;
+        }
+    });
+
+    // Filter Toggle modules
+    const TOGGLE_MODULES = ALL_TOGGLE_MODULES.filter(mod => {
+        if (isLifetime) return true;
+        switch (mod.val) {
+            case 'notes': return features.notes;
+            case 'chat': return features.chat;
+            case 'attendance': return features.attendance !== 'none';
+            case 'reports': return features.reports !== 'none';
+            case 'announcements': return features.announcements;
+            case 'exams': return features.exams;
+            case 'collect_fees': return features.fees;
+            case 'recent_payments': return features.fees;
+            case 'transport': return features.transport;
+            case 'biometric': return features.biometric;
+            case 'finance': return features.finance;
+            case 'assignments': return features.assignment;
+            case 'performance_hub': return features.performance_hub;
+            case 'parents': return true;
+            default: return true;
+        }
+    });
+
 
     const [managers, setManagers] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -408,13 +446,17 @@ function ManageAdmins() {
     const handleSaveEdit = async () => {
         try {
             setSavingEdit(true);
-            await api.put(`/admin/admins/${editingManager.id}`, {
+            const payload = {
                 name: editingManager.name,
                 email: editingManager.email,
                 phone: editingManager.phone,
                 status: editStatus,
                 permissions: editPerms,
-            });
+            };
+            if (editingManager.password) {
+                payload.password = editingManager.password;
+            }
+            await api.put(`/admin/admins/${editingManager.id}`, payload);
             setEditingManager(null);
             fetchManagers();
         } catch (err) {
@@ -808,7 +850,7 @@ function ManageAdmins() {
                             {wizardStep === 1 && (
                                 <div className="ma-wizard-view">
                                     <h3 className="ma-wizard-section-title"><span></span> Basic Information</h3>
-                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '1.5rem' }}>
+                                    <div className="ma-form-grid">
                                         <div className="form-group">
                                             <label className="form-label">Full Name <span style={{color: '#ef4444'}}>*</span></label>
                                             <div className="ma-input-with-icon">
@@ -1038,8 +1080,43 @@ function ManageAdmins() {
                     <div className="modal-content" style={{ maxWidth: '680px', width: '95%', maxHeight: '92vh', overflowY: 'auto' }}>
                         <h2 style={{ marginBottom: '0.25rem' }}>✏️ Edit: {editingManager.name}</h2>
                         <p style={{ color: 'var(--text-secondary)', fontSize: '0.88rem', marginBottom: '1.25rem' }}>
-                            Update permissions and account status.
+                            Update manager details, permissions and account status.
                         </p>
+
+                        <div style={{ fontWeight: '700', fontSize: '0.92rem', marginBottom: '0.75rem' }}>Basic Information</div>
+                        <div className="ma-form-grid">
+                            <div className="form-group" style={{ marginBottom: '0' }}>
+                                <label className="form-label">Full Name</label>
+                                <div className="ma-input-with-icon">
+                                    <span className="ma-input-icon">👤</span>
+                                    <input type="text" className="form-input" style={{ paddingLeft: '2.5rem' }} value={editingManager.name || ''} onChange={e => setEditingManager({...editingManager, name: e.target.value})} />
+                                </div>
+                            </div>
+                            <div className="form-group" style={{ marginBottom: '0' }}>
+                                <label className="form-label">Email Address</label>
+                                <div className="ma-input-with-icon">
+                                    <span className="ma-input-icon">✉️</span>
+                                    <input type="email" className="form-input" style={{ paddingLeft: '2.5rem' }} value={editingManager.email || ''} onChange={e => setEditingManager({...editingManager, email: e.target.value})} />
+                                </div>
+                            </div>
+                            <div className="form-group" style={{ marginBottom: '0' }}>
+                                <label className="form-label">Phone Number</label>
+                                <div className="ma-input-with-icon">
+                                    <div className="ma-country-code">🇮🇳 +91 <span style={{fontSize: '0.6rem', color: '#9ca3af', marginLeft: '4px'}}>▼</span></div>
+                                    <input type="tel" className="form-input" style={{ paddingLeft: '5.5rem' }} value={editingManager.phone || ''} onChange={e => setEditingManager({...editingManager, phone: e.target.value})} />
+                                </div>
+                            </div>
+                            <div className="form-group" style={{ marginBottom: '0' }}>
+                                <label className="form-label">New Password (Optional)</label>
+                                <div className="ma-input-with-icon">
+                                    <span className="ma-input-icon">🔒</span>
+                                    <input type={showPassword ? "text" : "password"} className="form-input" style={{ paddingLeft: '2.5rem', paddingRight: '2.5rem' }} value={editingManager.password || ''} onChange={e => setEditingManager({...editingManager, password: e.target.value})} placeholder="Leave blank to keep current" />
+                                    <span className="ma-input-action-icon" onClick={() => setShowPassword(!showPassword)} style={{ position: 'absolute', right: '1rem', cursor: 'pointer' }}>
+                                        {showPassword ? '👁️‍🗨️' : '👁️'}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
 
                         {/* Status */}
                         <div style={{ marginBottom: '1.25rem' }}>

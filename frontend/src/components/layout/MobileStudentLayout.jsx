@@ -279,9 +279,21 @@ const MobileStudentLayout = () => {
             {/* Bottom Tab Bar */}
             <nav className="msl-bottom-nav" role="navigation" aria-label="Main navigation">
                 {TABS.map(tab => {
-                    // Hide feature-gated tabs
-                    if (tab.id === "exams"         && !user?.features?.exams)         return null;
-                    if (tab.id === "announcements"  && !user?.features?.announcements) return null;
+                    // Map tab IDs to backend feature flags for proper gating
+                    let requiredFeature = tab.id;
+                    if (tab.id === 'assignments') requiredFeature = 'notes';
+                    if (tab.id === 'performance') requiredFeature = 'exams';
+
+                    // Hide feature-gated tabs dynamically based on user's plan
+                    if (tab.id !== "dashboard" && tab.id !== "profile") {
+                        if (user?.features && user.features[requiredFeature] === false) {
+                            return null;
+                        }
+                        // Some features are strictly booleans, others might be 'none' strings
+                        if (user?.features && user.features[requiredFeature] === 'none') {
+                            return null;
+                        }
+                    }
 
                     const isActive = activeTab === tab.id;
 

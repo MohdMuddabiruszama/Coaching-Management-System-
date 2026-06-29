@@ -16,9 +16,16 @@ const Profile = lazy(() => import("../pages/admin/Profile"));
 const ChatApp = lazy(() => import("../pages/chat/ChatApp"));
 const Unauthorized = lazy(() => import("../pages/common/Unauthorized"));
 
-const ParentDashboard = lazy(() => import("../pages/parent/Dashboard"));
-const ParentTimetable = lazy(() => import("../pages/parent/Timetable"));
-const ParentAssignments = lazy(() => import("../pages/parent/Assignments"));
+import FeatureGuard from "../components/common/FeatureGuard";
+
+const ParentDashboard = lazy(() => import("../pages/parent/MobileDashboard"));
+const ParentMobileTimetable = lazy(() => import("../pages/parent/MobileTimetable"));
+const ParentMobileAssignments = lazy(() => import("../pages/parent/MobileAssignments"));
+const ParentMobileAttendance = lazy(() => import("../pages/parent/MobileAttendance"));
+const ParentMobileMarks = lazy(() => import("../pages/parent/MobileMarks"));
+const ParentMobilePerformance = lazy(() => import("../pages/parent/MobilePerformance"));
+const ParentMobileFees = lazy(() => import("../pages/parent/MobileFees"));
+const ViewAnnouncements = lazy(() => import("../pages/student/ViewAnnouncements"));
 
 const PageLoader = () => (
   <div className="page-loader">
@@ -36,9 +43,46 @@ function ParentArea() {
       <Routes>
         <Route path="/" element={<ParentLayout />}>
           <Route path="dashboard" element={<ParentDashboard />} />
-          <Route path="timetable" element={<ParentTimetable />} />
-          <Route path="assignments" element={<ParentAssignments />} />
-          <Route path="chat" element={<ChatApp />} />
+          <Route path="timetable" element={
+            <FeatureGuard featureKey="timetable" title="Timetable">
+              <ParentMobileTimetable />
+            </FeatureGuard>
+          } />
+          <Route path="assignments" element={
+            <FeatureGuard featureKey="notes" title="Assignments">
+              <ParentMobileAssignments />
+            </FeatureGuard>
+          } />
+          <Route path="attendance" element={
+            <FeatureGuard featureKey="attendance" title="Attendance">
+              <ParentMobileAttendance />
+            </FeatureGuard>
+          } />
+          <Route path="marks" element={
+            <FeatureGuard featureKey="exams" title="Marks">
+              <ParentMobileMarks />
+            </FeatureGuard>
+          } />
+          <Route path="performance" element={
+            <FeatureGuard featureKey="exams" title="Performance">
+              <ParentMobilePerformance />
+            </FeatureGuard>
+          } />
+          <Route path="fees" element={
+            <FeatureGuard featureKey="fees" title="Fees">
+              <ParentMobileFees />
+            </FeatureGuard>
+          } />
+          <Route path="announcements" element={
+            <FeatureGuard featureKey="announcements" title="Announcements">
+              <ViewAnnouncements />
+            </FeatureGuard>
+          } />
+          <Route path="chat" element={
+            <FeatureGuard featureKey="chat" title="Messages">
+              <ChatApp />
+            </FeatureGuard>
+          } />
           <Route path="profile" element={<Profile />} />
           <Route path="*" element={<Navigate to="dashboard" replace />} />
         </Route>

@@ -4,12 +4,16 @@
   "webDir": "dist",
   "server": {
     "hostname": "zenithflows.in",
-    "androidScheme": "https"
+    "androidScheme": "https",
+    "cleartext": true
   },
   "android": {
-    "allowMixedContent": false
+    "allowMixedContent": true
   },
   "plugins": {
+    "CapacitorHttp": {
+      "enabled": true
+    },
     "SplashScreen": {
       "launchShowDuration": 2000,
       "launchAutoHide": true,

@@ -794,67 +794,75 @@ function StudentDashboard() {
 
             {/* Stats Cards */}
             <div className="sd-secondary-stats">
-                <div className="sd-stat-card">
-                    <div className="sd-stat-card-header">
-                        <div className="sd-stat-card-icon icon-purple">👥</div>
-                        <span className="sd-stat-card-title">Classes Attended</span>
+                {user?.features?.attendance !== 'none' && (
+                    <div className="sd-stat-card">
+                        <div className="sd-stat-card-header">
+                            <div className="sd-stat-card-icon icon-purple">👥</div>
+                            <span className="sd-stat-card-title">Classes Attended</span>
+                        </div>
+                        <div className="sd-stat-card-value-row">
+                            <span className="sd-stat-card-value">{heroStats.presentDays}</span>
+                            <span className="sd-stat-card-max">/ {heroStats.workingDays || '-'}</span>
+                        </div>
+                        <div className="sd-progress-bar">
+                            <div className="sd-progress-fill" style={{ width: `${heroStats.attendancePct}%`, backgroundColor: '#8b5cf6' }} />
+                        </div>
+                        <div className="sd-stat-card-footer">
+                            <span>Overall</span><span>{heroStats.attendancePct}%</span>
+                        </div>
                     </div>
-                    <div className="sd-stat-card-value-row">
-                        <span className="sd-stat-card-value">{heroStats.presentDays}</span>
-                        <span className="sd-stat-card-max">/ {heroStats.workingDays || '-'}</span>
-                    </div>
-                    <div className="sd-progress-bar">
-                        <div className="sd-progress-fill" style={{ width: `${heroStats.attendancePct}%`, backgroundColor: '#8b5cf6' }} />
-                    </div>
-                    <div className="sd-stat-card-footer">
-                        <span>Overall</span><span>{heroStats.attendancePct}%</span>
-                    </div>
-                </div>
+                )}
 
-                <div className="sd-stat-card">
-                    <div className="sd-stat-card-header">
-                        <div className="sd-stat-card-icon icon-green">📋</div>
-                        <span className="sd-stat-card-title">Assignments</span>
+                {user?.features?.notes && (
+                    <div className="sd-stat-card">
+                        <div className="sd-stat-card-header">
+                            <div className="sd-stat-card-icon icon-green">📋</div>
+                            <span className="sd-stat-card-title">Assignments</span>
+                        </div>
+                        <div className="sd-stat-card-value-row">
+                            <span className="sd-stat-card-value">{assignmentsStats.completed}</span>
+                            <span className="sd-stat-card-max">/ {assignmentsStats.total || 0}</span>
+                        </div>
+                        <div className="sd-progress-bar">
+                            <div className="sd-progress-fill" style={{ width: `${assignmentsStats.total ? (assignmentsStats.completed / assignmentsStats.total) * 100 : 0}%`, backgroundColor: '#10b981' }} />
+                        </div>
+                        <div className="sd-stat-card-footer">
+                            <span>Completed</span><span>{assignmentsStats.total ? Math.round((assignmentsStats.completed / assignmentsStats.total) * 100) : 0}%</span>
+                        </div>
                     </div>
-                    <div className="sd-stat-card-value-row">
-                        <span className="sd-stat-card-value">{assignmentsStats.completed}</span>
-                        <span className="sd-stat-card-max">/ {assignmentsStats.total || 0}</span>
-                    </div>
-                    <div className="sd-progress-bar">
-                        <div className="sd-progress-fill" style={{ width: `${assignmentsStats.total ? (assignmentsStats.completed / assignmentsStats.total) * 100 : 0}%`, backgroundColor: '#10b981' }} />
-                    </div>
-                    <div className="sd-stat-card-footer">
-                        <span>Completed</span><span>{assignmentsStats.total ? Math.round((assignmentsStats.completed / assignmentsStats.total) * 100) : 0}%</span>
-                    </div>
-                </div>
+                )}
 
-                <div className="sd-stat-card">
-                    <div className="sd-stat-card-header">
-                        <div className="sd-stat-card-icon icon-yellow">⏱️</div>
-                        <span className="sd-stat-card-title">Upcoming Exams</span>
+                {user?.features?.exams && (
+                    <div className="sd-stat-card">
+                        <div className="sd-stat-card-header">
+                            <div className="sd-stat-card-icon icon-yellow">⏱️</div>
+                            <span className="sd-stat-card-title">Upcoming Exams</span>
+                        </div>
+                        <div className="sd-stat-card-value-row">
+                            <span className="sd-stat-card-value">2</span>
+                        </div>
+                        <div style={{ height: '4px', marginBottom: '8px' }} />
+                        <div className="sd-stat-card-footer">
+                            <span>This Month</span>
+                        </div>
                     </div>
-                    <div className="sd-stat-card-value-row">
-                        <span className="sd-stat-card-value">2</span>
-                    </div>
-                    <div style={{ height: '4px', marginBottom: '8px' }} />
-                    <div className="sd-stat-card-footer">
-                        <span>This Month</span>
-                    </div>
-                </div>
+                )}
 
-                <div className="sd-stat-card">
-                    <div className="sd-stat-card-header">
-                        <div className="sd-stat-card-icon icon-blue">💰</div>
-                        <span className="sd-stat-card-title">Outstanding Fees</span>
+                {user?.features?.fees && (
+                    <div className="sd-stat-card">
+                        <div className="sd-stat-card-header">
+                            <div className="sd-stat-card-icon icon-blue">💰</div>
+                            <span className="sd-stat-card-title">Outstanding Fees</span>
+                        </div>
+                        <div className="sd-stat-card-value-row">
+                            <span className="sd-stat-card-value">₹{outstandingFees.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</span>
+                        </div>
+                        <div style={{ height: '4px', marginBottom: '8px' }} />
+                        <div className="sd-stat-card-footer">
+                            <span className={outstandingFees > 0 ? "sd-text-danger" : "sd-text-success"}>{outstandingFees > 0 ? "Action Required" : "All cleared"}</span>
+                        </div>
                     </div>
-                    <div className="sd-stat-card-value-row">
-                        <span className="sd-stat-card-value">₹{outstandingFees.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</span>
-                    </div>
-                    <div style={{ height: '4px', marginBottom: '8px' }} />
-                    <div className="sd-stat-card-footer">
-                        <span className={outstandingFees > 0 ? "sd-text-danger" : "sd-text-success"}>{outstandingFees > 0 ? "Action Required" : "All cleared"}</span>
-                    </div>
-                </div>
+                )}
             </div>
 
             {/* Bottom Widgets */}
@@ -936,37 +944,39 @@ function StudentDashboard() {
                 </WidgetErrorBoundary>
 
                 {/* Today's Schedule */}
-                <WidgetErrorBoundary title="Today's Schedule">
-                <div className="sd-widget">
-                    <div className="sd-widget-header">
-                        <h3>📅 Today's Schedule</h3>
-                        <Link to="/student/timetable" className="sd-view-all">View Full Timetable</Link>
-                    </div>
-                    <div className="sd-list">
-                        {widgetsLoading ? <SkeletonList /> : todaySchedule.length > 0 ? (
-                            todaySchedule.map((cls, idx) => (
-                                <div key={cls.id || idx} className="sd-schedule-item">
-                                    <div className="sd-schedule-time-col">
-                                        <span className="sd-schedule-start">{formatTime(cls.startTime)}</span>
-                                        <span className="sd-schedule-end">{formatTime(cls.endTime)}</span>
+                {user?.features?.timetable && (
+                    <WidgetErrorBoundary title="Today's Schedule">
+                    <div className="sd-widget">
+                        <div className="sd-widget-header">
+                            <h3>📅 Today's Schedule</h3>
+                            <Link to="/student/timetable" className="sd-view-all">View Full Timetable</Link>
+                        </div>
+                        <div className="sd-list">
+                            {widgetsLoading ? <SkeletonList /> : todaySchedule.length > 0 ? (
+                                todaySchedule.map((cls, idx) => (
+                                    <div key={cls.id || idx} className="sd-schedule-item">
+                                        <div className="sd-schedule-time-col">
+                                            <span className="sd-schedule-start">{formatTime(cls.startTime)}</span>
+                                            <span className="sd-schedule-end">{formatTime(cls.endTime)}</span>
+                                        </div>
+                                        <div className="sd-schedule-bar" style={{backgroundColor: cls.color + '20', borderLeft: `3px solid ${cls.color}`}}>
+                                            <div className="sd-schedule-subject" style={{color: cls.color}}>{cls.subject}</div>
+                                            {cls.room && <div className="sd-schedule-room">📍 {cls.room}</div>}
+                                            {cls.dayLabel && <div className="sd-schedule-daylabel">{cls.dayLabel}</div>}
+                                        </div>
+                                        <span className={`sd-schedule-badge sd-badge-${cls.status.toLowerCase()}`}>{cls.status}</span>
                                     </div>
-                                    <div className="sd-schedule-bar" style={{backgroundColor: cls.color + '20', borderLeft: `3px solid ${cls.color}`}}>
-                                        <div className="sd-schedule-subject" style={{color: cls.color}}>{cls.subject}</div>
-                                        {cls.room && <div className="sd-schedule-room">📍 {cls.room}</div>}
-                                        {cls.dayLabel && <div className="sd-schedule-daylabel">{cls.dayLabel}</div>}
-                                    </div>
-                                    <span className={`sd-schedule-badge sd-badge-${cls.status.toLowerCase()}`}>{cls.status}</span>
+                                ))
+                            ) : (
+                                <div className="sd-empty-state">
+                                    <span>🎉</span>
+                                    <p>No classes scheduled. Enjoy your time!</p>
                                 </div>
-                            ))
-                        ) : (
-                            <div className="sd-empty-state">
-                                <span>🎉</span>
-                                <p>No classes scheduled. Enjoy your time!</p>
-                            </div>
-                        )}
+                            )}
+                        </div>
                     </div>
-                </div>
-                </WidgetErrorBoundary>
+                    </WidgetErrorBoundary>
+                )}
             </div>
         </div>
     );

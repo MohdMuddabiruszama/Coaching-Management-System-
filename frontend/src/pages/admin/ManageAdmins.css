@@ -875,4 +875,12 @@ html.theme-dark .ma-perm-chip,
     .ma-row-card, .ma-list-header { display: flex; flex-direction: column; align-items: flex-start; gap: 1rem; }
     .ma-col-profile, .ma-col-perms, .ma-col-type, .ma-col-actions { width: 100%; }
     .ma-col-actions { justify-content: flex-start; }
+    .ma-form-grid { grid-template-columns: 1fr; }
+}
+
+.ma-form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
 }

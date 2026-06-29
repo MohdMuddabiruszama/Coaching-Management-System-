@@ -102,6 +102,10 @@ const Plan = sequelize.define("Plan", {
         type: DataTypes.INTEGER,
         defaultValue: 17   // ~2 months free = 16.67%
     },
+    gst_percent: {
+        type: DataTypes.INTEGER,
+        defaultValue: 2
+    },
     // If true, CTA shows "Contact Sales" — no public price
     contact_sales: {
         type: DataTypes.BOOLEAN,

@@ -352,7 +352,7 @@ exports.updateAdmin = async (req, res) => {
     try {
         const institute_id = req.user.institute_id;
         const adminId = req.params.id;
-        const { name, email, phone, status } = req.body;
+        const { name, email, phone, status, password } = req.body;
 
         const { Op } = require('sequelize');
         const admin = await User.findOne({
@@ -368,13 +368,20 @@ exports.updateAdmin = async (req, res) => {
             return res.status(403).json({ success: false, message: "Managers cannot edit primary administrators." });
         }
 
-        await admin.update({
+        const updateData = {
             name,
             email,
             phone,
             status,
             permissions: req.body.permissions !== undefined ? req.body.permissions : admin.permissions
-        });
+        };
+
+        if (password) {
+            const { hashPassword } = require("../utils/hashPassword");
+            updateData.password_hash = await hashPassword(password);
+        }
+
+        await admin.update(updateData);
 
         res.status(200).json({ success: true, message: "Admin updated successfully.", data: admin });
 

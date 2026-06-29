@@ -91,19 +91,45 @@ export default function MobileDashboard() {
                 </div>
                 <div className="mfd-quick-grid-4">
                     <QuickActionBtn icon="👥" label="View Students" onClick={() => navigate('/faculty/students')} />
-                    <QuickActionBtn icon="📋" label="Mark Attendance" onClick={() => navigate('/faculty/attendance')} />
-                    <QuickActionBtn icon="📊" label="View Attendance" onClick={() => navigate('/faculty/view-attendance')} />
-                    <QuickActionBtn icon="🔳" label="Scan QR Code" onClick={() => navigate('/faculty/smart-attendance')} />
                     
-                    <QuickActionBtn icon="📝" label="Enter Marks" onClick={() => navigate('/faculty/marks')} />
-                    <QuickActionBtn icon="🎯" label="Class Performance" onClick={() => navigate('/faculty/class-performance')} />
-                    <QuickActionBtn icon="📆" label="My Schedule" onClick={() => navigate('/faculty/timetable')} />
+                    {user?.features?.attendance !== 'none' && (
+                        <QuickActionBtn icon="📋" label="Mark Attendance" onClick={() => navigate('/faculty/attendance')} />
+                    )}
+                    {user?.features?.attendance !== 'none' && (
+                        <QuickActionBtn icon="📊" label="View Attendance" onClick={() => navigate('/faculty/view-attendance')} />
+                    )}
+                    
+                    {user?.features?.auto_attendance && (
+                        <QuickActionBtn icon="🔳" label="Scan QR Code" onClick={() => navigate('/faculty/smart-attendance')} />
+                    )}
+                    
+                    {user?.features?.exams && (
+                        <>
+                            <QuickActionBtn icon="📝" label="Enter Marks" onClick={() => navigate('/faculty/marks')} />
+                            <QuickActionBtn icon="🎯" label="Class Performance" onClick={() => navigate('/faculty/class-performance')} />
+                        </>
+                    )}
+                    
+                    {user?.features?.timetable && (
+                        <QuickActionBtn icon="📆" label="My Schedule" onClick={() => navigate('/faculty/timetable')} />
+                    )}
+                    
                     <QuickActionBtn icon="🆔" label="My QR Code" onClick={() => navigate('/faculty/scan-attendance')} />
 
-                    <QuickActionBtn icon="📢" label="Announcements" badge={demoBadge} onClick={() => navigate('/faculty/announcements')} />
-                    <QuickActionBtn icon="📓" label="Class Notes" onClick={() => navigate('/faculty/notes')} />
-                    <QuickActionBtn icon="📄" label="Assignments" onClick={() => navigate('/faculty/assignments')} />
-                    <QuickActionBtn icon="💬" label="Academic Chat" badge={demoBadge} onClick={() => navigate('/faculty/chat')} />
+                    {user?.features?.announcements && (
+                        <QuickActionBtn icon="📢" label="Announcements" badge={demoBadge} onClick={() => navigate('/faculty/announcements')} />
+                    )}
+                    
+                    {user?.features?.notes && (
+                        <>
+                            <QuickActionBtn icon="📓" label="Class Notes" onClick={() => navigate('/faculty/notes')} />
+                            <QuickActionBtn icon="📄" label="Assignments" onClick={() => navigate('/faculty/assignments')} />
+                        </>
+                    )}
+                    
+                    {user?.features?.chat && (
+                        <QuickActionBtn icon="💬" label="Academic Chat" badge={demoBadge} onClick={() => navigate('/faculty/chat')} />
+                    )}
                 </div>
             </div>
 
@@ -136,80 +162,86 @@ export default function MobileDashboard() {
             </div>
 
             {/* 4. Today's Schedule (Student UI Style) */}
-            <div className="mfd-section-v2">
-                <div className="mfd-section-header-v2">
-                    <h3>Today's Schedule</h3>
-                    <button className="mfd-view-all-v2" onClick={() => navigate('/faculty/timetable')}>
-                        View Timetable
-                    </button>
-                </div>
-                {todaySchedule && todaySchedule.length > 0 ? (
-                    todaySchedule.map((cls, idx) => (
-                        <div key={idx} className="mfd-schedule-card-v2">
-                            <div className="mfd-schedule-time-v2">
-                                <span className="mfd-time-start-v2">{formatTime(cls.startTime)}</span>
-                                <span className="mfd-time-end-v2">{formatTime(cls.endTime)}</span>
-                            </div>
-                            <div className="mfd-schedule-divider-v2" />
-                            <div className="mfd-schedule-info-v2">
-                                <span className="mfd-schedule-subject-v2">{cls.subject || 'Subject'}</span>
-                                <span className="mfd-schedule-room-v2">
-                                    {cls.class ? (cls.class.toLowerCase().includes('class') ? cls.class : `Class ${cls.class}`) : 'Classroom'}
-                                </span>
-                            </div>
-                        </div>
-                    ))
-                ) : (
-                    <div className="mfd-empty-card-v2">
-                        <div className="mfd-empty-icon-v2" style={{ color: '#c7d2fe' }}>📅</div>
-                        <div className="mfd-empty-text-v2">
-                            <h4>No classes scheduled.</h4>
-                            <p>Enjoy your time!</p>
-                        </div>
+            {user?.features?.timetable && (
+                <div className="mfd-section-v2">
+                    <div className="mfd-section-header-v2">
+                        <h3>Today's Schedule</h3>
+                        <button className="mfd-view-all-v2" onClick={() => navigate('/faculty/timetable')}>
+                            View Timetable
+                        </button>
                     </div>
-                )}
-            </div>
+                    {todaySchedule && todaySchedule.length > 0 ? (
+                        todaySchedule.map((cls, idx) => (
+                            <div key={idx} className="mfd-schedule-card-v2">
+                                <div className="mfd-schedule-time-v2">
+                                    <span className="mfd-time-start-v2">{formatTime(cls.startTime)}</span>
+                                    <span className="mfd-time-end-v2">{formatTime(cls.endTime)}</span>
+                                </div>
+                                <div className="mfd-schedule-divider-v2" />
+                                <div className="mfd-schedule-info-v2">
+                                    <span className="mfd-schedule-subject-v2">{cls.subject || 'Subject'}</span>
+                                    <span className="mfd-schedule-room-v2">
+                                        {cls.class ? (cls.class.toLowerCase().includes('class') ? cls.class : `Class ${cls.class}`) : 'Classroom'}
+                                    </span>
+                                </div>
+                            </div>
+                        ))
+                    ) : (
+                        <div className="mfd-empty-card-v2">
+                            <div className="mfd-empty-icon-v2" style={{ color: '#c7d2fe' }}>📅</div>
+                            <div className="mfd-empty-text-v2">
+                                <h4>No classes scheduled.</h4>
+                                <p>Enjoy your time!</p>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            )}
 
             {/* Recent Announcements */}
-            <div className="mfd-section-v2">
-                <div className="mfd-section-header-v2">
-                    <h3>Recent Announcements</h3>
-                    <button className="mfd-view-all-v2" onClick={() => navigate('/faculty/announcements')}>
-                        View All
-                    </button>
+            {user?.features?.announcements && (
+                <div className="mfd-section-v2">
+                    <div className="mfd-section-header-v2">
+                        <h3>Recent Announcements</h3>
+                        <button className="mfd-view-all-v2" onClick={() => navigate('/faculty/announcements')}>
+                            View All
+                        </button>
+                    </div>
+                    {firstAnnouncement ? (
+                        <div className="mfd-announcement-card">
+                            <div className="mfd-ann-icon-bg"><span className="mfd-ann-icon">📢</span></div>
+                            <div className="mfd-ann-info">
+                                <h4>{firstAnnouncement.title}</h4>
+                                <p>{firstAnnouncement.message || 'No content'}</p>
+                                <span className="mfd-ann-time">Recently</span>
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="mfd-empty-card-v2">
+                            <div className="mfd-empty-icon-v2" style={{ color: '#c7d2fe' }}>📢</div>
+                            <div className="mfd-empty-text-v2">
+                                <h4 style={{ color: '#64748b', fontWeight: 500 }}>No new announcements.</h4>
+                            </div>
+                        </div>
+                    )}
                 </div>
-                {firstAnnouncement ? (
-                    <div className="mfd-announcement-card">
-                        <div className="mfd-ann-icon-bg"><span className="mfd-ann-icon">📢</span></div>
-                        <div className="mfd-ann-info">
-                            <h4>{firstAnnouncement.title}</h4>
-                            <p>{firstAnnouncement.message || 'No content'}</p>
-                            <span className="mfd-ann-time">Recently</span>
-                        </div>
-                    </div>
-                ) : (
-                    <div className="mfd-empty-card-v2">
-                        <div className="mfd-empty-icon-v2" style={{ color: '#c7d2fe' }}>📢</div>
-                        <div className="mfd-empty-text-v2">
-                            <h4 style={{ color: '#64748b', fontWeight: 500 }}>No new announcements.</h4>
-                        </div>
-                    </div>
-                )}
-            </div>
+            )}
 
             {/* 5. Stay Connected Banner */}
-            <div className="mfd-stay-connected">
-                <div className="mfd-sc-left">
-                    <div className="mfd-sc-icon-wrapper">
-                        <span className="mfd-sc-icon">💬</span>
+            {user?.features?.chat && (
+                <div className="mfd-stay-connected">
+                    <div className="mfd-sc-left">
+                        <div className="mfd-sc-icon-wrapper">
+                            <span className="mfd-sc-icon">💬</span>
+                        </div>
+                        <div className="mfd-sc-text">
+                            <h3>Stay Connected</h3>
+                            <p>Use Academic Chat to connect with your students and share important updates.</p>
+                        </div>
                     </div>
-                    <div className="mfd-sc-text">
-                        <h3>Stay Connected</h3>
-                        <p>Use Academic Chat to connect with your students and share important updates.</p>
-                    </div>
+                    <button className="mfd-sc-btn" onClick={() => navigate('/faculty/chat')}>Open Academic Chat</button>
                 </div>
-                <button className="mfd-sc-btn" onClick={() => navigate('/faculty/chat')}>Open Academic Chat</button>
-            </div>
+            )}
         </div>
     );
 }

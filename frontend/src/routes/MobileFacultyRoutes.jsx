@@ -39,23 +39,61 @@ const FacultyLayout = IS_NATIVE
     ? lazy(() => import("../components/layout/MobileFacultyLayout"))
     : lazy(() => import("../components/layout/FacultyLayout"));
 
+import FeatureGuard from "../components/common/FeatureGuard";
+
 function FacultyArea() {
   return (
     <ProtectedRoute allowedRoles={["faculty"]}>
       <Routes>
         <Route path="/" element={<FacultyLayout />}>
           <Route path="dashboard" element={<FacultyDashboard />} />
-          <Route path="attendance" element={<MarkAttendance />} />
-          <Route path="view-attendance" element={<FacultyViewAttendance />} />
-          <Route path="smart-attendance" element={<FacultySmartAttendance />} />
+          <Route path="attendance" element={
+            <FeatureGuard featureKey="attendance" title="Mark Attendance">
+              <MarkAttendance />
+            </FeatureGuard>
+          } />
+          <Route path="view-attendance" element={
+            <FeatureGuard featureKey="attendance" title="View Attendance">
+              <FacultyViewAttendance />
+            </FeatureGuard>
+          } />
+          <Route path="smart-attendance" element={
+            <FeatureGuard featureKey="auto_attendance" title="Smart Attendance">
+              <FacultySmartAttendance />
+            </FeatureGuard>
+          } />
           <Route path="scan-attendance" element={<ScanFacultyQR />} />
-          <Route path="marks" element={<EnterMarks />} />
+          <Route path="marks" element={
+            <FeatureGuard featureKey="exams" title="Enter Marks">
+              <EnterMarks />
+            </FeatureGuard>
+          } />
           <Route path="students" element={<ViewStudents />} />
-          <Route path="announcements" element={<FacultyAnnouncements />} />
-          <Route path="timetable" element={<FacultySchedule />} />
-          <Route path="notes" element={<FacultyNotes />} />
-          <Route path="assignments" element={<FacultyAssignments />} />
-          <Route path="chat" element={<ChatApp />} />
+          <Route path="announcements" element={
+            <FeatureGuard featureKey="announcements" title="Announcements">
+              <FacultyAnnouncements />
+            </FeatureGuard>
+          } />
+          <Route path="timetable" element={
+            <FeatureGuard featureKey="timetable" title="My Schedule">
+              <FacultySchedule />
+            </FeatureGuard>
+          } />
+          <Route path="notes" element={
+            <FeatureGuard featureKey="notes" title="Class Notes">
+              <FacultyNotes />
+            </FeatureGuard>
+          } />
+          <Route path="assignments" element={
+            <FeatureGuard featureKey="notes" title="Assignments">
+              <FacultyAssignments />
+            </FeatureGuard>
+          } />
+          <Route path="chat" element={
+            <FeatureGuard featureKey="chat" title="Academic Chat">
+              <ChatApp />
+            </FeatureGuard>
+          } />
           <Route path="profile" element={<Profile />} />
           <Route path="*" element={<Navigate to="dashboard" replace />} />
         </Route>

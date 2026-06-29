@@ -1,10 +1,11 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../../services/api";
 import LoadingSpinner from "../../components/common/LoadingSpinner";
 import { resolveFileUrl } from "../../utils/resolveUrl";
 import { toast } from "react-hot-toast";
 import { downloadRemoteFile } from "../../utils/capacitorPermissions";
+import { AuthContext } from "../../context/AuthContext";
 import "./StudentNotesV2.css";
 import "../admin/Students.css";
 
@@ -36,6 +37,7 @@ const formatDateTime = (dateStr) => {
 };
 
 function StudentNotes() {
+    const { user } = useContext(AuthContext);
     const navigate = useNavigate();
     const [notes, setNotes] = useState([]);
     const [subjects, setSubjects] = useState([]);
@@ -452,12 +454,18 @@ function StudentNotes() {
                         <div className="notes-v2-help-icon">i</div>
                         <div>
                             <div className="notes-v2-help-title">Need something?</div>
-                            <div className="notes-v2-help-sub">Can't find the material you're looking for? Contact your subject teacher or use the Subject Chat.</div>
+                            <div className="notes-v2-help-sub">
+                                {user?.features?.chat 
+                                    ? "Can't find the material you're looking for? Contact your subject teacher or use the Subject Chat." 
+                                    : "Can't find the material you're looking for? Contact your subject teacher for assistance."}
+                            </div>
                         </div>
                     </div>
-                    <button className="notes-v2-chat-btn" onClick={() => navigate('/student/chat')}>
-                        <span style={{ fontSize: '1.1rem' }}>💬</span> Go to Subject Chat
-                    </button>
+                    {user?.features?.chat && (
+                        <button className="notes-v2-chat-btn" onClick={() => navigate('/student/chat')}>
+                            <span style={{ fontSize: '1.1rem' }}>💬</span> Go to Subject Chat
+                        </button>
+                    )}
                 </div>
             </div>
             

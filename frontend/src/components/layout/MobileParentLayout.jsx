@@ -103,6 +103,19 @@ const MobileParentLayout = ({ children }) => {
 
             <nav className="mpl-bottom-nav" role="navigation" aria-label="Parent navigation">
                 {TABS.map(tab => {
+                    let requiredFeature = tab.id;
+                    if (tab.id === 'marks' || tab.id === 'performance') requiredFeature = 'exams';
+                    if (tab.id === 'assignments') requiredFeature = 'notes';
+
+                    if (tab.id !== "dashboard" && tab.id !== "profile") {
+                        if (user?.features && user.features[requiredFeature] === false) {
+                            return null;
+                        }
+                        if (user?.features && user.features[requiredFeature] === 'none') {
+                            return null;
+                        }
+                    }
+
                     const isActive = activeTab === tab.id;
                     return (
                         <button

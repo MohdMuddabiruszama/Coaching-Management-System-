@@ -555,205 +555,225 @@ export default function MobileDashboard() {
                 </div>
                 <div className="msd-quick-actions">
 
-                    {/* Attendance */}
-                    <QuickActionBtn
-                        icon="🗓️"
-                        label="Attendance"
-                        badge={badges.attendance}
-                        badgeVariant="dot-blue"
-                        onClick={() => {
-                            clearBadge('attendance');
-                            // Also advance the snapshot with current month total
-                            // so badge only returns when faculty adds MORE records.
-                            if (doAdvanceAttendance && data?.attendance?.total !== undefined) {
-                                doAdvanceAttendance(data.attendance.total);
-                            }
-                            navigate('/student/attendance');
-                        }}
-                    />
+                    {user?.features?.attendance !== 'none' && (
+                        <QuickActionBtn
+                            icon="🗓️"
+                            label="Attendance"
+                            badge={badges.attendance}
+                            badgeVariant="dot-blue"
+                            onClick={() => {
+                                clearBadge('attendance');
+                                // Also advance the snapshot with current month total
+                                // so badge only returns when faculty adds MORE records.
+                                if (doAdvanceAttendance && data?.attendance?.total !== undefined) {
+                                    doAdvanceAttendance(data.attendance.total);
+                                }
+                                navigate('/student/attendance');
+                            }}
+                        />
+                    )}
 
-                    {/* Marks */}
-                    <QuickActionBtn
-                        icon={<span style={{ color: '#2563eb', fontWeight: 800, fontSize: '20px' }}>A+</span>}
-                        label="Marks"
-                        badge={badges.exams}
-                        badgeVariant="count-purple"
-                        onClick={() => { clearBadge('exams'); navigate('/student/exams'); }}
-                    />
+                    {user?.features?.exams && (
+                        <QuickActionBtn
+                            icon={<span style={{ color: '#2563eb', fontWeight: 800, fontSize: '20px' }}>A+</span>}
+                            label="Marks"
+                            badge={badges.exams}
+                            badgeVariant="count-purple"
+                            onClick={() => { clearBadge('exams'); navigate('/student/exams'); }}
+                        />
+                    )}
 
-                    {/* Performance */}
-                    <QuickActionBtn
-                        icon="📊"
-                        label="Performance"
-                        badge={badges.performance}
-                        badgeVariant="dot-blue"
-                        onClick={() => { clearBadge('performance'); navigate('/student/performance'); }}
-                    />
+                    {user?.features?.exams && (
+                        <QuickActionBtn
+                            icon="📊"
+                            label="Performance"
+                            badge={badges.performance}
+                            badgeVariant="dot-blue"
+                            onClick={() => { clearBadge('performance'); navigate('/student/performance'); }}
+                        />
+                    )}
 
-                    {/* Timetable */}
-                    <QuickActionBtn
-                        icon="📆"
-                        label="Timetable"
-                        onClick={() => navigate('/student/timetable')}
-                    />
+                    {user?.features?.timetable && (
+                        <QuickActionBtn
+                            icon="📆"
+                            label="Timetable"
+                            onClick={() => navigate('/student/timetable')}
+                        />
+                    )}
 
                     {/* Assignments */}
-                    <QuickActionBtn
-                        icon="📋"
-                        label="Assignments"
-                        badge={badges.assignments}
-                        badgeVariant="count-purple"
-                        onClick={() => { clearBadge('assignments'); navigate('/student/assignments'); }}
-                    />
+                    {user?.features?.notes && (
+                        <QuickActionBtn
+                            icon="📋"
+                            label="Assignments"
+                            badge={badges.assignments}
+                            badgeVariant="count-purple"
+                            onClick={() => { clearBadge('assignments'); navigate('/student/assignments'); }}
+                        />
+                    )}
 
-                    {/* Pay Fees — always visible with amber badge if pending */}
-                    <QuickActionBtn
-                        icon="💳"
-                        label="Pay Fees"
-                        badge={badges.fees || (needsFeeAttention ? { count: '!', type: 'dot' } : null)}
-                        badgeVariant="dot-amber"
-                        onClick={() => { clearBadge('fees'); navigate('/student/fees'); }}
-                    />
+                    {user?.features?.fees && (
+                        <QuickActionBtn
+                            icon="💳"
+                            label="Pay Fees"
+                            badge={badges.fees || (needsFeeAttention ? { count: '!', type: 'dot' } : null)}
+                            badgeVariant="dot-amber"
+                            onClick={() => { clearBadge('fees'); navigate('/student/fees'); }}
+                        />
+                    )}
 
-                    {/* Notes */}
-                    <QuickActionBtn
-                        icon="📓"
-                        label="Notes"
-                        onClick={() => navigate('/student/notes')}
-                    />
+                    {user?.features?.notes && (
+                        <QuickActionBtn
+                            icon="📓"
+                            label="Notes"
+                            onClick={() => navigate('/student/notes')}
+                        />
+                    )}
 
-                    {/* Chat */}
-                    <QuickActionBtn
-                        icon="💬"
-                        label="Chat"
-                        badge={badges.chat || (data.unreadChatCount > 0 ? { count: data.unreadChatCount, type: 'number' } : null)}
-                        badgeVariant="count-green"
-                        onClick={() => { clearBadge('chat'); navigate('/student/chat'); }}
-                    />
+                    {user?.features?.chat && (
+                        <QuickActionBtn
+                            icon="💬"
+                            label="Chat"
+                            badge={badges.chat || (data.unreadChatCount > 0 ? { count: data.unreadChatCount, type: 'number' } : null)}
+                            badgeVariant="count-green"
+                            onClick={() => { clearBadge('chat'); navigate('/student/chat'); }}
+                        />
+                    )}
 
                 </div>
             </div>
 
             {/* Summary Grid */}
             <div className="msd-summary-grid">
-                <div className="msd-summary-card">
-                    <div className="msd-summary-header">
-                        <div className="msd-summary-icon icon-purple">👥</div>
-                        <span className="msd-summary-title">Classes Attended</span>
-                    </div>
-                    <div className="msd-summary-body">
-                        <div className="msd-summary-value">{totalClassesAttended} <span className="msd-summary-sub">/ {totalClasses || '-'}</span></div>
-                        <div className="msd-summary-footer">
-                            <span>Overall</span>
-                            <span>{attPct}%</span>
+                {user?.features?.attendance !== 'none' && (
+                    <div className="msd-summary-card">
+                        <div className="msd-summary-header">
+                            <div className="msd-summary-icon icon-purple">👥</div>
+                            <span className="msd-summary-title">Classes Attended</span>
                         </div>
-                    </div>
-                </div>
-                <div className="msd-summary-card">
-                    <div className="msd-summary-header">
-                        <div className="msd-summary-icon icon-green">📋</div>
-                        <span className="msd-summary-title">Assignments</span>
-                    </div>
-                    <div className="msd-summary-body">
-                        <div className="msd-summary-value">{assignmentsCompleted} <span className="msd-summary-sub">/ {assignmentsTotal || '-'}</span></div>
-                        <div className="msd-summary-footer">
-                            <span>Completed</span>
-                            <span>{assignmentsPct}%</span>
-                        </div>
-                    </div>
-                </div>
-                <div className="msd-summary-card">
-                    <div className="msd-summary-header">
-                        <div className="msd-summary-icon icon-yellow">⏱️</div>
-                        <span className="msd-summary-title">Exams</span>
-                    </div>
-                    <div className="msd-summary-body">
-                        <div className="msd-summary-value">{examsThisMonth}</div>
-                        <div className="msd-summary-footer">
-                            <span>This Month</span>
-                        </div>
-                    </div>
-                </div>
-                <div className="msd-summary-card">
-                    <div className="msd-summary-header">
-                        <div className="msd-summary-icon icon-blue">💰</div>
-                        <span className="msd-summary-title">Fees</span>
-                    </div>
-                    <div className="msd-summary-body">
-                        <div className="msd-summary-value">₹{fees?.totalDue?.toLocaleString('en-IN') || 0}</div>
-                        <div className="msd-summary-footer">
-                            <span className={fees?.totalDue > 0 ? "msd-text-danger" : "msd-text-success"}>
-                                {fees?.totalDue > 0 ? "Pending" : "All cleared"}
-                            </span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            {/* Today's Schedule */}
-            <div className="msd-section">
-                <div className="msd-section-header">
-                    <h3>Today's Schedule</h3>
-                    <button className="msd-view-all" onClick={() => navigate('/student/timetable')}>
-                        View Timetable
-                    </button>
-                </div>
-                {todaySchedule && todaySchedule.length > 0 ? (
-                    todaySchedule.map((cls, idx) => (
-                        <div key={idx} className="msd-schedule-card">
-                            <div className="msd-schedule-time">
-                                <span className="msd-time-start">{formatTime(cls.startTime)}</span>
-                                <span className="msd-time-end">{formatTime(cls.endTime)}</span>
+                        <div className="msd-summary-body">
+                            <div className="msd-summary-value">{totalClassesAttended} <span className="msd-summary-sub">/ {totalClasses || '-'}</span></div>
+                            <div className="msd-summary-footer">
+                                <span>Overall</span>
+                                <span>{attPct}%</span>
                             </div>
-                            <div className="msd-schedule-divider" />
-                            <div className="msd-schedule-info">
-                                <span className="msd-schedule-subject">{cls.isBreak ? cls.breakLabel || 'Break' : cls.subject}</span>
-                                <span className="msd-schedule-room">
-                                    {cls.room ? (cls.room.toLowerCase().includes('room') ? cls.room : `Room ${cls.room}`) : 'Classroom'}
+                        </div>
+                    </div>
+                )}
+                {user?.features?.notes && (
+                    <div className="msd-summary-card">
+                        <div className="msd-summary-header">
+                            <div className="msd-summary-icon icon-green">📋</div>
+                            <span className="msd-summary-title">Assignments</span>
+                        </div>
+                        <div className="msd-summary-body">
+                            <div className="msd-summary-value">{assignmentsCompleted} <span className="msd-summary-sub">/ {assignmentsTotal || '-'}</span></div>
+                            <div className="msd-summary-footer">
+                                <span>Completed</span>
+                                <span>{assignmentsPct}%</span>
+                            </div>
+                        </div>
+                    </div>
+                )}
+                {user?.features?.exams && (
+                    <div className="msd-summary-card">
+                        <div className="msd-summary-header">
+                            <div className="msd-summary-icon icon-yellow">⏱️</div>
+                            <span className="msd-summary-title">Exams</span>
+                        </div>
+                        <div className="msd-summary-body">
+                            <div className="msd-summary-value">{examsThisMonth}</div>
+                            <div className="msd-summary-footer">
+                                <span>This Month</span>
+                            </div>
+                        </div>
+                    </div>
+                )}
+                {user?.features?.fees && (
+                    <div className="msd-summary-card">
+                        <div className="msd-summary-header">
+                            <div className="msd-summary-icon icon-blue">💰</div>
+                            <span className="msd-summary-title">Fees</span>
+                        </div>
+                        <div className="msd-summary-body">
+                            <div className="msd-summary-value">₹{fees?.totalDue?.toLocaleString('en-IN') || 0}</div>
+                            <div className="msd-summary-footer">
+                                <span className={fees?.totalDue > 0 ? "msd-text-danger" : "msd-text-success"}>
+                                    {fees?.totalDue > 0 ? "Pending" : "All cleared"}
                                 </span>
                             </div>
                         </div>
-                    ))
-                ) : (
-                    <div className="msd-empty-card">
-                        <div className="msd-empty-icon" style={{ color: '#c7d2fe' }}>📅</div>
-                        <div className="msd-empty-text">
-                            <h4>No classes scheduled.</h4>
-                            <p>Enjoy your time!</p>
-                        </div>
                     </div>
                 )}
             </div>
 
-            {/* Recent Announcements */}
-            <div className="msd-section">
-                <div className="msd-section-header">
-                    <h3>Recent Announcements</h3>
-                    <button className="msd-view-all" onClick={() => navigate('/student/announcements')}>
-                        View All
-                    </button>
-                </div>
-                {announcements && announcements.length > 0 ? (
-                    announcements.slice(0, 2).map((ann, idx) => (
-                        <div key={ann.id || idx} className="msd-notice-card" onClick={() => navigate('/student/announcements')}>
-                            <div className="msd-notice-icon">
-                                📣
-                            </div>
-                            <div className="msd-notice-content">
-                                <h4 className="msd-notice-title">{ann.title}</h4>
-                                <p className="msd-notice-date">{safeFormatDate(ann.date || ann.createdAt)}</p>
-                            </div>
-                        </div>
-                    ))
-                ) : (
-                    <div className="msd-empty-card">
-                        <div className="msd-empty-icon" style={{ color: '#c7d2fe' }}>📢</div>
-                        <div className="msd-empty-text">
-                            <h4 style={{ color: '#64748b', fontWeight: 500 }}>No announcements yet.</h4>
-                        </div>
+            {/* Today's Schedule */}
+            {user?.features?.timetable && (
+                <div className="msd-section">
+                    <div className="msd-section-header">
+                        <h3>Today's Schedule</h3>
+                        <button className="msd-view-all" onClick={() => navigate('/student/timetable')}>
+                            View Timetable
+                        </button>
                     </div>
-                )}
-            </div>
+                    {todaySchedule && todaySchedule.length > 0 ? (
+                        todaySchedule.map((cls, idx) => (
+                            <div key={idx} className="msd-schedule-card">
+                                <div className="msd-schedule-time">
+                                    <span className="msd-time-start">{formatTime(cls.startTime)}</span>
+                                    <span className="msd-time-end">{formatTime(cls.endTime)}</span>
+                                </div>
+                                <div className="msd-schedule-divider" />
+                                <div className="msd-schedule-info">
+                                    <span className="msd-schedule-subject">{cls.isBreak ? cls.breakLabel || 'Break' : cls.subject}</span>
+                                    <span className="msd-schedule-room">
+                                        {cls.room ? (cls.room.toLowerCase().includes('room') ? cls.room : `Room ${cls.room}`) : 'Classroom'}
+                                    </span>
+                                </div>
+                            </div>
+                        ))
+                    ) : (
+                        <div className="msd-empty-card">
+                            <div className="msd-empty-icon" style={{ color: '#c7d2fe' }}>📅</div>
+                            <div className="msd-empty-text">
+                                <h4>No classes scheduled.</h4>
+                                <p>Enjoy your time!</p>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            )}
+
+            {/* Recent Announcements */}
+            {user?.features?.announcements && (
+                <div className="msd-section">
+                    <div className="msd-section-header">
+                        <h3>Recent Announcements</h3>
+                        <button className="msd-view-all" onClick={() => navigate('/student/announcements')}>
+                            View All
+                        </button>
+                    </div>
+                    {announcements && announcements.length > 0 ? (
+                        announcements.slice(0, 2).map((ann, idx) => (
+                            <div key={ann.id || idx} className="msd-notice-card" onClick={() => navigate('/student/announcements')}>
+                                <div className="msd-notice-icon">
+                                    📣
+                                </div>
+                                <div className="msd-notice-content">
+                                    <h4 className="msd-notice-title">{ann.title}</h4>
+                                    <p className="msd-notice-date">{safeFormatDate(ann.date || ann.createdAt)}</p>
+                                </div>
+                            </div>
+                        ))
+                    ) : (
+                        <div className="msd-empty-card" style={{ padding: '1.5rem', minHeight: 'auto' }}>
+                            <div className="msd-empty-text">
+                                <p style={{ fontSize: '0.95rem' }}>No recent announcements.</p>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            )}
         </div>
     );
 }

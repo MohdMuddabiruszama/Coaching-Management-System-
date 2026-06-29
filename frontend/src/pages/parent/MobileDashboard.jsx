@@ -508,66 +508,82 @@ export default function MobileDashboard() {
               isActive={activeTab === 'Overview'}
               onClick={() => setActiveTab('Overview')}
           />
-          <QuickActionBtn
-              icon={<GridIcons.Attendance />}
-              label="Attendance"
-              badge={badges.attendance}
-              badgeVariant="dot-blue"
-              onClick={() => {
-                  clearBadge('attendance');
-                  if (doAdvanceAttendance && attendance?.records) {
-                      doAdvanceAttendance(attendance.records.length);
-                  }
-                  navigate('/parent/attendance');
-              }}
-          />
-          <QuickActionBtn
-              icon={<GridIcons.Marks />}
-              label="Marks"
-              badge={badges.marks}
-              badgeVariant="count-purple"
-              onClick={() => { clearBadge('marks'); navigate('/parent/marks'); }}
-          />
-          <QuickActionBtn
-              icon={<GridIcons.Performance />}
-              label="Performance"
-              badge={badges.performance}
-              badgeVariant="dot-blue"
-              onClick={() => { clearBadge('performance'); navigate('/parent/performance'); }}
-          />
-          <QuickActionBtn
-              icon={<GridIcons.Fees />}
-              label="Fees"
-              badge={badges.fees}
-              badgeVariant="dot-amber"
-              onClick={() => { clearBadge('fees'); navigate('/parent/fees'); }}
-          />
-          <QuickActionBtn
-              icon={<GridIcons.Timetable />}
-              label="Timetable"
-              onClick={() => navigate('/parent/timetable')}
-          />
-          <QuickActionBtn
-              icon={<GridIcons.Assignments />}
-              label="Assignments"
-              badge={badges.assignments}
-              badgeVariant="count-purple"
-              onClick={() => { clearBadge('assignments'); navigate('/parent/assignments'); }}
-          />
-          <QuickActionBtn
-              icon={<GridIcons.Chat />}
-              label="Chat"
-              badge={badges.chat}
-              badgeVariant="count-green"
-              onClick={() => { clearBadge('chat'); navigate('/parent/chat'); }}
-          />
-          <QuickActionBtn
-              icon={<GridIcons.Announcements />}
-              label="Announcements"
-              badge={badges.announcements}
-              badgeVariant="count-purple"
-              onClick={() => { clearBadge('announcements'); navigate('/parent/announcements'); }}
-          />
+          {user?.features?.attendance !== 'none' && (
+              <QuickActionBtn
+                  icon={<GridIcons.Attendance />}
+                  label="Attendance"
+                  badge={badges.attendance}
+                  badgeVariant="dot-blue"
+                  onClick={() => {
+                      clearBadge('attendance');
+                      if (doAdvanceAttendance && attendance?.records) {
+                          doAdvanceAttendance(attendance.records.length);
+                      }
+                      navigate('/parent/attendance');
+                  }}
+              />
+          )}
+          {user?.features?.exams && (
+              <QuickActionBtn
+                  icon={<GridIcons.Marks />}
+                  label="Marks"
+                  badge={badges.marks}
+                  badgeVariant="count-purple"
+                  onClick={() => { clearBadge('marks'); navigate('/parent/marks'); }}
+              />
+          )}
+          {user?.features?.exams && (
+              <QuickActionBtn
+                  icon={<GridIcons.Performance />}
+                  label="Performance"
+                  badge={badges.performance}
+                  badgeVariant="dot-blue"
+                  onClick={() => { clearBadge('performance'); navigate('/parent/performance'); }}
+              />
+          )}
+          {user?.features?.fees && (
+              <QuickActionBtn
+                  icon={<GridIcons.Fees />}
+                  label="Fees"
+                  badge={badges.fees}
+                  badgeVariant="dot-amber"
+                  onClick={() => { clearBadge('fees'); navigate('/parent/fees'); }}
+              />
+          )}
+          {user?.features?.timetable && (
+              <QuickActionBtn
+                  icon={<GridIcons.Timetable />}
+                  label="Timetable"
+                  onClick={() => navigate('/parent/timetable')}
+              />
+          )}
+          {user?.features?.notes && (
+              <QuickActionBtn
+                  icon={<GridIcons.Assignments />}
+                  label="Assignments"
+                  badge={badges.assignments}
+                  badgeVariant="count-purple"
+                  onClick={() => { clearBadge('assignments'); navigate('/parent/assignments'); }}
+              />
+          )}
+          {user?.features?.chat && (
+              <QuickActionBtn
+                  icon={<GridIcons.Chat />}
+                  label="Chat"
+                  badge={badges.chat}
+                  badgeVariant="count-green"
+                  onClick={() => { clearBadge('chat'); navigate('/parent/chat'); }}
+              />
+          )}
+          {user?.features?.announcements && (
+              <QuickActionBtn
+                  icon={<GridIcons.Announcements />}
+                  label="Announcements"
+                  badge={badges.announcements}
+                  badgeVariant="count-purple"
+                  onClick={() => { clearBadge('announcements'); navigate('/parent/announcements'); }}
+              />
+          )}
         </div>
       </div>
 
@@ -624,18 +640,20 @@ export default function MobileDashboard() {
 
           {/* STATS GRID */}
           <div className="mpd-stats-grid">
-            <div className="mpd-stat-box">
-              <div className="mpd-stat-header">
-                <span className="mpd-stat-icon green-icon">📋</span>
-                <span className="mpd-stat-title">Attendance</span>
+            {user?.features?.attendance !== 'none' && (
+              <div className="mpd-stat-box">
+                <div className="mpd-stat-header">
+                  <span className="mpd-stat-icon green-icon">📋</span>
+                  <span className="mpd-stat-title">Attendance</span>
+                </div>
+                <div className="mpd-stat-value">{attPct}%</div>
+                <div className="mpd-stat-bar-bg"><div className="mpd-stat-bar-fill green-fill" style={{width: `${attPct}%`}}></div></div>
+                <div className="mpd-stat-footer">
+                  <span>Present Days</span>
+                  <span>{presentDays} / {totalDays}</span>
+                </div>
               </div>
-              <div className="mpd-stat-value">{attPct}%</div>
-              <div className="mpd-stat-bar-bg"><div className="mpd-stat-bar-fill green-fill" style={{width: `${attPct}%`}}></div></div>
-              <div className="mpd-stat-footer">
-                <span>Present Days</span>
-                <span>{presentDays} / {totalDays}</span>
-              </div>
-            </div>
+            )}
 
             <div className="mpd-stat-box">
               <div className="mpd-stat-header">
@@ -649,104 +667,116 @@ export default function MobileDashboard() {
               </div>
             </div>
 
-            <div className="mpd-stat-box">
-              <div className="mpd-stat-header">
-                <span className="mpd-stat-icon blue-icon">📝</span>
-                <span className="mpd-stat-title">Assignments</span>
+            {user?.features?.notes && (
+              <div className="mpd-stat-box">
+                <div className="mpd-stat-header">
+                  <span className="mpd-stat-icon blue-icon">📝</span>
+                  <span className="mpd-stat-title">Assignments</span>
+                </div>
+                <div className="mpd-stat-value">{completedAssignments} <span className="small-val">/ {totalAssignments}</span></div>
+                <div className="mpd-stat-footer mt-auto">
+                  <span>Completed</span>
+                  <span className="text-dark">{assignmentsPct}%</span>
+                </div>
               </div>
-              <div className="mpd-stat-value">{completedAssignments} <span className="small-val">/ {totalAssignments}</span></div>
-              <div className="mpd-stat-footer mt-auto">
-                <span>Completed</span>
-                <span className="text-dark">{assignmentsPct}%</span>
-              </div>
-            </div>
+            )}
 
-            <div className="mpd-stat-box">
-              <div className="mpd-stat-header">
-                <span className="mpd-stat-icon yellow-icon">⏳</span>
-                <span className="mpd-stat-title">Pending Fees</span>
-              </div>
-              <div className="mpd-stat-value">₹{totalPendingAmount.toLocaleString('en-IN')}</div>
-              <div className="mpd-stat-footer mt-auto">
-                <span>Status</span>
-                <span className="text-dark">{pendingFees.length} pending</span>
-              </div>
-            </div>
+            {user?.features?.fees && (
+              <>
+                <div className="mpd-stat-box">
+                  <div className="mpd-stat-header">
+                    <span className="mpd-stat-icon yellow-icon">⏳</span>
+                    <span className="mpd-stat-title">Pending Fees</span>
+                  </div>
+                  <div className="mpd-stat-value">₹{totalPendingAmount.toLocaleString('en-IN')}</div>
+                  <div className="mpd-stat-footer mt-auto">
+                    <span>Status</span>
+                    <span className="text-dark">{pendingFees.length} pending</span>
+                  </div>
+                </div>
 
-            <div className="mpd-stat-box">
-              <div className="mpd-stat-header">
-                <span className="mpd-stat-icon green-icon">✅</span>
-                <span className="mpd-stat-title">Paid Fees</span>
-              </div>
-              <div className="mpd-stat-value">₹{totalPaidAmount.toLocaleString('en-IN', {maximumFractionDigits: 0}) || "0"}</div>
-              <div className="mpd-stat-bar-bg"><div className="mpd-stat-bar-fill green-fill" style={{width: totalFees ? `${(totalPaidAmount/totalFees)*100}%` : '100%'}}></div></div>
-              <div className="mpd-stat-footer">
-                <span>Total Fees</span>
-                <span className="text-dark">₹{totalFees.toLocaleString('en-IN', {maximumFractionDigits: 0}) || "0"}</span>
-              </div>
-            </div>
+                <div className="mpd-stat-box">
+                  <div className="mpd-stat-header">
+                    <span className="mpd-stat-icon green-icon">✅</span>
+                    <span className="mpd-stat-title">Paid Fees</span>
+                  </div>
+                  <div className="mpd-stat-value">₹{totalPaidAmount.toLocaleString('en-IN', {maximumFractionDigits: 0}) || "0"}</div>
+                  <div className="mpd-stat-bar-bg"><div className="mpd-stat-bar-fill green-fill" style={{width: totalFees ? `${(totalPaidAmount/totalFees)*100}%` : '100%'}}></div></div>
+                  <div className="mpd-stat-footer">
+                    <span>Total Fees</span>
+                    <span className="text-dark">₹{totalFees.toLocaleString('en-IN', {maximumFractionDigits: 0}) || "0"}</span>
+                  </div>
+                </div>
+              </>
+            )}
 
-            <div className="mpd-stat-box">
-              <div className="mpd-stat-header">
-                <span className="mpd-stat-icon red-icon">🎯</span>
-                <span className="mpd-stat-title">Exam Results</span>
+            {user?.features?.exams && (
+              <div className="mpd-stat-box">
+                <div className="mpd-stat-header">
+                  <span className="mpd-stat-icon red-icon">🎯</span>
+                  <span className="mpd-stat-title">Exam Results</span>
+                </div>
+                <div className="mpd-stat-value">{passedExams} <span className="small-val">/ {safeResults.length || 1}</span></div>
+                <div className="mpd-stat-bar-bg"><div className="mpd-stat-bar-fill" style={{width: `${passRate}%`, background: '#10b981'}}></div></div>
+                <div className="mpd-stat-footer">
+                  <span>Pass Rate</span>
+                  <span className="text-green">{passRate}%</span>
+                </div>
               </div>
-              <div className="mpd-stat-value">{passedExams} <span className="small-val">/ {safeResults.length || 1}</span></div>
-              <div className="mpd-stat-bar-bg"><div className="mpd-stat-bar-fill" style={{width: `${passRate}%`, background: '#10b981'}}></div></div>
-              <div className="mpd-stat-footer">
-                <span>Pass Rate</span>
-                <span className="text-green">{passRate}%</span>
-              </div>
-            </div>
+            )}
           </div>
 
           {/* LIGHT ACCENT GRID */}
           <div className="mpd-accent-grid">
-            <div className="mpd-accent-card">
-              <div className="mpd-card-header">
-                <h3>📊 Subject Performance</h3>
-                <span className="mpd-link" onClick={() => navigate('/parent/performance')}>View all</span>
-              </div>
-              <div className="mpd-card-body">
-                {enrolledSubjectPerformance.map((sub, idx) => (
-                  <div key={idx} className="mpd-perf-row">
-                    <span className="mpd-perf-name">{sub.name}</span>
-                    <div className="mpd-perf-bar-wrap">
-                      <div className="mpd-perf-bar" style={{width: `${sub.pct}%`, background: sub.color}}></div>
+            {user?.features?.exams && (
+              <div className="mpd-accent-card">
+                <div className="mpd-card-header">
+                  <h3>📊 Subject Performance</h3>
+                  <span className="mpd-link" onClick={() => navigate('/parent/performance')}>View all</span>
+                </div>
+                <div className="mpd-card-body">
+                  {enrolledSubjectPerformance.map((sub, idx) => (
+                    <div key={idx} className="mpd-perf-row">
+                      <span className="mpd-perf-name">{sub.name}</span>
+                      <div className="mpd-perf-bar-wrap">
+                        <div className="mpd-perf-bar" style={{width: `${sub.pct}%`, background: sub.color}}></div>
+                      </div>
+                      <span className="mpd-perf-pct">{sub.pct}%</span>
                     </div>
-                    <span className="mpd-perf-pct">{sub.pct}%</span>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
 
-            <div className="mpd-accent-card">
-              <div className="mpd-card-header">
-                <h3>Recent Announcements</h3>
-                <span className="mpd-link" onClick={() => navigate('/parent/announcements')}>View all</span>
-              </div>
-              <div className="mpd-card-body">
-                {recentAnnouncements.length > 0 ? recentAnnouncements.map((ann, idx) => (
-                  <div key={idx} className="mpd-ann-item">
-                    <div className="mpd-ann-icon">📢</div>
-                    <div className="mpd-ann-text">
-                      <h4>{ann.title}</h4>
-                      <p>{ann.message || ann.content}</p>
-                      <span className="mpd-time">Recent</span>
+            {user?.features?.announcements && (
+              <div className="mpd-accent-card">
+                <div className="mpd-card-header">
+                  <h3>Recent Announcements</h3>
+                  <span className="mpd-link" onClick={() => navigate('/parent/announcements')}>View all</span>
+                </div>
+                <div className="mpd-card-body">
+                  {recentAnnouncements.length > 0 ? recentAnnouncements.map((ann, idx) => (
+                    <div key={idx} className="mpd-ann-item">
+                      <div className="mpd-ann-icon">📢</div>
+                      <div className="mpd-ann-text">
+                        <h4>{ann.title}</h4>
+                        <p>{ann.message || ann.content}</p>
+                        <span className="mpd-time">Recent</span>
+                      </div>
                     </div>
-                  </div>
-                )) : (
-                  <div className="mpd-ann-item">
-                    <div className="mpd-ann-icon" style={{background: '#fce7f3', color: '#ec4899'}}>📢</div>
-                    <div className="mpd-ann-text">
-                      <h4>No Announcements</h4>
-                      <p>You have no recent announcements.</p>
-                      <span className="mpd-time">Now</span>
+                  )) : (
+                    <div className="mpd-ann-item">
+                      <div className="mpd-ann-icon" style={{background: '#fce7f3', color: '#ec4899'}}>📢</div>
+                      <div className="mpd-ann-text">
+                        <h4>No Announcements</h4>
+                        <p>You have no recent announcements.</p>
+                        <span className="mpd-time">Now</span>
+                      </div>
                     </div>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
-            </div>
+            )}
           </div>
         </div>
       )}

@@ -13,6 +13,13 @@ import { Capacitor } from "@capacitor/core";
  * Use 10.0.2.2 (AVD emulator) or your LAN IP for local dev on native.
  */
 const getBaseURL = () => {
+    // 0. Highest Priority: Runtime override (set via Login page easter egg)
+    const storedURL = localStorage.getItem('API_BASE_URL_OVERRIDE');
+    if (storedURL && storedURL.trim() !== '') {
+        console.info(`🔧 Using API override from local storage: ${storedURL}`);
+        return storedURL;
+    }
+
     let baseURL = import.meta.env.VITE_API_URL;
 
     // Remove trailing slash if present
@@ -23,26 +30,33 @@ const getBaseURL = () => {
             console.warn(`⚠️ VITE_API_URL (${baseURL}) is missing /api. Auto-appending it.`);
             baseURL += "/api";
         }
+        return baseURL;
     }
 
-    if (!baseURL || !baseURL.trim()) {
-        console.warn("⚠️ VITE_API_URL is not defined — using fallback");
+    console.warn("⚠️ VITE_API_URL is not defined — using smart fallback");
 
-        // On native Capacitor (Android/iOS), localhost doesn't refer to the PC
-        // Always use the production API for native builds without explicit URL
+    // Development Environment Fallbacks
+    if (import.meta.env.DEV) {
+        const hostname = window.location.hostname;
+        
+        // If accessed via LAN IP (e.g. 192.168.x.x)
+        if (hostname !== 'localhost' && hostname !== '127.0.0.1' && hostname !== '') {
+            return `http://${hostname}:5000/api`;
+        }
+
+        // Native app local dev
         if (Capacitor.isNativePlatform()) {
-            console.info("📱 Native platform detected — using production API");
-            return "https://institutes-saas.onrender.com/api";
+            console.info("📱 Native dev platform detected");
+            // Android emulator accesses host PC via 10.0.2.2
+            return Capacitor.getPlatform() === 'android' ? "http://10.0.2.2:5000/api" : "http://localhost:5000/api";
         }
 
-        if (import.meta.env.DEV) {
-            return "http://127.0.0.1:5000/api";
-        }
-
-        return "https://institutes-saas.onrender.com/api";
+        // Browser local dev
+        return "http://localhost:5000/api";
     }
 
-    return baseURL;
+    // Default Production API (Native Builds and Web)
+    return "https://institutes-saas.onrender.com/api";
 };
 
 /**

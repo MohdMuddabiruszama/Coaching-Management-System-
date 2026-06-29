@@ -11,50 +11,78 @@ const legalStyle = {
     paddingTop: '120px'
   },
   container: {
-    maxWidth: '800px',
+    maxWidth: '900px',
     margin: '0 auto',
     padding: '0 1.5rem',
   },
+  header: {
+    marginBottom: '3rem',
+  },
   title: {
-    fontSize: 'clamp(1.8rem, 4vw, 2.6rem)',
+    fontSize: 'clamp(2rem, 5vw, 3rem)',
     fontWeight: 800,
     color: 'var(--lp-text)',
-    marginBottom: '0.5rem',
-    lineHeight: 1.2,
+    marginBottom: '1rem',
+    lineHeight: 1.1,
+    letterSpacing: '-0.02em'
   },
   date: {
-    fontSize: '0.9rem',
-    color: 'var(--lp-muted)',
-    marginBottom: '2.5rem',
-    display: 'block',
-  },
-  h2: {
-    fontSize: '1.2rem',
-    fontWeight: 700,
-    color: 'var(--lp-text)',
-    margin: '2rem 0 0.75rem',
-    borderLeft: '3px solid var(--lp-accent)',
-    paddingLeft: '12px',
-  },
-  p: {
     fontSize: '0.95rem',
     color: 'var(--lp-muted)',
+    display: 'inline-block',
+    background: 'rgba(99,102,241,0.1)',
+    padding: '6px 16px',
+    borderRadius: '20px',
+    fontWeight: 500,
+  },
+  h2: {
+    fontSize: '1.4rem',
+    fontWeight: 700,
+    color: 'var(--lp-text)',
+    margin: '2.5rem 0 1rem',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '12px'
+  },
+  h2Number: {
+    background: 'var(--lp-accent)',
+    color: '#fff',
+    width: '28px',
+    height: '28px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: '6px',
+    fontSize: '0.9rem',
+    fontWeight: 800
+  },
+  p: {
+    fontSize: '1.05rem',
+    color: 'var(--lp-muted)',
     lineHeight: 1.8,
-    marginBottom: '1rem',
+    marginBottom: '1.25rem',
   },
   ul: {
     paddingLeft: '1.5rem',
-    margin: '0.75rem 0 1rem',
+    margin: '0.5rem 0 1.5rem',
     color: 'var(--lp-muted)',
-    fontSize: '0.95rem',
+    fontSize: '1.05rem',
     lineHeight: 1.8,
   },
-  divider: {
-    width: '60px',
-    height: '3px',
-    background: 'linear-gradient(90deg, var(--lp-accent), transparent)',
-    margin: '1rem 0 2rem',
-    borderRadius: '2px',
+  li: {
+    marginBottom: '0.5rem',
+  },
+  strong: {
+    color: 'var(--lp-text)',
+    fontWeight: 600,
+  },
+  contactBox: {
+    marginTop: '4rem',
+    padding: '2rem',
+    background: 'linear-gradient(135deg, rgba(99,102,241,0.05), rgba(168,85,247,0.05))',
+    border: '1px solid rgba(99,102,241,0.15)',
+    borderRadius: '16px',
+    textAlign: 'center'
   }
 };
 
@@ -68,66 +96,94 @@ export default function PrivacyPage() {
       <Navbar />
       <section style={legalStyle.section}>
         <div style={legalStyle.container}>
-          <h2 style={legalStyle.title}>Privacy Policy</h2>
-          <div style={legalStyle.divider} />
-          <span style={legalStyle.date}>
-            Last updated: {new Date().toLocaleDateString('en-IN', { month: 'long', day: 'numeric', year: 'numeric' })}
-          </span>
-
-          <h3 style={legalStyle.h2}>1. Introduction</h3>
-          <p style={legalStyle.p}>
-            Welcome to ZenithFlows. We respect your privacy and are committed to protecting your personal data. This privacy policy will inform you as to how we look after your personal data when you visit our website or use our application ("Service") and tell you about your privacy rights and how the law protects you.
-          </p>
-
-          <h3 style={legalStyle.h2}>2. Data We Collect</h3>
-          <p style={legalStyle.p}>Personal data means any information about an individual from which that person can be identified. We collect:</p>
-          <ul style={legalStyle.ul}>
-            <li><strong>Identity Data:</strong> First name, last name, username or similar identifier.</li>
-            <li><strong>Contact Data:</strong> Email address and telephone numbers.</li>
-            <li><strong>Technical Data:</strong> IP address, login data, browser type and version, time zone, operating system and platform.</li>
-            <li><strong>Profile Data:</strong> Username and password, purchases, interests, preferences, feedback and survey responses.</li>
-            <li><strong>Usage Data:</strong> Information about how you use our website, products, and services.</li>
-          </ul>
-
-          <h3 style={legalStyle.h2}>3. How We Use Your Data</h3>
-          <p style={legalStyle.p}>We will only use your personal data when the law allows us to. Most commonly, we will use your personal data to:</p>
-          <ul style={legalStyle.ul}>
-            <li>Perform the contract we are about to enter into or have entered into with you.</li>
-            <li>Operate and improve our legitimate platform services.</li>
-            <li>Comply with a legal obligation.</li>
-          </ul>
-
-          <h3 style={legalStyle.h2}>4. Data Security</h3>
-          <p style={legalStyle.p}>
-            We have put in place appropriate security measures to prevent your personal data from being accidentally lost, used or accessed in an unauthorized way, altered or disclosed. We limit access to your personal data to those employees, agents, contractors and other third parties who have a business need to know.
-          </p>
-
-          <h3 style={legalStyle.h2}>5. Student Privacy Rights</h3>
-          <p style={legalStyle.p}>
-            As an educational platform, we maintain strict privacy considerations specifically to protect students. Educational records, attendance statistics, grades, and related analytics are only exposed to strictly authorized faculty and the parents or guardians associated with the given individual student profile, in adherence with standard academic privacy guidelines.
-          </p>
-
-          <h3 style={legalStyle.h2}>6. Third-Party Links</h3>
-          <p style={legalStyle.p}>
-            This website may include links to third-party websites, plug-ins, and applications. Clicking on those links or enabling those connections may allow third parties to collect or share data about you. We do not control these third-party websites and are not responsible for their privacy statements.
-          </p>
-
-          <h3 style={legalStyle.h2}>7. Your Legal Rights</h3>
-          <p style={legalStyle.p}>Under data protection laws you have rights including:</p>
-          <ul style={legalStyle.ul}>
-            <li>Request access to your personal data.</li>
-            <li>Request correction or erasure of your personal data.</li>
-            <li>Object to processing of your personal data.</li>
-            <li>Request restriction of processing your personal data.</li>
-            <li>Request transfer of your personal data.</li>
-            <li>Right to withdraw consent.</li>
-          </ul>
-
-          <div style={{ marginTop: '2.5rem', padding: '1.25rem', background: 'rgba(99,102,241,0.07)', border: '1px solid rgba(99,102,241,0.15)', borderRadius: '12px' }}>
-            <p style={{ ...legalStyle.p, marginBottom: 0 }}>
-              Questions about your data? <a href="/#contact" style={{ color: 'var(--lp-accent)', fontWeight: 600 }}>Contact us →</a>
-            </p>
+          
+          <div style={legalStyle.header}>
+            <h1 style={legalStyle.title}>Privacy Policy</h1>
+            <span style={legalStyle.date}>
+              Effective Date: {new Date().toLocaleDateString('en-IN', { month: 'long', day: 'numeric', year: 'numeric' })}
+            </span>
           </div>
+
+          <p style={legalStyle.p}>
+            At <strong>ZenithFlows</strong>, we are deeply committed to protecting the privacy and security of our users. This Privacy Policy governs how we collect, use, process, and distribute information across our cloud-based Institute Management System (the "Platform" or "Service"), including our web and mobile applications.
+          </p>
+          <p style={legalStyle.p}>
+            By accessing or using ZenithFlows, whether as an Institute Administrator, Faculty member, Student, or Parent, you agree to the practices described in this policy.
+          </p>
+
+          <h2 style={legalStyle.h2}><span style={legalStyle.h2Number}>1</span> Information We Collect</h2>
+          <p style={legalStyle.p}>ZenithFlows collects information to provide a seamless educational management experience. We act primarily as a <strong>Data Processor</strong> for the Institutes (who act as Data Controllers). The data we collect includes:</p>
+          <ul style={legalStyle.ul}>
+            <li style={legalStyle.li}><strong style={legalStyle.strong}>Account & Identity Data:</strong> Names, email addresses, phone numbers, profile photos, and role-based credentials (Admin, Faculty, Student, Parent).</li>
+            <li style={legalStyle.li}><strong style={legalStyle.strong}>Academic Data:</strong> Enrollment details, class schedules, assignments, grades, examination marks, and performance analytics.</li>
+            <li style={legalStyle.li}><strong style={legalStyle.strong}>Attendance & Biometric Data:</strong> Daily attendance records, QR-code check-ins, and hardware-based biometric attendance logs (where applicable). <em>Note: Raw biometric templates are typically stored on localized hardware and transmitted to our servers only as anonymized confirmation hashes.</em></li>
+            <li style={legalStyle.li}><strong style={legalStyle.strong}>Financial Data:</strong> Fee payment records, invoice history, and faculty salary slips. Payment processing is handled by secure third-party gateways (e.g., Razorpay, Stripe); we do not store full credit card numbers.</li>
+            <li style={legalStyle.li}><strong style={legalStyle.strong}>Communications:</strong> In-app chat messages, announcements, and administrative notes.</li>
+            <li style={legalStyle.li}><strong style={legalStyle.strong}>Device & Usage Data:</strong> IP addresses, browser types, mobile device identifiers, crash logs, and interaction metrics to help us optimize platform performance.</li>
+          </ul>
+
+          <h2 style={legalStyle.h2}><span style={legalStyle.h2Number}>2</span> How We Use Your Information</h2>
+          <p style={legalStyle.p}>We only process your personal data for legitimate business and educational purposes, including:</p>
+          <ul style={legalStyle.ul}>
+            <li style={legalStyle.li}><strong>Providing the Service:</strong> Enabling role-based access to dashboards, timetables, and academic reports.</li>
+            <li style={legalStyle.li}><strong>Communication:</strong> Sending push notifications, SMS, or emails regarding attendance alerts, fee reminders, and institutional announcements.</li>
+            <li style={legalStyle.li}><strong>Security & Fraud Prevention:</strong> Monitoring chat environments for safety, verifying login attempts, and securing academic records.</li>
+            <li style={legalStyle.li}><strong>Platform Improvement:</strong> Analyzing aggregated, anonymized usage data to fix bugs, develop new features, and improve UI/UX.</li>
+          </ul>
+
+          <h2 style={legalStyle.h2}><span style={legalStyle.h2Number}>3</span> Data Sharing and Disclosure</h2>
+          <p style={legalStyle.p}>We do not sell, rent, or trade your personal data. Data is only shared under the following circumstances:</p>
+          <ul style={legalStyle.ul}>
+            <li style={legalStyle.li}><strong>Within Your Institute:</strong> Information is shared internally based on strict Role-Based Access Control (RBAC). For example, parents can only see their own child's data; faculty can only see data for students in their assigned classes.</li>
+            <li style={legalStyle.li}><strong>Service Providers:</strong> We use trusted third-party cloud hosts (e.g., AWS, Google Cloud), email/SMS providers, and payment gateways that are bound by strict data processing agreements.</li>
+            <li style={legalStyle.li}><strong>Legal Requirements:</strong> We may disclose information if required to do so by law, valid subpoena, or court order.</li>
+          </ul>
+
+          <h2 style={legalStyle.h2}><span style={legalStyle.h2Number}>4</span> Data Security</h2>
+          <p style={legalStyle.p}>
+            Security is paramount in educational software. We implement industry-standard security protocols, including <strong>TLS/SSL encryption</strong> for data in transit, and AES-256 encryption for sensitive data at rest. We utilize JWT-based authentication, strict CORS policies, and automated backups to prevent unauthorized access, alteration, or loss of data.
+          </p>
+
+          <h2 style={legalStyle.h2}><span style={legalStyle.h2Number}>5</span> Children's Privacy</h2>
+          <p style={legalStyle.p}>
+            ZenithFlows is utilized by educational institutes that may enroll children under the age of 13 (or the applicable age of consent in your region). We rely on the subscribing Institute to obtain appropriate parental consent before provisioning student accounts. If we discover that personal data has been collected from a child without verified institutional/parental consent, we will delete the account immediately.
+          </p>
+
+          <h2 style={legalStyle.h2}><span style={legalStyle.h2Number}>6</span> Data Retention and Deletion</h2>
+          <p style={legalStyle.p}>
+            We retain personal data only for as long as the Institute maintains an active subscription, or as required to fulfill legal/accounting obligations. Upon termination of an Institute's subscription, all associated student, parent, and faculty data is securely purged from our active databases within a standard grace period, unless a specific export request is made by the Institute Administrator.
+          </p>
+
+          <h2 style={legalStyle.h2}><span style={legalStyle.h2Number}>7</span> Your Privacy Rights</h2>
+          <p style={legalStyle.p}>Depending on your jurisdiction, you have the right to:</p>
+          <ul style={legalStyle.ul}>
+            <li style={legalStyle.li}>Access the personal data we hold about you.</li>
+            <li style={legalStyle.li}>Request corrections to inaccurate data.</li>
+            <li style={legalStyle.li}>Request the deletion of your data ("Right to be Forgotten").</li>
+          </ul>
+          <p style={legalStyle.p}>
+            <em>Note to Students/Parents/Faculty:</em> Because your Institute is the Data Controller, requests to access, modify, or delete your data should be directed to your Institute's Administrator. ZenithFlows will assist the Institute in fulfilling these requests.
+          </p>
+
+          <div style={legalStyle.contactBox}>
+            <h3 style={{ fontSize: '1.25rem', color: 'var(--lp-text)', marginBottom: '0.5rem' }}>Questions regarding this policy?</h3>
+            <p style={{ color: 'var(--lp-muted)', marginBottom: '1.5rem', fontSize: '1.05rem' }}>
+              If you have any questions about how we handle your data, our compliance team is here to help.
+            </p>
+            <a href="/#contact" style={{ 
+              display: 'inline-block',
+              padding: '12px 24px', 
+              background: 'var(--lp-accent)', 
+              color: '#fff', 
+              textDecoration: 'none',
+              borderRadius: '8px',
+              fontWeight: 600,
+              boxShadow: '0 4px 12px rgba(99,102,241,0.25)'
+            }}>
+              Contact Privacy Team
+            </a>
+          </div>
+
         </div>
       </section>
       <Footer />

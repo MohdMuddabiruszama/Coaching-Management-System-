@@ -376,10 +376,8 @@ function AdminDashboard() {
         <div className="dashboard-container">
 
             {/* ── Header ── */}
-            <div className="dashboard-header" style={{ marginBottom: '1rem' }}>
-                <div>
-                    <h1 style={{ fontSize: '1.5rem', margin: '0 0 0.5rem 0' }}>Here's what's happening with your institute today.</h1>
-                </div>
+            <div className="dashboard-header">
+                <h1 style={{ fontSize: '1.5rem', margin: '0' }}>Here's what's happening with your institute today.</h1>
             </div>
 
             {/* Lifetime member banner moved below stats */}

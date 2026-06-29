@@ -100,8 +100,20 @@ const MobileFacultyLayout = () => {
 
             <nav className="mfl-bottom-nav" role="navigation" aria-label="Faculty navigation">
                 {TABS.map(tab => {
-                    if (tab.id === "marks"     && !user?.features?.exams)    return null;
-                    if (tab.id === "timetable" && !user?.features?.timetable) return null;
+                    let requiredFeature = tab.id;
+                    if (tab.id === 'marks' || tab.id === 'class-performance') requiredFeature = 'exams';
+                    if (tab.id === 'smart-attendance') requiredFeature = 'auto_attendance';
+                    if (tab.id === 'view-attendance') requiredFeature = 'attendance';
+                    if (tab.id === 'assignments') requiredFeature = 'notes';
+
+                    if (tab.id !== "dashboard" && tab.id !== "profile" && tab.id !== "students") {
+                        if (user?.features && user.features[requiredFeature] === false) {
+                            return null;
+                        }
+                        if (user?.features && user.features[requiredFeature] === 'none') {
+                            return null;
+                        }
+                    }
 
                     const isActive = activeTab === tab.id;
                     const hasUnread = tab.id === "dashboard" && chatUnread > 0;
