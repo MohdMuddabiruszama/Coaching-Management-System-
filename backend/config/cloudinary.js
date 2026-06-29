@@ -29,9 +29,11 @@ if (isConfigured) {
     });
 
     // Non-blocking startup ping — logs status, never crashes the server
-    cloudinary.api.ping()
-        .then(() => console.log("✅ Cloudinary connected successfully"))
-        .catch((err) => console.warn("⚠️  Cloudinary ping failed (check credentials):", err.message));
+    if (process.env.NODE_ENV !== "test") {
+        cloudinary.api.ping()
+            .then(() => console.log("✅ Cloudinary connected successfully"))
+            .catch((err) => console.warn("⚠️  Cloudinary ping failed (check credentials):", err.message));
+    }
 } else {
     console.warn(
         "⚠️  Cloudinary NOT configured — file uploads will fail.\n" +

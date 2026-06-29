@@ -83,7 +83,9 @@ describe("🔐 AuthContext — session restore on mount", () => {
 
   it("TC-AUTH-CTX-002 | clears session if getProfile fails", async () => {
     sessionStorage.setItem("token", "bad-token");
-    getProfile.mockRejectedValue(new Error("401 Unauthorized"));
+    const error = new Error("401 Unauthorized");
+    error.response = { status: 401 };
+    getProfile.mockRejectedValue(error);
 
     renderWithAuth();
     await waitFor(() => expect(screen.getByTestId("init").textContent).toBe("false"));
