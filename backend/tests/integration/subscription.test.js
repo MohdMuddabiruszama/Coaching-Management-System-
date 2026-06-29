@@ -186,8 +186,9 @@ describe("Subscription Lifecycle Integration Tests", () => {
             expect(res.status).toBe(200);
             expect(res.body.success).toBe(true);
 
-            // Yearly = price × 12 × 0.8 + GST
-            const yearlyBase = paidPlan.price * 12 * 0.8;
+            // Yearly = yearly_price OR price × 12 × discount
+            const discount = paidPlan.yearly_discount_percent != null ? Number(paidPlan.yearly_discount_percent) : 20;
+            const yearlyBase = paidPlan.yearly_price != null ? Number(paidPlan.yearly_price) : (paidPlan.price * 12 * ((100 - discount) / 100));
             const gst = paidPlan.gst_percent != null ? Number(paidPlan.gst_percent) : 2;
             const expectedAmount = Math.round((yearlyBase * (1 + gst / 100)) * 100);
             expect(res.body.order.amount).toBe(expectedAmount);
