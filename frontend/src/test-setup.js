@@ -39,15 +39,7 @@ vi.mock("@capacitor/preferences", () => ({
   },
 }));
 
-vi.mock("@capacitor/push-notifications", () => ({
-  PushNotifications: {
-    checkPermissions:    vi.fn(async () => ({ receive: "denied" })),
-    requestPermissions:  vi.fn(async () => ({ receive: "denied" })),
-    addListener:         vi.fn(async () => ({ remove: vi.fn() })),
-    removeAllListeners:  vi.fn(async () => {}),
-    register:            vi.fn(async () => {}),
-  },
-}));
+
 
 vi.mock("@capacitor/splash-screen", () => ({
   SplashScreen: {
