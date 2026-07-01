@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Capacitor } from "@capacitor/core";
 import { flushQueue } from "../services/offlineQueue";
 import "./NetworkStatus.css";
@@ -6,25 +6,37 @@ import "./NetworkStatus.css";
 const IS_NATIVE = Capacitor.isNativePlatform();
 
 const NetworkStatus = () => {
-    const [isOnline, setIsOnline] = useState(navigator.onLine);
+    const [isOnline, setIsOnline] = useState(typeof navigator !== 'undefined' ? navigator.onLine : true);
     const [showBackOnline, setShowBackOnline] = useState(false);
     const [serverDown, setServerDown] = useState(false);
     const [retrying, setRetrying] = useState(false);
+    
+    // Track if we were previously offline so we don't show "Back Online" on app start
+    const wasOfflineRef = useRef(typeof navigator !== 'undefined' ? !navigator.onLine : false);
 
     useEffect(() => {
         let networkListener;
+        let timeoutId;
 
         const handleOnline = () => {
             setIsOnline(true);
-            setShowBackOnline(true);
             setRetrying(false);
             flushQueue(); // Phase 4C: Flush offline queue when reconnected
-            setTimeout(() => setShowBackOnline(false), 4000); // Hide success toast after 4s
+            
+            if (wasOfflineRef.current) {
+                setShowBackOnline(true);
+                if (timeoutId) clearTimeout(timeoutId);
+                timeoutId = setTimeout(() => setShowBackOnline(false), 4000); // Hide success toast after 4s
+            }
+            
+            wasOfflineRef.current = false;
         };
 
         const handleOffline = () => {
             setIsOnline(false);
             setShowBackOnline(false);
+            wasOfflineRef.current = true;
+            if (timeoutId) clearTimeout(timeoutId);
         };
 
         const handleServerDown = () => {
