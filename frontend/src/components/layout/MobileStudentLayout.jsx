@@ -48,8 +48,6 @@ const MobileStudentLayout = () => {
     const firstName = user?.name ? user.name.split(" ")[0] : "Student";
 
     const [announcementData, setAnnouncementData]   = useState({ count: 0, highest_priority: null });
-    const touchStartX = useRef(null);
-    const touchStartY = useRef(null);
 
     const [headerBgColor, setHeaderBgColor] = useState('normal');
     const [dismissedReminders, setDismissedReminders] = useState([]);
@@ -157,33 +155,7 @@ const MobileStudentLayout = () => {
         navigate(tab.path);
     }, [navigate, clearBadge]);
 
-    // ── Swipe gesture — left/right to change tabs ─────────────────────────────
-    const handleTouchStart = useCallback((e) => {
-        touchStartX.current = e.touches[0].clientX;
-        touchStartY.current = e.touches[0].clientY;
-    }, []);
-
-    const handleTouchEnd = useCallback((e) => {
-        if (touchStartX.current === null) return;
-        const dx = e.changedTouches[0].clientX - touchStartX.current;
-        const dy = e.changedTouches[0].clientY - touchStartY.current;
-
-        // Only horizontal swipe (dx > dy and > 60px threshold)
-        if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.5) {
-            const currentIdx = TABS.findIndex(t => t.id === activeTab);
-            if (dx < 0 && currentIdx < TABS.length - 1) {
-                const nextTab = TABS[currentIdx + 1];
-                clearBadge(nextTab.id);
-                navigate(nextTab.path);
-            } else if (dx > 0 && currentIdx > 0) {
-                const prevTab = TABS[currentIdx - 1];
-                clearBadge(prevTab.id);
-                navigate(prevTab.path);
-            }
-        }
-        touchStartX.current = null;
-        touchStartY.current = null;
-    }, [activeTab, navigate, clearBadge]);
+    // Swipe gestures removed to prevent accidental tab switching during horizontal scroll
 
     return (
         <div className="msl-layout">
@@ -268,11 +240,7 @@ const MobileStudentLayout = () => {
             </header>
 
             {/* Main scrollable content area */}
-            <main
-                className="msl-content"
-                onTouchStart={handleTouchStart}
-                onTouchEnd={handleTouchEnd}
-            >
+            <main className="msl-content">
                 <Outlet context={{ dismissedReminders, setDismissedReminders, advanceAttendanceCount }} />
             </main>
 

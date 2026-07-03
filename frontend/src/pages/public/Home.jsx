@@ -47,6 +47,39 @@ export default function Home() {
     }
   }, []);
 
+  // Set circular favicon for the landing page
+  useEffect(() => {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      const size = Math.max(img.width, img.height);
+      canvas.width = size;
+      canvas.height = size;
+      const ctx = canvas.getContext('2d');
+      
+      // Draw circular clipping path
+      ctx.beginPath();
+      ctx.arc(size / 2, size / 2, size / 2, 0, Math.PI * 2, true);
+      ctx.closePath();
+      ctx.clip();
+      
+      // Draw image
+      const dx = (size - img.width) / 2;
+      const dy = (size - img.height) / 2;
+      ctx.drawImage(img, dx, dy, img.width, img.height);
+      
+      let link = document.querySelector("link[rel~='icon']");
+      if (!link) {
+          link = document.createElement('link');
+          link.rel = 'icon';
+          document.getElementsByTagName('head')[0].appendChild(link);
+      }
+      link.href = canvas.toDataURL('image/png');
+    };
+    img.src = "/logo.png";
+  }, []);
+
   return (
     <div className='landing-root'>
       <div id='progress-bar' />

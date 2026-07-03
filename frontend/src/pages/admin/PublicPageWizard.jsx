@@ -1266,15 +1266,15 @@ export default function PublicPageWizard({ onDone, existingData }) {
 function buildYtPreviewUrl(url) {
   if (!url || !url.trim()) return null;
   url = url.trim();
-  if (url.includes('youtube.com/embed/')) return url;
+  if (url.includes('youtube.com/embed/') || url.includes('youtube-nocookie.com/embed/')) return url;
   const shortMatch = url.match(/youtu\.be\/([a-zA-Z0-9_-]{11})/);
-  if (shortMatch) return `https://www.youtube.com/embed/${shortMatch[1]}?rel=0`;
+  if (shortMatch) return `https://www.youtube-nocookie.com/embed/${shortMatch[1]}?rel=0`;
   const watchMatch = url.match(/[?&]v=([a-zA-Z0-9_-]{11})/);
-  if (watchMatch) return `https://www.youtube.com/embed/${watchMatch[1]}?rel=0`;
+  if (watchMatch) return `https://www.youtube-nocookie.com/embed/${watchMatch[1]}?rel=0`;
   const shortsMatch = url.match(/\/shorts\/([a-zA-Z0-9_-]{11})/);
-  if (shortsMatch) return `https://www.youtube.com/embed/${shortsMatch[1]}?rel=0`;
+  if (shortsMatch) return `https://www.youtube-nocookie.com/embed/${shortsMatch[1]}?rel=0`;
   const liveMatch = url.match(/\/live\/([a-zA-Z0-9_-]{11})/);
-  if (liveMatch) return `https://www.youtube.com/embed/${liveMatch[1]}?rel=0`;
+  if (liveMatch) return `https://www.youtube-nocookie.com/embed/${liveMatch[1]}?rel=0`;
   return null;
 }
 

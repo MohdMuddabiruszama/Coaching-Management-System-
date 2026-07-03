@@ -121,6 +121,40 @@ export default function InstitutePage({ subdomain }) {
         document.title = json.data.seo_title || `${json.data.name} — Institute`;
         const metaDesc = document.querySelector("meta[name='description']");
         if (metaDesc) metaDesc.setAttribute("content", json.data.seo_description || json.data.description || "");
+        
+        // Update Favicon with Border Radius (Circle)
+        if (json.data.logo_url) {
+          const img = new Image();
+          img.crossOrigin = "anonymous";
+          img.onload = () => {
+            const canvas = document.createElement('canvas');
+            const size = Math.max(img.width, img.height);
+            canvas.width = size;
+            canvas.height = size;
+            const ctx = canvas.getContext('2d');
+            
+            // Draw circular clipping path
+            ctx.beginPath();
+            ctx.arc(size / 2, size / 2, size / 2, 0, Math.PI * 2, true);
+            ctx.closePath();
+            ctx.clip();
+            
+            // Draw image centered in the canvas
+            const dx = (size - img.width) / 2;
+            const dy = (size - img.height) / 2;
+            ctx.drawImage(img, dx, dy, img.width, img.height);
+            
+            let link = document.querySelector("link[rel~='icon']");
+            if (!link) {
+              link = document.createElement('link');
+              link.rel = 'icon';
+              document.getElementsByTagName('head')[0].appendChild(link);
+            }
+            link.href = canvas.toDataURL('image/png');
+          };
+          // Set src after onload to ensure it fires
+          img.src = resolveImg(json.data.logo_url);
+        }
       } catch (e) {
         // Network error — backend unreachable
         setError("network");

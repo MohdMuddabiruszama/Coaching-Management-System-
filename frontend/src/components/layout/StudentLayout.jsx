@@ -34,6 +34,58 @@ const StudentLayout = () => {
         }
     }, [user]);
 
+    useEffect(() => {
+        if (user) {
+            // Update Document Title
+            document.title = user.institute_name 
+                ? `${user.institute_name} — Student Portal` 
+                : "Student Portal";
+
+            // Update Favicon with Border Radius (Circle)
+            if (user.institute_logo) {
+                let logoUrl = user.institute_logo;
+                if (!logoUrl.startsWith("http") && !logoUrl.startsWith("data:")) {
+                    const normalizedPath = logoUrl.replace(/\\/g, '/');
+                    const pathWithSlash = normalizedPath.startsWith('/') ? normalizedPath : `/${normalizedPath}`;
+                    
+                    const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+                    const backendBase = apiUrl.replace(/\/api\/?$/, ""); // strip /api
+                    logoUrl = `${backendBase}${pathWithSlash}`;
+                }
+                
+                const img = new Image();
+                img.crossOrigin = "anonymous";
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    const size = Math.max(img.width, img.height);
+                    canvas.width = size;
+                    canvas.height = size;
+                    const ctx = canvas.getContext('2d');
+                    
+                    // Draw circular clipping path
+                    ctx.beginPath();
+                    ctx.arc(size / 2, size / 2, size / 2, 0, Math.PI * 2, true);
+                    ctx.closePath();
+                    ctx.clip();
+                    
+                    // Draw image centered in the canvas
+                    const dx = (size - img.width) / 2;
+                    const dy = (size - img.height) / 2;
+                    ctx.drawImage(img, dx, dy, img.width, img.height);
+                    
+                    let link = document.querySelector("link[rel~='icon']");
+                    if (!link) {
+                        link = document.createElement('link');
+                        link.rel = 'icon';
+                        document.getElementsByTagName('head')[0].appendChild(link);
+                    }
+                    link.href = canvas.toDataURL('image/png');
+                };
+                img.src = logoUrl;
+            }
+        }
+    }, [user]);
+
     const navLinkClass = (path) => {
         const isMatch = location.pathname === path || location.pathname.startsWith(path + '/');
         return isMatch ? "sl-nav-link active" : "sl-nav-link";

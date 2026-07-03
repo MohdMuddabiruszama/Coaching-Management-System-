@@ -90,7 +90,7 @@ function StudentPerformance() {
     const buildCalendar = () => {
         const today = new Date();
         const months = [];
-        for (let m = 1; m >= 0; m--) {
+        for (let m = 0; m >= 0; m--) {
             const date = new Date(today.getFullYear(), today.getMonth() - m, 1);
             const year = date.getFullYear();
             const month = date.getMonth();
