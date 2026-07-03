@@ -100,6 +100,13 @@ app.use((req, res, next) => {
 // ============================================
 // ✅ PHASE 1.4: RATE LIMITING
 // ============================================
+// Optimized rate limit skipper for development speed and mobile testing
+// O(1) time complexity check prevents Redis/memory calls during dev
+const skipRateLimiting = (req) => {
+  if (process.env.NODE_ENV !== "production") return true;
+  return req.ip === "127.0.0.1" || req.ip === "::1";
+};
+
 // Global rate limiter: 200 requests per 15 minutes per IP
 const globalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
@@ -107,7 +114,7 @@ const globalLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   message: { success: false, message: "Too many requests — please try again later." },
-  skip: (req) => req.ip === "127.0.0.1" || req.ip === "::1", // Don't limit localhost
+  skip: skipRateLimiting,
 });
 app.use("/api/", globalLimiter);
 
@@ -119,6 +126,7 @@ const authLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   message: { success: false, message: "Too many login attempts — please wait 15 minutes." },
+  skip: skipRateLimiting,
 });
 app.use("/api/auth/login", authLimiter);
 
@@ -130,7 +138,7 @@ const otpLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   message: { success: false, message: "Too many OTP attempts — please wait 15 minutes before trying again." },
-  skip: (req) => req.ip === "127.0.0.1" || req.ip === "::1", // Don't limit localhost during dev
+  skip: skipRateLimiting,
 });
 app.use("/api/auth/register-init", otpLimiter);
 app.use("/api/auth/verify-registration", otpLimiter);

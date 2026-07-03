@@ -29,7 +29,7 @@ function LandingPage() {
                 <div className="container">
                     <div className="nav-content">
                         <Link to="/" className="logo">
-                            <img src={zfLogo} alt="ZenithFlows" style={{ height: '60px', width: '60px', objectFit: 'contain', verticalAlign: 'middle' }} /> ZenithFlows
+                            <img src={zfLogo} alt="ZenithFlows" style={{ height: '60px', width: '60px', objectFit: 'contain', verticalAlign: 'middle', borderRadius: '50%' }} /> ZenithFlows
                         </Link>
                         <div className="nav-links">
                             <Link to="/features">Features</Link>

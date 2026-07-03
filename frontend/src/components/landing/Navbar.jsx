@@ -108,7 +108,7 @@ export default function Navbar() {
   return (
     <nav className={`lp-nav ${scrolled ? 'scrolled' : ''}`}>
       <Link to="/" className='lp-logo'>
-        <img src={zfLogo} alt="ZF ZenithFlows" style={{ height: '40px', width: 'auto', objectFit: 'contain', borderRadius: '8px' }} />ZenithFlows
+        <img src={zfLogo} alt="ZF ZenithFlows" style={{ height: '40px', width: 'auto', objectFit: 'contain', borderRadius: '50%' }} />ZenithFlows
       </Link>
 
       <ul className='lp-nav-links'>

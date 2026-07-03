@@ -74,7 +74,7 @@
 
 .pub-nav-brand { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
 .pub-nav-logo {
-  width: 44px; height: 44px; border-radius: 10px; flex-shrink: 0;
+  width: 44px; height: 44px; border-radius: 50%; flex-shrink: 0;
   background: linear-gradient(135deg, var(--pub-primary) 60%, var(--pub-accent));
   display: flex; align-items: center; justify-content: center;
   font-family: 'Playfair Display', serif; font-size: 20px; font-weight: 900; color: #fff;

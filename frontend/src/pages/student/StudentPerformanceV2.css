@@ -4,6 +4,10 @@
 }
 
 /* Header */
+.perf-hero-banner.mobile-only {
+    display: none;
+}
+
 .marks-mobile-header {
     display: none;
 }

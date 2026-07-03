@@ -186,9 +186,9 @@ function Exams() {
         setLoading(true);
         try {
             const [examRes, classRes, subRes] = await Promise.all([
-                api.get('/exams'),
-                api.get('/classes'),
-                api.get('/subjects'),
+                api.get('/exams?limit=10000'),
+                api.get('/classes?limit=10000'),
+                api.get('/subjects?limit=10000'),
             ]);
             setExams(examRes.data.data.exams || []);
             setClasses(classRes.data.data || []);
@@ -368,16 +368,19 @@ function Exams() {
                 await api.post('/exams', { ...formData, exam_type: finalExamType });
                 alert('Exam created successfully!');
             } else {
-                const errors = [];
-                const created = [];
-                for (const subject of availableSubjects) {
-                    try {
-                        await api.post('/exams', { ...formData, exam_type: finalExamType, subject_id: subject.id });
-                        created.push(subject.name);
-                    } catch (err) {
-                        errors.push(`${subject.name}: ${err.response?.data?.message || 'Failed'}`);
-                    }
-                }
+                const results = await Promise.allSettled(
+                    availableSubjects.map(subject => 
+                        api.post('/exams', { ...formData, exam_type: finalExamType, subject_id: subject.id })
+                            .then(() => subject.name)
+                            .catch(err => {
+                                throw `${subject.name}: ${err.response?.data?.message || 'Failed'}`;
+                            })
+                    )
+                );
+                
+                const created = results.filter(r => r.status === 'fulfilled').map(r => r.value);
+                const errors = results.filter(r => r.status === 'rejected').map(r => r.reason);
+
                 if (errors.length === 0) {
                     alert(`✅ ${created.length} exam(s) created!\nSubjects: ${created.join(', ')}`);
                 } else if (created.length > 0) {

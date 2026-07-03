@@ -28,8 +28,6 @@ const MobileParentLayout = ({ children }) => {
     const { user, logout } = useContext(AuthContext);
     const location = useLocation();
     const navigate = useNavigate();
-    const touchStartX = useRef(null);
-    const touchStartY = useRef(null);
 
     const activeTab = TABS.find(t =>
         location.pathname === t.path || location.pathname.startsWith(t.path + "/")
@@ -51,24 +49,6 @@ const MobileParentLayout = ({ children }) => {
 
 
     const handleTabPress = useCallback((tab) => { navigate(tab.path); }, [navigate]);
-
-    const handleTouchStart = useCallback((e) => {
-        touchStartX.current = e.touches[0].clientX;
-        touchStartY.current = e.touches[0].clientY;
-    }, []);
-
-    const handleTouchEnd = useCallback((e) => {
-        if (touchStartX.current === null) return;
-        const dx = e.changedTouches[0].clientX - touchStartX.current;
-        const dy = e.changedTouches[0].clientY - touchStartY.current;
-        if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.5) {
-            const currentIdx = TABS.findIndex(t => t.id === activeTab);
-            if (dx < 0 && currentIdx < TABS.length - 1) navigate(TABS[currentIdx + 1].path);
-            else if (dx > 0 && currentIdx > 0) navigate(TABS[currentIdx - 1].path);
-        }
-        touchStartX.current = null;
-        touchStartY.current = null;
-    }, [activeTab, navigate]);
 
     return (
         <div className="mpl-layout">
@@ -97,7 +77,7 @@ const MobileParentLayout = ({ children }) => {
                 </div>
             </header>
 
-            <main className="mpl-content" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
+            <main className="mpl-content">
                 {children || <Outlet context={{ dismissedReminders, setDismissedReminders, setSelectedGlobalChildId, setHeaderBgColor }} />}
             </main>
 

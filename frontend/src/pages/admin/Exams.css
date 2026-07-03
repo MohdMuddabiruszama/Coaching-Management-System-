@@ -852,3 +852,91 @@
         transform: translateY(0);
     }
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   RESPONSIVENESS (Mobile & Tablet)
+   ═══════════════════════════════════════════════════════════════ */
+@media screen and (max-width: 1024px) {
+    .exams-summary-cards {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .exams-grid-view {
+        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    }
+}
+
+@media screen and (max-width: 768px) {
+    .exams-header-area {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 16px;
+    }
+
+    .exams-header-actions {
+        width: 100%;
+        justify-content: space-between;
+    }
+
+    .exams-filters-bar {
+        flex-direction: column;
+    }
+
+    .exams-summary-cards {
+        grid-template-columns: 1fr;
+    }
+
+    .exams-form-row {
+        grid-template-columns: 1fr;
+        gap: 20px;
+    }
+
+    .exams-duration-wrapper {
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .exams-modal {
+        max-width: 100%;
+        margin: 0;
+        border-radius: 12px;
+        max-height: 95vh;
+    }
+    
+    .exams-modal-overlay {
+        padding: 10px;
+    }
+
+    .exams-table-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 16px;
+    }
+
+    .exams-table-controls {
+        width: 100%;
+        justify-content: space-between;
+    }
+
+    .exams-data-table {
+        display: block;
+        overflow-x: auto;
+        white-space: nowrap;
+    }
+}
+
+@media screen and (max-width: 480px) {
+    .exams-page-container {
+        padding: 1rem;
+    }
+    
+    .exams-modal-footer {
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .exams-modal-footer button {
+        width: 100%;
+        justify-content: center;
+    }
+}
