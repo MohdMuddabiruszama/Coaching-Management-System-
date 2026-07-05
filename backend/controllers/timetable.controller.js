@@ -1,5 +1,6 @@
-const { Timetable, TimetableSlot, Class, Subject, Faculty, User } = require("../models");
+const { Timetable, TimetableSlot, Class, Subject, Faculty, User, Student } = require("../models");
 const { Op } = require("sequelize");
+const NotificationService = require("../services/notificationService");
 
 // --- SLOT MANAGEMENT ---
 
@@ -130,6 +131,23 @@ exports.createTimetableEntry = async (req, res) => {
             created_by: req.user.id
         });
 
+        // Phase 4: Notification Integration - Notify students
+        try {
+            const students = await Student.findAll({ where: { class_id, institute_id } });
+            for (const stu of students) {
+                NotificationService.notifyStudentAndParents(
+                    institute_id,
+                    stu.id,
+                    "timetable_updated",
+                    "Timetable Updated",
+                    `Your timetable for ${day_of_week} has been updated.`,
+                    `/student/timetable`
+                );
+            }
+        } catch (notifErr) {
+            console.error("Timetable notification error:", notifErr);
+        }
+
         res.status(201).json({ success: true, message: "Timetable entry created successfully", data: timetable });
     } catch (error) {
         console.error("Error creating timetable entry:", error);
@@ -257,6 +275,23 @@ exports.updateTimetableEntry = async (req, res) => {
         await entry.update({
             class_id, subject_id, faculty_id, slot_id, day_of_week, room_number
         });
+
+        // Phase 4: Notification Integration - Notify students
+        try {
+            const students = await Student.findAll({ where: { class_id, institute_id } });
+            for (const stu of students) {
+                NotificationService.notifyStudentAndParents(
+                    institute_id,
+                    stu.id,
+                    "timetable_updated",
+                    "Timetable Updated",
+                    `Your timetable for ${day_of_week} has been updated.`,
+                    `/student/timetable`
+                );
+            }
+        } catch (notifErr) {
+            console.error("Timetable notification error:", notifErr);
+        }
 
         res.status(200).json({ success: true, message: "Timetable entry updated successfully", data: entry });
     } catch (error) {

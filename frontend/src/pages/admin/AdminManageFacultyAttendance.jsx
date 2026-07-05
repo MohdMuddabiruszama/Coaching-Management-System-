@@ -401,21 +401,28 @@ function AdminManageFacultyAttendance() {
                         />
                     </div>
                 </div>
-                <button onClick={() => { 
-                    const selected = new Date(selectedDate + 'T00:00:00');
-                    const today = new Date();
-                    today.setHours(0, 0, 0, 0);
-                    
-                    if (selected > today) {
-                        setFutureDatePopup(true);
-                    } else {
-                        fetchFacultyAttendance(); 
-                        fetchDashboardStats(); 
-                    }
-                }} style={{ padding: "0.6rem 1.2rem", backgroundColor: "#f8fafc", color: "#6366f1", border: "1px solid #e2e8f0", borderRadius: "8px", cursor: "pointer", fontWeight: "600", fontSize: "0.9rem", display: "flex", alignItems: "center", gap: "8px" }}>
-                    <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
-                    Load Faculty
-                </button>
+                <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+                    {pendingFaculty.length > 0 && (
+                        <button onClick={handleSubmit} className="st-btn st-btn-primary" style={{ padding: "0.6rem 1.2rem", fontSize: "0.9rem" }}>
+                            ✓ Submit Attendance
+                        </button>
+                    )}
+                    <button onClick={() => { 
+                        const selected = new Date(selectedDate + 'T00:00:00');
+                        const today = new Date();
+                        today.setHours(0, 0, 0, 0);
+                        
+                        if (selected > today) {
+                            setFutureDatePopup(true);
+                        } else {
+                            fetchFacultyAttendance(); 
+                            fetchDashboardStats(); 
+                        }
+                    }} style={{ padding: "0.6rem 1.2rem", backgroundColor: "#f8fafc", color: "#6366f1", border: "1px solid #e2e8f0", borderRadius: "8px", cursor: "pointer", fontWeight: "600", fontSize: "0.9rem", display: "flex", alignItems: "center", gap: "8px" }}>
+                        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+                        Load Faculty
+                    </button>
+                </div>
             </div>
 
             {/* Pending Attendance Section */}
@@ -572,13 +579,7 @@ function AdminManageFacultyAttendance() {
                             </div>
                         )}
                         
-                        {pendingFaculty.length > 0 && (
-                            <div style={{ padding: "1.5rem", borderTop: "1px solid #f1f5f9", display: "flex", justifyContent: "flex-end" }}>
-                                <button onClick={handleSubmit} className="st-btn st-btn-primary" style={{ padding: "0.8rem 2rem", fontSize: "1rem" }}>
-                                    ✓ Submit Attendance
-                                </button>
-                            </div>
-                        )}
+
                     </div>
                 )}
             </div>

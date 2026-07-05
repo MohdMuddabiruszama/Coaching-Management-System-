@@ -28,6 +28,7 @@
     "@capacitor/filesystem": "^7.1.8",
     "@capacitor/network": "^7.0.4",
     "@capacitor/preferences": "^7.0.0",
+    "@capacitor/push-notifications": "^7.0.7",
     "@capacitor/share": "^7.0.4",
     "@capacitor/splash-screen": "^7.0.5",
     "@sentry/react": "^10.52.0",
@@ -52,6 +53,7 @@
     "react-quill": "^2.0.0",
     "react-router-dom": "^7.13.0",
     "recharts": "^2.12.7",
+    "socket.io-client": "^4.8.3",
     "xlsx": "^0.18.5"
   },
   "devDependencies": {

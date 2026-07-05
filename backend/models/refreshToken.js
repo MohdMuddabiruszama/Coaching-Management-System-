@@ -24,6 +24,11 @@ const RefreshToken = sequelize.define("RefreshToken", {
         type: DataTypes.STRING(255),
         allowNull: true,
     },
+    source: {
+        type: DataTypes.ENUM('web', 'mobile'),
+        allowNull: true,
+        defaultValue: 'web'
+    },
     ip_address: {
         type: DataTypes.STRING(45),
         allowNull: true,

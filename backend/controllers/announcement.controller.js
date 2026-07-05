@@ -29,6 +29,42 @@ exports.createAnnouncement = async (req, res) => {
             posted_by:       req.user.name || req.user.username || null,
         });
 
+        // Phase 4: Notification Integration
+        try {
+            const { DeviceToken, User } = require("../models");
+            const { sendPushNotification } = require("../config/firebase");
+            const { getIo } = require("../utils/socket");
+
+            try {
+                getIo().emit("new_announcement", announcement);
+            } catch (wsErr) {}
+
+            let whereClause = { institute_id: req.user.institute_id };
+            if (target_audience === 'students') whereClause.role = 'student';
+            else if (target_audience === 'faculty') whereClause.role = 'faculty';
+            else if (target_audience === 'parents') whereClause.role = 'parent';
+            
+            const users = await User.findAll({ where: whereClause, attributes: ['id'] });
+            const userIds = users.map(u => u.id);
+            
+            if (userIds.length > 0) {
+                const devices = await DeviceToken.findAll({
+                    where: { user_id: { [Op.in]: userIds }, is_active: true }
+                });
+                
+                if (devices.length > 0) {
+                    const tokens = devices.map(d => d.fcm_token);
+                    await sendPushNotification(tokens, {
+                        title: `New Announcement: ${title}`,
+                        body: content.replace(/<[^>]*>?/gm, '').substring(0, 100), // strip html tags
+                        data: { type: "announcement", route: "/student/dashboard" }
+                    });
+                }
+            }
+        } catch (notifErr) {
+            console.error("Announcement notification error:", notifErr);
+        }
+
         return res.status(201).json({
             success: true,
             message: "Announcement created successfully",

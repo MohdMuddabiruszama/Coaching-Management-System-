@@ -68,6 +68,11 @@ const SubscriptionEvent = require("./subscriptionEvent");
 const Coupon = require("./coupon");
 const UsageTracker = require("./usageTracker");
 
+// Notification System Models
+const Notification = require("./notification");
+const DeviceToken = require("./deviceToken");
+const NotificationPref = require("./notificationPref");
+
 // Associations
 
 Plan.hasMany(Subscription, { foreignKey: "plan_id" });
@@ -486,6 +491,19 @@ User.hasMany(BulkImportLog, { foreignKey: "imported_by" });
 RefreshToken.belongsTo(User, { foreignKey: "user_id" });
 User.hasMany(RefreshToken, { foreignKey: "user_id" });
 
+// Notification Associations
+Notification.belongsTo(User, { foreignKey: "user_id" });
+User.hasMany(Notification, { foreignKey: "user_id" });
+
+Notification.belongsTo(Institute, { foreignKey: "institute_id" });
+Institute.hasMany(Notification, { foreignKey: "institute_id" });
+
+DeviceToken.belongsTo(User, { foreignKey: "user_id" });
+User.hasMany(DeviceToken, { foreignKey: "user_id" });
+
+NotificationPref.belongsTo(User, { foreignKey: "user_id" });
+User.hasMany(NotificationPref, { foreignKey: "user_id" });
+
 module.exports = {
     sequelize,
     Plan,
@@ -551,4 +569,7 @@ module.exports = {
     SubscriptionEvent,
     Coupon,
     UsageTracker,
+    Notification,
+    DeviceToken,
+    NotificationPref,
 };

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "581483363158",
+    "project_id": "zenithflow-6fb76",
+    "storage_bucket": "zenithflow-6fb76.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:581483363158:android:b3c1e893ba10bdae73f4f7",
+        "android_client_info": {
+          "package_name": "com.zenithflows.ims"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCz-_og2LDgIGLwp5_FL-c3iZgoDHolycE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

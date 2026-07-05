@@ -1,0 +1,15 @@
+{
+    "keep": {
+        "days": true,
+        "amount": 30
+    },
+    "auditLog": "D:\\Pre Production\\Coaching-Management-System-\\backend\\logs\\.ba223fb7d9a2c7a26927e8d204322cec127a7cf2-audit.json",
+    "files": [
+        {
+            "date": 1783191154129,
+            "name": "D:\\Pre Production\\Coaching-Management-System-\\backend\\logs\\error-2026-07-05.log",
+            "hash": "1e3fb9c08ac12c989d93076ec898dae2bfecda996fe132d498e1f94fa1c7779a"
+        }
+    ],
+    "hashType": "sha256"
+}

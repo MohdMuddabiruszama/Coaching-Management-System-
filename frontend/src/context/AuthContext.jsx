@@ -1,6 +1,9 @@
 import { createContext, useState, useEffect, useContext } from "react";
 import { loginUser } from "../services/auth.service";
 import { BrandingContext } from "./BrandingContext";
+import { getStoredPushToken } from "../hooks/usePushNotifications";
+import { Capacitor } from "@capacitor/core";
+import api from "../services/api";
 
 export const AuthContext = createContext();
 
@@ -64,6 +67,15 @@ export const AuthProvider = ({ children }) => {
            setBranding(userData);
 
            setUser(userData);
+
+           // ── Register FCM Token if available ──
+           const fcmToken = getStoredPushToken();
+           if (fcmToken && Capacitor.isNativePlatform()) {
+               api.post('/notifications/device/register', {
+                   fcm_token: fcmToken,
+                   platform: Capacitor.getPlatform()
+               }).catch(e => console.error("FCM Registration error:", e));
+           }
         } else {
            logout();
         }
@@ -132,6 +144,15 @@ export const AuthProvider = ({ children }) => {
     setBranding(user);
 
     setUser(user);
+
+    // ── Register FCM Token if available ──
+    const fcmToken = getStoredPushToken();
+    if (fcmToken && Capacitor.isNativePlatform()) {
+        api.post('/notifications/device/register', {
+            fcm_token: fcmToken,
+            platform: Capacitor.getPlatform()
+        }).catch(e => console.error("FCM Registration error:", e));
+    }
   };
 
   const logout = () => {

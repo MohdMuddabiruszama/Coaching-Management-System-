@@ -1,6 +1,7 @@
 const app = require("./app");
 require("./utils/cron");
 const { keepAlive } = require("./utils/keepAlive");
+const socketUtils = require("./utils/socket");
 
 const PORT = process.env.PORT || 8080;
 const HOST = "0.0.0.0";
@@ -10,6 +11,9 @@ const server = app.listen(PORT, HOST, () => {
     console.log(`📱 Mobile devices can reach backend at http://[IP_ADDRESS]:${PORT}/api`);
     keepAlive();
 });
+
+// ✅ Initialize WebSocket (Socket.io) Server
+socketUtils.init(server);
 
 // ============================================================
 // ✅ PHASE 1: PROCESS-LEVEL CRASH PREVENTION

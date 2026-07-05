@@ -36,23 +36,40 @@
     gap: 16px;
 }
 
-.fd-logout-btn {
-    background: #6366f1;
-    color: white;
-    border: none;
-    padding: 8px 20px;
-    border-radius: 8px;
-    font-size: 14px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: background 0.2s;
+.fd-user-profile {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 12px;
+    cursor: pointer;
 }
 
-.fd-logout-btn:hover {
-    background: #4f46e5;
+.fd-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background-color: #8b5cf6;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 16px;
+}
+
+.fd-user-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.fd-user-name {
+    font-weight: 600;
+    font-size: 14px;
+    color: #1e293b;
+}
+
+.fd-user-role {
+    font-size: 12px;
+    color: #64748b;
 }
 
 /* Section Titles */

@@ -4,7 +4,9 @@
  */
 
 const { FeesStructure, Payment, Student, User, StudentFee, FeeDiscountLog, Class, Subject } = require("../models");
-const { Op } = require("sequelize");const { catchAsync } = require("../utils/catchAsync");
+const { Op } = require("sequelize");
+const { catchAsync } = require("../utils/catchAsync");
+const NotificationService = require("../services/notificationService");
 
 exports.createFeeStructure = catchAsync(async (req, res) => {
   try {
@@ -97,7 +99,31 @@ exports.createFeeStructure = catchAsync(async (req, res) => {
 
       if (feeRecords.length > 0) {
         await StudentFee.bulkCreate(feeRecords, { ignoreDuplicates: true });
+        
+        // Notify all target students
+        targetStudents.forEach(stu => {
+          NotificationService.notifyStudentAndParents(
+            institute_id,
+            stu.id,
+            "fee_assigned",
+            "New Fee Assigned",
+            `A new fee "${fee_type}" of ₹${amount} has been assigned. Due Date: ${due_date}`,
+            `/student/fees`
+          );
+        });
       }
+    }
+
+    // Phase 4: Individual Student Fee Notification
+    if (individual_student_id) {
+       NotificationService.notifyStudentAndParents(
+          institute_id,
+          individual_student_id,
+          "fee_assigned",
+          "New Fee Assigned",
+          `A new fee "${fee_type}" of ₹${amount} has been assigned. Due Date: ${due_date}`,
+          `/student/fees`
+       );
     }
 
     res.status(201).json({
@@ -302,6 +328,16 @@ exports.recordPayment = catchAsync(async (req, res) => {
       collected_by: req.user.id,
       remarks: remarks || null
     });
+
+    // Notify payment success
+    NotificationService.notifyStudentAndParents(
+        institute_id,
+        actual_student_id,
+        "fee_payment",
+        "Payment Received",
+        `We have received your payment of ₹${amount}. TXN ID: ${payment.transaction_id}`,
+        `/student/fees`
+    );
 
     res.status(201).json({
       success: true,

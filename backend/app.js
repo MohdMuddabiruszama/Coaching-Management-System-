@@ -371,6 +371,7 @@ app.use("/api/assignments", [verifyToken, tenantScope], require("./routes/assign
 app.use("/api/performance", [verifyToken, tenantScope], require("./routes/performance.routes"));
 app.use("/api/biometric", [verifyToken, tenantScope], require("./routes/biometric.routes"));
 app.use("/api/mobile", [verifyToken, tenantScope], require("./routes/mobileDashboard.routes"));
+app.use("/api/notifications", [verifyToken, tenantScope], require("./routes/notification.routes"));
 // Subscription, payment, plans — no tenantScope (cross-institute billing routes)
 app.use("/api/subscriptions", require("./routes/subscription.routes"));
 app.use("/api/plans", require("./routes/plan.routes"));
@@ -683,7 +684,7 @@ const syncDatabase = async () => {
 
       // Auto-sync other schema changes using alter for the explicit models to make sure everything matches
       try {
-        const { Institute, InstitutePublicProfile, InstituteGalleryPhoto, InstituteReview, PublicEnquiry, Subscription, Plan, User, LandingPageView, Coupon, AddOn, InstituteAddOn, SubscriptionEvent, UsageTracker } = require('./models');
+        const { Institute, InstitutePublicProfile, InstituteGalleryPhoto, InstituteReview, PublicEnquiry, Subscription, Plan, User, LandingPageView, Coupon, AddOn, InstituteAddOn, SubscriptionEvent, UsageTracker, Notification, NotificationPref, DeviceToken } = require('./models');
         await InstitutePublicProfile.sync({ alter: true });
         await InstituteGalleryPhoto.sync({ alter: true });
         await InstituteReview.sync({ alter: true });
@@ -702,6 +703,10 @@ const syncDatabase = async () => {
         await Institute.sync({ alter: true }); // ✅ picks up current_limit_chat_messages
         await User.sync({ alter: true });  // ✅ picks up manager_type + manager_type_label
         await LandingPageView.sync({ alter: true });
+        
+        await Notification.sync({ alter: true });
+        await NotificationPref.sync({ alter: true });
+        await DeviceToken.sync({ alter: true });
       } catch (e) { console.error("Error auto-syncing explicit models:", e); }
     } else {
       console.log("Startup schema migrations skipped. Set RUN_STARTUP_MIGRATIONS=true to apply ALTER/index maintenance.");

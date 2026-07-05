@@ -11,6 +11,7 @@ const {
 } = require("../models");
 const { Op } = require("sequelize");
 const cloudinary = require("../config/cloudinary");
+const NotificationService = require("../services/notificationService");
 
 // Helper: silently delete a Cloudinary asset
 async function destroyCloudinary(url, resourceType = "raw") {
@@ -244,6 +245,24 @@ exports.publishAssignment = async (req, res) => {
         if (!assignment) return res.status(404).json({ success: false, message: 'Assignment not found' });
         if (assignment.status !== 'draft') return res.status(400).json({ success: false, message: 'Assignment is already published/closed' });
         await assignment.update({ status: 'published' });
+
+        // Phase 4: Notification Integration - Notify class students
+        try {
+            const students = await Student.findAll({ where: { class_id: assignment.class_id, institute_id } });
+            for (const stu of students) {
+                NotificationService.notifyStudentAndParents(
+                    institute_id,
+                    stu.id,
+                    "assignment_new",
+                    "New Assignment",
+                    `A new assignment "${assignment.title}" has been published. Due: ${new Date(assignment.due_date).toLocaleDateString()}`,
+                    `/student/assignments`
+                );
+            }
+        } catch (notifErr) {
+            console.error("Assignment publish notification error:", notifErr);
+        }
+
         res.status(200).json({ success: true, message: 'Assignment published successfully', assignment });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
@@ -356,6 +375,16 @@ exports.gradeSubmission = async (req, res) => {
 
         const calculatedGrade = grade || calculateGrade(marks, max);
         await submission.update({ marks_obtained: marks, grade: calculatedGrade, feedback, status: 'graded', graded_by: req.user.id, graded_at: new Date() });
+
+        // Notify student about grade
+        NotificationService.notifyStudentAndParents(
+            institute_id,
+            submission.student_id,
+            "assignment_graded",
+            "Assignment Graded",
+            `Your assignment "${assignment.title}" has been graded. Marks: ${marks}/${max}`,
+            `/student/assignments`
+        );
 
         res.status(200).json({ success: true, message: 'Graded successfully', submission });
     } catch (error) {

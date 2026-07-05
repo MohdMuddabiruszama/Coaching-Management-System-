@@ -17,8 +17,11 @@ const jwt = require("jsonwebtoken");
 const crypto = require("crypto");
 
 const ACCESS_TOKEN_EXPIRY = "15m";
-const REFRESH_TOKEN_EXPIRY = "7d";
-const REFRESH_TOKEN_EXPIRY_MS = 7 * 24 * 60 * 60 * 1000;
+const REFRESH_TOKEN_EXPIRY = "90d";
+const REFRESH_TOKEN_EXPIRY_MS = 7776000000; // 90 days in ms
+
+const MOBILE_REFRESH_TOKEN_EXPIRY = "180d";
+const MOBILE_REFRESH_TOKEN_EXPIRY_MS = 15552000000; // 180 days in ms
 
 // ─── Phase A: Role → Permission Mapping ──────────────────────────────────────
 // Pre-computed permission sets per role.
@@ -124,13 +127,20 @@ const generateAccessToken = (user, instituteData = null) => {
 };
 
 /**
- * Generate a long-lived refresh token (7 days).
+ * Generate a long-lived refresh token.
  * Random bytes — not a JWT. Stored hashed in DB for revocation.
+ * @param {string} source - Origin of the request ('web' or 'mobile')
  */
-const generateRefreshToken = () => {
+const generateRefreshToken = (source = 'web') => {
     const token = crypto.randomBytes(40).toString("hex");
     const hash = crypto.createHash("sha256").update(token).digest("hex");
-    const expiresAt = new Date(Date.now() + REFRESH_TOKEN_EXPIRY_MS);
+    
+    let expiryMs = REFRESH_TOKEN_EXPIRY_MS;
+    if (source === 'mobile') {
+        expiryMs = MOBILE_REFRESH_TOKEN_EXPIRY_MS;
+    }
+    
+    const expiresAt = new Date(Date.now() + expiryMs);
     return { token, hash, expiresAt };
 };
 
@@ -161,7 +171,7 @@ const generateToken = (user, instituteData = null) => {
                 : (ROLE_PERMISSIONS[plain.role] || []),
         },
         process.env.JWT_SECRET,
-        { expiresIn: "7d" }
+        { expiresIn: "90d" }
     );
 };
 

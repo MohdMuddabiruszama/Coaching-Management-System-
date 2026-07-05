@@ -5,6 +5,7 @@
 
 import { BrowserRouter } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
+import { NotificationProvider } from "./context/NotificationContext";
 import { ThemeProvider } from "./context/ThemeContext";
 import MobileShell from "mobile-shell";
 import WebAppRoutes from "./routes/WebAppRoutes";
@@ -20,6 +21,7 @@ import { Toaster } from "react-hot-toast";
 import MobileAppInit from "./components/MobileAppInit";
 import SplashOverlay from "./components/SplashOverlay";
 import MobileNotificationBanner from "./components/MobileNotificationBanner";
+import AppUpdateGuard from "./components/AppUpdateGuard";
 
 import { BrandingProvider } from "./context/BrandingContext";
 
@@ -40,20 +42,23 @@ function App() {
                 {/* BrandingProvider wraps AuthProvider so branding is persistent */}
                 <BrandingProvider>
                     <AuthProvider>
-                        {/* ThemeProvider must be INSIDE AuthProvider so it can read user */}
-                        <ThemeProvider>
-                            <AnnouncementSidebarProvider>
-                                {/* Animated splash — native→web seamless handoff */}
-                                <SplashOverlay />
-                                {/* Phase 7: Unified mobile init — CSS, push (no-op on web) */}
-                                <MobileAppInit />
-                                <NetworkStatus />
-                                <Toaster position="top-right" />
-                                <MobileNotificationBanner />
-                                {isMobileShell ? <MobileShell /> : <WebAppRoutes />}
-                                <AnnouncementSidebar />
-                            </AnnouncementSidebarProvider>
-                        </ThemeProvider>
+                        <NotificationProvider>
+                            {/* ThemeProvider must be INSIDE AuthProvider so it can read user */}
+                            <ThemeProvider>
+                                <AnnouncementSidebarProvider>
+                                    <AppUpdateGuard />
+                                    {/* Animated splash — native→web seamless handoff */}
+                                    <SplashOverlay />
+                                    {/* Phase 7: Unified mobile init — CSS, push (no-op on web) */}
+                                    <MobileAppInit />
+                                    <NetworkStatus />
+                                    <Toaster position="top-right" />
+                                    <MobileNotificationBanner />
+                                    {isMobileShell ? <MobileShell /> : <WebAppRoutes />}
+                                    <AnnouncementSidebar />
+                                </AnnouncementSidebarProvider>
+                            </ThemeProvider>
+                        </NotificationProvider>
                     </AuthProvider>
                 </BrandingProvider>
             </BrowserRouter>

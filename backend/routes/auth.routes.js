@@ -24,6 +24,17 @@ router.post("/send-otp",           authController.sendOtp);
 // ── Public: OTP Mode status (no auth required) ───────────────────────────────
 router.get("/otp-mode", authController.getOtpMode);
 
+// ── Public: App Version Config (no auth required) ────────────────────────────
+router.get("/app-version", (req, res) => {
+    res.json({
+        success: true,
+        minVersion: process.env.MIN_APP_VERSION || "1.0.0",
+        latestVersion: process.env.LATEST_APP_VERSION || "1.0.0",
+        playStoreUrl: process.env.PLAY_STORE_URL || "https://play.google.com/store/apps/details?id=com.yourapp.id",
+        appStoreUrl: process.env.APP_STORE_URL || "https://apps.apple.com/app/idYOUR_APP_ID"
+    });
+});
+
 // ── Auth ─────────────────────────────────────────────────────────────────────
 router.post("/login",            validate(authValidator.login), authController.login);
 router.post("/logout",           authController.logout);

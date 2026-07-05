@@ -1,5 +1,6 @@
 const { ChatRoom, ChatMessage, ChatParticipant, User, Faculty, Student, Class, Subject, Institute, UsageTracker } = require("../models");
 const { Op, fn, col, literal } = require("sequelize");
+const NotificationService = require("../services/notificationService");
 
 // ─── HELPERS ──────────────────────────────────────────────────────────────
 
@@ -229,6 +230,25 @@ exports.sendMessage = async (req, res) => {
         }
         // ─────────────────────────────────────────────────────────────────────
 
+        // Phase 4: Notify participants
+        try {
+            const participants = await ChatParticipant.findAll({ where: { room_id } });
+            for (const p of participants) {
+                if (p.user_id !== userId) {
+                    NotificationService.createAndSend(
+                        institute_id,
+                        p.user_id,
+                        "chat_message",
+                        "New Message",
+                        `You have a new message in ${room.name}`,
+                        { route: `/student/chats`, room_id: room.id }
+                    );
+                }
+            }
+        } catch (notifErr) {
+            console.error("Error sending chat notifications:", notifErr);
+        }
+
         return res.status(201).json({ success: true, sender_display_name });
     } catch (err) {
         console.error("sendMessage:", err);
@@ -316,15 +336,17 @@ exports.getRooms = async (req, res) => {
 
             // Build unread counts in a single batch query instead of N queries
             const unreadFilters = participants
-                .filter(p => p.last_read_at)
                 .map(p => ({
                     room_id: Number(p.room_id),
-                    created_at: { [Op.gt]: p.last_read_at },
+                    created_at: { [Op.gt]: p.last_read_at || new Date(0) },
                 }));
 
             const unreadRows = unreadFilters.length
                 ? await ChatMessage.findAll({
-                    where: { [Op.or]: unreadFilters },
+                    where: { 
+                        [Op.or]: unreadFilters,
+                        sender_id: { [Op.ne]: userId }
+                    },
                     attributes: ["room_id", [fn("COUNT", col("id")), "unread_count"]],
                     group: ["room_id"],
                     raw: true,
@@ -335,11 +357,8 @@ exports.getRooms = async (req, res) => {
             const result = roomsArray.map(r => {
                 const rData = r.toJSON();
                 const stats = statsByRoom.get(Number(r.id)) || { message_count: 0, last_message_at: null };
-                const participant = participantByRoom.get(Number(r.id));
                 rData.message_count = stats.message_count;
-                rData.unread_count = participant?.last_read_at
-                    ? (unreadByRoom.get(Number(r.id)) || 0)
-                    : stats.message_count;
+                rData.unread_count = unreadByRoom.get(Number(r.id)) || 0;
                 rData.last_message_at = stats.last_message_at || r.created_at;
                 return rData;
             });
@@ -732,7 +751,10 @@ exports.getUnreadChatCount = async (req, res) => {
         }));
 
         const totalUnread = await ChatMessage.count({
-            where: { [Op.or]: orConditions }
+            where: { 
+                [Op.or]: orConditions,
+                sender_id: { [Op.ne]: userId }
+            }
         });
 
         return res.status(200).json({ success: true, count: totalUnread });

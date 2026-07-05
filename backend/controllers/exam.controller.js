@@ -10,6 +10,7 @@ const { Op } = require('sequelize');
 const { sequelize } = require('../models');
 const { QueryTypes } = require('sequelize');
 const examResultService = require('../services/examResult.service');
+const NotificationService = require('../services/notificationService');
 
 // ─── PDFKit ───────────────────────────────────────────────────
 let PDFDocument;
@@ -33,6 +34,23 @@ exports.createExam = async (req, res) => {
             passing_marks,
             exam_type: exam_type || 'unit_test',
         });
+
+        // Phase 4: Notification Integration - Notify class students
+        try {
+            const students = await Student.findAll({ where: { class_id, institute_id } });
+            for (const stu of students) {
+                NotificationService.notifyStudentAndParents(
+                    institute_id,
+                    stu.id,
+                    "exam_new",
+                    "New Exam Scheduled",
+                    `An exam "${name}" has been scheduled for ${new Date(exam_date).toLocaleDateString()}.`,
+                    `/student/exams`
+                );
+            }
+        } catch (notifErr) {
+            console.error("Exam notification error:", notifErr);
+        }
 
         res.status(201).json({ success: true, message: 'Exam created successfully', data: exam });
     } catch (error) {
@@ -313,6 +331,23 @@ exports.lockMarks = async (req, res) => {
             marks_locked_at: new Date(),
             marks_locked_by: req.user.id,
         });
+
+        // Notify all students with marks
+        try {
+            const marks = await Mark.findAll({ where: { exam_id: exam.id } });
+            for (const m of marks) {
+                NotificationService.notifyStudentAndParents(
+                    exam.institute_id,
+                    m.student_id,
+                    "exam_result",
+                    "Exam Results Published",
+                    `Results for ${exam.name} have been published.`,
+                    `/student/exams`
+                );
+            }
+        } catch (notifErr) {
+            console.error("Error sending exam notifications:", notifErr);
+        }
 
         return res.json({
             success: true,

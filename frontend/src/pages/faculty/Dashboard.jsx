@@ -208,14 +208,13 @@ function FacultyDashboard() {
                 <div className="fd-header-right">
                     {user?.features?.announcements && <AnnouncementBell size="large" />}
                     <ThemeSelector />
-                    <button onClick={logout} className="fd-logout-btn">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-                            <polyline points="16 17 21 12 16 7"></polyline>
-                            <line x1="21" y1="12" x2="9" y2="12"></line>
-                        </svg>
-                        Logout
-                    </button>
+                    <div className="fd-user-profile" onClick={() => navigate('/faculty/profile')}>
+                        <div className="fd-avatar">{user?.name ? user.name.charAt(0).toUpperCase() : 'F'}</div>
+                        <div className="fd-user-info">
+                            <span className="fd-user-name">{user?.name || 'Faculty Member'}</span>
+                            <span className="fd-user-role">Professor</span>
+                        </div>
+                    </div>
                 </div>
             </div>
 

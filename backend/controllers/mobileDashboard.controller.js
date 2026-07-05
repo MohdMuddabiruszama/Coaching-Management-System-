@@ -243,7 +243,7 @@ exports.getStudentDashboard = async (req, res) => {
                 FROM chat_messages m
                 JOIN chat_participants p ON p.room_id = m.room_id
                 WHERE p.user_id = :userId
-                  AND m.created_at > p.last_read_at
+                  AND (p.last_read_at IS NULL OR m.created_at > p.last_read_at)
                   AND m.sender_id != :userId
             `, {
                 replacements: { userId: user.id },

@@ -215,6 +215,35 @@
     background: #f3e8ff;
 }
 
+.fl-logout-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    margin-top: 16px;
+    padding: 10px 12px;
+    background: #fef2f2;
+    color: #ef4444;
+    border: 1px solid #fee2e2;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.fl-logout-btn:hover {
+    background: #fee2e2;
+    color: #dc2626;
+    border-color: #fca5a5;
+}
+
+.fl-logout-btn .fl-nav-icon {
+    color: inherit;
+    font-size: 16px;
+}
+
 .fl-sidebar-bottom {
     display: flex;
     justify-content: space-between;

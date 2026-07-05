@@ -214,7 +214,44 @@ exports.login = catchAsync(async (req, res) => {
     // This eliminates 2 extra DB lookups per request in auth middleware.
     const instituteData = user.Institute ? { name: user.Institute.name } : null;
     const accessToken = generateAccessToken(user, instituteData);
-    const refresh = generateRefreshToken();
+    const refresh = generateRefreshToken(source);
+
+    const loginSource = source === 'mobile' ? 'mobile' : 'web';
+    
+    // Define device limits based on role
+    let maxDevices = 1; // Default
+    if (loginSource === 'mobile') {
+      if (user.role === 'super_admin') maxDevices = 2;
+      else maxDevices = 1;
+    } else {
+      if (user.role === 'super_admin') maxDevices = 3;
+      else if (user.role === 'admin') maxDevices = 2;
+      else maxDevices = 1;
+    }
+
+    // Revoke oldest sessions if limit is reached
+    const activeSessions = await RefreshToken.findAll({
+      where: {
+        user_id: user.id,
+        source: loginSource,
+        is_revoked: false,
+        expires_at: { [Op.gt]: new Date() }
+      },
+      order: [['created_at', 'ASC']]
+    });
+
+    if (activeSessions.length >= maxDevices) {
+      // We need to revoke enough sessions to make room for 1 more
+      const excessCount = activeSessions.length - maxDevices + 1;
+      const sessionsToRevoke = activeSessions.slice(0, excessCount).map(s => s.id);
+      
+      if (sessionsToRevoke.length > 0) {
+        await RefreshToken.update(
+          { is_revoked: true },
+          { where: { id: { [Op.in]: sessionsToRevoke } } }
+        );
+      }
+    }
 
     // Store refresh token hash in DB (enables revocation & session management)
     await RefreshToken.create({
@@ -222,6 +259,7 @@ exports.login = catchAsync(async (req, res) => {
       token_hash: refresh.hash,
       expires_at: refresh.expiresAt,
       device_info: req.headers["user-agent"] || null,
+      source: loginSource,
       ip_address: req.ip
     });
 

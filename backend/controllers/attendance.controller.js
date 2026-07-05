@@ -6,6 +6,7 @@
 const { Attendance, Student, Class, User, Institute, Plan, ClassSession } = require("../models");
 const { Op } = require("sequelize");
 const crypto = require("crypto");
+const NotificationService = require("../services/notificationService");
 
 /**
  * Mark Bulk Attendance for a Class
@@ -66,6 +67,21 @@ exports.markBulkAttendance = catchAsync(async (req, res) => {
           marked_by
         });
         results.push(created);
+        
+        // Notify if present, absent, or late
+        if (["present", "absent", "late"].includes(item.status)) {
+          const currentTime = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+          const statusCapitalized = item.status.charAt(0).toUpperCase() + item.status.slice(1);
+          
+          NotificationService.notifyStudentAndParents(
+             institute_id, 
+             item.student_id, 
+             `attendance_${item.status}`, 
+             `${statusCapitalized} Alert`, 
+             `You were marked ${item.status} on ${date} at ${currentTime}.`,
+             `/student/attendance`
+          );
+        }
       }
     }
 
@@ -329,6 +345,20 @@ exports.updateAttendance = catchAsync(async (req, res) => {
     }
 
     await attendance.update({ status, remarks });
+
+    if (["present", "absent", "late"].includes(status)) {
+       const currentTime = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+       const statusCapitalized = status.charAt(0).toUpperCase() + status.slice(1);
+       
+       NotificationService.notifyStudentAndParents(
+          institute_id, 
+          attendance.student_id, 
+          `attendance_${status}`, 
+          `${statusCapitalized} Alert`, 
+          `You were marked ${status} on ${attendance.date} at ${currentTime}.`,
+          `/student/attendance`
+       );
+    }
 
     res.status(200).json({
       success: true,

@@ -115,3 +115,116 @@ cron.schedule("1 0 1 * *", async () => {
 }, {
     timezone: "Asia/Kolkata",  // IST timezone for Indian institutes
 });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// NOTIFICATION SYSTEM CRONS (Phase 5)
+// ─────────────────────────────────────────────────────────────────────────────
+const NotificationService = require('../services/notificationService');
+const { StudentFee, Attendance, NotificationPref } = require('../models');
+
+// Daily 9:00 AM — Fee Due Reminder
+cron.schedule('0 9 * * *', async () => {
+    console.log("[CRON] Running Daily 9:00 AM Fee Due Reminder");
+    try {
+        const targetDate = new Date();
+        targetDate.setDate(targetDate.getDate() + 3);
+        const targetDateString = targetDate.toISOString().split('T')[0];
+
+        const { FeesStructure } = require('../models');
+        const fees = await StudentFee.findAll({
+            where: {
+                status: { [Op.ne]: 'paid' }
+            },
+            include: [{
+                model: FeesStructure,
+                where: { due_date: targetDateString }
+            }]
+        });
+
+        for (const fee of fees) {
+            await NotificationService.notifyStudentAndParents(
+                fee.institute_id,
+                fee.student_id,
+                "fee_due",
+                "Fee Due Reminder",
+                `Your fee of ₹${fee.due_amount} is due on ${targetDateString}.`,
+                `/student/fees`
+            );
+        }
+    } catch (err) {
+        console.error("[CRON] Fee Due Reminder Error:", err);
+    }
+});
+
+// Daily 8:00 PM — Low Attendance Alert
+cron.schedule('0 20 * * *', async () => {
+    console.log("[CRON] Running Daily 8:00 PM Low Attendance Alert");
+    try {
+        const { sequelize } = require('../models');
+        const lowAttendanceStudents = await sequelize.query(`
+            SELECT student_id, institute_id, 
+                   SUM(CASE WHEN status = 'present' THEN 1 ELSE 0 END) * 100.0 / COUNT(id) as attendance_percent
+            FROM attendance
+            GROUP BY student_id, institute_id
+            HAVING SUM(CASE WHEN status = 'present' THEN 1 ELSE 0 END) * 100.0 / COUNT(id) < 75
+        `, { type: sequelize.QueryTypes.SELECT });
+
+        for (const row of lowAttendanceStudents) {
+            await NotificationService.notifyStudentAndParents(
+                row.institute_id,
+                row.student_id,
+                "low_attendance",
+                "Low Attendance Alert",
+                `Your attendance is currently at ${parseFloat(row.attendance_percent).toFixed(1)}%, which is below the 75% requirement.`,
+                `/student/attendance`
+            );
+        }
+    } catch (err) {
+        console.error("[CRON] Low Attendance Alert Error:", err);
+    }
+});
+
+// Daily 7:00 AM — DND Flush Queue
+cron.schedule('0 7 * * *', async () => {
+    console.log("[CRON] Running Daily 7:00 AM DND Flush Queue");
+    // Placeholder: Flush queued notifications
+});
+
+// Weekly Sunday 8:00 AM — Email Digest
+cron.schedule('0 8 * * 0', async () => {
+    console.log("[CRON] Running Weekly Email Digest");
+    try {
+        const { User, Notification } = require('../models');
+        const emailService = require('../services/email.service');
+        
+        // Find users who opted in for weekly digest
+        const prefs = await NotificationPref.findAll({
+            where: { email_enabled: true } // Assuming email_enabled means weekly digest for now
+        });
+
+        for (const pref of prefs) {
+            const user = await User.findByPk(pref.user_id);
+            if (!user) continue;
+
+            const unreadNotifs = await Notification.findAll({
+                where: { user_id: user.id, is_read: false }
+            });
+
+            if (unreadNotifs.length > 0) {
+                let digestContent = `<h3>Your Weekly Digest</h3><ul>`;
+                for (const n of unreadNotifs) {
+                    digestContent += `<li><strong>${n.title}</strong>: ${n.body}</li>`;
+                }
+                digestContent += `</ul>`;
+
+                await emailService.sendEmail(
+                    user.email,
+                    "Weekly Notification Digest",
+                    digestContent
+                );
+            }
+        }
+    } catch (err) {
+        console.error("[CRON] Weekly Email Digest Error:", err);
+    }
+});

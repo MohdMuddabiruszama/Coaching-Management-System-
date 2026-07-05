@@ -6,7 +6,7 @@ import "./FacultyLayout.css";
 import api from "../../services/api";
 
 const FacultyLayout = () => {
-    const { user } = useContext(AuthContext);
+    const { user, logout } = useContext(AuthContext);
     const location = useLocation();
     const navigate = useNavigate();
     const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -223,6 +223,11 @@ const FacultyLayout = () => {
                     </Link>
                 </div>
 
+                <div className="fl-sidebar-footer">
+                    <button className="fl-logout-btn" onClick={logout}>
+                        <span className="fl-nav-icon">🚪</span> Logout
+                    </button>
+                </div>
                 <div className="fl-sidebar-bottom" style={{flexDirection: 'column', gap: 4, alignItems: 'center', textAlign: 'center'}}>
                     <span>© {new Date().getFullYear()} {user?.institute_name || "IT Hub"}. All rights reserved.</span>
                     <span>Version 1.0.0</span>
