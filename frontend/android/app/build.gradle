@@ -21,8 +21,8 @@ android {
             minifyEnabled false
         }
         release {
-            minifyEnabled true
-            shrinkResources true
+            minifyEnabled false
+            shrinkResources false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
             // TODO B20: Uncomment after generating keystore (zenithflows-upload.jks)
             // signingConfig signingConfigs.release
