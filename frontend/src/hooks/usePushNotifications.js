@@ -16,11 +16,7 @@ export function usePushNotifications() {
 
         const registerPush = async () => {
             try {
-                let permStatus = await PushNotifications.checkPermissions();
-
-                if (permStatus.receive === 'prompt') {
-                    permStatus = await PushNotifications.requestPermissions();
-                }
+                let permStatus = await PushNotifications.requestPermissions();
 
                 if (permStatus.receive !== 'granted') {
                     console.warn("Push permissions not granted by user.");
