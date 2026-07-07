@@ -64,7 +64,7 @@ export function usePushNotifications() {
                 console.log('👆 Push notification tapped: ', notification);
                 const data = notification.notification.data;
                 if (data && (data.route || data.url)) {
-                    window.dispatchEvent(new CustomEvent('push_notification_received', { detail: notification.notification }));
+                    window.dispatchEvent(new CustomEvent('push_notification_tapped', { detail: notification.notification }));
                 }
             });
         };
