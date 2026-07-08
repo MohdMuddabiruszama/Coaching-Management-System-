@@ -91,6 +91,7 @@ router.post(
     verifyToken,
     checkSubscription,
     allowRoles("admin"),
+    invalidateCache("cache:/api/admin/stats*"),
     adminController.createAdmin
 );
 
@@ -100,6 +101,7 @@ router.delete(
     verifyToken,
     checkSubscription,
     allowRoles("admin"),
+    invalidateCache("cache:/api/admin/stats*"),
     adminController.deleteAdmin
 );
 
@@ -109,6 +111,7 @@ router.put(
     verifyToken,
     checkSubscription,
     allowRoles("admin"),
+    invalidateCache("cache:/api/admin/stats*"),
     adminController.updateAdmin
 );
 

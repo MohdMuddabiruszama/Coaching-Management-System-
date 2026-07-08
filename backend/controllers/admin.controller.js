@@ -196,9 +196,11 @@ const MANAGER_TYPE_LABELS = {
 
 exports.createAdmin = async (req, res) => {
     try {
-        if (req.user.role === 'manager') return res.status(403).json({ success: false, message: "Managers cannot create secondary admins." });
+        if (req.user.role === 'manager') return res.status(403).json({ success: false, message: "Managers cannot create secondary admins or managers." });
         const institute_id = req.user.institute_id;
-        const { name, email, password, phone } = req.body;
+        const { name, email, password, phone, role } = req.body;
+        
+        const targetRole = role === 'admin' ? 'admin' : 'manager';
 
         // 1. Check Plan Limits
         const institute = await Institute.findByPk(institute_id, {
@@ -210,17 +212,32 @@ exports.createAdmin = async (req, res) => {
         }
 
         const { Op } = require('sequelize');
-        const currentAdminCount = await User.count({
-            where: { institute_id, role: { [Op.in]: ['admin', 'manager'] } }
-        });
 
-        const limit_admins = institute.current_limit_admins || institute.Plan.max_admin_users;
-
-        if (currentAdminCount >= limit_admins) {
-            return res.status(403).json({
-                success: false,
-                message: `Plan limit reached. Your plan allows ${limit_admins} admins. Please upgrade.`
+        // Check specific limits based on target role
+        if (targetRole === 'admin') {
+            const currentAdminCount = await User.count({
+                where: { institute_id, role: 'admin' }
             });
+            const limit_admins = institute.current_limit_admins || institute.Plan.max_admin_users;
+            
+            if (limit_admins !== -1 && currentAdminCount >= limit_admins) {
+                return res.status(403).json({
+                    success: false,
+                    message: `Plan limit reached. Your plan allows up to ${limit_admins} admins. Please upgrade.`
+                });
+            }
+        } else {
+            const currentManagerCount = await User.count({
+                where: { institute_id, role: 'manager' }
+            });
+            const limit_managers = institute.current_limit_managers || institute.Plan.max_managers;
+
+            if (limit_managers !== -1 && currentManagerCount >= limit_managers) {
+                return res.status(403).json({
+                    success: false,
+                    message: `Plan limit reached. Your plan allows up to ${limit_managers} managers. Please upgrade.`
+                });
+            }
         }
 
         // 2. Validate Input
@@ -228,23 +245,36 @@ exports.createAdmin = async (req, res) => {
             return res.status(400).json({ success: false, message: "Name, email, and password are required." });
         }
 
-        // 3. Create Admin/Manager (second admins are created as managers)
+        // 3. Create Admin/Manager
         const hashedPassword = await hashPassword(password);
-        const rawType = req.body.manager_type || 'custom';
-        const validTypes = ['fees', 'data', 'academic', 'ops', 'hr', 'custom'];
-        const managerType = validTypes.includes(rawType) ? rawType : 'custom';
+        
+        let managerType = 'custom';
+        let managerTypeLabel = 'Custom Manager';
+        let permissions = req.body.permissions || null;
+
+        if (targetRole === 'manager') {
+            const rawType = req.body.manager_type || 'custom';
+            const validTypes = ['fees', 'data', 'academic', 'ops', 'hr', 'custom'];
+            managerType = validTypes.includes(rawType) ? rawType : 'custom';
+            managerTypeLabel = MANAGER_TYPE_LABELS[managerType] || 'Custom Manager';
+        } else {
+            // Admins don't have manager types/permissions
+            managerType = null;
+            managerTypeLabel = null;
+            permissions = null;
+        }
 
         const newAdmin = await User.create({
             institute_id,
-            role: 'manager',
+            role: targetRole,
             name,
             email,
             phone,
             password_hash: hashedPassword,
             status: 'active',
-            permissions: req.body.permissions || null,
+            permissions,
             manager_type: managerType,
-            manager_type_label: MANAGER_TYPE_LABELS[managerType] || 'Custom Manager',
+            manager_type_label: managerTypeLabel,
         });
 
         res.status(201).json({

@@ -115,6 +115,12 @@ function AdminDashboard() {
     // Manager count and list for the admin "Manager System" banner
     const [managers, setManagers] = useState([]);
 
+    // Add Admin Modal State
+    const [showAddAdminModal, setShowAddAdminModal] = useState(false);
+    const [adminFormData, setAdminFormData] = useState({ name: '', email: '', phone: '', password: '' });
+    const [adminFormErrors, setAdminFormErrors] = useState({});
+    const [submittingAdmin, setSubmittingAdmin] = useState(false);
+
     const isAdmin = user?.role === 'admin' || user?.role === 'super_admin';
 
     useEffect(() => {
@@ -135,6 +141,37 @@ function AdminDashboard() {
             setStats(response.data.data);
         } catch (error) {
             console.error("Error fetching stats:", error);
+        }
+    };
+
+    const handleCreateAdmin = async (e) => {
+        e.preventDefault();
+        const errors = {};
+        if (!adminFormData.name.trim()) errors.name = 'Full name is required';
+        if (!adminFormData.email.trim()) errors.email = 'Email is required';
+        else if (!/\S+@\S+\.\S+/.test(adminFormData.email)) errors.email = 'Invalid email format';
+        if (!adminFormData.password) errors.password = 'Password is required';
+        else if (adminFormData.password.length < 6) errors.password = 'Minimum 6 characters';
+        
+        setAdminFormErrors(errors);
+        if (Object.keys(errors).length > 0) return;
+
+        try {
+            setSubmittingAdmin(true);
+            const res = await api.post('/admin/admins', {
+                ...adminFormData,
+                role: 'admin'
+            });
+            if (res.data.success) {
+                setShowAddAdminModal(false);
+                setAdminFormData({ name: '', email: '', phone: '', password: '' });
+                fetchStats();
+            }
+        } catch (err) {
+            const msg = err.response?.data?.message || 'Failed to create admin.';
+            setAdminFormErrors({ ...adminFormErrors, general: msg });
+        } finally {
+            setSubmittingAdmin(false);
         }
     };
 
@@ -425,11 +462,13 @@ function AdminDashboard() {
             ) : (
                 <div className="stats-grid advanced-stats-grid">
                     {(() => {
-                        const totalAdminsLimit = 1;
-                        const usageAdminsLimit = planDetails?.usage?.admin_users?.limit;
-                        const totalManagersLimit = usageAdminsLimit === '∞' ? '∞' : Math.max(0, (usageAdminsLimit || 1) - 1);
+                        const totalAdminsLimit = planDetails?.usage?.admin_users?.limit || 1;
+                        const totalManagersLimit = planDetails?.usage?.managers?.limit || 0;
                         
-                        const adminsProgress = Math.min(100, ((stats.totalAdmins || 0) / totalAdminsLimit) * 100).toFixed(1);
+                        const adminsProgress = totalAdminsLimit === '∞' ? '0.0' : (totalAdminsLimit > 0
+                            ? Math.min(100, ((stats.totalAdmins || 0) / totalAdminsLimit) * 100).toFixed(1)
+                            : ((stats.totalAdmins || 0) > 0 ? 100 : 0).toFixed(1));
+                        
                         const managersProgress = totalManagersLimit === '∞' ? '0.0' : (totalManagersLimit > 0 
                             ? Math.min(100, ((stats.totalManagers || 0) / totalManagersLimit) * 100).toFixed(1)
                             : ((stats.totalManagers || 0) > 0 ? 100 : 0).toFixed(1));
@@ -540,6 +579,55 @@ function AdminDashboard() {
             )}
 
 
+            {/* ══════════════ ADD ANOTHER ADMIN BANNER (Admin only, if limit allows) ══════════════ */}
+            {isAdmin && planDetails && (
+                (() => {
+                    const limit = planDetails?.usage?.admin_users?.limit;
+                    const current = stats.totalAdmins || 1;
+                    if (limit === '∞' || current < limit) {
+                        return (
+                            <div style={{
+                                marginTop: '2rem',
+                                padding: '1.5rem 2rem',
+                                background: 'linear-gradient(135deg, #4338ca, #6366f1)',
+                                borderRadius: '16px',
+                                color: '#fff',
+                                display: 'flex',
+                                justifyContent: 'space-between',
+                                alignItems: 'center',
+                                boxShadow: '0 10px 25px -5px rgba(99, 102, 241, 0.4)'
+                            }}>
+                                <div>
+                                    <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1.3rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                        <span style={{ fontSize: '1.5rem' }}>👑</span> Add Another Admin
+                                    </h3>
+                                    <p style={{ margin: 0, opacity: 0.9, fontSize: '0.95rem' }}>
+                                        Your plan allows you to have additional primary administrators. Delegate full institute management safely.
+                                    </p>
+                                </div>
+                                <button 
+                                    onClick={() => setShowAddAdminModal(true)}
+                                    style={{
+                                        background: '#fff',
+                                        color: '#4338ca',
+                                        border: 'none',
+                                        padding: '0.75rem 1.5rem',
+                                        borderRadius: '8px',
+                                        fontWeight: '700',
+                                        cursor: 'pointer',
+                                        boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
+                                        whiteSpace: 'nowrap'
+                                    }}
+                                >
+                                    + Create Admin
+                                </button>
+                            </div>
+                        );
+                    }
+                    return null;
+                })()
+            )}
+
             {/* ══════════════ MANAGER SYSTEM BANNER (Admin only) ══════════════ */}
             {isAdmin && (
                 <div className="premium-manager-banner">
@@ -596,9 +684,10 @@ function AdminDashboard() {
                             </button>
                         </div>
                     </div>
-
                 </div>
             )}
+
+
 
             {/* ══════════════ QUICK ACTIONS ══════════════ */}
             <div className="dashboard-actions-wrapper">
@@ -840,6 +929,103 @@ function AdminDashboard() {
                         <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
                             <button className="btn btn-secondary" onClick={() => setShowUpgradeModal(false)}>Close</button>
                             <button className="btn btn-primary" onClick={() => navigate("/pricing")}>Upgrade Now</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* ── Add Admin Modal ── */}
+            {showAddAdminModal && (
+                <div className="modal-overlay" style={{ backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 1000 }}>
+                    <div className="modal-content" style={{
+                        maxWidth: '450px', width: '90%',
+                        backgroundColor: 'white', borderRadius: '12px',
+                        boxShadow: '0 10px 25px rgba(0,0,0,0.2)',
+                        overflow: 'hidden'
+                    }}>
+                        <div style={{ background: 'linear-gradient(135deg, #4338ca, #6366f1)', padding: '1.5rem', color: '#fff' }}>
+                            <h2 style={{ margin: 0, fontSize: '1.4rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                <span>👑</span> Create New Admin
+                            </h2>
+                            <p style={{ margin: '0.5rem 0 0 0', opacity: 0.9, fontSize: '0.85rem' }}>
+                                This user will have full access to your institute's data and settings.
+                            </p>
+                        </div>
+                        
+                        <div style={{ padding: '1.5rem' }}>
+                            {adminFormErrors.general && (
+                                <div style={{ padding: '0.75rem', background: '#fef2f2', color: '#ef4444', borderRadius: '8px', marginBottom: '1rem', fontSize: '0.85rem', border: '1px solid #fca5a5' }}>
+                                    {adminFormErrors.general}
+                                </div>
+                            )}
+
+                            <div style={{ marginBottom: '1rem' }}>
+                                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600, fontSize: '0.85rem', color: '#374151' }}>Full Name *</label>
+                                <input 
+                                    type="text" 
+                                    value={adminFormData.name}
+                                    onChange={(e) => setAdminFormData({...adminFormData, name: e.target.value})}
+                                    style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: `1px solid ${adminFormErrors.name ? '#ef4444' : '#d1d5db'}`, outline: 'none' }}
+                                    placeholder="Enter admin's full name"
+                                />
+                                {adminFormErrors.name && <span style={{ color: '#ef4444', fontSize: '0.75rem', marginTop: '0.25rem', display: 'block' }}>{adminFormErrors.name}</span>}
+                            </div>
+
+                            <div style={{ marginBottom: '1rem' }}>
+                                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600, fontSize: '0.85rem', color: '#374151' }}>Email Address *</label>
+                                <input 
+                                    type="email" 
+                                    value={adminFormData.email}
+                                    onChange={(e) => setAdminFormData({...adminFormData, email: e.target.value})}
+                                    style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: `1px solid ${adminFormErrors.email ? '#ef4444' : '#d1d5db'}`, outline: 'none' }}
+                                    placeholder="Enter admin's email"
+                                />
+                                {adminFormErrors.email && <span style={{ color: '#ef4444', fontSize: '0.75rem', marginTop: '0.25rem', display: 'block' }}>{adminFormErrors.email}</span>}
+                            </div>
+
+                            <div style={{ marginBottom: '1rem' }}>
+                                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600, fontSize: '0.85rem', color: '#374151' }}>Phone Number (Optional)</label>
+                                <input 
+                                    type="text" 
+                                    value={adminFormData.phone}
+                                    onChange={(e) => setAdminFormData({...adminFormData, phone: e.target.value})}
+                                    style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid #d1d5db', outline: 'none' }}
+                                    placeholder="Enter phone number"
+                                />
+                            </div>
+
+                            <div style={{ marginBottom: '1.5rem' }}>
+                                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600, fontSize: '0.85rem', color: '#374151' }}>Password *</label>
+                                <input 
+                                    type="password" 
+                                    value={adminFormData.password}
+                                    onChange={(e) => setAdminFormData({...adminFormData, password: e.target.value})}
+                                    style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: `1px solid ${adminFormErrors.password ? '#ef4444' : '#d1d5db'}`, outline: 'none' }}
+                                    placeholder="Set a password for the admin"
+                                />
+                                {adminFormErrors.password && <span style={{ color: '#ef4444', fontSize: '0.75rem', marginTop: '0.25rem', display: 'block' }}>{adminFormErrors.password}</span>}
+                            </div>
+
+                            <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+                                <button 
+                                    onClick={() => {
+                                        setShowAddAdminModal(false);
+                                        setAdminFormErrors({});
+                                        setAdminFormData({ name: '', email: '', phone: '', password: '' });
+                                    }}
+                                    style={{ padding: '0.75rem 1.5rem', background: '#f3f4f6', color: '#4b5563', border: 'none', borderRadius: '8px', fontWeight: 600, cursor: 'pointer' }}
+                                    disabled={submittingAdmin}
+                                >
+                                    Cancel
+                                </button>
+                                <button 
+                                    onClick={handleCreateAdmin}
+                                    disabled={submittingAdmin}
+                                    style={{ padding: '0.75rem 1.5rem', background: '#4338ca', color: '#fff', border: 'none', borderRadius: '8px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+                                >
+                                    {submittingAdmin ? 'Creating...' : 'Create Admin'}
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>

@@ -29,6 +29,7 @@ function Plans() {
         max_faculty: 5,
         max_classes: 5,
         max_admin_users: 1,
+        max_managers: 1,
 
         // Core Features (Usually true)
         feature_students: true,
@@ -108,6 +109,7 @@ function Plans() {
             payload.max_faculty = payload.max_faculty !== "" && payload.max_faculty !== null ? parseInt(payload.max_faculty) : 5;
             payload.max_classes = payload.max_classes !== "" && payload.max_classes !== null ? parseInt(payload.max_classes) : 5;
             payload.max_admin_users = payload.max_admin_users !== "" && payload.max_admin_users !== null ? parseInt(payload.max_admin_users) : 1;
+            payload.max_managers = payload.max_managers !== "" && payload.max_managers !== null ? parseInt(payload.max_managers) : 1;
             payload.trial_days = payload.trial_days !== "" && payload.trial_days !== null ? parseInt(payload.trial_days) : 0;
             payload.max_chat_messages = payload.max_chat_messages !== "" && payload.max_chat_messages !== null ? parseInt(payload.max_chat_messages) : 500;
             payload.lifetime_price = payload.lifetime_price !== "" && payload.lifetime_price !== null ? parseFloat(payload.lifetime_price) : null;
@@ -235,6 +237,7 @@ function Plans() {
                                     <div><strong>Faculty:</strong> {plan.max_faculty}</div>
                                     <div><strong>Classes:</strong> {plan.max_classes}</div>
                                     <div><strong>Admins:</strong> {plan.max_admin_users}</div>
+                                    <div><strong>Managers:</strong> {plan.max_managers}</div>
                                     {plan.feature_chat && (
                                         <div style={{ gridColumn: '1 / -1', color: '#6366f1' }}>
                                             <strong>💬 Chat Limit:</strong> {plan.max_chat_messages === -1 ? '∞ Unlimited' : `${plan.max_chat_messages} msgs/mo`}
@@ -470,6 +473,17 @@ function Plans() {
                                                 name="max_admin_users"
                                                 className="form-input"
                                                 value={formData.max_admin_users}
+                                                onChange={handleChange}
+                                                required
+                                            />
+                                        </div>
+                                        <div className="limit-input-group">
+                                            <label>Max Managers</label>
+                                            <input
+                                                type="number"
+                                                name="max_managers"
+                                                className="form-input"
+                                                value={formData.max_managers}
                                                 onChange={handleChange}
                                                 required
                                             />

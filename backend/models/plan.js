@@ -57,6 +57,11 @@ const Plan = sequelize.define("Plan", {
         allowNull: false,
         defaultValue: 1
     },
+    max_managers: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        defaultValue: 1
+    },
     max_branches: {
         type: DataTypes.INTEGER,
         allowNull: false,

@@ -520,6 +520,10 @@ const syncDatabase = async () => {
       try { await sequelize.query(`ALTER TABLE institutes ADD COLUMN current_feature_mobile_app BOOLEAN DEFAULT false;`); } catch (e) { }
       console.log("âœ… Finance & Mobile module feature columns ensured");
 
+      // Manager Limits
+      try { await sequelize.query(`ALTER TABLE plans ADD COLUMN max_managers INTEGER NOT NULL DEFAULT 1;`); } catch (e) { }
+      try { await sequelize.query(`ALTER TABLE institutes ADD COLUMN current_limit_managers INTEGER DEFAULT 1;`); } catch (e) { }
+
       // â”€â”€ Manager Type columns (CreateManager.md â€” Phase 1 DB changes) â”€â”€â”€â”€â”€â”€â”€â”€
       // PostgreSQL-safe: CREATE TYPE IF NOT EXISTS, then ADD COLUMN IF NOT EXISTS
       try {

@@ -276,6 +276,61 @@ const checkAdminUserLimit = async (req, res, next) => {
 };
 
 /**
+ * Check if institute can add more managers
+ */
+const checkManagerLimit = async (req, res, next) => {
+    try {
+        const institute_id = req.user.institute_id;
+
+        const institute = await Institute.findByPk(institute_id, {
+            include: [{ model: Plan }]
+        });
+
+        if (!institute || !institute.Plan) {
+            return res.status(400).json({
+                success: false,
+                message: "Institute or plan not found"
+            });
+        }
+
+        // === LIFETIME BYPASS: unlimited access ===
+        if (institute.is_lifetime_member) return next();
+
+        // Count current managers
+        const managerCount = await User.count({
+            where: {
+                institute_id,
+                role: 'manager'
+            }
+        });
+
+        const limit_managers = getEffectiveLimit(institute.current_limit_managers, institute.Plan.max_managers);
+
+        // -1 = unlimited
+        if (limit_managers !== -1 && managerCount >= limit_managers) {
+            if (req.method === 'GET') return next();
+            
+            return res.status(403).json({
+                success: false,
+                message: `Manager user limit reached! Your plan allows up to ${limit_managers} managers. Please upgrade your plan.`,
+                limit_reached: true,
+                current_count: managerCount,
+                max_limit: limit_managers,
+                upgrade_required: true
+            });
+        }
+
+        next();
+    } catch (error) {
+        console.error("Error checking manager user limit:", error);
+        res.status(500).json({
+            success: false,
+            message: "Error checking manager user limit"
+        });
+    }
+};
+
+/**
  * Check if institute has access to a feature
  */
 const checkFeatureAccess = (featureName) => {
@@ -442,11 +497,12 @@ const getUsageStats = async (req, res) => {
         }
 
         // Get current counts
-        const [studentCount, facultyCount, classCount, adminCount] = await Promise.all([
+        const [studentCount, facultyCount, classCount, adminCount, managerCount] = await Promise.all([
             Student.count({ where: { institute_id } }),
             User.count({ where: { institute_id, role: 'faculty' } }),
             Class.count({ where: { institute_id } }),
-            User.count({ where: { institute_id, role: 'admin' } })
+            User.count({ where: { institute_id, role: 'admin' } }),
+            User.count({ where: { institute_id, role: 'manager' } })
         ]);
 
         // Determine limits (Snapshot first, then Plan fallback; -1 = unlimited)
@@ -454,6 +510,7 @@ const getUsageStats = async (req, res) => {
         const limit_faculty = getEffectiveLimit(institute.current_limit_faculty, institute.Plan.max_faculty);
         const limit_classes = getEffectiveLimit(institute.current_limit_classes, institute.Plan.max_classes);
         const limit_admins = getEffectiveLimit(institute.current_limit_admins, institute.Plan.max_admin_users);
+        const limit_managers = getEffectiveLimit(institute.current_limit_managers, institute.Plan.max_managers);
 
         // Helper: safe percentage (handles -1 unlimited)
         const safePct = (cur, lim) => lim === -1 ? 0 : Math.round((cur / lim) * 100);
@@ -500,6 +557,12 @@ const getUsageStats = async (req, res) => {
                         limit: limit_admins === -1 ? '∞' : limit_admins,
                         percentage: safePct(adminCount, limit_admins),
                         remaining: safeRem(adminCount, limit_admins)
+                    },
+                    managers: {
+                        current: managerCount,
+                        limit: limit_managers === -1 ? '∞' : limit_managers,
+                        percentage: safePct(managerCount, limit_managers),
+                        remaining: safeRem(managerCount, limit_managers)
                     }
                 },
                 features: computeFeatures(institute, institute.Plan)
@@ -519,6 +582,7 @@ module.exports = {
     checkFacultyLimit,
     checkClassLimit,
     checkAdminUserLimit,
+    checkManagerLimit,
     checkFeatureAccess,
     getUsageStats,
     computeFeatures

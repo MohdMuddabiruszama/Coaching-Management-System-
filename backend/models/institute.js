@@ -44,6 +44,10 @@ const Institute = sequelize.define("Institute", {
         type: DataTypes.INTEGER,
         defaultValue: 1
     },
+    current_limit_managers: {
+        type: DataTypes.INTEGER,
+        defaultValue: 1
+    },
 
     // Snapshot of Features (for grandfathering)
     current_feature_attendance: {

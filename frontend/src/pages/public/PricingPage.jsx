@@ -245,6 +245,7 @@ function PricingPage() {
                         const storage  = storageLabel(plan.max_storage_mb);
                         const students = plan.max_students    === -1 ? 'Unlimited' : plan.max_students?.toLocaleString('en-IN');
                         const admins   = plan.max_admin_users === -1 ? 'Unlimited' : plan.max_admin_users;
+                        const managers = plan.max_managers    === -1 ? 'Unlimited' : (plan.max_managers || 0);
                         const faculty  = plan.max_faculty     === -1 ? 'Unlimited' : plan.max_faculty?.toLocaleString('en-IN');
 
                         return (
@@ -285,8 +286,10 @@ function PricingPage() {
                                         <strong>{students}</strong>
                                         <span className="sp-muted"> students</span>
                                     </div>
-                                    <div className="sp-stat-line">
+                                    <div className="sp-stat-line" style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', alignItems: 'center' }}>
                                         <strong>{admins} admins</strong>
+                                        <span className="sp-muted"> · </span>
+                                        <strong>{managers} managers</strong>
                                         <span className="sp-muted"> · </span>
                                         <strong>{faculty} faculty</strong>
                                     </div>

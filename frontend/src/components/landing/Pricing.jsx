@@ -364,6 +364,7 @@ export default function Pricing() {
 
                         const students = plan.max_students    === -1 ? 'Unlimited' : plan.max_students?.toLocaleString('en-IN');
                         const admins   = plan.max_admin_users === -1 ? 'Unlimited' : plan.max_admin_users;
+                        const managers = plan.max_managers    === -1 ? 'Unlimited' : (plan.max_managers || 0);
                         const faculty  = plan.max_faculty     === -1 ? 'Unlimited' : plan.max_faculty?.toLocaleString('en-IN');
 
                         return (
@@ -405,7 +406,7 @@ export default function Pricing() {
                                     </li>
                                     <li style={S.featItem}>
                                         <FeatureCheck />
-                                        <span><strong style={{color:'var(--lp-text)'}}>{admins}</strong> admins &middot; <strong style={{color:'var(--lp-text)'}}>{faculty}</strong> faculty</span>
+                                        <span><strong style={{color:'var(--lp-text)'}}>{admins}</strong> admins &middot; <strong style={{color:'var(--lp-text)'}}>{managers}</strong> managers <br/> <strong style={{color:'var(--lp-text)'}}>{faculty}</strong> faculty</span>
                                     </li>
                                     <li style={S.featItem}>
                                         <FeatureCheck />
