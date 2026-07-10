@@ -7,6 +7,7 @@ const { Attendance, Student, Class, User, Institute, Plan, ClassSession } = requ
 const { Op } = require("sequelize");
 const crypto = require("crypto");
 const NotificationService = require("../services/notificationService");
+const attendanceMarkingService = require("../services/attendanceMarkingService");
 
 /**
  * Mark Bulk Attendance for a Class
@@ -36,52 +37,22 @@ exports.markBulkAttendance = catchAsync(async (req, res) => {
     for (const item of attendance_data) {
       if (item.status === "pending") continue; // Skip unmarked students
 
-      const existing = await Attendance.findOne({
-        where: {
-          institute_id,
-          student_id: item.student_id,
-          class_id,
-          subject_id: subject_id || null,
-          date
-        }
+      const res = await attendanceMarkingService.markAttendance({
+         entityType: "student",
+         entityId: item.student_id,
+         instituteId: institute_id,
+         classId: class_id,
+         subjectId: subject_id || null,
+         date: date,
+         status: item.status,
+         sourceType: "manual",
+         actorId: marked_by,
+         isAdminOverride: true, // Manual bulk edits by faculty/admin override others
+         remarks: item.remarks
       });
 
-      if (existing) {
-        // Update existing record (allows faculty to override QR or absent marks)
-        await existing.update({
-          status: item.status,
-          remarks: item.remarks || existing.remarks,
-          marked_by
-        });
-        results.push(existing);
-      } else {
-        // Create new record
-        const created = await Attendance.create({
-          institute_id,
-          student_id: item.student_id,
-          class_id,
-          subject_id: subject_id || null,
-          date,
-          status: item.status,
-          remarks: item.remarks || null,
-          marked_by
-        });
-        results.push(created);
-        
-        // Notify if present, absent, or late
-        if (["present", "absent", "late"].includes(item.status)) {
-          const currentTime = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
-          const statusCapitalized = item.status.charAt(0).toUpperCase() + item.status.slice(1);
-          
-          NotificationService.notifyStudentAndParents(
-             institute_id, 
-             item.student_id, 
-             `attendance_${item.status}`, 
-             `${statusCapitalized} Alert`, 
-             `You were marked ${item.status} on ${date} at ${currentTime}.`,
-             `/student/attendance`
-          );
-        }
+      if (res.record) {
+         results.push(res.record);
       }
     }
 
@@ -974,7 +945,7 @@ exports.markAttendanceByStudentQR = catchAsync(async (req, res) => {
       return res.status(400).json({ success: false, message: "Invalid QR format. Must be a valid student QR code." });
     }
 
-    const student_id = qr_code.split("STUDENT_QR_")[1];
+    const student_id = qr_code.split("STUDENT_QR_")[1].trim();
 
     // Find Student (include User for name in response messages)
     const student = await Student.findOne({

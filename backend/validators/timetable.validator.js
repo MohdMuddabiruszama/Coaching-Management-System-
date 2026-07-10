@@ -34,6 +34,18 @@ const createSlot = {
 
 const deleteSlot = { params: idParam };
 
+const updateSlot = {
+    params: idParam,
+    body: Joi.object({
+        start_time: Joi.string().pattern(/^\d{2}:\d{2}(:\d{2})?$/).optional()
+            .messages({ "string.pattern.base": "Start time must be in HH:MM format" }),
+        end_time: Joi.string().pattern(/^\d{2}:\d{2}(:\d{2})?$/).optional()
+            .messages({ "string.pattern.base": "End time must be in HH:MM format" }),
+        label: Joi.string().trim().max(50).optional().allow("", null),
+        slot_type: Joi.string().valid("lecture", "break", "lab").optional(),
+    }).min(1)
+};
+
 const createEntry = {
     body: Joi.object({
         class_id: idField(true),
@@ -88,4 +100,4 @@ const getByFaculty = {
     }),
 };
 
-module.exports = { createSlot, deleteSlot, createEntry, updateEntry, deleteEntry, getByClass, getByFaculty };
+module.exports = { createSlot, updateSlot, deleteSlot, createEntry, updateEntry, deleteEntry, getByClass, getByFaculty };

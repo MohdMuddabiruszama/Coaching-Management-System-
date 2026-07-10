@@ -364,6 +364,7 @@ app.use("/api/transport-fees", [verifyToken, tenantScope], require("./routes/tra
 app.use("/api/salary", [verifyToken, tenantScope], require("./routes/salary.routes"));
 app.use("/api/finance", [verifyToken, tenantScope], require("./routes/finance.routes"));
 app.use("/api/timetable", [verifyToken, tenantScope], require("./routes/timetable.routes"));
+app.use("/api/live-timetable", [verifyToken, tenantScope], require("./routes/liveTimetable.routes"));
 app.use("/api/chat", [verifyToken, tenantScope], require("./routes/chat.routes"));
 app.use("/api/parents", [verifyToken, tenantScope], require("./routes/parent.routes"));
 app.use("/api/notes", [verifyToken, tenantScope], require("./routes/note.routes"));
@@ -495,10 +496,26 @@ const syncDatabase = async () => {
       try { await sequelize.query(`ALTER TABLE attendances ADD COLUMN is_late BOOLEAN DEFAULT false;`); } catch (e) { }
       try { await sequelize.query(`ALTER TABLE attendances ADD COLUMN late_by_minutes INT DEFAULT 0;`); } catch (e) { }
       try { await sequelize.query(`ALTER TABLE attendances ADD COLUMN is_half_day BOOLEAN DEFAULT false;`); } catch (e) { }
-      // Modify attendance status type to include half_day (PostgreSQL-safe â€” no-op if already correct)
+      // Phase 1 Multi-channel attendance unified model
+      try { await sequelize.query(`ALTER TABLE attendances ADD COLUMN source_meta JSONB NULL;`); } catch (e) { }
+      try { await sequelize.query(`ALTER TABLE attendances ADD COLUMN version INT DEFAULT 1;`); } catch (e) { }
+      try { await sequelize.query(`ALTER TABLE faculty_attendances ADD COLUMN time_in TIME NULL;`); } catch (e) { }
+      try { await sequelize.query(`ALTER TABLE faculty_attendances ADD COLUMN time_out TIME NULL;`); } catch (e) { }
+      // Modify attendance status type to include half_day (PostgreSQL-safe — no-op if already correct)
       try {
         await sequelize.query(`ALTER TABLE attendances ADD COLUMN IF NOT EXISTS status VARCHAR(20) DEFAULT 'present';`);
-      } catch (e) { /* ignore â€” column already exists */ }
+      } catch (e) { /* ignore — column already exists */ }
+
+      // Add enforce_subject_enrollment to biometric_settings
+      try {
+        await sequelize.query(`ALTER TABLE biometric_settings ADD COLUMN IF NOT EXISTS enforce_subject_enrollment BOOLEAN DEFAULT true;`);
+      } catch (e) { }
+
+      // Add granular punch notification columns to biometric_settings
+      try { await sequelize.query(`ALTER TABLE biometric_settings ADD COLUMN IF NOT EXISTS notify_main_gate_in BOOLEAN DEFAULT false;`); } catch (e) { }
+      try { await sequelize.query(`ALTER TABLE biometric_settings ADD COLUMN IF NOT EXISTS notify_main_gate_out BOOLEAN DEFAULT false;`); } catch (e) { }
+      try { await sequelize.query(`ALTER TABLE biometric_settings ADD COLUMN IF NOT EXISTS notify_subject_in BOOLEAN DEFAULT false;`); } catch (e) { }
+      try { await sequelize.query(`ALTER TABLE biometric_settings ADD COLUMN IF NOT EXISTS notify_subject_out BOOLEAN DEFAULT false;`); } catch (e) { }
 
       // Public Web Page feature columns
       try { await sequelize.query(`ALTER TABLE plans ADD COLUMN feature_public_page BOOLEAN DEFAULT false;`); } catch (e) { }
@@ -688,7 +705,7 @@ const syncDatabase = async () => {
 
       // Auto-sync other schema changes using alter for the explicit models to make sure everything matches
       try {
-        const { Institute, InstitutePublicProfile, InstituteGalleryPhoto, InstituteReview, PublicEnquiry, Subscription, Plan, User, LandingPageView, Coupon, AddOn, InstituteAddOn, SubscriptionEvent, UsageTracker, Notification, NotificationPref, DeviceToken } = require('./models');
+        const { Institute, InstitutePublicProfile, InstituteGalleryPhoto, InstituteReview, PublicEnquiry, Subscription, Plan, User, LandingPageView, Coupon, AddOn, InstituteAddOn, SubscriptionEvent, UsageTracker, Notification, NotificationPref, DeviceToken, Attendance, FacultyPeriodAttendance, StudentPeriodAttendance, BiometricSettings, BiometricDevice } = require('./models');
         await InstitutePublicProfile.sync({ alter: true });
         await InstituteGalleryPhoto.sync({ alter: true });
         await InstituteReview.sync({ alter: true });
@@ -704,13 +721,24 @@ const syncDatabase = async () => {
         await SubscriptionEvent.sync({ alter: true });
 
         await Plan.sync({ alter: true });
-        await Institute.sync({ alter: true }); // ✅ picks up current_limit_chat_messages
+        await Institute.sync({ alter: true }); // ✅ picks up student_attendance_mode + faculty_attendance_mode
         await User.sync({ alter: true });  // ✅ picks up manager_type + manager_type_label
         await LandingPageView.sync({ alter: true });
-        
+
+        // ✅ Attendance In-Out mode: add mode_snapshot column to existing table
+        await Attendance.sync({ alter: true });
+        // ✅ Period-level faculty attendance (in_out mode)
+        await FacultyPeriodAttendance.sync({ alter: true });
+        // ✅ Live Timetable: period-level student attendance
+        await StudentPeriodAttendance.sync({ alter: true });
+
         await Notification.sync({ alter: true });
         await NotificationPref.sync({ alter: true });
         await DeviceToken.sync({ alter: true });
+
+        // ✅ Biometric v2: attendance_mode, subject_mode, placement_type, room_identifier
+        await BiometricSettings.sync({ alter: true });
+        await BiometricDevice.sync({ alter: true });
       } catch (e) { console.error("Error auto-syncing explicit models:", e); }
     } else {
       console.log("Startup schema migrations skipped. Set RUN_STARTUP_MIGRATIONS=true to apply ALTER/index maintenance.");

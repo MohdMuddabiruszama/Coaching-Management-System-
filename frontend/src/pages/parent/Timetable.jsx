@@ -3,6 +3,7 @@ import api from "../../services/api";
 import { AuthContext } from "../../context/AuthContext";
 import ThemeSelector from "../../components/ThemeSelector";
 import * as parentService from "../../services/parent.service";
+import { format12Hour } from "../../utils/timeFormat";
 import "../admin/Dashboard.css"; // Reuse dashboard UI
 import "./Dashboard.css"; // Parent custom styles
 
@@ -207,7 +208,7 @@ function ParentTimetable() {
                                     <tr key={slot.id}>
                                         <td className="time-slot-label" style={{ padding: "1rem", borderBottom: "1px solid var(--border-color)" }}>
                                             <strong style={{ display: "block", color: "var(--text-primary)" }}>Period {idx + 1}</strong>
-                                            <span style={{ fontSize: "0.85rem", color: "var(--text-secondary)" }}>{slot.start_time.slice(0, 5)} - {slot.end_time.slice(0, 5)}</span>
+                                            <span style={{ fontSize: "0.85rem", color: "var(--text-secondary)" }}>{format12Hour(slot.start_time)} - {format12Hour(slot.end_time)}</span>
                                         </td>
                                         {DAYS_OF_WEEK.map(day => {
                                             const entry = timetable.find(t => t.slot_id === slot.id && t.day_of_week === day);

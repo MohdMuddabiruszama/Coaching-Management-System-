@@ -2,6 +2,7 @@ import { useState, useEffect, useContext } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { AuthContext } from "../../context/AuthContext";
 import api from "../../services/api";
+import { format12Hour } from "../../utils/timeFormat";
 import "./StudentAttendance.css";
 import "../admin/Students.css";
 
@@ -293,17 +294,7 @@ function ViewAttendance() {
                                 const dateObj = new Date(record.date);
                                 const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'long' });
                                 
-                                let timeFormatted = "—";
-                                if (record.time_in) {
-                                    // Parse HH:mm:ss and convert to AM/PM format
-                                    const parts = record.time_in.split(':');
-                                    let hours = parseInt(parts[0], 10);
-                                    let mins = parts[1];
-                                    const ampm = hours >= 12 ? 'PM' : 'AM';
-                                    hours = hours % 12;
-                                    hours = hours ? hours : 12; // the hour '0' should be '12'
-                                    timeFormatted = `${hours.toString().padStart(2, '0')}:${mins} ${ampm}`;
-                                }
+                                let timeFormatted = format12Hour(record.time_in);
                                 
                                 return (
                                     <tr key={record.id}>

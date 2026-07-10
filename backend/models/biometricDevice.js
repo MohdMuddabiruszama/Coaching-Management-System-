@@ -10,6 +10,12 @@ const BiometricDevice = sequelize.define("BiometricDevice", {
         validate: { isIn: [["fingerprint", "face", "rfid", "mobile"]] },
         defaultValue: "fingerprint"
     },
+    placement_type: {
+        type: DataTypes.STRING(20),
+        validate: { isIn: [["gate", "classroom"]] },
+        defaultValue: "gate"
+    },
+    room_identifier: { type: DataTypes.STRING(255), allowNull: true },
     location: { type: DataTypes.STRING(100) },
     ip_address: { type: DataTypes.STRING(45) },
     secret_key: { type: DataTypes.STRING(255), allowNull: false },

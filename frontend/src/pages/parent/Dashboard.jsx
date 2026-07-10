@@ -8,7 +8,10 @@ import markService from "../../services/mark.service";
 import performanceService from "../../services/performance.service";
 import announcementService from "../../services/announcement.service";
 import InstituteLogo from "../../components/common/InstituteLogo";
+import toast from "react-hot-toast";
 import AnnouncementBell from "../../components/AnnouncementBell";
+import WidgetErrorBoundary from "../../components/common/WidgetErrorBoundary"; // ✅ Phase 7
+import { format12Hour } from "../../utils/timeFormat";
 import AdvancedStatCard from "../../components/common/AdvancedStatCard";
 import "./Dashboard.css";
 import "../student/Performance.css";
@@ -946,7 +949,7 @@ function ParentDashboard() {
                                                             <td style={{ fontWeight: 600 }}>{new Date(record.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</td>
                                                             <td>{record.Subject?.name || record.Class?.name || 'All Subjects'}</td>
                                                             <td style={{ color: '#10b981', fontWeight: 600 }}>
-                                                                {record.time_in ? record.time_in.substring(0, 5) : '—'}
+                                                                {record.time_in ? format12Hour(record.time_in) : '—'}
                                                                 {record.is_late && <span style={{ marginLeft: '0.4rem', color: '#f59e0b', fontSize: '0.75rem' }}>+{record.late_by_minutes}m late</span>}
                                                             </td>
                                                             <td>
@@ -985,7 +988,7 @@ function ParentDashboard() {
                                                                 {record.status?.replace('_', ' ')}
                                                             </span>
                                                             {record.time_in && (
-                                                                <div className="parent-att-time">{record.time_in.substring(0, 5)}</div>
+                                                                <div className="parent-att-time">{format12Hour(record.time_in)}</div>
                                                             )}
                                                             {record.is_late && (
                                                                 <div style={{ fontSize: '11px', color: '#f59e0b', fontWeight: 700 }}>+{record.late_by_minutes}m late</div>
@@ -1535,7 +1538,7 @@ function ParentDashboard() {
                                                             {activeSlots.map(slot => (
                                                                 <tr key={slot.id}>
                                                                     <td className="time-col">
-                                                                        {slot.start_time.slice(0, 5)} - {slot.end_time.slice(0, 5)}
+                                                                        {format12Hour(slot.start_time)} - {format12Hour(slot.end_time)}
                                                                     </td>
                                                                     {DAYS_OF_WEEK.map(day => {
                                                                         const entry = timetable.find(t => t.TimetableSlot?.start_time === slot.start_time && t.TimetableSlot?.end_time === slot.end_time && t.day_of_week === day);
@@ -1604,7 +1607,7 @@ function ParentDashboard() {
                                                                             return (
                                                                                 <div key={slot.id} style={{ display: "flex", alignItems: "center", background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: "12px", padding: "1rem", boxShadow: "0 1px 2px rgba(0,0,0,0.02)" }}>
                                                                                     <div style={{ width: "120px", fontWeight: "600", color: "#64748b", fontSize: "0.85rem", borderRight: "1px solid #e2e8f0", marginRight: "1rem" }}>
-                                                                                        {slot.start_time.slice(0, 5)} - {slot.end_time.slice(0, 5)}
+                                                                                        {format12Hour(slot.start_time)} - {format12Hour(slot.end_time)}
                                                                                     </div>
                                                                                     <div style={{ flex: 1, display: "flex", alignItems: "center", gap: "1rem", flexWrap: "wrap" }}>
                                                                                         <div className={`tt-v2-pill ${theme.pill}`} style={{ fontSize: "0.8rem", padding: "6px 14px" }}>

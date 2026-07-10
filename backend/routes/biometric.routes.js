@@ -21,6 +21,7 @@ router.post("/devices/:id/sync", verifyToken, allowRoles("admin"), ctrl.syncDevi
 // ── Phase 3: Enrollment ──────────────────────────────────────────
 router.post("/enroll", verifyToken, allowRoles("admin"), ctrl.enroll);
 router.get("/enrollments", verifyToken, allowRoles("admin"), ctrl.getEnrollments);
+router.put("/enrollments/:id", verifyToken, allowRoles("admin"), ctrl.updateEnrollment);
 router.delete("/enrollments/:id", verifyToken, allowRoles("admin"), ctrl.removeEnrollment);
 router.get("/enrollments/check/:userId", verifyToken, allowRoles("admin"), ctrl.checkEnrollment);
 
@@ -41,6 +42,7 @@ router.get("/punch-log", verifyToken, allowRoles("admin"), ctrl.getPunchLogs);
 router.get("/live", verifyToken, allowRoles("admin", "faculty"), ctrl.getLiveAttendance);
 router.get("/late-report", verifyToken, allowRoles("admin", "faculty"), ctrl.getLateReport);
 router.get("/absent-report", verifyToken, allowRoles("admin", "faculty"), ctrl.getAbsentReport);
+router.get("/present-report", verifyToken, allowRoles("admin", "faculty"), ctrl.getPresentReport);
 router.get("/class/:id", verifyToken, allowRoles("admin", "faculty"), ctrl.getClassBiometricAttendance);
 router.get("/student/:id", verifyToken, ctrl.getStudentBiometricReport);
 
