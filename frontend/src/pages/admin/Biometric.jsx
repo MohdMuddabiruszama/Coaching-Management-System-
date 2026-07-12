@@ -60,57 +60,7 @@ export default function BiometricPage() {
                     </div>
                 </div>
 
-                {/* ── Mode Toggle ── */}
-                <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "0.3rem" }}>
-                    <div style={{ fontSize: "0.75rem", fontWeight: 600, color: "#64748b", letterSpacing: "0.05em" }}>MODE</div>
-                    <button
-                        onClick={toggleMode}
-                        title={isTestMode ? "Click to switch to Real Mode" : "Click to switch to Test Mode"}
-                        style={{
-                            position: "relative",
-                            display: "flex",
-                            alignItems: "center",
-                            width: "200px",
-                            height: "40px",
-                            borderRadius: "100px",
-                            border: "none",
-                            padding: "4px",
-                            cursor: "pointer",
-                            background: isTestMode ? "#fef3c7" : "#f0fdf4",
-                            boxShadow: "0 0 0 1px " + (isTestMode ? "#fbbf24" : "#86efac"),
-                            transition: "all 0.3s ease",
-                        }}
-                    >
-                        {/* Sliding pill */}
-                        <div style={{
-                            position: "absolute",
-                            width: "96px",
-                            height: "32px",
-                            borderRadius: "100px",
-                            background: isTestMode ? "linear-gradient(135deg, #f59e0b, #d97706)" : "linear-gradient(135deg, #10b981, #059669)",
-                            top: "4px",
-                            left: isTestMode ? "calc(100% - 100px)" : "4px",
-                            transition: "all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)",
-                            boxShadow: "0 2px 8px " + (isTestMode ? "rgba(245,158,11,0.4)" : "rgba(16,185,129,0.4)"),
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            color: "#fff",
-                            fontSize: "0.75rem",
-                            fontWeight: 700,
-                            gap: "4px",
-                        }}>
-                            {isTestMode ? (
-                                <><svg width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M9 3H5a2 2 0 0 0-2 2v4m6-6h10a2 2 0 0 1 2 2v4M9 3v18m0 0h10a2 2 0 0 0 2-2v-4M9 21H5a2 2 0 0 1-2-2v-4m0 0h18"></path></svg> TEST</>
-                            ) : (
-                                <><svg width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"></circle><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"></path></svg> REAL</>
-                            )}
-                        </div>
-                        {/* Labels */}
-                        <span style={{ flex: 1, textAlign: "center", fontSize: "0.75rem", fontWeight: 700, color: !isTestMode ? "#fff" : "#15803d", transition: "color 0.3s", zIndex: 1 }}>REAL</span>
-                        <span style={{ flex: 1, textAlign: "center", fontSize: "0.75rem", fontWeight: 700, color: isTestMode ? "#fff" : "#92400e", transition: "color 0.3s", zIndex: 1 }}>TEST</span>
-                    </button>
-                </div>
+
             </div>
 
             {/* Test Mode Banner */}

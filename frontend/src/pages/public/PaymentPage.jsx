@@ -426,32 +426,7 @@ function PaymentPage() {
                         </div>
                     </div>
 
-                    {/* Test Mode / Real Mode Toggle */}
-                    {!isFree && (
-                        <div className="checkout-mode-section">
-                            <div className="checkout-mode-toggle">
-                                <span className={`checkout-mode-label ${isTestMode ? "active" : ""}`}>
-                                    🧪 Test Mode
-                                </span>
-                                <label className="checkout-toggle-switch">
-                                    <input
-                                        type="checkbox"
-                                        checked={!isTestMode}
-                                        onChange={(e) => setIsTestMode(!e.target.checked)}
-                                    />
-                                    <span className="checkout-toggle-slider" />
-                                </label>
-                                <span className={`checkout-mode-label ${!isTestMode ? "active" : ""}`}>
-                                    💳 Real Mode
-                                </span>
-                            </div>
-                            {isTestMode && (
-                                <p className="checkout-mode-hint">
-                                    Test mode: No real charges. Use test card numbers.
-                                </p>
-                            )}
-                        </div>
-                    )}
+
 
                     {/* Pay Button */}
                     <button
