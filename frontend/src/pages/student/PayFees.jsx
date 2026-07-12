@@ -483,29 +483,7 @@ function PayFees() {
                                         min="1"
                                     />
                                 </div>
-                                <div className="payment-mode-toggle" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', marginTop: '15px', marginBottom: '15px' }}>
-                                    <span style={{ fontWeight: isTestMode ? '600' : '400', color: isTestMode ? 'var(--primary-color, #3f51b5)' : '#666' }}>Test Mode</span>
-                                    <label style={{ position: 'relative', display: 'inline-block', width: '50px', height: '26px' }}>
-                                        <input 
-                                            type="checkbox" 
-                                            checked={!isTestMode} 
-                                            onChange={(e) => setIsTestMode(!e.target.checked)} 
-                                            style={{ opacity: 0, width: 0, height: 0, margin: 0, padding: 0 }}
-                                        />
-                                        <span style={{
-                                            position: 'absolute', cursor: 'pointer', top: 0, left: 0, right: 0, bottom: 0,
-                                            backgroundColor: isTestMode ? '#ccc' : 'var(--primary-color, #3f51b5)', transition: '.3s', borderRadius: '34px'
-                                        }}>
-                                            <span style={{
-                                                position: 'absolute', height: '20px', width: '20px', left: '3px', bottom: '3px',
-                                                backgroundColor: 'white', transition: '.3s', borderRadius: '50%',
-                                                transform: isTestMode ? 'translateX(0)' : 'translateX(24px)',
-                                                boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
-                                            }}></span>
-                                        </span>
-                                    </label>
-                                    <span style={{ fontWeight: !isTestMode ? '600' : '400', color: !isTestMode ? 'var(--primary-color, #3f51b5)' : '#666' }}>Real Mode</span>
-                                </div>
+
                                 
                                 <div className="modal-footer" style={{ marginTop: "20px" }}>
                                     <button type="button" onClick={() => setShowModal(false)} className="btn btn-secondary" disabled={isPaymentLoading}>
@@ -517,7 +495,7 @@ function PayFees() {
                                 </div>
                                 <div className="secure-badge" style={{ marginTop: '16px', textAlign: 'center', fontSize: '12px', color: '#666', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '6px' }}>
                                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
-                                    Secured by Razorpay ({isTestMode ? 'Test Mode' : 'Live Mode'})
+                                    Secured by Razorpay
                                 </div>
                             </form>
                         </div>

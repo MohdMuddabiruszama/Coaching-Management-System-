@@ -377,19 +377,7 @@ function RegisterPage() {
             <div className="auth-orb auth-orb--3" />
             <div className="auth-theme-controls"><ThemeSelector loginMode /></div>
 
-            {/* ── Live Test Mode Banner (top of page, visible always when test mode active) ── */}
-            {otpTestMode && modeChecked && (
-                <div className="otp-test-banner">
-                    <div className="otp-test-banner__inner">
-                        <span className="otp-test-banner__icon">🧪</span>
-                        <div>
-                            <strong>Test Mode Active</strong>
-                            <span> — OTP is auto-filled instantly. No real emails are sent.</span>
-                        </div>
-                        <span className="otp-test-banner__badge">TEST</span>
-                    </div>
-                </div>
-            )}
+
 
             {showOtpScreen ? (
                 /* ── OTP Verification Screen ── */
@@ -541,75 +529,7 @@ function RegisterPage() {
                             <h1 className="auth-title">Register Your Institute</h1>
                             <p className="auth-subtitle">Join thousands of institutes. Start free, scale as you grow.</p>
 
-                            {/* Slide Button Toggle */}
-                            {modeChecked && (
-                                <div style={{
-                                    display: "flex",
-                                    alignItems: "center",
-                                    justifyContent: "center",
-                                    gap: "12px",
-                                    marginTop: "1.5rem",
-                                    background: "var(--pro-glass-bg, rgba(255, 255, 255, 0.05))",
-                                    border: "1px solid var(--pro-glass-border, rgba(255, 255, 255, 0.1))",
-                                    padding: "12px 20px",
-                                    borderRadius: "12px",
-                                    maxWidth: "300px",
-                                    margin: "1.5rem auto 0 auto"
-                                }}>
-                                    <span style={{ 
-                                        fontSize: "0.85rem", 
-                                        fontWeight: !otpTestMode ? "700" : "500",
-                                        color: !otpTestMode ? "var(--pro-accent, #818cf8)" : "var(--text-muted, #6b7280)",
-                                        transition: "all 0.3s ease"
-                                    }}>
-                                        Real Mode
-                                    </span>
-                                    
-                                    <button
-                                        type="button"
-                                        onClick={toggleMode}
-                                        style={{
-                                            position: "relative",
-                                            width: "60px",
-                                            height: "32px",
-                                            borderRadius: "30px",
-                                            background: otpTestMode ? "linear-gradient(135deg, #059669, #10b981)" : "var(--pro-border)",
-                                            border: "none",
-                                            cursor: "pointer",
-                                            transition: "background 0.3s ease",
-                                            padding: 0,
-                                            boxShadow: otpTestMode ? "0 0 10px rgba(16, 185, 129, 0.3)" : "none"
-                                        }}
-                                    >
-                                        <div style={{
-                                            position: "absolute",
-                                            top: "3px",
-                                            left: otpTestMode ? "calc(100% - 29px)" : "3px",
-                                            width: "26px",
-                                            height: "26px",
-                                            borderRadius: "50%",
-                                            background: "#fff",
-                                            boxShadow: "0 2px 4px rgba(0,0,0,0.2)",
-                                            transition: "left 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)",
-                                            display: "flex",
-                                            alignItems: "center",
-                                            justifyContent: "center",
-                                            fontSize: "12px"
-                                        }}>
-                                            {otpTestMode ? "🧪" : "📧"}
-                                        </div>
-                                    </button>
 
-                                    <span style={{ 
-                                        fontSize: "0.85rem", 
-                                        fontWeight: otpTestMode ? "700" : "500",
-                                        color: otpTestMode ? "#10b981" : "var(--text-muted, #6b7280)",
-                                        transition: "all 0.3s ease"
-                                    }}>
-                                        Test Mode
-                                    </span>
-                                </div>
-                            )}
                         </div>
 
                         <form onSubmit={handleSubmit} className="auth-form reg-form" noValidate>
