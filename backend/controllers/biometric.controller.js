@@ -20,11 +20,15 @@ const {
     Timetable,
     TimetableSlot,
     StudentSubject,
+    Notification,
+    StudentParent,
 } = require("../models");
 const { Op } = require("sequelize");
 const bcrypt = require("bcrypt");
 const crypto = require("crypto");
 const emailService = require("../services/email.service");
+const socketUtils = require("../utils/socket");
+const NotificationService = require("../services/notificationService");
 
 // ─────────────────────────────────────────────────────────────────
 // HELPERS
@@ -404,9 +408,14 @@ async function processPunch(punch, options = {}) {
 }
 
 /**
- * Send parent notification for attendance event
- * @param {string} punch_type  - "in" | "out"
- * @param {boolean} isClassroom - true = subject-based punch, false = main gate
+ * Send parent notification for attendance event.
+ * Uses the centralized NotificationService which handles:
+ *   1. DB persistence  (notifications table)
+ *   2. Real-time WebSocket push (Socket.io)
+ *   3. FCM push notification (shows in Android notification tray like announcements)
+ *   4. Email (optional fallback)
+ * @param {string} punch_type   "in" | "out"
+ * @param {boolean} isClassroom true = subject-based punch, false = main gate
  */
 async function sendParentNotification(
     student_id,
@@ -419,7 +428,6 @@ async function sendParentNotification(
     isClassroom = false
 ) {
     try {
-        const { StudentParent } = require("../models");
         const student = await Student.findOne({
             where: { id: student_id },
             include: [{ model: User, attributes: ["name"] }],
@@ -427,63 +435,80 @@ async function sendParentNotification(
         if (!student) return;
         const studentName = student.User?.name || "Your child";
 
-        const parents = await StudentParent.findAll({
+        const studentParents = await StudentParent.findAll({
             where: { student_id },
-            include: [
-                {
-                    model: User,
-                    as: "Parent",
-                    attributes: ["name", "email"],
-                    foreignKey: "parent_id",
-                },
-            ],
         });
 
-        for (const sp of parents) {
-            const parent = sp.Parent || sp.dataValues?.Parent;
-            if (!parent?.email) continue;
+        if (!studentParents || studentParents.length === 0) return;
 
-            let subject, body;
+        const parentIds = studentParents.map(sp => sp.parent_id);
+
+        const parents = await User.findAll({
+            where: { id: { [Op.in]: parentIds } },
+            attributes: ["id", "name", "email"],
+        });
+
+        for (const parent of parents) {
+            if (!parent?.id) continue;
+
+            let title, body;
             const time = punchTime;
 
             if (isClassroom) {
                 // ── Subject-Based Punch Notifications ──
                 if (punch_type === "in" && settings.notify_subject_in) {
-                    subject = `📚 ${studentName} entered classroom`;
-                    body = `<p>Dear Parent,<br><strong>${studentName}</strong> has punched <b>IN</b> for a subject class at <b>${time}</b>.</p>`;
+                    title = `📚 ${studentName} entered classroom`;
+                    body = `${studentName} has punched IN for a subject class at ${time}.`;
                 } else if (punch_type === "out" && settings.notify_subject_out) {
-                    subject = `📚 ${studentName} left classroom`;
-                    body = `<p>Dear Parent,<br><strong>${studentName}</strong> has punched <b>OUT</b> from a subject class at <b>${time}</b>.</p>`;
+                    title = `📚 ${studentName} left classroom`;
+                    body = `${studentName} has punched OUT from a subject class at ${time}.`;
                 }
             } else {
                 // ── Main Gate Notifications ──
                 if (punch_type === "in" && settings.notify_main_gate_in) {
                     if (status === "present") {
-                        subject = `✅ ${studentName} has arrived at school`;
-                        body = `<p>Dear Parent,<br><strong>${studentName}</strong> has entered through the <b>Main Gate</b> at <b>${time}</b> and is marked <b>Present</b>.</p>`;
+                        title = `✅ ${studentName} has arrived`;
+                        body = `${studentName} entered the Main Gate at ${time} and is marked Present.`;
                     } else if (status === "late" || status === "half_day") {
-                        subject = `⚠️ ${studentName} arrived late`;
-                        body = `<p>Dear Parent,<br><strong>${studentName}</strong> arrived <b>late by ${minsLate} minutes</b> at the <b>Main Gate</b> at <b>${time}</b>.</p>`;
+                        title = `⚠️ ${studentName} arrived late`;
+                        body = `${studentName} arrived late by ${minsLate} min at the Main Gate at ${time}.`;
                     }
                 } else if (punch_type === "out" && settings.notify_main_gate_out) {
-                    subject = `🚪 ${studentName} has left school`;
-                    body = `<p>Dear Parent,<br><strong>${studentName}</strong> has exited through the <b>Main Gate</b> at <b>${time}</b>.</p>`;
+                    title = `🚪 ${studentName} has left school`;
+                    body = `${studentName} exited through the Main Gate at ${time}.`;
                 }
 
-                // Legacy: also handle old notify_parent_on_present / notify_parent_on_late flags
-                if (!subject) {
+                // Legacy fallback flags
+                if (!title) {
                     if (punch_type === "in" && status === "present" && settings.notify_parent_on_present) {
-                        subject = `✅ ${studentName} has arrived`;
-                        body = `<p>Dear Parent,<br><strong>${studentName}</strong> has been marked <b>present</b> at <b>${time}</b>.</p>`;
+                        title = `✅ ${studentName} has arrived`;
+                        body = `${studentName} has been marked present at ${time}.`;
                     } else if (punch_type === "in" && (status === "late" || status === "half_day") && settings.notify_parent_on_late) {
-                        subject = `⚠️ ${studentName} arrived late`;
-                        body = `<p>Dear Parent,<br><strong>${studentName}</strong> arrived <b>late by ${minsLate} minutes</b> today at <b>${time}</b>.</p>`;
+                        title = `⚠️ ${studentName} arrived late`;
+                        body = `${studentName} arrived late by ${minsLate} min today at ${time}.`;
                     }
                 }
             }
 
-            if (subject && body) {
-                await emailService.sendEmail(parent.email, subject, body).catch(() => { });
+            if (title && body) {
+                const notifType = isClassroom ? "biometric_subject_punch" : "biometric_gate_punch";
+                const dataPayload = { student_id, punch_type, status, time: punchTime, isClassroom, route: "/parent" };
+
+                // Sends DB + WebSocket + FCM push in one call (same as announcements)
+                await NotificationService.createAndSend(
+                    institute_id,
+                    parent.id,
+                    notifType,
+                    title,
+                    body,
+                    dataPayload
+                );
+
+                // Also send email as backup (non-blocking)
+                if (parent.email) {
+                    const emailBody = `<p>Dear Parent,<br>${body}</p>`;
+                    emailService.sendEmail(parent.email, title, emailBody).catch(() => {});
+                }
             }
         }
     } catch (err) {
@@ -1309,6 +1334,7 @@ exports.updateSettings = async (req, res) => {
         const {
             attendance_mode,
             subject_mode,
+            enforce_subject_enrollment,
             late_threshold_minutes,
             half_day_threshold_minutes,
             working_days,
@@ -1316,12 +1342,17 @@ exports.updateSettings = async (req, res) => {
             notify_parent_on_absent,
             notify_parent_on_late,
             notify_parent_on_present,
+            notify_main_gate_in,
+            notify_main_gate_out,
+            notify_subject_in,
+            notify_subject_out,
             duplicate_punch_window_secs,
         } = req.body;
 
         await settings.update({
             attendance_mode,
             subject_mode,
+            enforce_subject_enrollment,
             late_threshold_minutes,
             half_day_threshold_minutes,
             working_days,
@@ -1329,6 +1360,10 @@ exports.updateSettings = async (req, res) => {
             notify_parent_on_absent,
             notify_parent_on_late,
             notify_parent_on_present,
+            notify_main_gate_in,
+            notify_main_gate_out,
+            notify_subject_in,
+            notify_subject_out,
             duplicate_punch_window_secs,
         });
 
