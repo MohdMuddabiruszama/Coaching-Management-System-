@@ -2,6 +2,16 @@ const cron = require("node-cron");
 const { Institute, Subscription } = require("../models");
 const { Op } = require("sequelize");
 const emailService = require("../services/email.service");
+const biometricCtrl = require("../controllers/biometric.controller");
+
+// Subject-Based Auto-Carry-Forward (Every Minute)
+cron.schedule("* * * * *", async () => {
+    try {
+        await biometricCtrl.processSubjectBasedAutoCarryForward();
+    } catch (err) {
+        console.error("❌ Auto carry-forward cron error:", err.message);
+    }
+});
 
 cron.schedule("0 0 * * *", async () => {
     console.log("Running daily subscription check...");

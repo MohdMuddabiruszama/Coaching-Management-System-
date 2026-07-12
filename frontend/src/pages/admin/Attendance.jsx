@@ -120,7 +120,7 @@ function Attendance() {
                     };
                 } else {
                     initialData[student.student_id] = {
-                        status: "present",
+                        status: "",
                         remarks: ""
                     };
                 }
@@ -183,6 +183,12 @@ function Attendance() {
                 status: attendanceData[student.student_id].status,
                 remarks: attendanceData[student.student_id].remarks
             }));
+
+            const unmarked = attendance_data.filter(d => !d.status);
+            if (unmarked.length > 0) {
+                alert(`Please mark attendance for all students. ${unmarked.length} student(s) unmarked.`);
+                return;
+            }
 
             if (attendance_data.length === 0) {
                 alert("No pending students to submit.");

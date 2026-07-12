@@ -1,36 +1,37 @@
 const { DataTypes } = require("sequelize");
 const sequelize = require("../config/database");
 
-const FacultyAttendance = sequelize.define("FacultyAttendance", {
-    institute_id: DataTypes.INTEGER,
-    faculty_id: DataTypes.INTEGER,
-    date: DataTypes.DATEONLY,
+const StudentPeriodAttendance = sequelize.define("StudentPeriodAttendance", {
+    institute_id: { type: DataTypes.INTEGER, allowNull: false },
+    student_id: { type: DataTypes.INTEGER, allowNull: false },
+    timetable_entry_id: { type: DataTypes.INTEGER, allowNull: true },
+    date: { type: DataTypes.DATEONLY, allowNull: false },
     status: {
         type: DataTypes.STRING(20),
         validate: { isIn: [["present", "absent", "late", "half_day", "holiday"]] }
     },
-    marked_by: DataTypes.INTEGER, // admin ID who marked it or self if smart QR
-    remarks: DataTypes.TEXT,
     marked_by_type: {
         type: DataTypes.STRING(20),
         validate: { isIn: [["manual", "qr", "biometric"]] },
         defaultValue: "manual"
     },
+    marked_by: { type: DataTypes.INTEGER, allowNull: true },
     source_meta: { type: DataTypes.JSON, allowNull: true },
     version: { type: DataTypes.INTEGER, defaultValue: 1 },
     time_in: { type: DataTypes.TIME, allowNull: true },
     time_out: { type: DataTypes.TIME, allowNull: true },
+    remarks: { type: DataTypes.TEXT, allowNull: true },
 }, {
-    tableName: "faculty_attendances",
+    tableName: "student_period_attendances",
     timestamps: true,
     underscored: true,
     indexes: [
         {
-            name: "faculty_attendance_unique_daily",
+            name: "student_period_attendance_unique",
             unique: true,
-            fields: ["institute_id", "faculty_id", "date"]
+            fields: ["institute_id", "student_id", "date", "timetable_entry_id"]
         }
     ]
 });
 
-module.exports = FacultyAttendance;
+module.exports = StudentPeriodAttendance;

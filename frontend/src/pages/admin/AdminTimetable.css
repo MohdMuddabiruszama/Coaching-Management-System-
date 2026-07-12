@@ -279,7 +279,8 @@
 }
 
 /* Reveal on cell hover */
-.ap-tt-cell:hover .ap-tt-action-btns {
+.ap-tt-cell:hover .ap-tt-action-btns,
+.ap-tt-time-col:hover .ap-tt-action-btns {
     opacity: 1;
     pointer-events: all;
     transform: translateY(0);

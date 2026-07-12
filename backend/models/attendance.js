@@ -16,7 +16,7 @@ const Attendance = sequelize.define("Attendance", {
     // Biometric fields
     marked_by_type: {
         type: DataTypes.STRING(20),
-        validate: { isIn: [["manual", "biometric", "mobile_otp", "qr_code"]] },
+        validate: { isIn: [["manual", "biometric", "mobile_otp", "qr_code", "qr"]] },
         defaultValue: "manual"
     },
     biometric_punch_id: { type: DataTypes.BIGINT, allowNull: true },
@@ -25,6 +25,8 @@ const Attendance = sequelize.define("Attendance", {
     is_late: { type: DataTypes.BOOLEAN, defaultValue: false },
     late_by_minutes: { type: DataTypes.INTEGER, defaultValue: 0 },
     is_half_day: { type: DataTypes.BOOLEAN, defaultValue: false },
+    source_meta: { type: DataTypes.JSON, allowNull: true },
+    version: { type: DataTypes.INTEGER, defaultValue: 1 },
 }, {
     tableName: "attendances",
     timestamps: true,

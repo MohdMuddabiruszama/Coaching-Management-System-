@@ -8,6 +8,7 @@ import announcementService from "../../services/announcement.service";
 import LoadingSpinner from "../../components/common/LoadingSpinner";
 import { useParentDashboard } from "../../hooks/useMobileDashboard";
 import { useParentBadges } from "../../hooks/useParentBadges";
+import api from "../../services/api";
 import "./MobileDashboard.css";
 
 const GridIcons = {
@@ -102,6 +103,56 @@ export default function MobileDashboard() {
   const [performance, setPerformance] = useState(null);
   const [assignments, setAssignments] = useState([]);
   const [recentAnnouncements, setRecentAnnouncements] = useState([]);
+
+  // ── Notification Feed ───────────────────────────────────────────────────
+  const [notifications, setNotifications] = useState([]);
+  const [notifUnread, setNotifUnread] = useState(0);
+  const socketRef = useRef(null);
+
+  // Fetch recent notifications on mount
+  useEffect(() => {
+    api.get('/notifications?limit=10').then(res => {
+      if (res.data?.success) {
+        setNotifications(res.data.data || []);
+        setNotifUnread((res.data.data || []).filter(n => !n.is_read).length);
+      }
+    }).catch(() => {});
+  }, []);
+
+  // Real-time socket listener for new punch notifications
+  useEffect(() => {
+    let socket;
+    const connectSocket = async () => {
+      try {
+        const { io } = await import('socket.io-client');
+        const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+        if (!token) return;
+        const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || (import.meta.env.VITE_API_URL || '').replace('/api', '') || 'http://localhost:3001';
+        socket = io(SOCKET_URL, { auth: { token }, transports: ['websocket', 'polling'] });
+        socketRef.current = socket;
+        socket.on('notification', (notif) => {
+          setNotifications(prev => [notif, ...prev.slice(0, 19)]);
+          setNotifUnread(prev => prev + 1);
+        });
+        // Also handle legacy event name
+        socket.on('new_notification', (notif) => {
+          setNotifications(prev => [notif, ...prev.slice(0, 19)]);
+          setNotifUnread(prev => prev + 1);
+        });
+      } catch (e) { /* socket not available */ }
+    };
+    connectSocket();
+    return () => { if (socketRef.current) socketRef.current.disconnect(); };
+  }, []);
+
+  const markNotifsRead = () => {
+    const unreadIds = notifications.filter(n => !n.is_read).map(n => n.id);
+    if (unreadIds.length === 0) return;
+    api.patch('/notifications/mark-read', { ids: unreadIds }).catch(() => {});
+    setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
+    setNotifUnread(0);
+  };
+  // ────────────────────────────────────────────────────────────────────────
 
   // ── Initialize badges hook ──────────────────────────────────────────────
   const { badges, clearBadge, advanceAttendanceCount } = useParentBadges(
@@ -637,6 +688,78 @@ export default function MobileDashboard() {
             </div>
           )}
           {/* ────────────────────────────────────────────────────────────────── */}
+
+          {/* ── BIOMETRIC NOTIFICATION FEED ──────────────────────────────────── */}
+          {notifications.length > 0 && (
+            <div style={{ marginBottom: '14px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span style={{ fontSize: '16px' }}>🔔</span>
+                  <span style={{ fontWeight: 700, fontSize: '14px', color: '#1e293b' }}>Recent Alerts</span>
+                  {notifUnread > 0 && (
+                    <span style={{
+                      background: '#8b5cf6', color: '#fff', borderRadius: '20px',
+                      fontSize: '10px', fontWeight: 700, padding: '1px 7px', minWidth: '18px', textAlign: 'center'
+                    }}>{notifUnread > 9 ? '9+' : notifUnread}</span>
+                  )}
+                </div>
+                {notifUnread > 0 && (
+                  <button onClick={markNotifsRead} style={{
+                    background: 'none', border: 'none', color: '#8b5cf6',
+                    fontSize: '12px', fontWeight: 600, cursor: 'pointer', padding: '2px 6px'
+                  }}>Mark all read</button>
+                )}
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {notifications.slice(0, 5).map((notif, idx) => {
+                  const isGate = notif.type === 'biometric_gate_punch';
+                  const isIn = notif.data_json?.punch_type === 'in';
+                  const emoji = isGate ? (isIn ? '✅' : '🚪') : (isIn ? '📚' : '📤');
+                  const accent = isGate ? (isIn ? '#10b981' : '#f59e0b') : '#8b5cf6';
+                  const timeStr = notif.created_at ? new Date(notif.created_at).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true }) : '';
+                  return (
+                    <div key={notif.id || idx} style={{
+                      background: notif.is_read ? '#f8fafc' : `${accent}0d`,
+                      border: `1.5px solid ${notif.is_read ? '#e2e8f0' : accent + '40'}`,
+                      borderRadius: '12px',
+                      padding: '10px 12px',
+                      display: 'flex',
+                      alignItems: 'flex-start',
+                      gap: '10px',
+                      transition: 'all 0.3s ease'
+                    }}>
+                      <span style={{
+                        fontSize: '20px', flexShrink: 0,
+                        width: '36px', height: '36px', borderRadius: '50%',
+                        background: `${accent}1a`, display: 'flex',
+                        alignItems: 'center', justifyContent: 'center'
+                      }}>{emoji}</span>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{
+                          fontWeight: notif.is_read ? 500 : 700,
+                          fontSize: '13px',
+                          color: '#1e293b',
+                          marginBottom: '2px',
+                          whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'
+                        }}>{notif.title}</div>
+                        <div style={{ fontSize: '12px', color: '#64748b', lineHeight: 1.4 }}>{notif.body}</div>
+                      </div>
+                      <div style={{ flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px' }}>
+                        <span style={{ fontSize: '11px', color: '#94a3b8', whiteSpace: 'nowrap' }}>{timeStr}</span>
+                        {!notif.is_read && (
+                          <span style={{
+                            width: '8px', height: '8px', borderRadius: '50%',
+                            background: accent, display: 'block', flexShrink: 0
+                          }} />
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+          {/* ───────────────────────────────────────────────────────────────── */}
 
           {/* STATS GRID */}
           <div className="mpd-stats-grid">

@@ -6,6 +6,7 @@ import { AuthContext } from "../../context/AuthContext";
 import api from "../../services/api";
 import AnnouncementBell from "../../components/AnnouncementBell";
 import WidgetErrorBoundary from "../../components/common/WidgetErrorBoundary"; // ✅ Phase 7
+import { format12Hour } from "../../utils/timeFormat";
 import "./StudentDashboard.css";
 
 // ── Pure helpers (outside component — no re-creation on render) ──────────────
@@ -31,14 +32,6 @@ function formatDueDate(dateStr) {
     };
 }
 
-function formatTime(timeStr) {
-    if (!timeStr) return '';
-    const [hh, mm] = timeStr.split(':');
-    const hour = parseInt(hh, 10);
-    const ampm = hour >= 12 ? 'PM' : 'AM';
-    const h12 = hour % 12 || 12;
-    return `${h12}:${mm} ${ampm}`;
-}
 
 function getDayAbbr(day) {
     const map = {
@@ -257,7 +250,7 @@ function StudentDashboard() {
                                             name,
                                             color: subjectColorMap[name],
                                             time: (r.TimetableSlot?.start_time || r.start_time) 
-                                                ? `${(r.TimetableSlot?.start_time || r.start_time).slice(0,5)} – ${(r.TimetableSlot?.end_time || r.end_time).slice(0,5)}`
+                                                ? `${format12Hour(r.TimetableSlot?.start_time || r.start_time)} – ${format12Hour(r.TimetableSlot?.end_time || r.end_time)}`
                                                 : null
                                         });
                                     }
@@ -956,8 +949,8 @@ function StudentDashboard() {
                                 todaySchedule.map((cls, idx) => (
                                     <div key={cls.id || idx} className="sd-schedule-item">
                                         <div className="sd-schedule-time-col">
-                                            <span className="sd-schedule-start">{formatTime(cls.startTime)}</span>
-                                            <span className="sd-schedule-end">{formatTime(cls.endTime)}</span>
+                                            <span className="sd-schedule-start">{format12Hour(cls.startTime)}</span>
+                                            <span className="sd-schedule-end">{format12Hour(cls.endTime)}</span>
                                         </div>
                                         <div className="sd-schedule-bar" style={{backgroundColor: cls.color + '20', borderLeft: `3px solid ${cls.color}`}}>
                                             <div className="sd-schedule-subject" style={{color: cls.color}}>{cls.subject}</div>

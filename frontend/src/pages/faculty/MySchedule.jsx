@@ -1,6 +1,7 @@
 import { useState, useEffect, useContext, useMemo } from "react";
 import api from "../../services/api";
 import { AuthContext } from "../../context/AuthContext";
+import { format12Hour } from "../../utils/timeFormat";
 import "../admin/Dashboard.css";
 
 const DAYS_OF_WEEK = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -196,7 +197,9 @@ function FacultySchedule() {
                                 return (
                                     <tr key={`${slot.start_time}-${slot.end_time}`}>
                                         <td style={{ padding: '1.5rem 1rem', fontSize: '0.85rem', fontWeight: '600', color: '#1e293b', borderBottom: '1px solid #f1f5f9', whiteSpace: 'nowrap' }}>
-                                            {slot.start_time.slice(0, 5)} - {slot.end_time.slice(0, 5)}
+                                            {format12Hour(slot.start_time)}<br />
+                                            <span style={{color: '#94a3b8', fontSize: '0.75rem', fontWeight: '500'}}>to</span><br />
+                                            {format12Hour(slot.end_time)}
                                         </td>
                                         
                                         {DAYS_OF_WEEK.map(day => {

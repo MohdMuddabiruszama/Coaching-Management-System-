@@ -2,6 +2,7 @@ import { useState, useEffect, useContext, useMemo, useCallback } from "react";
 import { Link } from "react-router-dom";
 import api from "../../services/api";
 import { AuthContext } from "../../context/AuthContext";
+import { format12Hour } from "../../utils/timeFormat";
 import "./StudentTimetableV2.css";
 import "../admin/Students.css";
 
@@ -319,7 +320,7 @@ function StudentTimetable() {
                                 {activeSlots.map(slot => (
                                     <tr key={slot.id}>
                                         <td className="time-col">
-                                            {slot.start_time.slice(0, 5)} - {slot.end_time.slice(0, 5)}
+                                            {format12Hour(slot.start_time)} - {format12Hour(slot.end_time)}
                                         </td>
                                         {DAYS_OF_WEEK.map(day => {
                                             const entry = timetableMap.get(`${slot.id}-${day}`);
@@ -404,7 +405,7 @@ function StudentTimetable() {
                                                     return (
                                                         <div key={slot.id} style={{ display: "flex", alignItems: "center", background: "linear-gradient(135deg, #FFF8E1, #FFF3CD)", border: "1.5px dashed #F59E0B", borderRadius: "12px", padding: "1rem" }}>
                                                             <div style={{ width: "120px", fontWeight: "600", color: "#64748b", fontSize: "0.85rem", borderRight: "1px solid #FDE68A", marginRight: "1rem" }}>
-                                                                {slot.start_time.slice(0, 5)} - {slot.end_time.slice(0, 5)}
+                                                                {format12Hour(slot.start_time)} - {format12Hour(slot.end_time)}
                                                             </div>
                                                             <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                                                                 <span style={{ fontSize: "1.1rem" }}>☕</span>
@@ -417,7 +418,7 @@ function StudentTimetable() {
                                                 return (
                                                     <div key={slot.id} style={{ display: "flex", alignItems: "center", background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: "12px", padding: "1rem", boxShadow: "0 1px 2px rgba(0,0,0,0.02)" }}>
                                                         <div style={{ width: "120px", fontWeight: "600", color: "#64748b", fontSize: "0.85rem", borderRight: "1px solid #e2e8f0", marginRight: "1rem" }}>
-                                                            {slot.start_time.slice(0, 5)} - {slot.end_time.slice(0, 5)}
+                                                            {format12Hour(slot.start_time)} - {format12Hour(slot.end_time)}
                                                         </div>
                                                         <div style={{ flex: 1, display: "flex", alignItems: "center", gap: "1rem", flexWrap: "wrap" }}>
                                                             <div className={`tt-v2-pill ${theme.pill}`} style={{ fontSize: "0.8rem", padding: "6px 14px" }}>

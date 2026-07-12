@@ -73,6 +73,7 @@ function AdminTimetable() {
 
     // Form States
     const [slotForm, setSlotForm] = useState({ start_time: "", end_time: "" });
+    const [editingSlotId, setEditingSlotId] = useState(null);
     const [entryForm, setEntryForm] = useState({
         day_of_week: "Monday",
         slot_id: "",
@@ -134,20 +135,37 @@ function AdminTimetable() {
     const handleSlotSubmit = async (e) => {
         e.preventDefault();
         try {
-            const res = await api.post("/timetable/slots", {
-                ...slotForm,
-                class_id: selectedClass
-            });
-            if (res.data.success) {
-                alert("Time Slot added successfully!");
-                setSlots([...slots, res.data.data]);
-                setShowSlotModal(false);
-                setSlotForm({ start_time: "", end_time: "" });
+            if (editingSlotId) {
+                const res = await api.put(`/timetable/slots/${editingSlotId}`, { ...slotForm });
+                if (res.data.success) {
+                    alert("Time Slot updated successfully!");
+                    setSlots(slots.map(s => s.id === editingSlotId ? res.data.data : s));
+                    setShowSlotModal(false);
+                    setEditingSlotId(null);
+                    setSlotForm({ start_time: "", end_time: "" });
+                }
+            } else {
+                const res = await api.post("/timetable/slots", {
+                    ...slotForm,
+                    class_id: selectedClass
+                });
+                if (res.data.success) {
+                    alert("Time Slot added successfully!");
+                    setSlots([...slots, res.data.data]);
+                    setShowSlotModal(false);
+                    setSlotForm({ start_time: "", end_time: "" });
+                }
             }
         } catch (error) {
-            console.error("Error adding slot:", error);
-            alert("Failed to add slot.");
+            console.error("Error saving slot:", error);
+            alert("Failed to save slot.");
         }
+    };
+
+    const handleEditSlot = (slot) => {
+        setEditingSlotId(slot.id);
+        setSlotForm({ start_time: slot.start_time, end_time: slot.end_time });
+        setShowSlotModal(true);
     };
 
     const handleDeleteSlot = async (id) => {
@@ -326,11 +344,19 @@ function AdminTimetable() {
                                 {slots.map((slot, idx) => (
                                     <tr key={slot.id}>
                                         <td>
-                                            <div className="ap-tt-time-col">
+                                            <div className="ap-tt-time-col" style={{ position: "relative" }}>
                                                 <div className="ap-tt-period-name">Period {idx + 1}</div>
                                                 <div className="ap-tt-time-range">
                                                     <ClockIcon />
                                                     {formatAMPM(slot.start_time)} - {formatAMPM(slot.end_time)}
+                                                </div>
+                                                <div className="ap-tt-action-btns slot-action-btns">
+                                                    <button className="ap-tt-edit-btn" onClick={() => handleEditSlot(slot)} title="Edit Period">
+                                                        <EditIcon />
+                                                    </button>
+                                                    <button className="ap-tt-delete-btn" onClick={() => handleDeleteSlot(slot.id)} title="Remove Period">
+                                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                                                    </button>
                                                 </div>
                                             </div>
                                         </td>
@@ -444,7 +470,7 @@ function AdminTimetable() {
                                     <p className="tt-modal-subtitle">Create, edit and manage class time slots</p>
                                 </div>
                             </div>
-                            <button className="tt-modal-close" onClick={() => setShowSlotModal(false)}>
+                            <button className="tt-modal-close" onClick={() => { setShowSlotModal(false); setEditingSlotId(null); setSlotForm({ start_time: "", end_time: "" }); }}>
                                 <CloseIcon />
                             </button>
                         </div>
@@ -482,8 +508,8 @@ function AdminTimetable() {
                             </form>
                         </div>
                         <div className="tt-modal-footer">
-                            <button type="button" className="ap-btn-white" onClick={() => setShowSlotModal(false)}>Cancel</button>
-                            <button type="submit" form="slotForm" className="ap-btn-purple">Add Time Slot</button>
+                            <button type="button" className="ap-btn-white" onClick={() => { setShowSlotModal(false); setEditingSlotId(null); setSlotForm({ start_time: "", end_time: "" }); }}>Cancel</button>
+                            <button type="submit" form="slotForm" className="ap-btn-purple">{editingSlotId ? "Update Time Slot" : "Add Time Slot"}</button>
                         </div>
                     </div>
                 </div>

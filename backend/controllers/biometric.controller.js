@@ -11,15 +11,24 @@ const {
     BiometricSettings,
     Attendance,
     Student,
+    Faculty,
+    FacultyAttendance,
     User,
     Class,
     Subject,
     Institute,
+    Timetable,
+    TimetableSlot,
+    StudentSubject,
+    Notification,
+    StudentParent,
 } = require("../models");
 const { Op } = require("sequelize");
 const bcrypt = require("bcrypt");
 const crypto = require("crypto");
 const emailService = require("../services/email.service");
+const socketUtils = require("../utils/socket");
+const NotificationService = require("../services/notificationService");
 
 // ─────────────────────────────────────────────────────────────────
 // HELPERS
@@ -34,6 +43,109 @@ async function getOrCreateSettings(institute_id) {
         settings = await BiometricSettings.create({ institute_id });
     }
     return settings;
+}
+
+/**
+ * Fetch the active timetable slot for a given room and time
+ */
+async function _getActiveTimetableSlot(room_identifier, punchTimeStr, dayOfWeekName) {
+    if (!room_identifier) return null;
+    
+    // Normalize room names by removing "room", "class", spaces and converting to lowercase
+    const normalizeRoom = (str) => str ? str.toString().toLowerCase().replace(/room|class|\s/g, "") : "";
+    const targetRoomNorm = normalizeRoom(room_identifier);
+
+    // Convert punchTimeStr (HH:MM:SS) to minutes for easier comparison
+    const [h, m, s] = punchTimeStr.split(":").map(Number);
+    const punchMinutes = h * 60 + m;
+    
+    // Find all slots for this day 
+    const allDaySchedules = await Timetable.findAll({
+        where: { day_of_week: dayOfWeekName, is_break: false },
+        raw: true
+    });
+    
+    // Filter matching rooms using normalization
+    const schedules = allDaySchedules.filter(s => normalizeRoom(s.room_number) === targetRoomNorm);
+    
+    if (!schedules.length) return null;
+    
+    const slotIds = schedules.map(s => s.slot_id);
+    const slots = await TimetableSlot.findAll({
+        where: { id: { [Op.in]: slotIds } },
+        raw: true
+    });
+    
+    for (const slot of slots) {
+        const [sh, sm] = slot.start_time.split(":").map(Number);
+        const [eh, em] = slot.end_time.split(":").map(Number);
+        const startMins = sh * 60 + sm - 15; // 15 mins grace before
+        const endMins = eh * 60 + em; // Up to end of class
+        
+        if (punchMinutes >= startMins && punchMinutes <= endMins) {
+            const schedule = schedules.find(s => s.slot_id === slot.id);
+            return schedule;
+        }
+    }
+    return null;
+}
+
+/**
+ * Batch mark subjects for a student based on time_in and time_out (Class-Based)
+ */
+async function _batchMarkSubjects(student, timeInStr, timeOutStr, dateStr, institute_id) {
+    const dayName = new Date(dateStr).toLocaleString("en-US", { weekday: "long" });
+    
+    // Convert times to minutes
+    const [ih, im] = timeInStr.split(":").map(Number);
+    const inMins = ih * 60 + im;
+    const [oh, om] = timeOutStr.split(":").map(Number);
+    const outMins = oh * 60 + om;
+    
+    const schedules = await Timetable.findAll({
+        where: { class_id: student.class_id, day_of_week: dayName, is_break: false },
+        raw: true
+    });
+    if (!schedules.length) return;
+    
+    const slotIds = schedules.map(s => s.slot_id);
+    const slots = await TimetableSlot.findAll({
+        where: { id: { [Op.in]: slotIds } },
+        raw: true
+    });
+    
+    for (const schedule of schedules) {
+        const slot = slots.find(s => s.id === schedule.slot_id);
+        if (!slot) continue;
+        
+        const [sh, sm] = slot.start_time.split(":").map(Number);
+        const [eh, em] = slot.end_time.split(":").map(Number);
+        const startMins = sh * 60 + sm;
+        const endMins = eh * 60 + em;
+        
+        // If the subject falls entirely or mostly within the time_in and time_out bounds
+        if (startMins >= inMins && endMins <= outMins + 15) {
+            await Attendance.findOrCreate({
+                where: {
+                    institute_id,
+                    student_id: student.id,
+                    date: dateStr,
+                    subject_id: schedule.subject_id
+                },
+                defaults: {
+                    institute_id,
+                    student_id: student.id,
+                    class_id: student.class_id,
+                    subject_id: schedule.subject_id,
+                    date: dateStr,
+                    status: "present",
+                    marked_by_type: "biometric",
+                    time_in: timeInStr,
+                    time_out: timeOutStr,
+                }
+            });
+        }
+    }
 }
 
 /**
@@ -126,13 +238,8 @@ async function processPunch(punch, options = {}) {
         let attendanceUpdated = false;
 
         if (enrollment.user_role === "student") {
-            // IMPORTANT: enrollment.user_id = users.id, but Attendance.student_id = students.id
-            // We must look up the Student record to get the correct student PK.
             const student = await Student.findOne({
-                where: {
-                    user_id: enrollment.user_id,
-                    institute_id: enrollment.institute_id,
-                },
+                where: { user_id: enrollment.user_id, institute_id: enrollment.institute_id },
             });
 
             if (!student) {
@@ -140,27 +247,137 @@ async function processPunch(punch, options = {}) {
                 return { ok: false, reason: `Student profile not found for user_id=${enrollment.user_id}. Ensure the student is properly registered.` };
             }
 
-            // Check already present today
-            const existing = await Attendance.findOne({
+            const device = await BiometricDevice.findByPk(punch.device_id);
+
+            if (!settings.attendance_mode || settings.attendance_mode === "class_based" || !device || device.placement_type === "gate") {
+                // Mode A: Class Based (Main Gate)
+                const existing = await Attendance.findOne({
+                    where: {
+                        institute_id: enrollment.institute_id,
+                        student_id: student.id,
+                        date: punchDate,
+                        subject_id: null,
+                    },
+                });
+
+                if (!existing) {
+                    await Attendance.create({
+                        institute_id: enrollment.institute_id,
+                        student_id: student.id,
+                        class_id: student.class_id,
+                        date: punchDate,
+                        status,
+                        marked_by_type: "biometric",
+                        biometric_punch_id: punch.id,
+                        time_in: punchTime,
+                        is_late: isLate,
+                        late_by_minutes: Math.max(0, minsLate),
+                        is_half_day: isHalfDay,
+                        marked_by: null,
+                    });
+                    attendanceCreated = true;
+                } else if (punch.punch_type === "out" && !existing.time_out) {
+                    await existing.update({ time_out: punchTime });
+                    attendanceUpdated = true;
+                    // Primary Trigger: Batch map subjects on punch out
+                    if (settings.attendance_mode === "class_based") {
+                        await _batchMarkSubjects(student, existing.time_in, punchTime, punchDate, enrollment.institute_id);
+                    }
+                }
+            } else if (settings.attendance_mode === "subject_based" && device.placement_type === "classroom") {
+                // Mode B/C: Subject Based (Classroom Devices)
+                const activeSlot = await _getActiveTimetableSlot(device.room_identifier, punchTime, dayName);
+                
+                if (activeSlot) {
+                    if (settings.enforce_subject_enrollment !== false) {
+                        const isEnrolled = await StudentSubject.count({
+                            where: {
+                                student_id: student.id,
+                                subject_id: activeSlot.subject_id
+                            }
+                        });
+                        
+                        if (isEnrolled === 0) {
+                            await punch.update({ processed: true });
+                            return { ok: false, reason: `Punch discarded: Student is not enrolled in the currently active subject (Subject ID: ${activeSlot.subject_id}).` };
+                        }
+                    }
+
+                    const existingSubjectAtt = await Attendance.findOne({
+                        where: {
+                            institute_id: enrollment.institute_id,
+                            student_id: student.id,
+                            date: punchDate,
+                            subject_id: activeSlot.subject_id,
+                        }
+                    });
+
+                    if (!existingSubjectAtt) {
+                        await Attendance.create({
+                            institute_id: enrollment.institute_id,
+                            student_id: student.id,
+                            class_id: activeSlot.class_id,
+                            subject_id: activeSlot.subject_id,
+                            date: punchDate,
+                            status: "present", 
+                            marked_by_type: "biometric",
+                            biometric_punch_id: punch.id,
+                            time_in: punchTime,
+                        });
+                        attendanceCreated = true;
+                    }
+                } else {
+                    // Punched in a classroom, but no active subject found for this room. 
+                    // Log it or ignore. We'll ignore and mark processed.
+                    await punch.update({ processed: true });
+                    return { ok: false, reason: `No active subject found in Timetable for Room ${device.room_identifier} at this time.` };
+                }
+            }
+
+            // Parent notifications — pass punch_type and placement context for granular routing
+            if (attendanceCreated || attendanceUpdated) {
+                const isClassroom = device && device.placement_type === "classroom";
+                sendParentNotification(
+                    student.id,
+                    enrollment.institute_id,
+                    status,
+                    punchTime,
+                    settings,
+                    minsLate,
+                    punch.punch_type,   // "in" | "out"
+                    isClassroom         // true = subject punch, false = main gate
+                ).catch(() => {});
+            }
+        } else if (enrollment.user_role === "faculty") {
+            const faculty = await Faculty.findOne({
+                where: {
+                    user_id: enrollment.user_id,
+                    institute_id: enrollment.institute_id,
+                },
+            });
+
+            if (!faculty) {
+                await punch.update({ processed: true });
+                return { ok: false, reason: `Faculty profile not found for user_id=${enrollment.user_id}. Ensure the faculty is properly registered.` };
+            }
+
+            const existing = await FacultyAttendance.findOne({
                 where: {
                     institute_id: enrollment.institute_id,
-                    student_id: student.id,           // ← students.id (not users.id)
+                    faculty_id: faculty.id,
                     date: punchDate,
                 },
             });
 
             if (!existing) {
-                await Attendance.create({
+                await FacultyAttendance.create({
                     institute_id: enrollment.institute_id,
-                    student_id: student.id,            // ← students.id
+                    faculty_id: faculty.id,
                     date: punchDate,
                     status,
                     marked_by_type: "biometric",
-                    biometric_punch_id: punch.id,
+                    source_meta: { biometric_punch_id: punch.id },
                     time_in: punchTime,
-                    is_late: isLate,
-                    late_by_minutes: Math.max(0, minsLate),
-                    is_half_day: isHalfDay,
                     marked_by: null,
                 });
                 attendanceCreated = true;
@@ -168,16 +385,6 @@ async function processPunch(punch, options = {}) {
                 await existing.update({ time_out: punchTime });
                 attendanceUpdated = true;
             }
-
-            // Parent notifications (pass student.id, which is the correct FK)
-            await sendParentNotification(
-                student.id,
-                enrollment.institute_id,
-                status,
-                punchTime,
-                settings,
-                minsLate
-            );
         }
 
         await punch.update({ processed: true });
@@ -201,18 +408,26 @@ async function processPunch(punch, options = {}) {
 }
 
 /**
- * Send parent notification for attendance event
+ * Send parent notification for attendance event.
+ * Uses the centralized NotificationService which handles:
+ *   1. DB persistence  (notifications table)
+ *   2. Real-time WebSocket push (Socket.io)
+ *   3. FCM push notification (shows in Android notification tray like announcements)
+ *   4. Email (optional fallback)
+ * @param {string} punch_type   "in" | "out"
+ * @param {boolean} isClassroom true = subject-based punch, false = main gate
  */
 async function sendParentNotification(
     student_id,
     institute_id,
     status,
-    time_in,
+    punchTime,
     settings,
-    minsLate
+    minsLate,
+    punch_type = "in",
+    isClassroom = false
 ) {
     try {
-        const { StudentParent } = require("../models");
         const student = await Student.findOne({
             where: { id: student_id },
             include: [{ model: User, attributes: ["name"] }],
@@ -220,36 +435,80 @@ async function sendParentNotification(
         if (!student) return;
         const studentName = student.User?.name || "Your child";
 
-        const parents = await StudentParent.findAll({
+        const studentParents = await StudentParent.findAll({
             where: { student_id },
-            include: [
-                {
-                    model: User,
-                    as: "Parent",
-                    attributes: ["name", "email"],
-                    foreignKey: "parent_id",
-                },
-            ],
         });
 
-        for (const sp of parents) {
-            const parent = sp.Parent || sp.dataValues?.Parent;
-            if (!parent?.email) continue;
+        if (!studentParents || studentParents.length === 0) return;
 
-            let subject, body;
-            if (status === "present" && settings.notify_parent_on_present) {
-                subject = `✅ ${studentName} has arrived`;
-                body = `<p>Dear Parent,<br><strong>${studentName}</strong> has been marked <b>present</b> at <b>${time_in}</b>.</p>`;
-            } else if (
-                (status === "late" || status === "half_day") &&
-                settings.notify_parent_on_late
-            ) {
-                subject = `⚠️ ${studentName} arrived late`;
-                body = `<p>Dear Parent,<br><strong>${studentName}</strong> arrived <b>late by ${minsLate} minutes</b> today at <b>${time_in}</b>.</p>`;
+        const parentIds = studentParents.map(sp => sp.parent_id);
+
+        const parents = await User.findAll({
+            where: { id: { [Op.in]: parentIds } },
+            attributes: ["id", "name", "email"],
+        });
+
+        for (const parent of parents) {
+            if (!parent?.id) continue;
+
+            let title, body;
+            const time = punchTime;
+
+            if (isClassroom) {
+                // ── Subject-Based Punch Notifications ──
+                if (punch_type === "in" && settings.notify_subject_in) {
+                    title = `📚 ${studentName} entered classroom`;
+                    body = `${studentName} has punched IN for a subject class at ${time}.`;
+                } else if (punch_type === "out" && settings.notify_subject_out) {
+                    title = `📚 ${studentName} left classroom`;
+                    body = `${studentName} has punched OUT from a subject class at ${time}.`;
+                }
+            } else {
+                // ── Main Gate Notifications ──
+                if (punch_type === "in" && settings.notify_main_gate_in) {
+                    if (status === "present") {
+                        title = `✅ ${studentName} has arrived`;
+                        body = `${studentName} entered the Main Gate at ${time} and is marked Present.`;
+                    } else if (status === "late" || status === "half_day") {
+                        title = `⚠️ ${studentName} arrived late`;
+                        body = `${studentName} arrived late by ${minsLate} min at the Main Gate at ${time}.`;
+                    }
+                } else if (punch_type === "out" && settings.notify_main_gate_out) {
+                    title = `🚪 ${studentName} has left school`;
+                    body = `${studentName} exited through the Main Gate at ${time}.`;
+                }
+
+                // Legacy fallback flags
+                if (!title) {
+                    if (punch_type === "in" && status === "present" && settings.notify_parent_on_present) {
+                        title = `✅ ${studentName} has arrived`;
+                        body = `${studentName} has been marked present at ${time}.`;
+                    } else if (punch_type === "in" && (status === "late" || status === "half_day") && settings.notify_parent_on_late) {
+                        title = `⚠️ ${studentName} arrived late`;
+                        body = `${studentName} arrived late by ${minsLate} min today at ${time}.`;
+                    }
+                }
             }
 
-            if (subject && body) {
-                await emailService.sendEmail(parent.email, subject, body).catch(() => { });
+            if (title && body) {
+                const notifType = isClassroom ? "biometric_subject_punch" : "biometric_gate_punch";
+                const dataPayload = { student_id, punch_type, status, time: punchTime, isClassroom, route: "/parent" };
+
+                // Sends DB + WebSocket + FCM push in one call (same as announcements)
+                await NotificationService.createAndSend(
+                    institute_id,
+                    parent.id,
+                    notifType,
+                    title,
+                    body,
+                    dataPayload
+                );
+
+                // Also send email as backup (non-blocking)
+                if (parent.email) {
+                    const emailBody = `<p>Dear Parent,<br>${body}</p>`;
+                    emailService.sendEmail(parent.email, title, emailBody).catch(() => {});
+                }
             }
         }
     } catch (err) {
@@ -285,7 +544,7 @@ exports.getDevices = async (req, res) => {
 exports.createDevice = async (req, res) => {
     try {
         const institute_id = req.user.institute_id;
-        const { device_name, device_serial, device_type, location, ip_address } =
+        const { device_name, device_serial, device_type, placement_type, room_identifier, location, ip_address } =
             req.body;
 
         if (!device_name || !device_serial) {
@@ -302,6 +561,8 @@ exports.createDevice = async (req, res) => {
             device_name,
             device_serial,
             device_type: device_type || "fingerprint",
+            placement_type: placement_type || "gate",
+            room_identifier: room_identifier || null,
             location: location || "",
             ip_address: ip_address || "",
             secret_key,
@@ -335,8 +596,8 @@ exports.updateDevice = async (req, res) => {
         if (!device)
             return res.status(404).json({ success: false, message: "Device not found" });
 
-        const { device_name, location, ip_address, status, device_type } = req.body;
-        await device.update({ device_name, location, ip_address, status, device_type });
+        const { device_name, location, ip_address, status, device_type, placement_type, room_identifier } = req.body;
+        await device.update({ device_name, location, ip_address, status, device_type, placement_type, room_identifier });
         res.json({ success: true, message: "Device updated", data: device });
     } catch (err) {
         res.status(500).json({ success: false, message: err.message });
@@ -480,7 +741,14 @@ exports.getEnrollments = async (req, res) => {
             where: { institute_id },
             include: [
                 { model: BiometricDevice, attributes: ["device_name", "location"] },
-                { model: User, attributes: ["name", "email", "role"] },
+                { 
+                    model: User, 
+                    attributes: ["name", "email", "role"],
+                    include: [
+                        { model: Student, attributes: ["roll_number", "class_id"] },
+                        { model: Faculty, attributes: ["designation"] }
+                    ]
+                },
             ],
             order: [["created_at", "DESC"]],
         });
@@ -505,6 +773,29 @@ exports.removeEnrollment = async (req, res) => {
             return res.status(404).json({ success: false, message: "Enrollment not found" });
         await enrollment.update({ status: "inactive" });
         res.json({ success: true, message: "Enrollment deactivated" });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+};
+
+/**
+ * PUT /api/biometric/enrollments/:id
+ * Update an existing enrollment (device, device_user_id, status)
+ */
+exports.updateEnrollment = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const institute_id = req.user.institute_id;
+        const { device_id, device_user_id, user_id, status } = req.body;
+        
+        const enrollment = await BiometricEnrollment.findOne({
+            where: { id, institute_id },
+        });
+        if (!enrollment)
+            return res.status(404).json({ success: false, message: "Enrollment not found" });
+        
+        await enrollment.update({ device_id, device_user_id, user_id, status });
+        res.json({ success: true, message: "Enrollment updated successfully", data: enrollment });
     } catch (err) {
         res.status(500).json({ success: false, message: err.message });
     }
@@ -750,32 +1041,74 @@ exports.getLiveAttendance = async (req, res) => {
                 marked_by_type: "biometric",
             },
             include: [
-                { model: Student, include: [{ model: User, attributes: ["name"] }] },
+                { 
+                    model: Student, 
+                    include: [
+                        { model: User, attributes: ["name"] },
+                        { model: Class, attributes: ["name", "section"], through: { attributes: [] } }
+                    ] 
+                },
                 { model: Class, attributes: ["id", "name", "section"] },
+                { 
+                    model: BiometricPunch, 
+                    include: [{ model: BiometricDevice, attributes: ["device_name"] }]
+                }
             ],
             order: [["time_in", "DESC"]],
         });
 
-        const present = records.filter((r) => r.status === "present" || r.status === "half_day").length;
-        const late = records.filter((r) => r.status === "late" || r.is_late).length;
+        const facultyRecords = await FacultyAttendance.findAll({
+            where: {
+                institute_id,
+                date: today,
+                marked_by_type: "biometric",
+            },
+            include: [
+                { model: Faculty, include: [{ model: User, attributes: ["name"] }] },
+            ],
+            order: [["time_in", "DESC"]],
+        });
+
+        const allRecords = [
+            ...records.map((r) => ({
+                id: r.student_id,
+                role: "student",
+                roll_number: r.Student?.roll_number,
+                name: r.Student?.User?.name,
+                class: r.Class ? `${r.Class.name} ${r.Class.section || ""}`.trim() : (r.Student?.Classes?.length ? `${r.Student.Classes[0].name} ${r.Student.Classes[0].section || ""}`.trim() : "—"),
+                time_in: r.time_in,
+                time_out: r.time_out,
+                status: r.status,
+                is_late: r.is_late,
+                late_by_minutes: r.late_by_minutes,
+                device_name: r.BiometricPunch?.BiometricDevice?.device_name || "Main Entrance",
+            })),
+            ...facultyRecords.map((r) => ({
+                id: r.faculty_id,
+                role: "faculty",
+                name: r.Faculty?.User?.name,
+                class: r.Faculty?.designation || "Faculty",
+                time_in: r.time_in,
+                time_out: r.time_out,
+                status: r.status,
+                is_late: r.status === "late" || r.status === "half_day",
+                late_by_minutes: 0,
+                device_name: "Main Entrance",
+            }))
+        ].sort((a, b) => new Date(b.time_in) - new Date(a.time_in));
+
+        const present = allRecords.filter((r) => r.status === "present" || r.status === "half_day").length;
+        const late = allRecords.filter((r) => r.status === "late" || r.is_late).length;
 
         res.json({
             success: true,
             data: {
                 date: today,
-                total_marked: records.length,
+                total_marked: allRecords.length,
                 present,
                 late,
-                absent: 0, // absent detection happens at night
-                records: records.map((r) => ({
-                    student_id: r.student_id,
-                    name: r.Student?.User?.name,
-                    class: r.Class ? `${r.Class.name} ${r.Class.section || ""}`.trim() : "—",
-                    time_in: r.time_in,
-                    status: r.status,
-                    is_late: r.is_late,
-                    late_by_minutes: r.late_by_minutes,
-                })),
+                absent: 0,
+                records: allRecords,
             },
         });
     } catch (err) {
@@ -861,41 +1194,50 @@ exports.getStudentBiometricReport = async (req, res) => {
 };
 
 /**
+ * Helper to get enrolled students and faculty for an institute
+ */
+const getEnrolledUsers = async (institute_id) => {
+    const devices = await BiometricDevice.findAll({ where: { institute_id }, attributes: ["id"] });
+    const deviceIds = devices.map(d => d.id);
+    const enrollments = await BiometricEnrollment.findAll({ where: { device_id: { [Op.in]: deviceIds } }, attributes: ["user_id"] });
+    const enrolledUserIds = enrollments.map(e => e.user_id);
+
+    const students = await Student.findAll({ where: { user_id: { [Op.in]: enrolledUserIds }, institute_id }, attributes: ["id"] });
+    const enrolledStudentIds = students.map(s => s.id);
+
+    const faculties = await Faculty.findAll({ where: { user_id: { [Op.in]: enrolledUserIds }, institute_id }, attributes: ["id"] });
+    const enrolledFacultyIds = faculties.map(f => f.id);
+
+    return { enrolledStudentIds, enrolledFacultyIds };
+};
+
+/**
  * GET /api/attendance/biometric/late-report
  * All late arrivals for date range
  */
 exports.getLateReport = async (req, res) => {
     try {
         const institute_id = req.user.institute_id;
-        const { start_date, end_date } = req.query;
+        const { start_date, end_date, role } = req.query;
+        const { enrolledStudentIds, enrolledFacultyIds } = await getEnrolledUsers(institute_id);
 
-        const where = {
-            institute_id,
-            is_late: true,
-            marked_by_type: "biometric",
-        };
-        if (start_date && end_date) {
-            where.date = { [Op.between]: [start_date, end_date] };
-        }
+        const sWhere = { institute_id, is_late: true, marked_by_type: "biometric", student_id: { [Op.in]: enrolledStudentIds } };
+        if (start_date && end_date) sWhere.date = { [Op.between]: [start_date, end_date] };
 
-        const records = await Attendance.findAll({
-            where,
-            include: [
-                { model: Student, include: [{ model: User, attributes: ["name"] }] },
-            ],
-            order: [["date", "DESC"], ["late_by_minutes", "DESC"]],
-        });
+        const fWhere = { institute_id, status: "late", marked_by_type: "biometric", faculty_id: { [Op.in]: enrolledFacultyIds } };
+        if (start_date && end_date) fWhere.date = { [Op.between]: [start_date, end_date] };
 
-        res.json({
-            success: true,
-            data: records.map((r) => ({
-                date: r.date,
-                student_id: r.student_id,
-                name: r.Student?.User?.name,
-                time_in: r.time_in,
-                late_by_minutes: r.late_by_minutes,
-            })),
-        });
+        const [studentRecords, facultyRecords] = await Promise.all([
+            (!role || role === "all" || role === "student") ? Attendance.findAll({ where: sWhere, include: [{ model: Student, include: [{ model: User, attributes: ["name"] }] }] }) : Promise.resolve([]),
+            (!role || role === "all" || role === "faculty") ? FacultyAttendance.findAll({ where: fWhere, include: [{ model: Faculty, include: [{ model: User, attributes: ["name"] }] }] }) : Promise.resolve([])
+        ]);
+
+        const merged = [
+            ...studentRecords.map(r => ({ date: r.date, student_id: r.student_id, name: r.Student?.User?.name, role: "student", time_in: r.time_in, time_out: r.time_out, late_by_minutes: r.late_by_minutes })),
+            ...facultyRecords.map(r => ({ date: r.date, faculty_id: r.faculty_id, name: r.Faculty?.User?.name, role: "faculty", time_in: r.time_in, time_out: r.time_out, late_by_minutes: 0 }))
+        ].sort((a, b) => new Date(b.date) - new Date(a.date) || b.late_by_minutes - a.late_by_minutes);
+
+        res.json({ success: true, data: merged });
     } catch (err) {
         res.status(500).json({ success: false, message: err.message });
     }
@@ -908,29 +1250,58 @@ exports.getLateReport = async (req, res) => {
 exports.getAbsentReport = async (req, res) => {
     try {
         const institute_id = req.user.institute_id;
-        const { start_date, end_date } = req.query;
+        const { start_date, end_date, role } = req.query;
+        const { enrolledStudentIds, enrolledFacultyIds } = await getEnrolledUsers(institute_id);
 
-        const where = { institute_id, status: "absent" };
-        if (start_date && end_date) {
-            where.date = { [Op.between]: [start_date, end_date] };
-        }
+        const sWhere = { institute_id, status: "absent", student_id: { [Op.in]: enrolledStudentIds } };
+        if (start_date && end_date) sWhere.date = { [Op.between]: [start_date, end_date] };
 
-        const records = await Attendance.findAll({
-            where,
-            include: [
-                { model: Student, include: [{ model: User, attributes: ["name"] }] },
-            ],
-            order: [["date", "DESC"]],
-        });
+        const fWhere = { institute_id, status: "absent", faculty_id: { [Op.in]: enrolledFacultyIds } };
+        if (start_date && end_date) fWhere.date = { [Op.between]: [start_date, end_date] };
 
-        res.json({
-            success: true,
-            data: records.map((r) => ({
-                date: r.date,
-                student_id: r.student_id,
-                name: r.Student?.User?.name,
-            })),
-        });
+        const [studentRecords, facultyRecords] = await Promise.all([
+            (!role || role === "all" || role === "student") ? Attendance.findAll({ where: sWhere, include: [{ model: Student, include: [{ model: User, attributes: ["name"] }] }] }) : Promise.resolve([]),
+            (!role || role === "all" || role === "faculty") ? FacultyAttendance.findAll({ where: fWhere, include: [{ model: Faculty, include: [{ model: User, attributes: ["name"] }] }] }) : Promise.resolve([])
+        ]);
+
+        const merged = [
+            ...studentRecords.map(r => ({ date: r.date, student_id: r.student_id, name: r.Student?.User?.name, role: "student" })),
+            ...facultyRecords.map(r => ({ date: r.date, faculty_id: r.faculty_id, name: r.Faculty?.User?.name, role: "faculty" }))
+        ].sort((a, b) => new Date(b.date) - new Date(a.date));
+
+        res.json({ success: true, data: merged });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+};
+
+/**
+ * GET /api/attendance/biometric/present-report
+ * All present students for a date range
+ */
+exports.getPresentReport = async (req, res) => {
+    try {
+        const institute_id = req.user.institute_id;
+        const { start_date, end_date, role } = req.query;
+        const { enrolledStudentIds, enrolledFacultyIds } = await getEnrolledUsers(institute_id);
+
+        const sWhere = { institute_id, status: { [Op.in]: ["present", "half_day"] }, marked_by_type: "biometric", student_id: { [Op.in]: enrolledStudentIds } };
+        if (start_date && end_date) sWhere.date = { [Op.between]: [start_date, end_date] };
+
+        const fWhere = { institute_id, status: { [Op.in]: ["present", "half_day"] }, marked_by_type: "biometric", faculty_id: { [Op.in]: enrolledFacultyIds } };
+        if (start_date && end_date) fWhere.date = { [Op.between]: [start_date, end_date] };
+
+        const [studentRecords, facultyRecords] = await Promise.all([
+            (!role || role === "all" || role === "student") ? Attendance.findAll({ where: sWhere, include: [{ model: Student, include: [{ model: User, attributes: ["name"] }] }] }) : Promise.resolve([]),
+            (!role || role === "all" || role === "faculty") ? FacultyAttendance.findAll({ where: fWhere, include: [{ model: Faculty, include: [{ model: User, attributes: ["name"] }] }] }) : Promise.resolve([])
+        ]);
+
+        const merged = [
+            ...studentRecords.map(r => ({ date: r.date, student_id: r.student_id, name: r.Student?.User?.name, role: "student", time_in: r.time_in, time_out: r.time_out, late_by_minutes: r.late_by_minutes })),
+            ...facultyRecords.map(r => ({ date: r.date, faculty_id: r.faculty_id, name: r.Faculty?.User?.name, role: "faculty", time_in: r.time_in, time_out: r.time_out, late_by_minutes: 0 }))
+        ].sort((a, b) => new Date(b.date) - new Date(a.date));
+
+        res.json({ success: true, data: merged });
     } catch (err) {
         res.status(500).json({ success: false, message: err.message });
     }
@@ -961,6 +1332,9 @@ exports.updateSettings = async (req, res) => {
         const institute_id = req.user.institute_id;
         const settings = await getOrCreateSettings(institute_id);
         const {
+            attendance_mode,
+            subject_mode,
+            enforce_subject_enrollment,
             late_threshold_minutes,
             half_day_threshold_minutes,
             working_days,
@@ -968,10 +1342,17 @@ exports.updateSettings = async (req, res) => {
             notify_parent_on_absent,
             notify_parent_on_late,
             notify_parent_on_present,
+            notify_main_gate_in,
+            notify_main_gate_out,
+            notify_subject_in,
+            notify_subject_out,
             duplicate_punch_window_secs,
         } = req.body;
 
         await settings.update({
+            attendance_mode,
+            subject_mode,
+            enforce_subject_enrollment,
             late_threshold_minutes,
             half_day_threshold_minutes,
             working_days,
@@ -979,6 +1360,10 @@ exports.updateSettings = async (req, res) => {
             notify_parent_on_absent,
             notify_parent_on_late,
             notify_parent_on_present,
+            notify_main_gate_in,
+            notify_main_gate_out,
+            notify_subject_in,
+            notify_subject_out,
             duplicate_punch_window_secs,
         });
 
@@ -1014,6 +1399,76 @@ exports.getPunchLogs = async (req, res) => {
         res.json({ success: true, data: punches });
     } catch (err) {
         res.status(500).json({ success: false, message: err.message });
+    }
+};
+
+/**
+ * Run every minute via Cron to auto-carry forward subject attendance
+ */
+exports.processSubjectBasedAutoCarryForward = async () => {
+    try {
+        const now = new Date();
+        const hh = String(now.getHours()).padStart(2, "0");
+        const mm = String(now.getMinutes()).padStart(2, "0");
+        const currentTimeStr = `${hh}:${mm}:00`;
+        const dayName = now.toLocaleString("en-US", { weekday: "long" });
+        const dateStr = now.toISOString().split("T")[0];
+
+        // 1. Find institutes that have subject_mode = "automatic"
+        const settings = await BiometricSettings.findAll({
+            where: { subject_mode: "automatic", attendance_mode: "subject_based" }
+        });
+
+        for (const setting of settings) {
+            const institute_id = setting.institute_id;
+            
+            // 2. Find slots that JUST ended in this minute (end_time matches currentTimeStr)
+            const slots = await TimetableSlot.findAll({
+                where: { institute_id, end_time: currentTimeStr }
+            });
+            
+            if (!slots.length) continue;
+
+            const slotIds = slots.map(s => s.id);
+
+            // 3. Find schedules for these slots on this day
+            const schedules = await Timetable.findAll({
+                where: { institute_id, slot_id: { [Op.in]: slotIds }, day_of_week: dayName, is_break: false }
+            });
+
+            for (const schedule of schedules) {
+                const students = await Student.findAll({ where: { class_id: schedule.class_id, institute_id } });
+                
+                for (const student of students) {
+                    const existingAtt = await Attendance.findOne({
+                        where: { institute_id, student_id: student.id, date: dateStr, subject_id: schedule.subject_id }
+                    });
+                    
+                    if (!existingAtt) {
+                        // Look up their most recent subject attendance today
+                        const lastAtt = await Attendance.findOne({
+                            where: { institute_id, student_id: student.id, date: dateStr, subject_id: { [Op.ne]: null } },
+                            order: [['createdAt', 'DESC']]
+                        });
+                        
+                        if (lastAtt && lastAtt.status === 'present') {
+                            await Attendance.create({
+                                institute_id,
+                                student_id: student.id,
+                                class_id: student.class_id,
+                                subject_id: schedule.subject_id,
+                                date: dateStr,
+                                status: "present",
+                                marked_by_type: "biometric",
+                                remarks: "Auto carry-forward"
+                            });
+                        }
+                    }
+                }
+            }
+        }
+    } catch (err) {
+        console.error("❌ processSubjectBasedAutoCarryForward error:", err.message);
     }
 };
 

@@ -48,6 +48,28 @@ exports.getSlots = async (req, res) => {
     }
 };
 
+exports.updateSlot = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const institute_id = req.user.institute_id;
+        const { start_time, end_time } = req.body;
+
+        const slot = await TimetableSlot.findOne({ where: { id, institute_id } });
+        if (!slot) {
+            return res.status(404).json({ success: false, message: "Time slot not found" });
+        }
+
+        if (start_time !== undefined) slot.start_time = start_time;
+        if (end_time !== undefined) slot.end_time = end_time;
+
+        await slot.save();
+        res.status(200).json({ success: true, message: "Time slot updated successfully", data: slot });
+    } catch (error) {
+        console.error("Error updating slot:", error);
+        res.status(500).json({ success: false, message: "Internal server error" });
+    }
+};
+
 exports.deleteSlot = async (req, res) => {
     try {
         const { id } = req.params;

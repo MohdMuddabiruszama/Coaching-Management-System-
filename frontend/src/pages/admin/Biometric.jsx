@@ -6,8 +6,10 @@
 
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
+import * as XLSX from "xlsx";
 import api from "../../services/api";
 import toast from "react-hot-toast";
+import { format12Hour } from "../../utils/timeFormat";
 
 // ─── Tab IDs ─────────────────────────────────────────────────────
 const TABS = [
@@ -170,7 +172,7 @@ export default function BiometricPage() {
             </div>
 
             {/* Tab Content */}
-            {activeTab === "live" && <LiveAttendanceTab isTestMode={isTestMode} />}
+            {activeTab === "live" && <LiveAttendanceTab isTestMode={isTestMode} setActiveTab={setActiveTab} />}
             {activeTab === "devices" && <DevicesTab />}
             {activeTab === "enrollment" && <EnrollmentTab />}
             {activeTab === "otp" && <OtpQrTab />}
@@ -497,11 +499,14 @@ function TestModeSimulator({ onPunchSent }) {
 // ─────────────────────────────────────────────────────────────────
 // LIVE ATTENDANCE TAB  (Phase 7 + 8)
 // ─────────────────────────────────────────────────────────────────
-function LiveAttendanceTab({ isTestMode = false }) {
+function LiveAttendanceTab({ isTestMode = false, setActiveTab }) {
     const [data, setData] = useState(null);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState("");
     const [filterStatus, setFilterStatus] = useState("all");
+    const [filterRole, setFilterRole] = useState("all");
+    const [filterClass, setFilterClass] = useState("all");
+    const [filterDesignation, setFilterDesignation] = useState("all");
     const [page, setPage] = useState(1);
     const limit = 10;
     const intervalRef = useRef(null);
@@ -538,11 +543,14 @@ function LiveAttendanceTab({ isTestMode = false }) {
     const filteredRecords = useMemo(() => {
         return records.filter(r => {
             const matchSearch = (r.name || "").toLowerCase().includes(searchTerm.toLowerCase()) || 
-                                (r.student_id || "").toString().toLowerCase().includes(searchTerm.toLowerCase());
+                                (r.id || "").toString().toLowerCase().includes(searchTerm.toLowerCase());
             const matchStatus = filterStatus === "all" || r.status === filterStatus || (filterStatus === "late" && r.is_late);
-            return matchSearch && matchStatus;
+            const matchRole = filterRole === "all" || r.role === filterRole;
+            const matchClass = filterRole === "student" && filterClass !== "all" ? r.class === filterClass : true;
+            const matchDesignation = filterRole === "faculty" && filterDesignation !== "all" ? r.class === filterDesignation : true;
+            return matchSearch && matchStatus && matchRole && matchClass && matchDesignation;
         });
-    }, [records, searchTerm, filterStatus]);
+    }, [records, searchTerm, filterStatus, filterRole, filterClass, filterDesignation]);
 
     const paginatedRecords = useMemo(() => {
         const start = (page - 1) * limit;
@@ -606,12 +614,14 @@ function LiveAttendanceTab({ isTestMode = false }) {
             {/* Main Table Card */}
             <div style={{ background: "#fff", borderRadius: "12px", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.03)", padding: "1.5rem" }}>
                 {/* Table Header */}
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.5rem", flexWrap: "wrap", gap: "1rem" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                        <svg width="20" height="20" fill="none" stroke="#6366f1" strokeWidth="2" viewBox="0 0 24 24"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
-                        <h3 style={{ margin: 0, fontSize: "1.1rem", fontWeight: 700, color: "#1e293b" }}>Today's Biometric Punches</h3>
+                <div style={{ display: "flex", flexDirection: "column", gap: "1rem", marginBottom: "1.5rem" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                            <svg width="20" height="20" fill="none" stroke="#6366f1" strokeWidth="2" viewBox="0 0 24 24"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
+                            <h3 style={{ margin: 0, fontSize: "1.1rem", fontWeight: 700, color: "#1e293b" }}>Today's Biometric Punches</h3>
+                        </div>
                     </div>
-                    <div style={{ display: "flex", gap: "0.75rem", alignItems: "center" }}>
+                    <div style={{ display: "flex", gap: "0.75rem", alignItems: "center", flexWrap: "wrap", width: "100%" }}>
                         <div style={{ position: "relative" }}>
                             <svg style={{ position: "absolute", left: "10px", top: "50%", transform: "translateY(-50%)", color: "#94a3b8" }} width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
                             <input 
@@ -623,6 +633,44 @@ function LiveAttendanceTab({ isTestMode = false }) {
                             />
                         </div>
                         <select 
+                            value={filterRole}
+                            onChange={(e) => { 
+                                setFilterRole(e.target.value); 
+                                setFilterClass("all");
+                                setFilterDesignation("all");
+                                setPage(1); 
+                            }}
+                            style={{ padding: "0.5rem 1rem", borderRadius: "8px", border: "1px solid #e2e8f0", fontSize: "0.9rem", color: "#475569", outline: "none", backgroundColor: "#fff", cursor: "pointer" }}
+                        >
+                            <option value="all">All Roles</option>
+                            <option value="faculty">Faculty</option>
+                            <option value="student">Student</option>
+                        </select>
+                        {filterRole === "student" && (
+                            <select
+                                value={filterClass}
+                                onChange={(e) => { setFilterClass(e.target.value); setPage(1); }}
+                                style={{ padding: "0.5rem 1rem", borderRadius: "8px", border: "1px solid #e2e8f0", fontSize: "0.9rem", color: "#475569", outline: "none", backgroundColor: "#fff", cursor: "pointer" }}
+                            >
+                                <option value="all">All Classes</option>
+                                {[...new Set(records.filter(r => r.role === "student").map(r => r.class).filter(c => c && c !== "—"))].sort().map(c => (
+                                    <option key={c} value={c}>{c}</option>
+                                ))}
+                            </select>
+                        )}
+                        {filterRole === "faculty" && (
+                            <select
+                                value={filterDesignation}
+                                onChange={(e) => { setFilterDesignation(e.target.value); setPage(1); }}
+                                style={{ padding: "0.5rem 1rem", borderRadius: "8px", border: "1px solid #e2e8f0", fontSize: "0.9rem", color: "#475569", outline: "none", backgroundColor: "#fff", cursor: "pointer" }}
+                            >
+                                <option value="all">All Designations</option>
+                                {[...new Set(records.filter(r => r.role === "faculty").map(r => r.class).filter(c => c && c !== "—"))].sort().map(d => (
+                                    <option key={d} value={d}>{d}</option>
+                                ))}
+                            </select>
+                        )}
+                        <select 
                             value={filterStatus}
                             onChange={(e) => { setFilterStatus(e.target.value); setPage(1); }}
                             style={{ padding: "0.5rem 1rem", borderRadius: "8px", border: "1px solid #e2e8f0", fontSize: "0.9rem", color: "#475569", outline: "none", backgroundColor: "#fff", cursor: "pointer" }}
@@ -632,10 +680,6 @@ function LiveAttendanceTab({ isTestMode = false }) {
                             <option value="late">Late</option>
                             <option value="absent">Absent</option>
                         </select>
-                        <button style={{ display: "flex", alignItems: "center", gap: "0.4rem", padding: "0.5rem 1rem", borderRadius: "8px", background: "#8b5cf6", color: "#fff", border: "none", fontWeight: 600, fontSize: "0.9rem", cursor: "pointer", boxShadow: "0 2px 4px rgba(139,92,246,0.2)" }}>
-                            <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"></path></svg>
-                            Export
-                        </button>
                     </div>
                 </div>
 
@@ -644,7 +688,12 @@ function LiveAttendanceTab({ isTestMode = false }) {
                     <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left", fontSize: "0.9rem" }}>
                         <thead>
                             <tr style={{ borderBottom: "1px solid #e2e8f0" }}>
-                                {["#", "Employee", "Employee ID", "Department", "Time", "Status", "Device", "Action"].map((h) => (
+                                {(filterRole === "student" 
+                                    ? ["#", "Student", "Roll Number", "Class", "Punch Time", "Status", "Device", "Action"]
+                                    : filterRole === "faculty"
+                                        ? ["#", "Faculty", "Faculty ID", "Designation", "Punch Time", "Status", "Device", "Action"]
+                                        : ["#", "Person", "ID", "Dept / Class", "Punch Time", "Status", "Device", "Action"]
+                                ).map((h) => (
                                     <th key={h} style={{ padding: "1rem 0.75rem", color: "#64748b", fontWeight: 600 }}>{h}</th>
                                 ))}
                             </tr>
@@ -666,15 +715,28 @@ function LiveAttendanceTab({ isTestMode = false }) {
                                                 </div>
                                                 <span style={{ fontWeight: 600, color: "#1e293b" }}>{r.name || "—"}</span>
                                             </td>
-                                            <td style={{ padding: "1rem 0.75rem", color: "#475569" }}>{r.student_id ? `EMP${r.student_id.toString().padStart(4, '0')}` : "—"}</td>
+                                            <td style={{ padding: "1rem 0.75rem", color: "#475569" }}>
+                                                {r.role === 'student' ? (r.roll_number || "—") : (r.id ? `EMP${r.id.toString().padStart(4, '0')}` : "—")}
+                                            </td>
                                             <td style={{ padding: "1rem 0.75rem", color: "#475569" }}>{r.class || "—"}</td>
-                                            <td style={{ padding: "1rem 0.75rem", color: "#475569" }}>{r.time_in || "—"}</td>
+                                            <td style={{ padding: "1rem 0.75rem", color: "#475569" }}>
+                                                <div style={{ display: "flex", flexDirection: "column", gap: "0.3rem" }}>
+                                                    <div style={{ display: "flex", alignItems: "center", gap: "0.4rem", fontSize: "0.85rem", whiteSpace: "nowrap" }}>
+                                                        <span style={{ color: "#10b981", fontWeight: 700, fontSize: "0.7rem", background: "#d1fae5", padding: "0.15rem 0.4rem", borderRadius: "4px", minWidth: "28px", textAlign: "center" }}>IN</span> 
+                                                        <span style={{ fontWeight: 500, color: "#334155" }}>{r.time_in ? format12Hour(r.time_in) : "—"}</span>
+                                                    </div>
+                                                    <div style={{ display: "flex", alignItems: "center", gap: "0.4rem", fontSize: "0.85rem", whiteSpace: "nowrap" }}>
+                                                        <span style={{ color: "#ef4444", fontWeight: 700, fontSize: "0.7rem", background: "#fee2e2", padding: "0.15rem 0.4rem", borderRadius: "4px", minWidth: "28px", textAlign: "center" }}>OUT</span> 
+                                                        <span style={{ fontWeight: 500, color: "#334155" }}>{r.time_out ? format12Hour(r.time_out) : "—"}</span>
+                                                    </div>
+                                                </div>
+                                            </td>
                                             <td style={{ padding: "1rem 0.75rem" }}>
                                                 <NewStatusBadge status={r.status} isLate={r.is_late} />
                                             </td>
-                                            <td style={{ padding: "1rem 0.75rem", color: "#475569" }}>{r.late_by_minutes > 0 ? "Side Entrance" : "Main Entrance"}</td>
+                                            <td style={{ padding: "1rem 0.75rem", color: "#475569" }}>{r.device_name || "—"}</td>
                                             <td style={{ padding: "1rem 0.75rem" }}>
-                                                <button style={{ display: "flex", alignItems: "center", gap: "0.25rem", padding: "0.4rem 0.75rem", borderRadius: "6px", border: "1px solid #e2e8f0", background: "#fff", color: "#6366f1", fontSize: "0.8rem", cursor: "pointer", fontWeight: 600 }}>
+                                                <button onClick={() => setActiveTab("reports")} style={{ display: "flex", alignItems: "center", gap: "0.25rem", padding: "0.4rem 0.75rem", borderRadius: "6px", border: "1px solid #e2e8f0", background: "#fff", color: "#6366f1", fontSize: "0.8rem", cursor: "pointer", fontWeight: 600 }}>
                                                     <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
                                                     View
                                                 </button>
@@ -771,6 +833,7 @@ function DevicesTab() {
     const [editDevice, setEditDevice] = useState(null);
     const [form, setForm] = useState({
         device_name: "", device_serial: "", device_type: "fingerprint",
+        placement_type: "gate", room_identifier: "",
         location: "", ip_address: "",
     });
 
@@ -792,13 +855,13 @@ function DevicesTab() {
 
     const openAdd = () => {
         setEditDevice(null);
-        setForm({ device_name: "", device_serial: "", device_type: "fingerprint", location: "", ip_address: "" });
+        setForm({ device_name: "", device_serial: "", device_type: "fingerprint", placement_type: "gate", room_identifier: "", location: "", ip_address: "" });
         setShowForm(true);
     };
 
     const openEdit = (d) => {
         setEditDevice(d);
-        setForm({ device_name: d.device_name, device_serial: d.device_serial, device_type: d.device_type, location: d.location || "", ip_address: d.ip_address || "" });
+        setForm({ device_name: d.device_name, device_serial: d.device_serial, device_type: d.device_type, placement_type: d.placement_type || "gate", room_identifier: d.room_identifier || "", location: d.location || "", ip_address: d.ip_address || "" });
         setShowForm(true);
     };
 
@@ -1154,6 +1217,23 @@ function DevicesTab() {
                                 </select>
                             </div>
 
+                            {/* Placement Type & Room */}
+                            <div style={{ display: "grid", gridTemplateColumns: form.placement_type === "classroom" ? "1fr 1fr" : "1fr", gap: "1rem" }}>
+                                <div>
+                                    <label style={{ fontSize: "0.85rem", fontWeight: 700, color: "#1e293b", marginBottom: "0.5rem", display: "block" }}>Placement Type <span style={{ color: "#ef4444" }}>*</span></label>
+                                    <select value={form.placement_type} onChange={(e) => setForm({ ...form, placement_type: e.target.value })} style={{ width: "100%", padding: "0.7rem 1rem", borderRadius: "8px", border: "1px solid #e2e8f0", fontSize: "0.95rem", color: "#1e293b", outline: "none", boxSizing: "border-box", backgroundColor: "#fff", cursor: "pointer", transition: "border-color 0.2s" }} onFocus={e => e.target.style.borderColor = "#8b5cf6"} onBlur={e => e.target.style.borderColor = "#e2e8f0"}>
+                                        <option value="gate">Main Gate</option>
+                                        <option value="classroom">Classroom</option>
+                                    </select>
+                                </div>
+                                {form.placement_type === "classroom" && (
+                                    <div>
+                                        <label style={{ fontSize: "0.85rem", fontWeight: 700, color: "#1e293b", marginBottom: "0.5rem", display: "block" }}>Room Name/Number <span style={{ color: "#ef4444" }}>*</span></label>
+                                        <input type="text" value={form.room_identifier} onChange={(e) => setForm({ ...form, room_identifier: e.target.value })} placeholder="e.g. Room 101" style={{ width: "100%", padding: "0.7rem 1rem", borderRadius: "8px", border: "1px solid #e2e8f0", fontSize: "0.95rem", color: "#1e293b", outline: "none", boxSizing: "border-box", transition: "border-color 0.2s" }} onFocus={e => e.target.style.borderColor = "#8b5cf6"} onBlur={e => e.target.style.borderColor = "#e2e8f0"} />
+                                    </div>
+                                )}
+                            </div>
+
                             {/* Location */}
                             <div>
                                 <label style={{ fontSize: "0.85rem", fontWeight: 700, color: "#1e293b", marginBottom: "0.5rem", display: "block" }}>Location <span style={{ color: "#ef4444" }}>*</span></label>
@@ -1210,15 +1290,20 @@ function EnrollmentTab() {
     const [enrollments, setEnrollments] = useState([]);
     const [devices, setDevices] = useState([]);
     const [users, setUsers] = useState([]);
+    const [classes, setClasses] = useState([]);
+    const [selectedClassId, setSelectedClassId] = useState("");
+    const [modalLoading, setModalLoading] = useState(false);
     const [loading, setLoading] = useState(true);
     const [showForm, setShowForm] = useState(false);
+    const [viewEnrollment, setViewEnrollment] = useState(null);
+    const [editEnrollmentId, setEditEnrollmentId] = useState(null);
     const [form, setForm] = useState({ device_id: "", device_user_id: "", user_id: "", user_role: "student" });
     const [personSearch, setPersonSearch] = useState("");
     
     // Filtering State
     const [searchTerm, setSearchTerm] = useState("");
     const [filterRole, setFilterRole] = useState("all");
-    const [filterDepartment, setFilterDepartment] = useState("all");
+    const [filterSubGroup, setFilterSubGroup] = useState("all");
     const [filterDevice, setFilterDevice] = useState("all");
     const [filterStatus, setFilterStatus] = useState("all");
     const [page, setPage] = useState(1);
@@ -1226,26 +1311,49 @@ function EnrollmentTab() {
 
     const fetchAll = async () => {
         try {
-            const [e, d, s, f] = await Promise.all([
+            const [e, d, c] = await Promise.all([
                 api.get("/biometric/enrollments"),
                 api.get("/biometric/devices"),
-                api.get("/students"),
-                api.get("/faculty"),
+                api.get("/classes")
             ]);
             if (e.data.success) setEnrollments(e.data.data);
             if (d.data.success) setDevices(d.data.data);
-            // Combine students and faculty for user dropdown
-            const studentUsers = (s.data.data || []).map((st) => ({
-                id: st.user_id, name: st.User?.name, role: "student", rollNo: st.roll_number, department: st.course || "General"
-            }));
-            const facultyUsers = (f.data.data || []).map((fac) => ({
-                id: fac.user_id, name: fac.User?.name, role: "faculty", subject: fac.subject, department: fac.department || "General"
-            }));
-            setUsers([...studentUsers, ...facultyUsers]);
+            if (c.data.success) setClasses(c.data.data);
         } catch { } finally { setLoading(false); }
     };
 
     useEffect(() => { fetchAll(); }, []);
+
+    useEffect(() => {
+        const fetchUsersForModal = async () => {
+            setUsers([]);
+            setPersonSearch("");
+            
+            if (form.user_role === "faculty") {
+                setModalLoading(true);
+                try {
+                    const res = await api.get("/faculty?limit=10000");
+                    const facultyUsers = (res.data.data || []).map((fac) => ({
+                        id: fac.user_id, name: fac.User?.name, role: "faculty", subject: fac.subject, department: fac.department || "General"
+                    }));
+                    setUsers(facultyUsers);
+                } catch {} finally { setModalLoading(false); }
+            } else if (form.user_role === "student" && selectedClassId) {
+                setModalLoading(true);
+                try {
+                    const res = await api.get(`/students?class_id=${selectedClassId}&limit=10000`);
+                    const studentUsers = (res.data.data || []).map((st) => ({
+                        id: st.user_id, name: st.User?.name, role: "student", rollNo: st.roll_number, department: st.course || "General"
+                    }));
+                    setUsers(studentUsers);
+                } catch {} finally { setModalLoading(false); }
+            }
+        };
+
+        if (showForm) {
+            fetchUsersForModal();
+        }
+    }, [form.user_role, selectedClassId, showForm]);
 
     const handleEnroll = async () => {
         if (!form.device_id || !form.device_user_id || !form.user_id) {
@@ -1253,13 +1361,32 @@ function EnrollmentTab() {
             return;
         }
         try {
-            await api.post("/biometric/enroll", form);
-            toast.success("Enrolled successfully");
+            if (editEnrollmentId) {
+                await api.put(`/biometric/enrollments/${editEnrollmentId}`, form);
+                toast.success("Enrollment updated successfully");
+            } else {
+                await api.post("/biometric/enroll", form);
+                toast.success("Enrolled successfully");
+            }
             setShowForm(false);
+            setEditEnrollmentId(null);
             fetchAll();
         } catch (err) {
             toast.error(err.response?.data?.message || "Enrollment failed");
         }
+    };
+
+    const handleEdit = (enrollment) => {
+        setEditEnrollmentId(enrollment.id);
+        setForm({
+            device_id: enrollment.device_id || "",
+            device_user_id: enrollment.device_user_id || "",
+            user_id: String(enrollment.user_id),
+            user_role: enrollment.User?.role || "student"
+        });
+        setSelectedClassId(""); // Reset so they can choose again if they want to switch
+        setPersonSearch("");
+        setShowForm(true);
     };
 
     const handleRemove = async (id) => {
@@ -1270,11 +1397,19 @@ function EnrollmentTab() {
             fetchAll();
         } catch { toast.error("Error"); }
     };
+
+    const handleActivate = async (id) => {
+        try {
+            await api.put(`/biometric/enrollments/${id}`, { status: "active" });
+            toast.success("Enrollment activated");
+            fetchAll();
+        } catch { toast.error("Error"); }
+    };
     
     const clearFilters = () => {
         setSearchTerm("");
         setFilterRole("all");
-        setFilterDepartment("all");
+        setFilterSubGroup("all");
         setFilterDevice("all");
         setFilterStatus("all");
         setPage(1);
@@ -1303,13 +1438,20 @@ function EnrollmentTab() {
     });
     const devicesActive = activeDevicesSet.size;
 
+    // Gather unique subGroups based on role
+    const subGroupsSet = new Set();
+    enrollments.forEach(e => {
+        if (filterRole === "student" && e.user_role === "student" && e.User?.Student?.class_id) {
+            subGroupsSet.add(e.User.Student.class_id);
+        } else if (filterRole === "faculty" && e.user_role === "faculty" && e.User?.Faculty?.designation) {
+            subGroupsSet.add(e.User.Faculty.designation);
+        }
+    });
+
     // Rich Filtering
     const filteredEnrollments = useMemo(() => {
-        return enrollments.map(e => {
-            const user = users.find(u => String(u.id) === String(e.user_id));
-            return { ...e, UserExt: user };
-        }).filter(e => {
-            const name = e.User?.name?.toLowerCase() || e.UserExt?.name?.toLowerCase() || "";
+        return enrollments.filter(e => {
+            const name = e.User?.name?.toLowerCase() || "";
             const deviceName = e.BiometricDevice?.device_name?.toLowerCase() || "";
             const deviceIdStr = String(e.device_user_id || "").toLowerCase();
             
@@ -1318,14 +1460,25 @@ function EnrollmentTab() {
                                 deviceIdStr.includes(searchTerm.toLowerCase());
                                 
             const matchRole = filterRole === "all" || e.user_role === filterRole;
-            const dept = e.UserExt?.department || "General";
-            const matchDept = filterDepartment === "all" || dept === filterDepartment;
+            
+            let matchSubGroup = true;
+            if (filterSubGroup !== "all") {
+                if (filterRole === "student" && e.user_role === "student") {
+                    matchSubGroup = String(e.User?.Student?.class_id) === String(filterSubGroup);
+                } else if (filterRole === "faculty" && e.user_role === "faculty") {
+                    matchSubGroup = e.User?.Faculty?.designation === filterSubGroup;
+                } else {
+                    // If filterRole is all, but subGroup has a value? Shouldn't happen since we clear it when changing role, but just in case:
+                    matchSubGroup = false; 
+                }
+            }
+
             const matchDevice = filterDevice === "all" || String(e.device_id) === filterDevice;
             const matchStatus = filterStatus === "all" || e.status === filterStatus;
             
-            return matchSearch && matchRole && matchDept && matchDevice && matchStatus;
+            return matchSearch && matchRole && matchSubGroup && matchDevice && matchStatus;
         });
-    }, [enrollments, users, searchTerm, filterRole, filterDepartment, filterDevice, filterStatus]);
+    }, [enrollments, searchTerm, filterRole, filterSubGroup, filterDevice, filterStatus]);
 
     const paginated = useMemo(() => {
         const start = (page - 1) * limit;
@@ -1349,13 +1502,7 @@ function EnrollmentTab() {
 
     if (loading) return <div style={{ textAlign: "center", padding: "3rem" }}>Loading enrollments...</div>;
 
-    const filteredUsers = form.user_role === "student"
-        ? users.filter((u) => u.role === "student")
-        : users.filter((u) => u.role === "faculty");
-
-    // Gather unique departments
-    const departmentsSet = new Set();
-    users.forEach(u => u.department && departmentsSet.add(u.department));
+    const filteredUsers = users;
 
     return (
         <div style={{ animation: "fadeIn 0.3s ease-in-out" }}>
@@ -1366,10 +1513,6 @@ function EnrollmentTab() {
                     <h2 style={{ margin: 0, fontSize: "1.25rem", fontWeight: 700, color: "#1e293b" }}>Biometric Enrollments</h2>
                 </div>
                 <div style={{ display: "flex", gap: "1rem", alignItems: "center" }}>
-                    <div style={{ position: "relative" }}>
-                        <svg style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", color: "#94a3b8" }} width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-                        <input value={searchTerm} onChange={(e) => {setSearchTerm(e.target.value); setPage(1);}} placeholder="Search by name, ID or device..." style={{ width: "260px", padding: "0.6rem 1rem 0.6rem 2.5rem", borderRadius: "8px", border: "1px solid #e2e8f0", fontSize: "0.9rem", color: "#1e293b", outline: "none", boxSizing: "border-box" }} />
-                    </div>
                     <button onClick={() => setShowForm(true)} style={{ display: "flex", alignItems: "center", gap: "0.5rem", padding: "0.6rem 1.25rem", borderRadius: "8px", background: "#6366f1", color: "#fff", border: "none", fontWeight: 600, cursor: "pointer", fontSize: "0.9rem", transition: "all 0.2s", boxShadow: "0 4px 6px rgba(99,102,241,0.2)" }}>
                         <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
                         Enroll Person
@@ -1411,19 +1554,30 @@ function EnrollmentTab() {
             <div style={{ background: "#fff", borderRadius: "12px", boxShadow: "0 2px 4px rgba(0,0,0,0.02)", padding: "1.25rem", marginBottom: "1.5rem", display: "flex", flexWrap: "wrap", gap: "1rem", border: "1px solid #f1f5f9" }}>
                 <div style={{ flex: "1 1 150px" }}>
                     <label style={{ fontSize: "0.8rem", color: "#64748b", fontWeight: 600, marginBottom: "0.4rem", display: "block" }}>Select Role</label>
-                    <select value={filterRole} onChange={(e) => { setFilterRole(e.target.value); setPage(1); }} style={{ width: "100%", padding: "0.6rem 1rem", borderRadius: "8px", border: "1px solid #e2e8f0", fontSize: "0.9rem", color: "#475569", outline: "none", backgroundColor: "#fff", cursor: "pointer", boxSizing: "border-box" }}>
+                    <select value={filterRole} onChange={(e) => { setFilterRole(e.target.value); setFilterSubGroup("all"); setPage(1); }} style={{ width: "100%", padding: "0.6rem 1rem", borderRadius: "8px", border: "1px solid #e2e8f0", fontSize: "0.9rem", color: "#475569", outline: "none", backgroundColor: "#fff", cursor: "pointer", boxSizing: "border-box" }}>
                         <option value="all">All Roles</option>
                         <option value="student">Student</option>
                         <option value="faculty">Faculty</option>
                     </select>
                 </div>
-                <div style={{ flex: "1 1 150px" }}>
-                    <label style={{ fontSize: "0.8rem", color: "#64748b", fontWeight: 600, marginBottom: "0.4rem", display: "block" }}>Select Department</label>
-                    <select value={filterDepartment} onChange={(e) => { setFilterDepartment(e.target.value); setPage(1); }} style={{ width: "100%", padding: "0.6rem 1rem", borderRadius: "8px", border: "1px solid #e2e8f0", fontSize: "0.9rem", color: "#475569", outline: "none", backgroundColor: "#fff", cursor: "pointer", boxSizing: "border-box" }}>
-                        <option value="all">All Departments</option>
-                        {Array.from(departmentsSet).map(d => <option key={d} value={d}>{d}</option>)}
-                    </select>
-                </div>
+                {filterRole !== "all" && (
+                    <div style={{ flex: "1 1 150px", animation: "fadeIn 0.3s ease-in-out" }}>
+                        <label style={{ fontSize: "0.8rem", color: "#64748b", fontWeight: 600, marginBottom: "0.4rem", display: "block" }}>
+                            {filterRole === "student" ? "Select Class" : "Select Designation"}
+                        </label>
+                        <select value={filterSubGroup} onChange={(e) => { setFilterSubGroup(e.target.value); setPage(1); }} style={{ width: "100%", padding: "0.6rem 1rem", borderRadius: "8px", border: "1px solid #e2e8f0", fontSize: "0.9rem", color: "#475569", outline: "none", backgroundColor: "#fff", cursor: "pointer", boxSizing: "border-box" }}>
+                            <option value="all">All {filterRole === "student" ? "Classes" : "Designations"}</option>
+                            {Array.from(subGroupsSet).map(val => {
+                                let label = val;
+                                if (filterRole === "student") {
+                                    const cls = classes.find(c => String(c.id) === String(val));
+                                    if (cls) label = `${cls.name} ${cls.section || ''}`;
+                                }
+                                return <option key={val} value={val}>{label}</option>
+                            })}
+                        </select>
+                    </div>
+                )}
                 <div style={{ flex: "1 1 150px" }}>
                     <label style={{ fontSize: "0.8rem", color: "#64748b", fontWeight: 600, marginBottom: "0.4rem", display: "block" }}>Select Device</label>
                     <select value={filterDevice} onChange={(e) => { setFilterDevice(e.target.value); setPage(1); }} style={{ width: "100%", padding: "0.6rem 1rem", borderRadius: "8px", border: "1px solid #e2e8f0", fontSize: "0.9rem", color: "#475569", outline: "none", backgroundColor: "#fff", cursor: "pointer", boxSizing: "border-box" }}>
@@ -1445,6 +1599,19 @@ function EnrollmentTab() {
                         Clear Filters
                     </button>
                 </div>
+                
+                {/* Search Bar on Next Line */}
+                <div style={{ flex: "1 1 100%", position: "relative", marginTop: "0.5rem" }}>
+                    <svg style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", color: "#64748b" }} width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                    <input 
+                        value={searchTerm} 
+                        onChange={(e) => {setSearchTerm(e.target.value); setPage(1);}} 
+                        placeholder="Search gracefully by name, device, or ID..." 
+                        style={{ width: "100%", padding: "0.75rem 1rem 0.75rem 2.75rem", borderRadius: "8px", border: "1px solid #e2e8f0", fontSize: "0.95rem", color: "#1e293b", outline: "none", boxSizing: "border-box", transition: "border-color 0.2s", backgroundColor: "#f8fafc" }} 
+                        onFocus={e => e.currentTarget.style.borderColor = "#6366f1"} 
+                        onBlur={e => e.currentTarget.style.borderColor = "#e2e8f0"}
+                    />
+                </div>
             </div>
 
             {/* Table Card */}
@@ -1453,7 +1620,7 @@ function EnrollmentTab() {
                     <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left", fontSize: "0.9rem" }}>
                         <thead>
                             <tr style={{ borderBottom: "1px solid #e2e8f0" }}>
-                                {["#", "Person", "Role", "Department", "Device", "Device User ID", "Enrolled On", "Enrolled By", "Status", "Actions"].map((h) => (
+                                {["#", "Person", "Role", filterRole === "student" ? "Class" : filterRole === "faculty" ? "Designation" : "Class / Designation", "Device", "Device User ID", "Enrolled On", "Enrolled By", "Status", "Actions"].map((h) => (
                                     <th key={h} style={{ padding: "1rem 0.75rem", color: "#64748b", fontWeight: 600, whiteSpace: "nowrap" }}>{h}</th>
                                 ))}
                             </tr>
@@ -1470,12 +1637,23 @@ function EnrollmentTab() {
                                 </tr>
                             ) : (
                                 paginated.map((e, i) => {
-                                    const userExt = e.UserExt || {};
-                                    const name = e.User?.name || userExt.name || "Unknown";
+                                    const name = e.User?.name || "Unknown";
                                     const roleStr = e.user_role === "student" ? "Student" : "Faculty";
+                                    
+                                    const studentRoll = e.User?.Student?.roll_number;
+                                    const rollOrEmp = roleStr === "Student" ? (studentRoll || "N/A") : `EMP${String(e.user_id).padStart(4,'0')}`;
+                                    
                                     const initials = getInitials(name);
                                     const avatarColor = getAvatarColor(name);
                                     const isActive = e.status === "active";
+                                    
+                                    let classOrDesig = "Unassigned";
+                                    if (roleStr === "Student") {
+                                        const c = classes.find(cls => String(cls.id) === String(e.User?.Student?.class_id));
+                                        if (c) classOrDesig = `${c.name} ${c.section || ''}`;
+                                    } else {
+                                        classOrDesig = e.User?.Faculty?.designation || "Unassigned";
+                                    }
                                     
                                     return (
                                         <tr key={e.id} style={{ borderBottom: "1px solid #f1f5f9", transition: "background 0.2s" }} onMouseOver={ev => ev.currentTarget.style.background = "#f8fafc"} onMouseOut={ev => ev.currentTarget.style.background = "transparent"}>
@@ -1486,7 +1664,7 @@ function EnrollmentTab() {
                                                 </div>
                                                 <div>
                                                     <div style={{ fontWeight: 600, color: "#1e293b" }}>{name}</div>
-                                                    <div style={{ fontSize: "0.75rem", color: "#94a3b8" }}>{userExt.rollNo || `EMP${String(userExt.id).padStart(4,'0')}`}</div>
+                                                    <div style={{ fontSize: "0.75rem", color: "#94a3b8" }}>{rollOrEmp}</div>
                                                 </div>
                                             </td>
                                             <td style={{ padding: "1rem 0.75rem" }}>
@@ -1494,7 +1672,7 @@ function EnrollmentTab() {
                                                     {roleStr}
                                                 </span>
                                             </td>
-                                            <td style={{ padding: "1rem 0.75rem", color: "#475569" }}>{userExt.department || "General"}</td>
+                                            <td style={{ padding: "1rem 0.75rem", color: "#475569" }}>{classOrDesig}</td>
                                             <td style={{ padding: "1rem 0.75rem", display: "flex", alignItems: "center", gap: "0.75rem", whiteSpace: "nowrap" }}>
                                                 <div style={{ width: "24px", height: "24px", borderRadius: "6px", background: "#1e293b", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                                                     <svg width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><rect x="4" y="2" width="16" height="20" rx="2" ry="2"></rect></svg>
@@ -1518,25 +1696,25 @@ function EnrollmentTab() {
                                             </td>
                                             <td style={{ padding: "1rem 0.75rem", textAlign: "center" }}>
                                                 <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                                                    <button style={{ background: "transparent", border: "1px solid #e2e8f0", borderRadius: "6px", padding: "0.3rem", cursor: "pointer", color: "#64748b" }}>
-                                                        <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
-                                                    </button>
-                                                    {isActive && (
-                                                        <div className="device-menu-container" style={{ position: "relative" }}>
-                                                            <button onClick={(ev) => {
-                                                                const el = document.getElementById(`enroll-menu-${e.id}`);
-                                                                if (el.style.display === "none") {
-                                                                    document.querySelectorAll('.device-menu-popup').forEach(p => p.style.display = 'none');
-                                                                    el.style.display = "flex";
-                                                                } else el.style.display = "none";
-                                                            }} style={{ background: "transparent", border: "1px solid #e2e8f0", borderRadius: "6px", padding: "0.3rem", cursor: "pointer", color: "#64748b" }}>
-                                                                <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="19" r="1"></circle></svg>
-                                                            </button>
-                                                            <div id={`enroll-menu-${e.id}`} className="device-menu-popup" style={{ display: "none", position: "absolute", right: "0", top: "100%", zIndex: 10, background: "#fff", borderRadius: "8px", boxShadow: "0 4px 12px rgba(0,0,0,0.1)", border: "1px solid #f1f5f9", flexDirection: "column", minWidth: "120px", overflow: "hidden" }}>
+                                                    <div className="device-menu-container" style={{ position: "relative" }}>
+                                                        <button onClick={(ev) => {
+                                                            const el = document.getElementById(`enroll-menu-${e.id}`);
+                                                            if (el.style.display === "none") {
+                                                                document.querySelectorAll('.device-menu-popup').forEach(p => p.style.display = 'none');
+                                                                el.style.display = "flex";
+                                                            } else el.style.display = "none";
+                                                        }} style={{ background: "transparent", border: "1px solid #e2e8f0", borderRadius: "6px", padding: "0.3rem", cursor: "pointer", color: "#64748b" }}>
+                                                            <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="19" r="1"></circle></svg>
+                                                        </button>
+                                                        <div id={`enroll-menu-${e.id}`} className="device-menu-popup" style={{ display: "none", position: "absolute", right: "0", top: "100%", zIndex: 10, background: "#fff", borderRadius: "8px", boxShadow: "0 4px 12px rgba(0,0,0,0.1)", border: "1px solid #f1f5f9", flexDirection: "column", minWidth: "120px", overflow: "hidden" }}>
+                                                            <button onClick={() => { handleEdit(e); document.getElementById(`enroll-menu-${e.id}`).style.display = "none"; }} style={{ padding: "0.6rem 1rem", textAlign: "left", background: "transparent", border: "none", cursor: "pointer", color: "#6366f1", fontSize: "0.85rem", width: "100%", borderBottom: "1px solid #f1f5f9" }}>Edit</button>
+                                                            {isActive ? (
                                                                 <button onClick={() => { handleRemove(e.id); document.getElementById(`enroll-menu-${e.id}`).style.display = "none"; }} style={{ padding: "0.6rem 1rem", textAlign: "left", background: "transparent", border: "none", cursor: "pointer", color: "#ef4444", fontSize: "0.85rem", width: "100%" }}>Deactivate</button>
-                                                            </div>
+                                                            ) : (
+                                                                <button onClick={() => { handleActivate(e.id); document.getElementById(`enroll-menu-${e.id}`).style.display = "none"; }} style={{ padding: "0.6rem 1rem", textAlign: "left", background: "transparent", border: "none", cursor: "pointer", color: "#10b981", fontSize: "0.85rem", width: "100%" }}>Activate</button>
+                                                            )}
                                                         </div>
-                                                    )}
+                                                    </div>
                                                 </div>
                                             </td>
                                         </tr>
@@ -1630,6 +1808,22 @@ function EnrollmentTab() {
                                 <div style={{ fontSize: "0.8rem", color: "#64748b", marginTop: "0.4rem" }}>Select the role of the person.</div>
                             </div>
 
+                            {/* Class Field (Only for Students) */}
+                            {form.user_role === "student" && (
+                                <div>
+                                    <label style={{ fontSize: "0.85rem", fontWeight: 700, color: "#1e293b", marginBottom: "0.4rem", display: "block" }}>Class <span style={{ color: "#ef4444" }}>*</span></label>
+                                    <div style={{ position: "relative" }}>
+                                        <svg style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", color: "#64748b" }} width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
+                                        <select value={selectedClassId} onChange={(e) => { setSelectedClassId(e.target.value); setForm({ ...form, user_id: "" }); }} style={{ width: "100%", padding: "0.8rem 1rem 0.8rem 2.75rem", borderRadius: "10px", border: "1px solid #e2e8f0", fontSize: "0.95rem", color: "#1e293b", outline: "none", boxSizing: "border-box", backgroundColor: "#fff", cursor: "pointer", appearance: "none", transition: "border-color 0.2s" }} onFocus={e => e.currentTarget.style.borderColor = "#6366f1"} onBlur={e => e.currentTarget.style.borderColor = "#e2e8f0"}>
+                                            <option value="">Select a class...</option>
+                                            {classes.map(c => <option key={c.id} value={c.id}>{c.name} {c.section}</option>)}
+                                        </select>
+                                        <svg style={{ position: "absolute", right: "14px", top: "50%", transform: "translateY(-50%)", color: "#94a3b8", pointerEvents: "none" }} width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                                    </div>
+                                    <div style={{ fontSize: "0.8rem", color: "#64748b", marginTop: "0.4rem" }}>Select the class to load students.</div>
+                                </div>
+                            )}
+
                             {/* Person Field */}
                             <div>
                                 <label style={{ fontSize: "0.85rem", fontWeight: 700, color: "#1e293b", marginBottom: "0.4rem", display: "block" }}>Person <span style={{ color: "#ef4444" }}>*</span></label>
@@ -1659,7 +1853,7 @@ function EnrollmentTab() {
                                                     onMouseOver={e => { if(!isSelected) e.currentTarget.style.background = "#f8fafc"; }}
                                                     onMouseOut={e => { if(!isSelected) e.currentTarget.style.background = "transparent"; }}
                                                 >
-                                                    <div style={{ width: "20px", height: "20px", borderRadius: "4px", border: `2px solid ${isSelected ? "#6366f1" : "#cbd5e1"}`, display: "flex", alignItems: "center", justifyContent: "center", background: isSelected ? "#6366f1" : "#fff", flexShrink: 0 }}>
+                                                    <div style={{ width: "20px", height: "20px", borderRadius: "4px", border: "2px solid " + (isSelected ? "#6366f1" : "#cbd5e1"), display: "flex", alignItems: "center", justifyContent: "center", background: isSelected ? "#6366f1" : "#fff", flexShrink: 0 }}>
                                                         {isSelected && <svg width="12" height="12" fill="none" stroke="#fff" strokeWidth="3" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg>}
                                                     </div>
                                                     <div style={{ width: "36px", height: "36px", borderRadius: "50%", background: "#f1f5f9", color: "#64748b", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 600, fontSize: "0.85rem", flexShrink: 0 }}>
@@ -1676,7 +1870,7 @@ function EnrollmentTab() {
                                         })}
                                         {filteredUsers.filter(u => !personSearch || u.name?.toLowerCase().includes(personSearch.toLowerCase()) || u.rollNo?.toLowerCase().includes(personSearch.toLowerCase())).length === 0 && (
                                             <div style={{ padding: "2rem", textAlign: "center", color: "#94a3b8", fontSize: "0.9rem" }}>
-                                                No persons found.
+                                                {modalLoading ? "Loading records..." : (form.user_role === "student" && !selectedClassId ? "Please select a class first." : "No persons found.")}
                                             </div>
                                         )}
                                     </div>
@@ -1898,25 +2092,22 @@ function OtpQrTab() {
 // ─────────────────────────────────────────────────────────────────
 function ReportsTab() {
     const [reportType, setReportType] = useState("late");
-    const [startDate, setStartDate] = useState("2026-06-01");
-    const [endDate, setEndDate] = useState("2026-06-07");
+    const [startDate, setStartDate] = useState("");
+    const [endDate, setEndDate] = useState("");
+    const [roleFilter, setRoleFilter] = useState("all");
     const [loading, setLoading] = useState(false);
 
-    // Initialize with beautifully mocked data for UI demonstration purposes
-    const [data, setData] = useState([
-        { id: 1, name: "Arjun Reddy", empId: "EMP1001", initials: "AR", role: "Faculty", department: "IT Department", deviceName: "Main Gate Device", deviceId: "MG-01", date: "06/07/2026", day: "Mon", checkIn: "09:15 AM", expected: "09:00 AM", delay: "15m", status: "Late", bg: "#6366f1" },
-        { id: 2, name: "Sneha Kapoor", empId: "EMP1002", initials: "SK", role: "Faculty", department: "HR Department", deviceName: "Block A Device", deviceId: "BA-01", date: "06/07/2026", day: "Mon", checkIn: "09:14 AM", expected: "09:00 AM", delay: "14m", status: "Late", bg: "#3b82f6" },
-        { id: 3, name: "Vikram Kumar", empId: "EMP1003", initials: "VK", role: "Faculty", department: "Finance Department", deviceName: "Block B Device", deviceId: "BB-01", date: "06/07/2026", day: "Mon", checkIn: "09:23 AM", expected: "09:00 AM", delay: "23m", status: "Late", bg: "#10b981" },
-        { id: 4, name: "Priya Sharma", empId: "EMP1004", initials: "PS", role: "Faculty", department: "Marketing Department", deviceName: "Library Device", deviceId: "LB-01", date: "06/07/2026", day: "Mon", checkIn: "09:21 AM", expected: "09:00 AM", delay: "21m", status: "Late", bg: "#f59e0b" },
-        { id: 5, name: "Manoj Singh", empId: "EMP1005", initials: "MS", role: "Student", department: "IT Department", deviceName: "Main Gate Device", deviceId: "MG-01", date: "06/07/2026", day: "Mon", checkIn: "09:10 AM", expected: "09:00 AM", delay: "10m", status: "Late", bg: "#ef4444" },
-    ]);
+    // Initialize with empty array for real-world application behavior
+    const [data, setData] = useState([]);
 
     const fetchReport = async () => {
         setLoading(true);
         try {
             const endpoint = reportType === "late" 
-                ? `/biometric/late-report?start_date=${startDate}&end_date=${endDate}`
-                : `/biometric/absent-report?start_date=${startDate}&end_date=${endDate}`;
+                ? `/biometric/late-report?start_date=${startDate}&end_date=${endDate}&role=${roleFilter}`
+                : reportType === "absent"
+                    ? `/biometric/absent-report?start_date=${startDate}&end_date=${endDate}&role=${roleFilter}`
+                    : `/biometric/present-report?start_date=${startDate}&end_date=${endDate}&role=${roleFilter}`;
             const res = await api.get(endpoint);
             if (res.data.success && res.data.data.length > 0) {
                 const mapped = res.data.data.map((r, i) => {
@@ -1933,10 +2124,11 @@ function ReportsTab() {
                         deviceId: r.device_id || "DEV",
                         date: r.date,
                         day: new Date(r.date).toLocaleDateString('en-US', {weekday: 'short'}),
-                        checkIn: r.time_in || "—",
+                        checkIn: r.time_in ? format12Hour(r.time_in) : "—",
+                        checkOut: r.time_out ? format12Hour(r.time_out) : "—",
                         expected: "09:00 AM",
                         delay: r.late_by_minutes ? `${r.late_by_minutes}m` : "—",
-                        status: reportType === "late" ? "Late" : "Absent",
+                        status: reportType === "late" ? "Late" : reportType === "absent" ? "Absent" : "Present",
                         bg: ["#6366f1", "#3b82f6", "#10b981", "#f59e0b", "#ef4444"][i % 5]
                     };
                 });
@@ -1949,8 +2141,39 @@ function ReportsTab() {
         finally { setLoading(false); }
     };
 
-    const exportCSV = () => {
-        toast.info("Exporting report...");
+    const exportExcel = () => {
+        if (!data || data.length === 0) {
+            toast.error("No data available to export.");
+            return;
+        }
+        
+        // Prepare data for Excel
+        const excelData = data.map(row => ({
+            "#": row.id,
+            "Name": row.name,
+            "ID": row.empId,
+            "Role": row.role,
+            "Department": row.department,
+            "Device": row.deviceName,
+            "Date": row.date,
+            "Day": row.day,
+            "Check In": row.checkIn,
+            "Check Out": row.checkOut,
+            "Expected Time": row.expected,
+            "Delay": row.delay,
+            "Status": row.status
+        }));
+        
+        // Generate Workbook
+        const worksheet = XLSX.utils.json_to_sheet(excelData);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "Attendance");
+        
+        // Download
+        const reportName = reportType.charAt(0).toUpperCase() + reportType.slice(1);
+        XLSX.writeFile(workbook, `Attendance_Report_${reportName}_${new Date().toISOString().split('T')[0]}.xlsx`);
+        
+        toast.success("Excel exported successfully!");
     };
 
     const inputStyle = { width: "100%", padding: "0.75rem 1rem", border: "1px solid #e2e8f0", borderRadius: "10px", outline: "none", fontSize: "0.95rem", color: "#1e293b", background: "#fff", transition: "all 0.2s" };
@@ -1972,9 +2195,18 @@ function ReportsTab() {
                         <select value={reportType} onChange={(e) => setReportType(e.target.value)} style={inputStyle}>
                             <option value="late">Late Arrivals</option>
                             <option value="absent">Absent Students</option>
+                            <option value="present">Present Students</option>
                         </select>
                     </div>
-                    <div style={{ flex: 1, minWidth: "180px" }}>
+                    <div style={{ flex: 1, minWidth: "150px" }}>
+                        <label style={{ fontSize: "0.85rem", fontWeight: 600, color: "#475569", display: "block", marginBottom: "0.5rem" }}>Role</label>
+                        <select value={roleFilter} onChange={(e) => setRoleFilter(e.target.value)} style={inputStyle}>
+                            <option value="all">All Roles</option>
+                            <option value="student">Student</option>
+                            <option value="faculty">Faculty</option>
+                        </select>
+                    </div>
+                    <div style={{ flex: 1, minWidth: "160px" }}>
                         <label style={{ fontSize: "0.85rem", fontWeight: 600, color: "#475569", display: "block", marginBottom: "0.5rem" }}>Start Date</label>
                         <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} style={inputStyle} />
                     </div>
@@ -1987,7 +2219,7 @@ function ReportsTab() {
                             <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
                             {loading ? "Generating..." : "Generate Report"}
                         </button>
-                        <button onClick={exportCSV} style={{ background: "#10b981", color: "#fff", border: "none", borderRadius: "10px", padding: "0 1.5rem", height: "46px", display: "flex", alignItems: "center", gap: "0.5rem", fontWeight: 600, fontSize: "0.95rem", cursor: "pointer", transition: "all 0.2s" }} onMouseOver={e => e.currentTarget.style.background = "#059669"} onMouseOut={e => e.currentTarget.style.background = "#10b981"}>
+                        <button onClick={exportExcel} style={{ background: "#10b981", color: "#fff", border: "none", borderRadius: "10px", padding: "0 1.5rem", height: "46px", display: "flex", alignItems: "center", gap: "0.5rem", fontWeight: 600, fontSize: "0.95rem", cursor: "pointer", transition: "all 0.2s" }} onMouseOver={e => e.currentTarget.style.background = "#059669"} onMouseOut={e => e.currentTarget.style.background = "#10b981"}>
                             <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="8" y1="13" x2="16" y2="13"></line><line x1="8" y1="17" x2="16" y2="17"></line><line x1="12" y1="11" x2="12" y2="19"></line></svg>
                             Export Excel
                         </button>
@@ -2053,7 +2285,7 @@ function ReportsTab() {
                     <table style={{ width: "100%", borderCollapse: "collapse", minWidth: "900px" }}>
                         <thead>
                             <tr style={{ borderBottom: "1px solid #e2e8f0" }}>
-                                {["#", "Person", "Role", "Department", "Device", "Date", "Check In", "Expected Time", "Delay", "Status"].map((h) => (
+                                {["#", "Person", "Role", "Department", "Device", "Date", "Check In/Out", "Expected Time", "Delay", "Status"].map((h) => (
                                     <th key={h} style={{ padding: "1rem 0.5rem", textAlign: "left", fontSize: "0.75rem", fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.5px" }}>{h}</th>
                                 ))}
                             </tr>
@@ -2097,7 +2329,18 @@ function ReportsTab() {
                                         <div style={{ fontSize: "0.85rem", color: "#1e293b" }}>{r.date}</div>
                                         <div style={{ fontSize: "0.75rem", color: "#94a3b8" }}>{r.day}</div>
                                     </td>
-                                    <td style={{ padding: "1rem 0.5rem", fontSize: "0.85rem", color: "#1e293b", fontWeight: 500 }}>{r.checkIn}</td>
+                                    <td style={{ padding: "1rem 0.5rem" }}>
+                                        <div style={{ display: "flex", flexDirection: "column", gap: "0.3rem" }}>
+                                            <div style={{ display: "flex", alignItems: "center", gap: "0.4rem", fontSize: "0.85rem", whiteSpace: "nowrap" }}>
+                                                <span style={{ color: "#10b981", fontWeight: 700, fontSize: "0.7rem", background: "#d1fae5", padding: "0.15rem 0.4rem", borderRadius: "4px", minWidth: "28px", textAlign: "center" }}>IN</span> 
+                                                <span style={{ fontWeight: 500, color: "#334155" }}>{r.checkIn}</span>
+                                            </div>
+                                            <div style={{ display: "flex", alignItems: "center", gap: "0.4rem", fontSize: "0.85rem", whiteSpace: "nowrap" }}>
+                                                <span style={{ color: "#ef4444", fontWeight: 700, fontSize: "0.7rem", background: "#fee2e2", padding: "0.15rem 0.4rem", borderRadius: "4px", minWidth: "28px", textAlign: "center" }}>OUT</span> 
+                                                <span style={{ fontWeight: 500, color: "#334155" }}>{r.checkOut}</span>
+                                            </div>
+                                        </div>
+                                    </td>
                                     <td style={{ padding: "1rem 0.5rem", fontSize: "0.85rem", color: "#64748b" }}>{r.expected}</td>
                                     <td style={{ padding: "1rem 0.5rem", fontSize: "0.85rem", color: "#ef4444", fontWeight: 600 }}>{r.delay}</td>
                                     <td style={{ padding: "1rem 0.5rem" }}>
@@ -2191,10 +2434,112 @@ function SettingsTab() {
 
             {/* Main Grid */}
             <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1.3fr) minmax(0, 1fr)", gap: "1.5rem", marginBottom: "1.5rem", alignItems: "start" }}>
-                
-                {/* Left Column: General Settings */}
-                <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: "16px", padding: "1.75rem", boxShadow: "0 2px 4px rgba(0,0,0,0.02)" }}>
-                    <div style={{ display: "flex", gap: "0.75rem", alignItems: "center", marginBottom: "1.75rem" }}>
+                {/* Left Column */}
+                <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
+                    
+                    {/* Attendance Mode Card */}
+                    <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: "16px", padding: "1.75rem", boxShadow: "0 2px 4px rgba(0,0,0,0.02)" }}>
+                        <div style={{ display: "flex", gap: "0.75rem", alignItems: "center", marginBottom: "1.5rem" }}>
+                            <div style={{ color: "#8b5cf6" }}>
+                                <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+                            </div>
+                            <h3 style={{ margin: 0, fontSize: "1.1rem", fontWeight: 700, color: "#1e293b" }}>Attendance Mode</h3>
+                        </div>
+                        
+                        {/* Attendance Mode Pill Toggle */}
+                        <div style={{ marginBottom: "1.5rem" }}>
+                            <label style={{ ...labelBaseStyle, marginBottom: "1rem" }}>Primary Tracking Mode</label>
+                            <div style={{ display: "inline-flex", background: "#f1f5f9", borderRadius: "12px", padding: "4px", gap: "2px", width: "100%" }}>
+                                {[
+                                    { value: "class_based", icon: "🏫", label: "Class Based", sub: "Main Gate" },
+                                    { value: "subject_based", icon: "📚", label: "Subject Based", sub: "Classrooms" }
+                                ].map(opt => {
+                                    const isActive = (settings.attendance_mode === opt.value) || (!settings.attendance_mode && opt.value === "class_based");
+                                    return (
+                                        <button key={opt.value} onClick={() => update("attendance_mode", opt.value)} style={{
+                                            flex: 1, padding: "0.7rem 1rem", borderRadius: "10px", border: "none",
+                                            background: isActive ? "#fff" : "transparent",
+                                            boxShadow: isActive ? "0 2px 8px rgba(99,102,241,0.12)" : "none",
+                                            cursor: "pointer", transition: "all 0.25s ease",
+                                            display: "flex", flexDirection: "column", alignItems: "center", gap: "2px"
+                                        }}>
+                                            <span style={{ fontSize: "1.2rem" }}>{opt.icon}</span>
+                                            <span style={{ fontSize: "0.85rem", fontWeight: isActive ? 700 : 500, color: isActive ? "#6366f1" : "#64748b", whiteSpace: "nowrap" }}>{opt.label}</span>
+                                            <span style={{ fontSize: "0.7rem", color: isActive ? "#8b5cf6" : "#94a3b8" }}>{opt.sub}</span>
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                            <div style={{ display: "flex", alignItems: "flex-start", gap: "0.5rem", marginTop: "0.75rem", padding: "0.6rem 0.75rem", background: (settings.attendance_mode === "subject_based") ? "#f5f3ff" : "#f0fdf4", borderRadius: "8px", border: "1px solid " + ((settings.attendance_mode === "subject_based") ? "#e9d5ff" : "#bbf7d0") }}>
+                                <span style={{ fontSize: "0.9rem" }}>{(settings.attendance_mode === "subject_based") ? "ℹ️" : "✅"}</span>
+                                <span style={{ fontSize: "0.8rem", color: "#475569", lineHeight: 1.4 }}>
+                                    {settings.attendance_mode === "subject_based"
+                                        ? "Students punch at specific classrooms. Each device must be assigned to a room with a timetable."
+                                        : "Students punch at the main gate only. All subjects are auto-marked present based on timetable when they punch out."}
+                                </span>
+                            </div>
+                        </div>
+
+                        {settings.attendance_mode === "subject_based" && (
+                            <div style={{ background: "#faf5ff", border: "1px solid #e9d5ff", borderRadius: "12px", padding: "1.25rem" }}>
+                                <div style={{ display: "flex", gap: "0.5rem", alignItems: "center", marginBottom: "1rem" }}>
+                                    <span style={{ fontSize: "1rem" }}>⚡</span>
+                                    <span style={{ fontSize: "0.9rem", fontWeight: 700, color: "#7c3aed" }}>Subject Punch Behavior</span>
+                                </div>
+                                {/* Subject Mode Pill Toggle */}
+                                <div style={{ display: "inline-flex", background: "#ede9fe", borderRadius: "10px", padding: "4px", gap: "2px", width: "100%", marginBottom: "0.75rem" }}>
+                                    {[
+                                        { value: "automatic", icon: "🤖", label: "Automatic", sub: "Carry-forward" },
+                                        { value: "manual", icon: "👆", label: "Manual", sub: "Punch per subject" }
+                                    ].map(opt => {
+                                        const isActive = (settings.subject_mode === opt.value) || (!settings.subject_mode && opt.value === "automatic");
+                                        return (
+                                            <button key={opt.value} onClick={() => update("subject_mode", opt.value)} style={{
+                                                flex: 1, padding: "0.6rem 0.75rem", borderRadius: "8px", border: "none",
+                                                background: isActive ? "#7c3aed" : "transparent",
+                                                cursor: "pointer", transition: "all 0.25s ease",
+                                                display: "flex", flexDirection: "column", alignItems: "center", gap: "2px"
+                                            }}>
+                                                <span style={{ fontSize: "1.1rem" }}>{opt.icon}</span>
+                                                <span style={{ fontSize: "0.8rem", fontWeight: isActive ? 700 : 500, color: isActive ? "#fff" : "#7c3aed", whiteSpace: "nowrap" }}>{opt.label}</span>
+                                                <span style={{ fontSize: "0.65rem", color: isActive ? "#e9d5ff" : "#a78bfa" }}>{opt.sub}</span>
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                                <div style={{ fontSize: "0.8rem", color: "#5b21b6", lineHeight: 1.4, padding: "0.5rem 0.25rem" }}>
+                                    {(settings.subject_mode === "manual")
+                                        ? "👆 Students must physically scan their finger for every subject period."
+                                        : "🤖 Once present in a room, attendance automatically carries forward to next consecutive subject periods in the same room."}
+                                </div>
+
+                                {/* Strict Subject Enrollment Toggle */}
+                                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: "1.5rem", paddingTop: "1.5rem", borderTop: "1px dashed #e9d5ff" }}>
+                                    <div>
+                                        <div style={{ fontSize: "0.95rem", fontWeight: 600, color: "#1e293b", marginBottom: "0.25rem" }}>Strict Subject Enrollment</div>
+                                        <div style={{ fontSize: "0.8rem", color: "#64748b", maxWidth: "250px", lineHeight: 1.4 }}>Only allow punches for subjects the student is explicitly enrolled in.</div>
+                                    </div>
+                                    <button
+                                        onClick={() => update("enforce_subject_enrollment", !(settings.enforce_subject_enrollment !== false))}
+                                        style={{
+                                            width: "44px", height: "24px", borderRadius: "12px", border: "none", cursor: "pointer",
+                                            background: (settings.enforce_subject_enrollment !== false) ? "#8b5cf6" : "#cbd5e1",
+                                            position: "relative", transition: "all 0.2s"
+                                        }}
+                                    >
+                                        <div style={{
+                                            width: "20px", height: "20px", borderRadius: "50%", background: "#fff", position: "absolute", top: "2px",
+                                            left: (settings.enforce_subject_enrollment !== false) ? "22px" : "2px", transition: "all 0.2s", boxShadow: "0 1px 2px rgba(0,0,0,0.1)"
+                                        }} />
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* General Settings Card */}
+                    <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: "16px", padding: "1.75rem", boxShadow: "0 2px 4px rgba(0,0,0,0.02)" }}>
+                        <div style={{ display: "flex", gap: "0.75rem", alignItems: "center", marginBottom: "1.75rem" }}>
                         <div style={{ color: "#8b5cf6" }}>
                             <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
                         </div>
@@ -2228,9 +2573,10 @@ function SettingsTab() {
                         <input type="number" min="60" max="1800" value={settings.duplicate_punch_window_secs || 300} onChange={(e) => update("duplicate_punch_window_secs", parseInt(e.target.value))} style={inputBaseStyle} />
                         <span style={subtextStyle}>Punched within this time will be considered as duplicate.</span>
                     </div>
+                    </div>
                 </div>
 
-                {/* Right Column */}
+            {/* Right Column */}
                 <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
                     
                     {/* Working Days Card */}
@@ -2274,25 +2620,78 @@ function SettingsTab() {
                             <h3 style={{ margin: 0, fontSize: "1.1rem", fontWeight: 700, color: "#1e293b" }}>Parent Notifications</h3>
                         </div>
 
-                        <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
-                            {[
-                                { key: "notify_parent_on_present", label: "Notify when student marks present" },
-                                { key: "notify_parent_on_late", label: "Notify when student arrives late" },
-                                { key: "notify_parent_on_absent", label: "Notify when student is absent" },
-                            ].map(({ key, label }) => (
-                                <label key={key} style={{ display: "flex", alignItems: "center", gap: "0.75rem", cursor: "pointer" }}>
-                                    <input
-                                        type="checkbox"
-                                        checked={!!settings[key]}
-                                        onChange={(e) => update(key, e.target.checked)}
-                                        style={{
-                                            width: "18px", height: "18px", cursor: "pointer",
-                                            accentColor: "#8b5cf6",
-                                        }}
-                                    />
-                                    <span style={{ fontSize: "0.9rem", color: "#1e293b", fontWeight: 500 }}>{label}</span>
-                                </label>
-                            ))}
+                        {/* Main Gate Notifications Group */}
+                        <div style={{ marginBottom: "1.5rem" }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "1rem", paddingBottom: "0.5rem", borderBottom: "1px dashed #e2e8f0" }}>
+                                <span style={{ fontSize: "1rem" }}>🚪</span>
+                                <span style={{ fontWeight: 700, fontSize: "0.85rem", color: "#374151", textTransform: "uppercase", letterSpacing: "0.05em" }}>Main Gate</span>
+                            </div>
+                            <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+                                {[
+                                    { key: "notify_main_gate_in", label: "Notify when student punches IN at Main Gate", emoji: "✅" },
+                                    { key: "notify_main_gate_out", label: "Notify when student punches OUT at Main Gate", emoji: "🚪" },
+                                ].map(({ key, label, emoji }) => (
+                                    <label key={key} style={{ display: "flex", alignItems: "center", gap: "0.75rem", cursor: "pointer", padding: "0.6rem 0.75rem", borderRadius: "8px", background: settings[key] ? "rgba(139,92,246,0.05)" : "transparent", border: "1px solid", borderColor: settings[key] ? "#e9d5ff" : "transparent", transition: "all 0.2s" }}>
+                                        <input
+                                            type="checkbox"
+                                            checked={!!settings[key]}
+                                            onChange={(e) => update(key, e.target.checked)}
+                                            style={{ width: "17px", height: "17px", cursor: "pointer", accentColor: "#8b5cf6", flexShrink: 0 }}
+                                        />
+                                        <span style={{ fontSize: "0.88rem", color: "#1e293b", fontWeight: 500 }}>{emoji} {label}</span>
+                                    </label>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Subject Punch Notifications Group */}
+                        {settings.attendance_mode === "subject_based" && (
+                            <div style={{ marginBottom: "1.5rem" }}>
+                                <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "1rem", paddingBottom: "0.5rem", borderBottom: "1px dashed #e2e8f0" }}>
+                                    <span style={{ fontSize: "1rem" }}>📚</span>
+                                    <span style={{ fontWeight: 700, fontSize: "0.85rem", color: "#374151", textTransform: "uppercase", letterSpacing: "0.05em" }}>Subject / Classroom</span>
+                                </div>
+                                <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+                                    {[
+                                        { key: "notify_subject_in", label: "Notify when student punches IN for a Subject", emoji: "📚" },
+                                        { key: "notify_subject_out", label: "Notify when student punches OUT for a Subject", emoji: "📤" },
+                                    ].map(({ key, label, emoji }) => (
+                                        <label key={key} style={{ display: "flex", alignItems: "center", gap: "0.75rem", cursor: "pointer", padding: "0.6rem 0.75rem", borderRadius: "8px", background: settings[key] ? "rgba(139,92,246,0.05)" : "transparent", border: "1px solid", borderColor: settings[key] ? "#e9d5ff" : "transparent", transition: "all 0.2s" }}>
+                                            <input
+                                                type="checkbox"
+                                                checked={!!settings[key]}
+                                                onChange={(e) => update(key, e.target.checked)}
+                                                style={{ width: "17px", height: "17px", cursor: "pointer", accentColor: "#8b5cf6", flexShrink: 0 }}
+                                            />
+                                            <span style={{ fontSize: "0.88rem", color: "#1e293b", fontWeight: 500 }}>{emoji} {label}</span>
+                                        </label>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Status-based Notifications Group */}
+                        <div>
+                            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "1rem", paddingBottom: "0.5rem", borderBottom: "1px dashed #e2e8f0" }}>
+                                <span style={{ fontSize: "1rem" }}>⚡</span>
+                                <span style={{ fontWeight: 700, fontSize: "0.85rem", color: "#374151", textTransform: "uppercase", letterSpacing: "0.05em" }}>Status Alerts</span>
+                            </div>
+                            <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+                                {[
+                                    { key: "notify_parent_on_late", label: "Notify when student arrives late", emoji: "⚠️" },
+                                    { key: "notify_parent_on_absent", label: "Notify when student is absent", emoji: "❌" },
+                                ].map(({ key, label, emoji }) => (
+                                    <label key={key} style={{ display: "flex", alignItems: "center", gap: "0.75rem", cursor: "pointer", padding: "0.6rem 0.75rem", borderRadius: "8px", background: settings[key] ? "rgba(139,92,246,0.05)" : "transparent", border: "1px solid", borderColor: settings[key] ? "#e9d5ff" : "transparent", transition: "all 0.2s" }}>
+                                        <input
+                                            type="checkbox"
+                                            checked={!!settings[key]}
+                                            onChange={(e) => update(key, e.target.checked)}
+                                            style={{ width: "17px", height: "17px", cursor: "pointer", accentColor: "#8b5cf6", flexShrink: 0 }}
+                                        />
+                                        <span style={{ fontSize: "0.88rem", color: "#1e293b", fontWeight: 500 }}>{emoji} {label}</span>
+                                    </label>
+                                ))}
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -2320,7 +2719,7 @@ function SettingsTab() {
 function StatBox({ icon, label, value, color }) {
     return (
         <div className="card" style={{ padding: "1.25rem", display: "flex", alignItems: "center", gap: "1rem" }}>
-            <div style={{ fontSize: "2rem", width: "48px", height: "48px", display: "flex", alignItems: "center", justifyContent: "center", background: `${color}1a`, borderRadius: "12px" }}>
+            <div style={{ fontSize: "2rem", width: "48px", height: "48px", display: "flex", alignItems: "center", justifyContent: "center", background: color + "1a", borderRadius: "12px" }}>
                 {icon}
             </div>
             <div>

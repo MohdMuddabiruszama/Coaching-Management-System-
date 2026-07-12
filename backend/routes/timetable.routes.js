@@ -10,6 +10,7 @@ const ttValidator = require("../validators/timetable.validator"); // ✅ Phase 7
 // Slot Routes
 router.post("/slots", verifyToken, allowRoles("admin", "manager"), checkManagerPermission("timetable.create"), validate(ttValidator.createSlot), timetableController.createSlot);
 router.get("/slots", verifyToken, checkManagerPermission("timetable.read", ["classes"]), timetableController.getSlots);
+router.put("/slots/:id", verifyToken, allowRoles("admin", "manager"), checkManagerPermission("timetable.update"), validate(ttValidator.updateSlot), timetableController.updateSlot);
 router.delete("/slots/:id", verifyToken, allowRoles("admin", "manager"), checkManagerPermission("timetable.delete"), validate(ttValidator.deleteSlot), timetableController.deleteSlot);
 
 // Timetable Entry Routes

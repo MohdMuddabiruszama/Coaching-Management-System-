@@ -11,6 +11,8 @@ const Faculty = require("./faculty");
 const Subject = require("./subject");
 const Attendance = require("./attendance");
 const FacultyAttendance = require("./facultyAttendance");
+const FacultyPeriodAttendance = require("./facultyPeriodAttendance");
+const StudentPeriodAttendance = require("./studentPeriodAttendance");
 const FeesStructure = require("./feesStructure");
 const Payment = require("./payment");
 const Announcement = require("./announcement");
@@ -216,6 +218,9 @@ Institute.hasMany(Attendance, { foreignKey: "institute_id" });
 
 Attendance.belongsTo(User, { as: "marker", foreignKey: "marked_by" });
 User.hasMany(Attendance, { foreignKey: "marked_by" });
+
+Attendance.belongsTo(BiometricPunch, { foreignKey: "biometric_punch_id" });
+BiometricPunch.hasMany(Attendance, { foreignKey: "biometric_punch_id" });
 
 // Faculty Attendance Associations
 FacultyAttendance.belongsTo(Faculty, { foreignKey: "faculty_id" });
@@ -460,6 +465,29 @@ User.hasMany(FacultySalary, { foreignKey: "paid_by" });
 // FacultySalary ↔ User direct association (for getAllSalaries JOIN)
 FacultySalary.belongsTo(User, { as: "facultyUser", foreignKey: "faculty_id" });
 
+// FacultyPeriodAttendance Associations
+FacultyPeriodAttendance.belongsTo(Institute, { foreignKey: "institute_id" });
+Institute.hasMany(FacultyPeriodAttendance, { foreignKey: "institute_id" });
+
+FacultyPeriodAttendance.belongsTo(Faculty, { foreignKey: "faculty_id" });
+Faculty.hasMany(FacultyPeriodAttendance, { foreignKey: "faculty_id" });
+
+FacultyPeriodAttendance.belongsTo(Timetable, { foreignKey: "timetable_entry_id", as: "TimetableEntry" });
+Timetable.hasMany(FacultyPeriodAttendance, { foreignKey: "timetable_entry_id" });
+
+// StudentPeriodAttendance Associations (Live Timetable feature)
+StudentPeriodAttendance.belongsTo(Institute, { foreignKey: "institute_id" });
+Institute.hasMany(StudentPeriodAttendance, { foreignKey: "institute_id" });
+
+StudentPeriodAttendance.belongsTo(Student, { foreignKey: "student_id" });
+Student.hasMany(StudentPeriodAttendance, { foreignKey: "student_id" });
+
+StudentPeriodAttendance.belongsTo(Timetable, { foreignKey: "timetable_entry_id", as: "TimetableEntry" });
+Timetable.hasMany(StudentPeriodAttendance, { foreignKey: "timetable_entry_id" });
+
+StudentPeriodAttendance.belongsTo(User, { as: "marker", foreignKey: "marked_by" });
+User.hasMany(StudentPeriodAttendance, { foreignKey: "marked_by" });
+
 // FacultySalarySettings Associations
 FacultySalarySettings.belongsTo(Institute, { foreignKey: "institute_id" });
 Institute.hasMany(FacultySalarySettings, { foreignKey: "institute_id" });
@@ -528,6 +556,8 @@ module.exports = {
     TimetableSlot,
     Timetable,
     FacultyAttendance,
+    FacultyPeriodAttendance,
+    StudentPeriodAttendance,
     TransportFee,
     StudentFee,
     FeeDiscountLog,
