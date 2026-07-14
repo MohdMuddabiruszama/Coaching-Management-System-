@@ -7,7 +7,7 @@ const NAV_LINKS = [
   { label: 'Home', href: '#home' },
   { label: 'Features', href: '#features' },
   { label: 'Pricing', href: '#pricing' },
-  { label: 'Testimonials', href: '#testimonials' },
+  // { label: 'Testimonials', href: '#testimonials' },
   { label: 'FAQ', href: '#faq' },
   { label: 'Contact', href: '#contact' }
 ];
@@ -68,7 +68,7 @@ export default function Navbar() {
   useEffect(() => {
     const onScroll = () => {
       setScrolled(window.scrollY > 30);
-      const ids = ['home', 'features', 'pricing', 'testimonials', 'faq', 'contact'];
+      const ids = ['home', 'features', 'pricing', 'faq', 'contact']; // 'testimonials' removed for now
       let current = 'home';
       ids.forEach(id => {
         const el = document.getElementById(id);

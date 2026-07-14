@@ -93,7 +93,8 @@ export default function Home() {
         <Hero />
         <Features />
         <Pricing />
-        <Testimonials />
+        {/* Hiding Testimonials for now as per user request */}
+        {false && <Testimonials />}
         <FAQ />
         <Contact />
 

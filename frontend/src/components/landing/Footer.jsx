@@ -85,7 +85,7 @@ export default function Footer() {
             <ul style={S.linkList}>
               <li><a href="#features" className="lp-f-link" style={S.linkItem}>Features</a></li>
               <li><a href="#pricing" className="lp-f-link" style={S.linkItem}>Pricing & Plans</a></li>
-              <li><a href="#testimonials" className="lp-f-link" style={S.linkItem}>Success Stories</a></li>
+              {/* <li><a href="#testimonials" className="lp-f-link" style={S.linkItem}>Success Stories</a></li> */}
               <li><Link to="/register?plan=free_trial" className="lp-f-link" style={S.linkItem}>Start Free Trial</Link></li>
               <li><Link to="/login" className="lp-f-link" style={S.linkItem}>Sign In</Link></li>
             </ul>

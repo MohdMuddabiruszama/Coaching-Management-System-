@@ -237,39 +237,42 @@ export default function Hero() {
         </div>
       </section>
 
-      <section className='lp-stats-strip reveal' ref={statsRef}>
-        <div className='lp-stat-item'>
-          <div className='lp-stat-icon' style={{background: 'rgba(168,85,247,0.1)', color: 'var(--lp-fuchsia)'}}>🏫</div>
-          <div>
-            <div className='lp-stat-num'>{countInstitutes}+</div>
-            <div className='lp-stat-label'>Institutes Active</div>
+      {/* Hiding stats strip for now as per user request */}
+      {false && (
+        <section className='lp-stats-strip reveal' ref={statsRef}>
+          <div className='lp-stat-item'>
+            <div className='lp-stat-icon' style={{background: 'rgba(168,85,247,0.1)', color: 'var(--lp-fuchsia)'}}>🏫</div>
+            <div>
+              <div className='lp-stat-num'>{countInstitutes}+</div>
+              <div className='lp-stat-label'>Institutes Active</div>
+            </div>
           </div>
-        </div>
-        <div className='lp-stat-divider'></div>
-        <div className='lp-stat-item'>
-          <div className='lp-stat-icon' style={{background: 'rgba(34,197,94,0.1)', color: '#22C55E'}}>👥</div>
-          <div>
-            <div className='lp-stat-num'>50,000+</div>
-            <div className='lp-stat-label'>Students Managed</div>
+          <div className='lp-stat-divider'></div>
+          <div className='lp-stat-item'>
+            <div className='lp-stat-icon' style={{background: 'rgba(34,197,94,0.1)', color: '#22C55E'}}>👥</div>
+            <div>
+              <div className='lp-stat-num'>50,000+</div>
+              <div className='lp-stat-label'>Students Managed</div>
+            </div>
           </div>
-        </div>
-        <div className='lp-stat-divider'></div>
-        <div className='lp-stat-item'>
-          <div className='lp-stat-icon' style={{background: 'rgba(59,130,246,0.1)', color: '#3B82F6'}}>📈</div>
-          <div>
-            <div className='lp-stat-num'>{countPassRate}%</div>
-            <div className='lp-stat-label'>Avg. Pass Rate</div>
+          <div className='lp-stat-divider'></div>
+          <div className='lp-stat-item'>
+            <div className='lp-stat-icon' style={{background: 'rgba(59,130,246,0.1)', color: '#3B82F6'}}>📈</div>
+            <div>
+              <div className='lp-stat-num'>{countPassRate}%</div>
+              <div className='lp-stat-label'>Avg. Pass Rate</div>
+            </div>
           </div>
-        </div>
-        <div className='lp-stat-divider'></div>
-        <div className='lp-stat-item'>
-          <div className='lp-stat-icon' style={{background: 'rgba(249,115,22,0.1)', color: '#F97316'}}>📍</div>
-          <div>
-            <div className='lp-stat-num'>{countCities}+</div>
-            <div className='lp-stat-label'>Cities Covered</div>
+          <div className='lp-stat-divider'></div>
+          <div className='lp-stat-item'>
+            <div className='lp-stat-icon' style={{background: 'rgba(249,115,22,0.1)', color: '#F97316'}}>📍</div>
+            <div>
+              <div className='lp-stat-num'>{countCities}+</div>
+              <div className='lp-stat-label'>Cities Covered</div>
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
     </>
   );
 }
