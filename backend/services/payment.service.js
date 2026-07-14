@@ -10,12 +10,21 @@ async function createOrder({ institute_id, amount_rupees, order_type, reference_
   const amount_paise = Math.round(amount_rupees * 100);
   const receipt = `rcpt_${order_type}_${Date.now()}`;
 
+  // Ensure all notes are strings to prevent Razorpay 400 errors
+  const rawNotes = { institute_id, order_type, reference_id, ...notes };
+  const stringifiedNotes = {};
+  for (const [key, value] of Object.entries(rawNotes)) {
+    if (value !== undefined && value !== null) {
+      stringifiedNotes[key] = String(value);
+    }
+  }
+
   // Call Razorpay API
   const rzpOrder = await razorpay.orders.create({
     amount: amount_paise,
     currency: 'INR',
     receipt,
-    notes: { institute_id, order_type, reference_id, ...notes },
+    notes: stringifiedNotes,
   });
 
   // Save order to your DB

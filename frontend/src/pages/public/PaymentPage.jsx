@@ -20,7 +20,7 @@ function PaymentPage() {
     const [processing, setProcessing] = useState(false);
     const [billingCycle, setBillingCycle] = useState("monthly");
     const [hasUsedTrial, setHasUsedTrial] = useState(false);
-    const [isTestMode, setIsTestMode] = useState(true);
+    const [isTestMode, setIsTestMode] = useState(false);
     const [instituteName, setInstituteName] = useState("");
 
     useEffect(() => {

@@ -19,7 +19,7 @@ function PayFees() {
     const [studentId, setStudentId] = useState(null);
     const [studentProfile, setStudentProfile] = useState(null);
     const [totalPaid, setTotalPaid] = useState(0);
-    const [isTestMode, setIsTestMode] = useState(true);
+    const [isTestMode, setIsTestMode] = useState(false);
     const [viewingReceipt, setViewingReceipt] = useState(null);
 
     const { initializePayment, isPaymentLoading, paymentError, setPaymentError } = useRazorpayPayment();
