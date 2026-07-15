@@ -517,6 +517,14 @@ const syncDatabase = async () => {
       try { await sequelize.query(`ALTER TABLE biometric_settings ADD COLUMN IF NOT EXISTS notify_subject_in BOOLEAN DEFAULT false;`); } catch (e) { }
       try { await sequelize.query(`ALTER TABLE biometric_settings ADD COLUMN IF NOT EXISTS notify_subject_out BOOLEAN DEFAULT false;`); } catch (e) { }
 
+      // Add QR notification columns to institutes
+      try { await sequelize.query(`ALTER TABLE institutes ADD COLUMN IF NOT EXISTS qr_notify_main_gate_in BOOLEAN DEFAULT false;`); } catch (e) { }
+      try { await sequelize.query(`ALTER TABLE institutes ADD COLUMN IF NOT EXISTS qr_notify_main_gate_out BOOLEAN DEFAULT false;`); } catch (e) { }
+      try { await sequelize.query(`ALTER TABLE institutes ADD COLUMN IF NOT EXISTS qr_notify_subject_in BOOLEAN DEFAULT false;`); } catch (e) { }
+      try { await sequelize.query(`ALTER TABLE institutes ADD COLUMN IF NOT EXISTS qr_notify_subject_out BOOLEAN DEFAULT false;`); } catch (e) { }
+      try { await sequelize.query(`ALTER TABLE institutes ADD COLUMN IF NOT EXISTS qr_notify_parent_on_late BOOLEAN DEFAULT false;`); } catch (e) { }
+      try { await sequelize.query(`ALTER TABLE institutes ADD COLUMN IF NOT EXISTS qr_notify_parent_on_absent BOOLEAN DEFAULT false;`); } catch (e) { }
+
       // Public Web Page feature columns
       try { await sequelize.query(`ALTER TABLE plans ADD COLUMN feature_public_page BOOLEAN DEFAULT false;`); } catch (e) { }
       try { await sequelize.query(`ALTER TABLE institutes ADD COLUMN current_feature_public_page BOOLEAN DEFAULT false;`); } catch (e) { }

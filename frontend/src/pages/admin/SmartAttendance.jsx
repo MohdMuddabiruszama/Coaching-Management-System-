@@ -23,9 +23,11 @@ function SmartAttendance() {
     const [selectedClass, setSelectedClass] = useState("");
     const [subjects, setSubjects] = useState([]);
     const [selectedSubject, setSelectedSubject] = useState("");
+    const [attendanceMode, setAttendanceMode] = useState("subject_based");
 
     // Step state: 1 = Setup, 2 = Scanning, 3 = Results, 4 = History
     const [step, setStep] = useState(1);
+    const [scanType, setScanType] = useState('in');
     
     // Session State
     const [recentScans, setRecentScans] = useState([]);
@@ -56,18 +58,32 @@ function SmartAttendance() {
     // Refs for callback access
     const selectedClassRef = useRef(selectedClass);
     const selectedSubjectRef = useRef(selectedSubject);
+    const scanTypeRef = useRef(scanType);
 
     useEffect(() => {
         selectedClassRef.current = selectedClass;
         selectedSubjectRef.current = selectedSubject;
-    }, [selectedClass, selectedSubject]);
+        scanTypeRef.current = scanType;
+    }, [selectedClass, selectedSubject, scanType]);
 
     useEffect(() => {
+        fetchSettings();
         fetchClasses();
         return () => {
             stopScanner();
         };
     }, []);
+
+    const fetchSettings = async () => {
+        try {
+            const res = await api.get("/attendance/settings");
+            if (res.data.success) {
+                setAttendanceMode(res.data.data.student_attendance_mode || "subject_based");
+            }
+        } catch (error) {
+            console.error("Error fetching settings:", error);
+        }
+    };
 
     useEffect(() => {
         if (selectedClass) {
@@ -97,9 +113,13 @@ function SmartAttendance() {
         }
     };
 
-    const startScanningProcess = async () => {
-        if (!selectedClass) return alert("Please select a class");
-        if (!selectedSubject) return alert("Please select a subject");
+    const startScanningProcess = async (type = 'in') => {
+        setScanType(type);
+        scanTypeRef.current = type;
+        if (attendanceMode === "subject_based") {
+            if (!selectedClass) return alert("Please select a class");
+            if (!selectedSubject) return alert("Please select a subject");
+        }
 
         const hasPermission = await requestCameraPermission();
         if (!hasPermission) {
@@ -135,7 +155,9 @@ function SmartAttendance() {
         setMessage(null);
         await stopScanner();
         
-        await fetchFinalResults(); // Fetch from DB before showing Step 3
+        if (attendanceMode === "subject_based") {
+            await fetchFinalResults(); // Fetch from DB before showing Step 3
+        }
         setStep(3); // Move to Results Step
     };
 
@@ -236,12 +258,18 @@ function SmartAttendance() {
         try {
             setMessage({ type: "loading", text: "Marking attendance..." });
 
-            const response = await api.post("/attendance/smart/mark-student", {
+            const payload = {
                 qr_code: decodedQR,
-                class_id: selectedClassRef.current,
-                subject_id: selectedSubjectRef.current,
-                date: getLocalDate()
-            });
+                date: getLocalDate(),
+                scan_type: scanTypeRef.current
+            };
+
+            if (attendanceMode === "subject_based") {
+                payload.class_id = selectedClassRef.current;
+                payload.subject_id = selectedSubjectRef.current;
+            }
+
+            const response = await api.post("/attendance/smart/mark-student", payload);
 
             if (response.data.success) {
                 setMessage({ type: "success", text: response.data.message });
@@ -430,53 +458,89 @@ function SmartAttendance() {
                     <div className="st-card" style={{ flex: '1 1 500px', padding: '2.5rem' }}>
                         <h2 style={{ marginBottom: "2rem", color: "#0f172a", fontSize: '1.5rem', textAlign: 'center' }}>Start New Scan</h2>
                         
-                        <div className="form-group" style={{ textAlign: "left", marginBottom: "1.5rem" }}>
-                            <label className="form-label" style={{ fontWeight: '600', color: '#475569', marginBottom: '0.5rem' }}>Class <span style={{color: '#ef4444'}}>*</span></label>
-                            <select
-                                className="st-select"
-                                style={{ width: '100%', padding: '0.75rem', fontSize: '1rem' }}
-                                value={selectedClass}
-                                onChange={(e) => setSelectedClass(e.target.value)}
-                            >
-                                <option value="">📚 Select Class</option>
-                                {classes.map((cls) => (
-                                    <option key={cls.id} value={cls.id}>
-                                        {cls.name} {cls.section ? `(${cls.section})` : ""}
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
-                        
-                        <div className="form-group" style={{ textAlign: "left", marginBottom: "2rem" }}>
-                            <label className="form-label" style={{ fontWeight: '600', color: '#475569', marginBottom: '0.5rem' }}>Subject <span style={{color: '#ef4444'}}>*</span></label>
-                            <select
-                                className="st-select"
-                                style={{ width: '100%', padding: '0.75rem', fontSize: '1rem' }}
-                                value={selectedSubject}
-                                onChange={(e) => setSelectedSubject(e.target.value)}
-                                disabled={!selectedClass}
-                            >
-                                <option value="">📖 Select Subject</option>
-                                {subjects.map((sub) => (
-                                    <option key={sub.id} value={sub.id}>
-                                        {sub.name}
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
+                        {attendanceMode === "subject_based" ? (
+                            <>
+                                <div className="form-group" style={{ textAlign: "left", marginBottom: "1.5rem" }}>
+                                    <label className="form-label" style={{ fontWeight: '600', color: '#475569', marginBottom: '0.5rem' }}>Class <span style={{color: '#ef4444'}}>*</span></label>
+                                    <select
+                                        className="st-select"
+                                        style={{ width: '100%', padding: '0.75rem', fontSize: '1rem' }}
+                                        value={selectedClass}
+                                        onChange={(e) => setSelectedClass(e.target.value)}
+                                    >
+                                        <option value="">📚 Select Class</option>
+                                        {classes.map((cls) => (
+                                            <option key={cls.id} value={cls.id}>
+                                                {cls.name} {cls.section ? `(${cls.section})` : ""}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+                                
+                                <div className="form-group" style={{ textAlign: "left", marginBottom: "2rem" }}>
+                                    <label className="form-label" style={{ fontWeight: '600', color: '#475569', marginBottom: '0.5rem' }}>Subject <span style={{color: '#ef4444'}}>*</span></label>
+                                    <select
+                                        className="st-select"
+                                        style={{ width: '100%', padding: '0.75rem', fontSize: '1rem' }}
+                                        value={selectedSubject}
+                                        onChange={(e) => setSelectedSubject(e.target.value)}
+                                        disabled={!selectedClass}
+                                    >
+                                        <option value="">📖 Select Subject</option>
+                                        {subjects.map((sub) => (
+                                            <option key={sub.id} value={sub.id}>
+                                                {sub.name}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+                            </>
+                        ) : (
+                            <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '2rem', textAlign: 'center', marginBottom: '2rem' }}>
+                                <span style={{ fontSize: '3rem', display: 'block', marginBottom: '1rem' }}>🏫</span>
+                                <h3 style={{ color: '#0f172a', margin: '0 0 0.5rem 0' }}>Main Gate Scanning</h3>
+                                <p style={{ color: '#64748b', margin: 0, fontSize: '0.95rem', lineHeight: '1.5' }}>
+                                    Your institute is set to <strong>Class Based</strong> mode.<br/>
+                                    Simply scan the student's QR code, and all their subjects for today will be automatically marked as present based on their timetable.
+                                </p>
+                            </div>
+                        )}
 
                         <div style={{ background: '#eef2ff', color: '#4f46e5', padding: '1rem', borderRadius: '8px', marginBottom: '2rem', display: 'flex', alignItems: 'center', gap: '10px', fontSize: '0.9rem' }}>
                             <span>ℹ️</span> Make sure students have their QR codes ready before scanning.
                         </div>
 
-                        <button
-                            className="st-btn st-btn-primary"
-                            style={{ width: "100%", padding: "1rem", fontSize: "1.1rem", display: "flex", justifyContent: "center", gap: "10px", background: "linear-gradient(135deg, #6366f1, #8b5cf6)", border: "none" }}
-                            onClick={startScanningProcess}
-                            disabled={!selectedClass || !selectedSubject}
-                        >
-                            📸 Open Camera & Start Scanning
-                        </button>
+                        {attendanceMode === "class_based" ? (
+                            <div style={{ display: "flex", gap: "1rem" }}>
+                                <button
+                                    className="st-btn st-btn-primary"
+                                    style={{ flex: 1, padding: "1rem", fontSize: "1.1rem", display: "flex", justifyContent: "center", gap: "10px", background: "linear-gradient(135deg, #10b981, #059669)", border: "none", borderRadius: "10px", color: "white", cursor: "pointer", transition: "all 0.3s ease" }}
+                                    onClick={() => startScanningProcess('in')}
+                                    onMouseOver={(e) => e.currentTarget.style.transform = "translateY(-2px)"}
+                                    onMouseOut={(e) => e.currentTarget.style.transform = "translateY(0)"}
+                                >
+                                    📥 In Scan
+                                </button>
+                                <button
+                                    className="st-btn st-btn-primary"
+                                    style={{ flex: 1, padding: "1rem", fontSize: "1.1rem", display: "flex", justifyContent: "center", gap: "10px", background: "linear-gradient(135deg, #ef4444, #dc2626)", border: "none", borderRadius: "10px", color: "white", cursor: "pointer", transition: "all 0.3s ease" }}
+                                    onClick={() => startScanningProcess('out')}
+                                    onMouseOver={(e) => e.currentTarget.style.transform = "translateY(-2px)"}
+                                    onMouseOut={(e) => e.currentTarget.style.transform = "translateY(0)"}
+                                >
+                                    📤 Out Scan
+                                </button>
+                            </div>
+                        ) : (
+                            <button
+                                className="st-btn st-btn-primary"
+                                style={{ width: "100%", padding: "1rem", fontSize: "1.1rem", display: "flex", justifyContent: "center", gap: "10px", background: "linear-gradient(135deg, #6366f1, #8b5cf6)", border: "none" }}
+                                onClick={() => startScanningProcess('in')}
+                                disabled={!selectedClass || !selectedSubject}
+                            >
+                                📸 Open Camera & Start Scanning
+                            </button>
+                        )}
                     </div>
 
                     <div style={{ flex: '1 1 300px', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
@@ -626,8 +690,10 @@ function SmartAttendance() {
             )}
 
             {/* --- STEP 3: RESULTS --- */}
-            {step === 3 && dbStats && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+            {step === 3 && (
+                <>
+                {attendanceMode === "subject_based" && dbStats ? (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
                     <div style={{ textAlign: 'center', padding: '2rem 0' }}>
                         <div style={{ width: '80px', height: '80px', borderRadius: '50%', background: '#22c55e', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '40px', margin: '0 auto 1rem auto', boxShadow: '0 10px 25px rgba(34, 197, 94, 0.3)' }}>✓</div>
                         <h2 style={{ color: '#0f172a', margin: '0 0 0.5rem 0', fontSize: '2rem' }}>Scan Completed!</h2>
@@ -716,19 +782,51 @@ function SmartAttendance() {
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                                     <span style={{ width: '12px', height: '12px', background: '#ef4444', borderRadius: '3px' }}></span>
                                     <span style={{ color: '#475569', fontSize: '0.9rem' }}>Absent ({dbStats.absent})</span>
+                                    <span>Absent ({dbStats.total > 0 ? Math.round((dbStats.absent / dbStats.total) * 100) : 0}%)</span>
                                 </div>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                                     <span style={{ width: '12px', height: '12px', background: '#f59e0b', borderRadius: '3px' }}></span>
-                                    <span style={{ color: '#475569', fontSize: '0.9rem' }}>Late ({dbStats.late})</span>
+                                    <span>Late ({dbStats.total > 0 ? Math.round((dbStats.late / dbStats.total) * 100) : 0}%)</span>
                                 </div>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                    <span style={{ width: '12px', height: '12px', background: '#e2e8f0', border: '1px dashed #94a3b8', borderRadius: '3px' }}></span>
-                                    <span style={{ color: '#94a3b8', fontSize: '0.9rem' }}>Unmarked ({dbStats.unmarked})</span>
+                                    <span style={{ width: '12px', height: '12px', background: '#e2e8f0', borderRadius: '3px' }}></span>
+                                    <span>Unmarked ({dbStats.total > 0 ? Math.round((dbStats.unmarked / dbStats.total) * 100) : 0}%)</span>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
+                ) : attendanceMode === "class_based" ? (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+                        <div style={{ textAlign: 'center', padding: '2rem 0' }}>
+                            <div style={{ width: '80px', height: '80px', borderRadius: '50%', background: '#22c55e', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '40px', margin: '0 auto 1rem auto', boxShadow: '0 10px 25px rgba(34, 197, 94, 0.3)' }}>✓</div>
+                            <h2 style={{ color: '#0f172a', margin: '0 0 0.5rem 0', fontSize: '2rem' }}>Gate Session Completed!</h2>
+                            <p style={{ color: '#64748b', margin: 0 }}>All scanned students have been automatically marked present for their timetable subjects.</p>
+                        </div>
+
+                        <div className="st-stats-grid" style={{ justifyContent: 'center' }}>
+                            <div className="st-stat-card" style={{ textAlign: 'center', padding: '2rem 1rem' }}>
+                                <p style={{ color: '#64748b', margin: '0 0 0.5rem 0', fontWeight: 600 }}>Total QR Scans</p>
+                                <h3 style={{ fontSize: '2.5rem', color: '#0f172a', margin: 0 }}>{sessionStats.totalScanned}</h3>
+                            </div>
+                            <div className="st-stat-card" style={{ textAlign: 'center', padding: '2rem 1rem' }}>
+                                <p style={{ color: '#16a34a', margin: '0 0 0.5rem 0', fontWeight: 600 }}>Marked Present</p>
+                                <h3 style={{ fontSize: '2.5rem', color: '#15803d', margin: 0 }}>{sessionStats.present}</h3>
+                            </div>
+                        </div>
+
+                        <div className="st-card" style={{ padding: '2rem', textAlign: 'center' }}>
+                            <Link 
+                                to={user?.role === 'faculty' ? "/faculty/attendance" : "/admin/attendance"} 
+                                className="st-btn st-btn-outline" 
+                                style={{ display: 'inline-flex', justifyContent: 'center' }}
+                            >
+                                ✏️ View/Edit Attendance Manually
+                            </Link>
+                        </div>
+                    </div>
+                ) : null}
+                </>
             )}
 
             {/* --- STEP 4: HISTORY (Mock) --- */}

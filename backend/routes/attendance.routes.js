@@ -15,6 +15,10 @@ const checkManagerPermission = require("../middlewares/checkManagerPermission");
 router.get("/dashboard", verifyToken, checkSubscription, allowRoles("admin", "faculty", "manager"), checkManagerPermission("attendance.read"), attendanceController.getAttendanceDashboard);
 router.get("/class/:class_id/summary", verifyToken, checkSubscription, allowRoles("admin", "faculty", "manager"), checkManagerPermission("attendance.read"), attendanceController.getClassAttendanceSummary);
 
+// Settings
+router.get("/settings", verifyToken, checkSubscription, allowRoles("admin", "manager"), attendanceController.getAttendanceSettings);
+router.put("/settings", verifyToken, checkSubscription, allowRoles("admin"), attendanceController.updateAttendanceSettings);
+
 // Student Report
 router.get("/student/:student_id/report", verifyToken, checkSubscription, allowRoles("admin", "faculty", "student", "parent", "manager"), attendanceController.getStudentAttendanceReport);
 

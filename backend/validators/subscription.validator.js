@@ -30,8 +30,17 @@ const updateStatus = {
     }),
 };
 
+const updatePeriod = {
+    params: idParam,
+    body: Joi.object({
+        start_date: dateISO.required(),
+        end_date: dateISO.required(),
+    }),
+};
+
 module.exports = {
     createSubscription,
     getAllSubscriptions,
     updateStatus,
+    updatePeriod,
 };

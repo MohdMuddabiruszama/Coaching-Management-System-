@@ -61,6 +61,7 @@ const AdminAssignments = lazy(() => import("../pages/admin/AdminAssignments"));
 const AdminPublicPage = lazy(() => import("../pages/admin/PublicPage"));
 const LifetimeAccess = lazy(() => import("../pages/admin/LifetimeAccess"));
 const AdminPerformance = lazy(() => import("../pages/admin/Performance"));
+const AttendanceSettings = lazy(() => import("../pages/admin/AttendanceSettings"));
 const FacultyViewAttendance = lazy(() => import("../pages/faculty/ViewAttendance"));
 import { Capacitor } from "@capacitor/core";
 
@@ -235,6 +236,7 @@ export default function WebAppRoutes() {
           <Route path="view-faculty-attendance" element={<AdminFacultyViewAttendance />} />
           <Route path="view-attendance" element={<FacultyViewAttendance />} />
           <Route path="smart-attendance" element={<AdminSmartAttendance />} />
+          <Route path="attendance-settings" element={<AttendanceSettings />} />
           <Route path="reports" element={<Reports />} />
           <Route path="fees" element={<Fees />} />
           <Route path="announcements" element={<Announcements />} />

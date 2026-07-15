@@ -379,6 +379,15 @@ function AdminDashboard() {
         return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
     };
 
+    const getSubscriptionDaysLeft = () => {
+        if (!planDetails?.institute?.subscription_end) return null;
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const end = new Date(planDetails.institute.subscription_end);
+        end.setHours(0, 0, 0, 0);
+        return Math.round((end - today) / (1000 * 60 * 60 * 24));
+    };
+
     if (loading) {
         return (
             <div className="dashboard-container">
@@ -447,6 +456,51 @@ function AdminDashboard() {
                     ) : null}
                 </div>
             )}
+
+            {/* ══════════════ SUBSCRIPTION EXPIRY BANNERS ══════════════ */}
+            {isAdmin && planDetails && !planDetails.plan.is_free_trial && !planDetails.institute?.is_lifetime_member && (() => {
+                const daysLeft = getSubscriptionDaysLeft();
+                if (daysLeft === null) return null;
+
+                const showBanner = (daysLeft === 8 || daysLeft === 4 || daysLeft <= 2);
+                if (!showBanner) return null;
+
+                let title = "";
+                let desc = "";
+                let bgClass = "";
+                let titleColor = "";
+                let descColor = "";
+                let btnColor = "";
+
+                if (daysLeft < 0) {
+                    title = "Subscription Expired";
+                    desc = `Your subscription expired on ${new Date(planDetails.institute.subscription_end).toLocaleDateString()}. Please renew immediately to restore full access.`;
+                    bgClass = "#fef2f2"; titleColor = "#b91c1c"; descColor = "#7f1d1d"; btnColor = "#ef4444";
+                } else if (daysLeft === 0) {
+                    title = "Subscription Expires Today";
+                    desc = "Your subscription expires today. Please renew immediately to avoid interruption.";
+                    bgClass = "#fef2f2"; titleColor = "#b91c1c"; descColor = "#7f1d1d"; btnColor = "#ef4444";
+                } else {
+                    title = "Subscription Expiring Soon";
+                    desc = `Your subscription will expire in ${daysLeft} days (${new Date(planDetails.institute.subscription_end).toLocaleDateString()}). Please renew to avoid interruption.`;
+                    bgClass = "#fffbeb"; titleColor = "#b45309"; descColor = "#92400e"; btnColor = "#f59e0b";
+                }
+
+                return (
+                    <div style={{ marginTop: '2rem' }}>
+                        <div style={{
+                            padding: '1.5rem', background: bgClass, border: `1px solid ${btnColor}`, 
+                            borderRadius: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center'
+                        }}>
+                            <div>
+                                <h3 style={{ color: titleColor, margin: '0 0 0.5rem 0' }}>{title}</h3>
+                                <p style={{ color: descColor, margin: 0 }}>{desc}</p>
+                            </div>
+                            <button className="btn btn-primary" onClick={() => navigate("/pricing")} style={{ background: btnColor, border: 'none' }}>Renew Now</button>
+                        </div>
+                    </div>
+                );
+            })()}
 
             {/* ══════════════ STATS ══════════════ */}
             {user?.role === 'manager' ? (

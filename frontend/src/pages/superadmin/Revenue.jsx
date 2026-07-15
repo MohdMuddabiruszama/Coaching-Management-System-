@@ -179,7 +179,10 @@ function Revenue() {
                             <tr>
                                 <th>Institute</th>
                                 <th>Plan</th>
-                                <th>Amount</th>
+                                <th>Original Amount</th>
+                                <th>Discount</th>
+                                <th>GST</th>
+                                <th>Total Amount</th>
                                 <th>Date</th>
                                 <th>Status</th>
                             </tr>
@@ -187,7 +190,7 @@ function Revenue() {
                         <tbody>
                             {recentPayments.length === 0 ? (
                                 <tr>
-                                    <td colSpan="5" style={{ textAlign: "center", padding: "2rem" }}>
+                                    <td colSpan="8" style={{ textAlign: "center", padding: "2rem" }}>
                                         No recent transactions
                                     </td>
                                 </tr>
@@ -196,7 +199,40 @@ function Revenue() {
                                     <tr key={sub.id}>
                                         <td>{sub.Institute?.name || "Unknown"}</td>
                                         <td>{sub.Plan?.name || "Custom"}</td>
-                                        <td>₹{sub.amount_paid}</td>
+                                        <td>
+                                            <span style={{ color: 'var(--text-primary)', fontWeight: '500' }}>
+                                                ₹{parseFloat(sub.original_price || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            {sub.discount_applied ? (
+                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                                                    <span style={{ fontSize: '0.75rem', color: '#16a34a', fontWeight: 'bold' }}>
+                                                        {sub.original_price > 0 ? Math.round((parseFloat(sub.discount_amount || 0) / parseFloat(sub.original_price)) * 100) : 0}% Off
+                                                    </span>
+                                                    <span style={{ 
+                                                        background: 'rgba(22, 163, 74, 0.1)', color: '#16a34a', 
+                                                        padding: '0.2rem 0.5rem', borderRadius: '4px', 
+                                                        fontSize: '0.85rem', fontWeight: 'bold',
+                                                        display: 'inline-block', width: 'fit-content'
+                                                    }}>
+                                                        ₹{parseFloat(sub.discount_amount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                                                    </span>
+                                                </div>
+                                            ) : (
+                                                <span style={{ color: 'var(--text-muted)' }}>-</span>
+                                            )}
+                                        </td>
+                                        <td>
+                                            <span style={{ color: 'var(--text-primary)', fontWeight: '500' }}>
+                                                ₹{parseFloat(sub.tax_amount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <div style={{ fontWeight: 'bold', color: 'var(--text-primary)', fontSize: '1.1rem' }}>
+                                                ₹{parseFloat(sub.amount_paid || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                                            </div>
+                                        </td>
                                         <td>{new Date(sub.updatedAt).toLocaleDateString()}</td>
                                         <td>
                                             <span className="badge badge-success">Paid</span>

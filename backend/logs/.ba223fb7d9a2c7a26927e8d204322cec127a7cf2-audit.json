@@ -29,6 +29,21 @@
             "date": 1783622179789,
             "name": "D:\\Pre Production\\Coaching-Management-System-\\backend\\logs\\error-2026-07-10.log",
             "hash": "cbb4fab38a590ef40b9e2e16e8273b41f364d564908aec20ff758eb9528ae1d9"
+        },
+        {
+            "date": 1783879281343,
+            "name": "D:\\Pre Production\\Coaching-Management-System-\\backend\\logs\\error-2026-07-12.log",
+            "hash": "40d7104e0e5c053c872e74e9137c1ba294382fc0a511a7a37f1f2528c100d318"
+        },
+        {
+            "date": 1784004852947,
+            "name": "D:\\Pre Production\\Coaching-Management-System-\\backend\\logs\\error-2026-07-14.log",
+            "hash": "188daed87e4fc9984ee60068cfbd8c15280eb98271a5520891c37d7199e5aebd"
+        },
+        {
+            "date": 1784087269689,
+            "name": "D:\\Pre Production\\Coaching-Management-System-\\backend\\logs\\error-2026-07-15.log",
+            "hash": "5851d88f5229116285f94ae454e858a3a3c669835bb171ec16663bc6f7cff7ee"
         }
     ],
     "hashType": "sha256"

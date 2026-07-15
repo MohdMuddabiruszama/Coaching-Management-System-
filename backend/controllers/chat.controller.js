@@ -787,3 +787,55 @@ exports.markAsRead = async (req, res) => {
         return res.status(500).json({ success: false, message: err.message });
     }
 };
+
+// 10. Delete Room
+exports.deleteRoom = async (req, res) => {
+    try {
+        const { roomId } = req.params;
+        const { id: userId, institute_id, role: userRole } = req.user;
+
+        if (userRole !== 'admin' && userRole !== 'super_admin' && userRole !== 'manager') {
+            return res.status(403).json({ success: false, message: "Unauthorized to delete rooms" });
+        }
+
+        const room = await ChatRoom.findOne({ where: { id: roomId, institute_id } });
+        if (!room) return res.status(404).json({ success: false, message: "Room not found" });
+
+        // Delete all messages and participants associated with this room
+        await ChatMessage.destroy({ where: { room_id: roomId } });
+        await ChatParticipant.destroy({ where: { room_id: roomId } });
+        await room.destroy();
+
+        return res.status(200).json({ success: true, message: "Room deleted successfully" });
+    } catch (err) {
+        console.error("deleteRoom:", err);
+        return res.status(500).json({ success: false, message: err.message });
+    }
+};
+
+// 11. Delete Message
+exports.deleteMessage = async (req, res) => {
+    try {
+        const { messageId } = req.params;
+        const { id: userId, institute_id, role: userRole } = req.user;
+
+        if (userRole !== 'admin' && userRole !== 'super_admin' && userRole !== 'manager') {
+            return res.status(403).json({ success: false, message: "Unauthorized to delete messages" });
+        }
+
+        const message = await ChatMessage.findOne({ 
+            where: { id: messageId },
+            include: [{ model: ChatRoom, where: { institute_id } }] 
+        });
+
+        if (!message) return res.status(404).json({ success: false, message: "Message not found" });
+        if (!message.ChatRoom) return res.status(403).json({ success: false, message: "Unauthorized" });
+
+        await message.destroy();
+
+        return res.status(200).json({ success: true, message: "Message deleted successfully" });
+    } catch (err) {
+        console.error("deleteMessage:", err);
+        return res.status(500).json({ success: false, message: err.message });
+    }
+};

@@ -15,12 +15,16 @@ const getPlanAmountForCycle = (plan, billingCycle = "monthly") => {
   }
 
   if (billingCycle === "yearly") {
+    const discountPercent = plan.yearly_discount_percent != null ? Number(plan.yearly_discount_percent) : 0;
+    if (discountPercent > 0) {
+        const discountMultiplier = discountPercent / 100;
+        const priceMultiplier = 1 - discountMultiplier;
+        return Math.round(Number(plan.price) * 12 * priceMultiplier);
+    }
     if (plan.yearly_price !== null && plan.yearly_price !== undefined) {
       return Number(plan.yearly_price);
     }
-
-    const discountPercent = Number(plan.yearly_discount_percent ?? 20);
-    return Number(plan.price) * 12 * ((100 - discountPercent) / 100);
+    return Number(plan.price) * 12;
   }
 
   return Number(plan.price);
@@ -215,6 +219,14 @@ exports.verifyPayment = catchAsync(async (req, res) => {
     const plan = await Plan.findByPk(planId);
 
     let amount = getPlanAmountForCycle(plan, billingCycle);
+    
+    let baseAmount = Number(plan.price);
+    if (billingCycle === 'yearly') {
+        baseAmount *= 12;
+    }
+    let discountAmountPreTax = baseAmount - amount;
+    if (discountAmountPreTax < 0) discountAmountPreTax = 0;
+
     let durationMonths = 1;
     if (billingCycle === 'yearly') {
       durationMonths = 12;
@@ -223,6 +235,9 @@ exports.verifyPayment = catchAsync(async (req, res) => {
     const gstPercent = plan.gst_percent != null ? Number(plan.gst_percent) : 2;
     const tax_amount = amount * (gstPercent / 100);
     const final_paid = amount + tax_amount;
+    
+    // We store discount amount including GST proportion so the UI breakdown adds up perfectly
+    const discount_amount = discountAmountPreTax + (discountAmountPreTax * (gstPercent / 100));
 
     const startDate = new Date();
     let endDate = null;
@@ -253,6 +268,7 @@ exports.verifyPayment = catchAsync(async (req, res) => {
       payment_status: "paid",
       transaction_reference: razorpay_payment_id,
       amount_paid: final_paid,
+      discount_amount: discount_amount,
       razorpay_order_id,
       razorpay_payment_id,
       invoice_number: invoiceNumber,
@@ -345,9 +361,19 @@ exports.verifyFailure = catchAsync(async (req, res) => {
     if (!plan) return res.status(404).json({ success: false, message: 'Plan not found' });
 
     const amount = getPlanAmountForCycle(plan, billingCycle);
+    
+    let baseAmount = Number(plan.price);
+    if (billingCycle === 'yearly') {
+        baseAmount *= 12;
+    }
+    let discountAmountPreTax = baseAmount - amount;
+    if (discountAmountPreTax < 0) discountAmountPreTax = 0;
+
     const gstPercent = plan.gst_percent != null ? Number(plan.gst_percent) : 2;
     const tax_amount = amount * (gstPercent / 100);
     const final_paid = amount + tax_amount;
+    
+    const discount_amount = discountAmountPreTax + (discountAmountPreTax * (gstPercent / 100));
 
     // Clean up any existing pending/failed subscriptions to avoid duplicates
     await Subscription.destroy({
@@ -371,6 +397,7 @@ exports.verifyFailure = catchAsync(async (req, res) => {
       payment_status: "failed",
       transaction_reference: "failed",
       amount_paid: final_paid,
+      discount_amount: discount_amount,
       razorpay_order_id,
       invoice_number: invoiceNumber,
       tax_amount: tax_amount,

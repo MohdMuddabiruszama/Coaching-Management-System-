@@ -47,4 +47,7 @@ router.post("/room/:roomId/read", authMiddleware, chatController.markAsRead);
 // Delete a room
 router.delete("/room/:roomId", authMiddleware, chatController.deleteRoom);
 
+// Delete a message
+router.delete("/message/:messageId", authMiddleware, chatController.deleteMessage);
+
 module.exports = router;

@@ -25,6 +25,17 @@ const Institute = sequelize.define("Institute", {
         type: DataTypes.BOOLEAN,
         defaultValue: false
     },
+    student_attendance_mode: {
+        type: DataTypes.STRING(20),
+        validate: { isIn: [["class_based", "subject_based"]] },
+        defaultValue: "subject_based"
+    },
+    qr_notify_main_gate_in: { type: DataTypes.BOOLEAN, defaultValue: false },
+    qr_notify_main_gate_out: { type: DataTypes.BOOLEAN, defaultValue: false },
+    qr_notify_subject_in: { type: DataTypes.BOOLEAN, defaultValue: false },
+    qr_notify_subject_out: { type: DataTypes.BOOLEAN, defaultValue: false },
+    qr_notify_parent_on_late: { type: DataTypes.BOOLEAN, defaultValue: false },
+    qr_notify_parent_on_absent: { type: DataTypes.BOOLEAN, defaultValue: false },
 
 
     // Snapshot of Plan Limits (for grandfathering)

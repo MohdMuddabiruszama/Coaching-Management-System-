@@ -14,5 +14,6 @@ const subValidator = require("../validators/subscription.validator"); // ✅ Pha
 router.post("/", verifyToken, allowRoles("super_admin", "admin"), validate(subValidator.createSubscription), subscriptionController.createSubscription);
 router.get("/", verifyToken, allowRoles("super_admin"), validate(subValidator.getAllSubscriptions), subscriptionController.getAllSubscriptions);
 router.patch("/:id/status", verifyToken, allowRoles("super_admin"), validate(subValidator.updateStatus), subscriptionController.updateSubscriptionStatus);
+router.patch("/:id/period", verifyToken, allowRoles("super_admin"), validate(subValidator.updatePeriod), subscriptionController.updateSubscriptionPeriod);
 
 module.exports = router;

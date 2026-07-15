@@ -8,12 +8,68 @@ const { Op } = require("sequelize");
 const crypto = require("crypto");
 const NotificationService = require("../services/notificationService");
 const attendanceMarkingService = require("../services/attendanceMarkingService");
+const { catchAsync } = require("../utils/catchAsync");
+
+exports.getAttendanceSettings = catchAsync(async (req, res) => {
+  const institute = await Institute.findByPk(req.user.institute_id, {
+    attributes: [
+        'student_attendance_mode',
+        'qr_notify_main_gate_in',
+        'qr_notify_main_gate_out',
+        'qr_notify_subject_in',
+        'qr_notify_subject_out',
+        'qr_notify_parent_on_late',
+        'qr_notify_parent_on_absent'
+    ]
+  });
+  if (!institute) {
+    return res.status(404).json({ success: false, message: "Institute not found" });
+  }
+  res.status(200).json({ success: true, data: { 
+      student_attendance_mode: institute.student_attendance_mode,
+      qr_notify_main_gate_in: institute.qr_notify_main_gate_in,
+      qr_notify_main_gate_out: institute.qr_notify_main_gate_out,
+      qr_notify_subject_in: institute.qr_notify_subject_in,
+      qr_notify_subject_out: institute.qr_notify_subject_out,
+      qr_notify_parent_on_late: institute.qr_notify_parent_on_late,
+      qr_notify_parent_on_absent: institute.qr_notify_parent_on_absent
+  } });
+});
+
+exports.updateAttendanceSettings = catchAsync(async (req, res) => {
+  const { 
+      student_attendance_mode,
+      qr_notify_main_gate_in,
+      qr_notify_main_gate_out,
+      qr_notify_subject_in,
+      qr_notify_subject_out,
+      qr_notify_parent_on_late,
+      qr_notify_parent_on_absent
+  } = req.body;
+
+  if (!["class_based", "subject_based"].includes(student_attendance_mode)) {
+    return res.status(400).json({ success: false, message: "Invalid attendance mode" });
+  }
+  await Institute.update(
+    { 
+        student_attendance_mode,
+        qr_notify_main_gate_in,
+        qr_notify_main_gate_out,
+        qr_notify_subject_in,
+        qr_notify_subject_out,
+        qr_notify_parent_on_late,
+        qr_notify_parent_on_absent
+    },
+    { where: { id: req.user.institute_id } }
+  );
+  res.status(200).json({ success: true, message: "Attendance settings updated successfully" });
+});
 
 /**
  * Mark Bulk Attendance for a Class
  * @route POST /api/attendance/bulk
  * @access Admin, Faculty
- */const { catchAsync } = require("../utils/catchAsync");
+ */
 exports.markBulkAttendance = catchAsync(async (req, res) => {
   try {
     const { class_id, subject_id, date, attendance_data } = req.body;
@@ -937,7 +993,7 @@ exports.markAttendanceByQR = catchAsync(async (req, res) => {
 
 exports.markAttendanceByStudentQR = catchAsync(async (req, res) => {
   try {
-    const { qr_code, class_id, subject_id, date } = req.body;
+    const { qr_code, class_id, subject_id, date, scan_type } = req.body;
     const institute_id = req.user.institute_id;
     const faculty_id = req.user.id;
 
@@ -947,45 +1003,26 @@ exports.markAttendanceByStudentQR = catchAsync(async (req, res) => {
 
     const student_id = qr_code.split("STUDENT_QR_")[1].trim();
 
-    // Find Student (include User for name in response messages)
+    // Fetch Institute to get attendance mode and notification settings
+    const institute = await Institute.findByPk(institute_id, { 
+      attributes: [
+        'student_attendance_mode', 'name',
+        'qr_notify_main_gate_in', 'qr_notify_subject_in',
+        'qr_notify_main_gate_out', 'qr_notify_subject_out'
+      ] 
+    });
+    const attendanceMode = institute?.student_attendance_mode || 'subject_based';
+
+    // Find Student (include User for name in response messages and Parents for notifications)
     const student = await Student.findOne({
       where: { id: student_id, institute_id },
-      include: [{ model: User, attributes: ['name', 'email'] }]
+      include: [
+        { model: User, attributes: ['name', 'email'] },
+        { model: User, as: "Parents", attributes: ['id', 'name', 'email'] }
+      ]
     });
     if (!student) {
       return res.status(404).json({ success: false, message: "Student record not found in your institute" });
-    }
-
-    // Verify enrollments
-    if (subject_id && !student.is_full_course) {
-      const { StudentSubject } = require('../models');
-      const enrollment = await StudentSubject.findOne({
-        where: { student_id, subject_id: subject_id }
-      });
-      if (!enrollment) {
-        return res.status(403).json({ success: false, message: "Student is not enrolled in this subject" });
-      }
-    } else if (class_id) {
-      const { StudentClass } = require('../models');
-      const enrollment = await StudentClass.findOne({
-        where: { student_id, class_id }
-      });
-      if (!enrollment) {
-        return res.status(403).json({ success: false, message: "Student is not enrolled in this class" });
-      }
-    } else if (subject_id && student.is_full_course) {
-      const { Subject, StudentClass } = require('../models');
-      const subj = await Subject.findOne({ where: { id: subject_id } });
-      if (subj) {
-        const enrollment = await StudentClass.findOne({
-          where: { student_id, class_id: subj.class_id }
-        });
-        if (!enrollment) {
-          return res.status(403).json({ success: false, message: "Student is not enrolled in the class for this subject" });
-        }
-      } else {
-        return res.status(403).json({ success: false, message: "Subject not found" });
-      }
     }
 
     const targetDate = date || new Date().toISOString().split('T')[0];
@@ -995,39 +1032,288 @@ exports.markAttendanceByStudentQR = catchAsync(async (req, res) => {
       return res.status(400).json({ success: false, message: "Cannot mark attendance before admission date." });
     }
 
-    // Check already marked
-    const existingAttendance = await Attendance.findOne({
-      where: {
-        student_id,
+    if (attendanceMode === 'class_based') {
+      // ---------------------------------------------------------
+      // CLASS BASED LOGIC
+      // Auto-mark all subjects from today's timetable
+      // ---------------------------------------------------------
+      
+      const { StudentClass, Timetable, Subject } = require('../models');
+      
+      // Get all classes student is enrolled in
+      const enrollments = await StudentClass.findAll({ where: { student_id } });
+      const enrolledClassIds = enrollments.map(e => e.class_id);
+
+      if (enrolledClassIds.length === 0) {
+        return res.status(403).json({ success: false, message: "Student is not enrolled in any class." });
+      }
+
+      // Find day of week for targetDate
+      const dayIndex = new Date(targetDate).getDay();
+      const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+      const dayName = days[dayIndex];
+
+      // Fetch timetable for these classes for today
+      const timetables = await Timetable.findAll({
+        where: {
+          institute_id,
+          class_id: { [Op.in]: enrolledClassIds },
+          day_of_week: dayName,
+          is_break: false,
+          subject_id: { [Op.not]: null }
+        }
+      });
+
+      if (timetables.length === 0) {
+        return res.status(404).json({ success: false, message: `No subjects scheduled for ${student.User?.name || 'this student'} on ${dayName}.` });
+      }
+
+      let newCount = 0;
+      let alreadyCount = 0;
+      let outScansUpdated = 0;
+      let alreadyOutScannedCount = 0;
+      
+      const currentTime = new Date().toTimeString().split(' ')[0]; // HH:mm:ss
+
+      // Bulk mark or update
+      for (const tt of timetables) {
+        const existingAttendance = await Attendance.findOne({
+          where: {
+            student_id,
+            institute_id,
+            class_id: tt.class_id,
+            subject_id: tt.subject_id,
+            date: targetDate
+          }
+        });
+
+        if (existingAttendance) {
+          if (scan_type === 'out') {
+            if (existingAttendance.time_out) {
+              alreadyOutScannedCount++;
+            } else {
+              await existingAttendance.update({ time_out: currentTime });
+              outScansUpdated++;
+            }
+          } else {
+            if (existingAttendance.status !== 'present') {
+              await existingAttendance.update({ 
+                status: 'present', 
+                marked_by: faculty_id, 
+                remarks: "Smart Attendance (QR) - Gate Scan",
+                time_in: existingAttendance.time_in || currentTime
+              });
+              newCount++;
+            } else {
+              alreadyCount++;
+            }
+          }
+        } else {
+          if (scan_type === 'out') {
+            await Attendance.create({
+              institute_id,
+              student_id,
+              class_id: tt.class_id,
+              subject_id: tt.subject_id,
+              date: targetDate,
+              status: "present",
+              marked_by: faculty_id,
+              remarks: "Smart Attendance (QR) - Gate Scan",
+              time_out: currentTime
+            });
+            outScansUpdated++;
+            newCount++;
+          } else {
+            await Attendance.create({
+              institute_id,
+              student_id,
+              class_id: tt.class_id,
+              subject_id: tt.subject_id,
+              date: targetDate,
+              status: "present",
+              marked_by: faculty_id,
+              remarks: "Smart Attendance (QR) - Gate Scan",
+              time_in: currentTime
+            });
+            newCount++;
+          }
+        }
+      }
+
+      const isOutScan = scan_type === 'out';
+
+      if (isOutScan) {
+        if (alreadyOutScannedCount > 0 && outScansUpdated === 0) {
+          return res.status(400).json({ success: false, message: `${student.User?.name || 'Student'} has already been scanned OUT today!` });
+        }
+      } else {
+        if (newCount === 0 && alreadyCount > 0) {
+          return res.status(400).json({ success: false, message: `Attendance already marked present today for ${student.User?.name || 'this student'}!` });
+        }
+      }
+
+      // ── Notify Parents for Main Gate IN / OUT ──────────────────────────────────────
+      const shouldNotify = isOutScan ? institute.qr_notify_main_gate_out : institute.qr_notify_main_gate_in;
+      if (shouldNotify && student.Parents && student.Parents.length > 0) {
+        const timeStr = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+        const title = isOutScan ? "Student Left Institute" : "Student Entered Institute";
+        const action = isOutScan ? "scanned OUT at the main gate" : "scanned IN at the main gate";
+        const body = `${student.User?.name || 'Your child'} has ${action} at ${timeStr}.`;
+        
+        for (const parent of student.Parents) {
+          await NotificationService.createAndSend(
+            institute_id,
+            parent.id,
+            "attendance",
+            title,
+            body,
+            { student_id, date: targetDate, scan_type }
+          );
+        }
+      }
+
+      if (isOutScan) {
+        return res.status(200).json({ success: true, message: `Out Scan successful for ${student.User?.name || 'Student'}! ✅` });
+      }
+      return res.status(200).json({ success: true, message: `Attendance marked for ${newCount} subject(s) for ${student.User?.name || 'Student'}! ✅` });
+
+    } else {
+      // ---------------------------------------------------------
+      // SUBJECT BASED LOGIC
+      // ---------------------------------------------------------
+
+      if (!class_id && !subject_id) {
+        return res.status(400).json({ success: false, message: "Class or Subject ID is required for subject-based attendance." });
+      }
+
+      // Verify enrollments
+      if (subject_id && !student.is_full_course) {
+        const { StudentSubject } = require('../models');
+        const enrollment = await StudentSubject.findOne({
+          where: { student_id, subject_id: subject_id }
+        });
+        if (!enrollment) {
+          return res.status(403).json({ success: false, message: "Student is not enrolled in this subject" });
+        }
+      } else if (class_id) {
+        const { StudentClass } = require('../models');
+        const enrollment = await StudentClass.findOne({
+          where: { student_id, class_id }
+        });
+        if (!enrollment) {
+          return res.status(403).json({ success: false, message: "Student is not enrolled in this class" });
+        }
+      } else if (subject_id && student.is_full_course) {
+        const { Subject, StudentClass } = require('../models');
+        const subj = await Subject.findOne({ where: { id: subject_id } });
+        if (subj) {
+          const enrollment = await StudentClass.findOne({
+            where: { student_id, class_id: subj.class_id }
+          });
+          if (!enrollment) {
+            return res.status(403).json({ success: false, message: "Student is not enrolled in the class for this subject" });
+          }
+        } else {
+          return res.status(403).json({ success: false, message: "Subject not found" });
+        }
+      }
+
+      // Check already marked
+      const existingAttendance = await Attendance.findOne({
+        where: {
+          student_id,
+          institute_id,
+          class_id,
+          subject_id: subject_id || null,
+          date: targetDate
+        }
+      });
+
+      const isOutScan = scan_type === 'out';
+      const subjName = subject_id ? "their class" : "class";
+      const currentTime = new Date().toTimeString().split(' ')[0];
+      
+      if (existingAttendance) {
+        if (existingAttendance.status === 'present') {
+          if (isOutScan) {
+            // Handle OUT scan when already marked present
+            if (existingAttendance.time_out) {
+              return res.status(400).json({ success: false, message: `${student.User?.name || 'Student'} has already been scanned OUT of this class!` });
+            }
+            await existingAttendance.update({ time_out: currentTime });
+
+            const shouldNotify = institute.qr_notify_subject_out;
+            if (shouldNotify && student.Parents && student.Parents.length > 0) {
+              const timeStr = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+              const title = "Student Left Class";
+              const body = `${student.User?.name || 'Your child'} has scanned OUT of ${subjName} at ${timeStr}.`;
+              for (const parent of student.Parents) {
+                await NotificationService.createAndSend(institute_id, parent.id, "attendance", title, body, { student_id, date: targetDate, scan_type });
+              }
+            }
+            return res.status(200).json({ success: true, message: `Out Scan successful for ${student.User?.name || 'Student'} ✅` });
+          } else {
+            return res.status(400).json({ success: false, message: `Attendance already marked present today for ${student.User?.name || 'this student'}!` });
+          }
+        } else {
+          // override absent to present
+          if (isOutScan) {
+             await existingAttendance.update({ status: 'present', marked_by: faculty_id, remarks: "Smart Attendance (QR)", time_out: currentTime });
+          } else {
+             await existingAttendance.update({ status: 'present', marked_by: faculty_id, remarks: "Smart Attendance (QR)", time_in: existingAttendance.time_in || currentTime });
+          }
+          
+          // ── Notify Parents for Subject IN / OUT ──────────────────────────────────────
+          const shouldNotify = isOutScan ? institute.qr_notify_subject_out : institute.qr_notify_subject_in;
+          if (shouldNotify && student.Parents && student.Parents.length > 0) {
+            const timeStr = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+            const title = isOutScan ? "Student Left Class" : "Student Attended Class";
+            const action = isOutScan ? "scanned OUT of" : "scanned IN for";
+            const body = `${student.User?.name || 'Your child'} has ${action} ${subjName} at ${timeStr}.`;
+            
+            for (const parent of student.Parents) {
+              await NotificationService.createAndSend(institute_id, parent.id, "attendance", title, body, { student_id, date: targetDate, scan_type });
+            }
+          }
+
+          if (isOutScan) {
+            return res.status(200).json({ success: true, message: `Out Scan successful for ${student.User?.name || 'Student'} ✅` });
+          }
+          return res.status(200).json({ success: true, message: `Attendance updated to Present for ${student.User?.name || 'Student'} ✅` });
+        }
+      }
+
+      await Attendance.create({
         institute_id,
+        student_id,
         class_id,
         subject_id: subject_id || null,
-        date: targetDate
-      }
-    });
+        date: targetDate,
+        status: "present",
+        marked_by: faculty_id,
+        remarks: "Smart Attendance (QR)",
+        time_in: isOutScan ? null : currentTime,
+        time_out: isOutScan ? currentTime : null
+      });
 
-    if (existingAttendance) {
-      if (existingAttendance.status === 'present') {
-        return res.status(400).json({ success: false, message: `Attendance already marked present today for ${student.User?.name || 'this student'}!` });
-      } else {
-        // override absent to present
-        await existingAttendance.update({ status: 'present', marked_by: faculty_id, remarks: "Smart Attendance (QR)" });
-        return res.status(200).json({ success: true, message: `Attendance updated to Present for ${student.User?.name || 'Student'} ✅` });
+      // ── Notify Parents for Subject IN / OUT ──────────────────────────────────────
+      const shouldNotify = isOutScan ? institute.qr_notify_subject_out : institute.qr_notify_subject_in;
+      if (shouldNotify && student.Parents && student.Parents.length > 0) {
+        const timeStr = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+        const title = isOutScan ? "Student Left Class" : "Student Attended Class";
+        const action = isOutScan ? "scanned OUT of" : "scanned IN for";
+        const body = `${student.User?.name || 'Your child'} has ${action} ${subjName} at ${timeStr}.`;
+        
+        for (const parent of student.Parents) {
+          await NotificationService.createAndSend(institute_id, parent.id, "attendance", title, body, { student_id, date: targetDate, scan_type });
+        }
       }
+
+      if (isOutScan) {
+        return res.status(200).json({ success: true, message: `Out Scan successful for ${student.User?.name || 'Student'}! ✅` });
+      }
+      res.status(200).json({ success: true, message: `Attendance marked successfully for ${student.User?.name || 'Student'}! ✅` });
     }
-
-    await Attendance.create({
-      institute_id,
-      student_id,
-      class_id,
-      subject_id: subject_id || null,
-      date: targetDate,
-      status: "present",
-      marked_by: faculty_id,
-      remarks: "Smart Attendance (QR)"
-    });
-
-    res.status(200).json({ success: true, message: `Attendance marked successfully for ${student.User?.name || 'Student'}! ✅` });
 
   } catch (error) {
     console.error("Mark by Student QR error:", error);

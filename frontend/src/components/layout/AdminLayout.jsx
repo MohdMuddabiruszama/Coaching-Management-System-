@@ -383,6 +383,10 @@ const AdminLayout = () => {
                                         <span className="al-nav-icon">📷</span> Scan Student QR
                                         {renderLockIcon('auto_attendance')}
                                     </Link>
+                                    <Link to="/admin/attendance-settings" className={navLinkClass('/admin/attendance-settings')} onClick={() => setSidebarOpen(false)}>
+                                        <span className="al-nav-icon">⚙️</span> Attendance Settings
+                                        {renderLockIcon('attendance')}
+                                    </Link>
                                 </div>
                             )}
                         </div>

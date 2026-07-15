@@ -713,26 +713,44 @@ export default function MobileDashboard() {
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 {notifications.slice(0, 5).map((notif, idx) => {
                   const isGate = notif.type === 'biometric_gate_punch';
-                  const isIn = notif.data_json?.punch_type === 'in';
-                  const emoji = isGate ? (isIn ? '✅' : '🚪') : (isIn ? '📚' : '📤');
-                  const accent = isGate ? (isIn ? '#10b981' : '#f59e0b') : '#8b5cf6';
+                  const isSmartQR = notif.type === 'attendance';
+                  const isIn = notif.data_json?.punch_type === 'in' || notif.data_json?.scan_type === 'in' || notif.title?.includes('Entered') || notif.title?.includes('Attended');
+                  
+                  let emoji = '🔔';
+                  let accent = '#8b5cf6'; // default purple
+                  
+                  if (isGate || isSmartQR) {
+                    emoji = isIn ? '✅' : '🚪';
+                    accent = isIn ? '#10b981' : '#f59e0b';
+                    if (isSmartQR) {
+                      emoji = isIn ? '📥' : '📤';
+                      accent = isIn ? '#10b981' : '#ef4444'; // Green for IN, Red for OUT
+                    }
+                  } else {
+                    emoji = '📚';
+                  }
+
                   const timeStr = notif.created_at ? new Date(notif.created_at).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true }) : '';
                   return (
                     <div key={notif.id || idx} style={{
-                      background: notif.is_read ? '#f8fafc' : `${accent}0d`,
+                      background: notif.is_read ? '#f8fafc' : (isSmartQR ? `linear-gradient(to right, #ffffff, ${accent}08)` : `${accent}0d`),
                       border: `1.5px solid ${notif.is_read ? '#e2e8f0' : accent + '40'}`,
                       borderRadius: '12px',
                       padding: '10px 12px',
                       display: 'flex',
                       alignItems: 'flex-start',
-                      gap: '10px',
-                      transition: 'all 0.3s ease'
+                      gap: '12px',
+                      transition: 'all 0.3s ease',
+                      boxShadow: notif.is_read ? 'none' : `0 2px 10px ${accent}15`
                     }}>
                       <span style={{
-                        fontSize: '20px', flexShrink: 0,
-                        width: '36px', height: '36px', borderRadius: '50%',
-                        background: `${accent}1a`, display: 'flex',
-                        alignItems: 'center', justifyContent: 'center'
+                        fontSize: '22px', flexShrink: 0,
+                        width: '42px', height: '42px', borderRadius: '10px',
+                        background: notif.is_read ? '#f1f5f9' : `linear-gradient(135deg, ${accent}22, ${accent}11)`, 
+                        display: 'flex',
+                        alignItems: 'center', justifyContent: 'center',
+                        border: `1px solid ${notif.is_read ? '#e2e8f0' : accent + '30'}`,
+                        boxShadow: notif.is_read ? 'none' : `inset 0 0 5px ${accent}20`
                       }}>{emoji}</span>
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{

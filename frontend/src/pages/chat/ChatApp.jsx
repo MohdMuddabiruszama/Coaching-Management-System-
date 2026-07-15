@@ -348,7 +348,7 @@ function ChatApp() {
     };
 
     const handleDeleteRoom = async (roomId, e) => {
-        e.stopPropagation();
+        if (e && e.stopPropagation) e.stopPropagation();
         if (!window.confirm("Are you sure you want to delete this room? This cannot be undone.")) return;
         try {
             const res = await api.delete(`/chat/room/${roomId}`);
@@ -508,6 +508,20 @@ function ChatApp() {
         }
 
         return uniqueItems;
+    };
+
+    const handleDeleteMessage = async (messageId) => {
+        if (!window.confirm("Are you sure you want to delete this message?")) return;
+        try {
+            const res = await api.delete(`/chat/message/${messageId}`);
+            if (res.data.success) {
+                toast.success("Message deleted");
+                setMessages(prev => prev.filter(m => m.id !== messageId));
+            }
+        } catch (err) {
+            console.error("Delete message error:", err);
+            toast.error(err.response?.data?.message || "Failed to delete message.");
+        }
     };
 
     // ─── Helpers ─────────────────────────────────────────────────────────────
@@ -922,6 +936,16 @@ function ChatApp() {
                                         </svg>
                                     </div>
                                 )}
+                                {isReadOnly && (
+                                    <button 
+                                        onClick={() => handleDeleteRoom(activeRoom.id)}
+                                        style={{ background: '#fef2f2', border: '1px solid #fca5a5', color: '#ef4444', padding: '6px 12px', borderRadius: '8px', cursor: 'pointer', fontWeight: 600, marginLeft: '12px', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.85rem' }}
+                                        title="Delete this entire room"
+                                    >
+                                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                                        Delete Room
+                                    </button>
+                                )}
                             </div>
                             <div className="chat-header-actions">
                                 {!isReadOnly && (
@@ -1032,6 +1056,9 @@ function ChatApp() {
                                                         <div className="msg-footer">
                                                             <span>{msgTime}</span>
                                                             {isMe && <span className={`read-receipts ${isRead ? 'read' : 'delivered'}`}>✔✔</span>}
+                                                            {isReadOnly && (
+                                                                <button onClick={() => handleDeleteMessage(msg.id)} style={{background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', marginLeft: '8px', padding: 0}} title="Delete Message">🗑️</button>
+                                                            )}
                                                         </div>
                                                     </div>
                                                 </div>
