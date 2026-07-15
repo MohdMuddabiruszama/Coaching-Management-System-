@@ -508,6 +508,16 @@ const syncDatabase = async () => {
 
       // Add enforce_subject_enrollment to biometric_settings
       try {
+        await sequelize.query(`ALTER TABLE biometric_settings ADD COLUMN IF NOT EXISTS attendance_mode VARCHAR(20) DEFAULT 'class_based';`);
+        await sequelize.query(`ALTER TABLE biometric_settings ADD COLUMN IF NOT EXISTS subject_mode VARCHAR(20) DEFAULT 'automatic';`);
+      } catch (e) { }
+
+      try {
+        await sequelize.query(`ALTER TABLE biometric_devices ADD COLUMN IF NOT EXISTS device_type VARCHAR(20) DEFAULT 'gate';`);
+        await sequelize.query(`ALTER TABLE biometric_devices ADD COLUMN IF NOT EXISTS room_identifier VARCHAR(255) NULL;`);
+      } catch (e) { }
+
+      try {
         await sequelize.query(`ALTER TABLE biometric_settings ADD COLUMN IF NOT EXISTS enforce_subject_enrollment BOOLEAN DEFAULT true;`);
       } catch (e) { }
 

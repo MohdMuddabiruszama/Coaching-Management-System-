@@ -553,3 +553,19 @@
     cursor: pointer;
     outline: none;
 }
+
+/* Attendance Settings Responsive Grid */
+.attendance-settings-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr);
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+    align-items: start;
+    margin-top: 1rem;
+}
+
+@media (max-width: 768px) {
+    .attendance-settings-grid {
+        grid-template-columns: 1fr;
+    }
+}
