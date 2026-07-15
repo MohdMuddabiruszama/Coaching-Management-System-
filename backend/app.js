@@ -528,6 +528,7 @@ const syncDatabase = async () => {
       try { await sequelize.query(`ALTER TABLE biometric_settings ADD COLUMN IF NOT EXISTS notify_subject_out BOOLEAN DEFAULT false;`); } catch (e) { }
 
       // Add QR notification columns to institutes
+      try { await sequelize.query(`ALTER TABLE institutes ADD COLUMN IF NOT EXISTS student_attendance_mode VARCHAR(20) DEFAULT 'subject_based';`); } catch (e) { }
       try { await sequelize.query(`ALTER TABLE institutes ADD COLUMN IF NOT EXISTS qr_notify_main_gate_in BOOLEAN DEFAULT false;`); } catch (e) { }
       try { await sequelize.query(`ALTER TABLE institutes ADD COLUMN IF NOT EXISTS qr_notify_main_gate_out BOOLEAN DEFAULT false;`); } catch (e) { }
       try { await sequelize.query(`ALTER TABLE institutes ADD COLUMN IF NOT EXISTS qr_notify_subject_in BOOLEAN DEFAULT false;`); } catch (e) { }
