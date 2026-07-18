@@ -19,6 +19,7 @@ import { AnnouncementSidebarContext } from "../../context/AnnouncementSidebarCon
 import { FiLogOut } from "react-icons/fi";
 import { useStudentDashboard } from "../../hooks/useMobileDashboard";
 import { useStudentBadges } from "../../hooks/useStudentBadges";
+import LogoutConfirmModal from "../common/LogoutConfirmModal";
 
 import api from "../../services/api";
 import "./MobileStudentLayout.css";
@@ -40,6 +41,7 @@ const TABS = [
 
 const MobileStudentLayout = () => {
     const { user, logout } = useContext(AuthContext);
+    const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
     const { logo, name } = useContext(BrandingContext);
     const { toggleSidebar } = useContext(AnnouncementSidebarContext);
     const location = useLocation();
@@ -214,10 +216,7 @@ const MobileStudentLayout = () => {
                     </div>
                     <button 
                         className="msl-logout-btn" 
-                        onClick={() => {
-                            logout();
-                            navigate('/login');
-                        }}
+                        onClick={() => setIsLogoutModalOpen(true)}
                         style={{
                             background: "transparent",
                             border: "none",
@@ -314,6 +313,15 @@ const MobileStudentLayout = () => {
                     );
                 })}
             </nav>
+
+            <LogoutConfirmModal 
+                isOpen={isLogoutModalOpen} 
+                onClose={() => setIsLogoutModalOpen(false)} 
+                onConfirm={() => {
+                    logout();
+                    navigate('/login');
+                }} 
+            />
         </div>
     );
 };

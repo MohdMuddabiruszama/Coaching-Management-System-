@@ -9,6 +9,7 @@ import { AuthContext } from "../../context/AuthContext";
 import api from "../../services/api";
 import InstituteLogo from "../common/InstituteLogo";
 import AnnouncementBell from "../AnnouncementBell";
+import LogoutConfirmModal from "../common/LogoutConfirmModal";
 import "./MobileFacultyLayout.css";
 
 const TABS = [
@@ -29,6 +30,7 @@ const TABS = [
 
 const MobileFacultyLayout = () => {
     const { user, logout } = useContext(AuthContext);
+    const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
     const location = useLocation();
     const navigate = useNavigate();
     const [chatUnread, setChatUnread] = useState(0);
@@ -68,7 +70,7 @@ const MobileFacultyLayout = () => {
                         </div>
                         <span className="mfl-online-dot"></span>
                     </div>
-                    <button className="mfl-logout-action" onClick={() => { logout(); navigate('/login'); }}>
+                    <button className="mfl-logout-action" onClick={() => setIsLogoutModalOpen(true)}>
                         <svg viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
                     </button>
                 </div>
@@ -119,6 +121,14 @@ const MobileFacultyLayout = () => {
                     );
                 })}
             </nav>
+            <LogoutConfirmModal 
+                isOpen={isLogoutModalOpen} 
+                onClose={() => setIsLogoutModalOpen(false)} 
+                onConfirm={() => {
+                    logout();
+                    navigate('/login');
+                }} 
+            />
         </div>
     );
 };
