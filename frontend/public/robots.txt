@@ -1,0 +1,38 @@
+# ── ZenithFlows robots.txt ────────────────────────────────────────────────
+# Tells search engine crawlers what to index and what to skip.
+# Updated: 2026-07-18
+
+User-agent: *
+
+# Allow all public marketing pages
+Allow: /
+Allow: /pricing
+Allow: /plans
+Allow: /features
+Allow: /about
+Allow: /contact
+Allow: /terms
+Allow: /privacy
+Allow: /book-demo
+
+# Block auth and dashboard routes (require login — waste of crawl budget)
+Disallow: /login
+Disallow: /register
+Disallow: /forgot-password
+Disallow: /change-password
+Disallow: /suspended
+Disallow: /checkout
+Disallow: /renew-plan
+
+# Block all role-based dashboards
+Disallow: /admin/
+Disallow: /superadmin/
+Disallow: /faculty/
+Disallow: /student/
+Disallow: /parent/
+
+# Block institute subdomain/slug pages (dynamic, not for main site index)
+Disallow: /i/
+
+# Sitemap location
+Sitemap: https://www.zenithflows.in/sitemap.xml

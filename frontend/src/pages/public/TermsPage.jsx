@@ -1,4 +1,5 @@
 import React, { useEffect } from "react";
+import { useSEO } from "../../hooks/useSEO";
 import Navbar from "../../components/landing/Navbar";
 import Footer from "../../components/landing/Footer";
 import '../../styles/landing.css';
@@ -87,6 +88,12 @@ const legalStyle = {
 };
 
 export default function TermsPage() {
+  useSEO({
+    title: 'Terms of Service — ZenithFlows',
+    description: 'Read the Terms of Service for ZenithFlows — the cloud-based institute management platform. Understand your rights, responsibilities, and our policies.',
+    canonical: '/terms',
+  });
+
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, []);

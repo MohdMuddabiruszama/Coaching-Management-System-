@@ -1,4 +1,5 @@
 import React, { useEffect } from "react";
+import { useSEO } from "../../hooks/useSEO";
 import Navbar from "../../components/landing/Navbar";
 import Footer from "../../components/landing/Footer";
 import '../../styles/landing.css';
@@ -87,6 +88,12 @@ const legalStyle = {
 };
 
 export default function PrivacyPage() {
+  useSEO({
+    title: 'Privacy Policy — ZenithFlows',
+    description: 'Read the Privacy Policy for ZenithFlows — understand how we collect, use, and protect your data on our institute management platform.',
+    canonical: '/privacy',
+  });
+
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, []);
