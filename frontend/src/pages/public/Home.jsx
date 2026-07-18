@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useSEO } from '../../hooks/useSEO';
 import Navbar from '../../components/landing/Navbar';
 import Hero from '../../components/landing/Hero';
 import Features from '../../components/landing/Features';
@@ -12,6 +13,14 @@ import '../../styles/landing.css';
 
 export default function Home() {
   useCursor(); // Custom lag cursor effect
+
+  useSEO({
+    title: 'ZenithFlows — #1 Institute Management System for Coaching Institutes & Schools',
+    description: 'ZenithFlows is a cloud-based ERP platform for coaching institutes, schools and colleges. Manage attendance, fees, exams, timetables, and parent communication — all in one dashboard.',
+    canonical: '/',
+    ogTitle: 'ZenithFlows — Institute Management System',
+    ogDescription: 'Cloud-based ERP for coaching institutes. Attendance, fees, exams, communication — all in one platform.',
+  });
 
   // Scroll progress bar
   useEffect(() => {

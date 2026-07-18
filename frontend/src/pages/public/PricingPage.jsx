@@ -6,6 +6,7 @@
  */
 
 import { useState, useEffect, useContext, useRef } from "react";
+import { useSEO } from "../../hooks/useSEO";
 import { Link, useNavigate } from "react-router-dom";
 import { AuthContext } from "../../context/AuthContext";
 import api from "../../services/api";
@@ -93,6 +94,14 @@ const FAQS = [
 function PricingPage() {
     const navigate = useNavigate();
     const { user } = useContext(AuthContext);
+
+    useSEO({
+        title: 'Pricing Plans — ZenithFlows Institute Management System',
+        description: 'Compare ZenithFlows pricing plans for coaching institutes and schools. Starter, Basic, Professional and Enterprise plans available. Flexible monthly and annual billing.',
+        canonical: '/pricing',
+        ogTitle: 'ZenithFlows Pricing — Plans for Every Institute',
+        ogDescription: 'Transparent pricing for ZenithFlows ERP. Starter to Enterprise plans. Monthly and annual billing. No hidden fees.',
+    });
     const fetchedRef = useRef(false);
     const [plans, setPlans] = useState([]);
     const [lifetimePlan, setLifetimePlan] = useState(null);
