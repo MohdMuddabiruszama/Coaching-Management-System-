@@ -9,6 +9,7 @@ import { AuthContext } from "../../context/AuthContext";
 import { useParentDashboard } from "../../hooks/useMobileDashboard";
 import InstituteLogo from "../common/InstituteLogo";
 import AnnouncementBell from "../AnnouncementBell";
+import LogoutConfirmModal from "../common/LogoutConfirmModal";
 import "./MobileParentLayout.css";
 
 const TABS = [
@@ -26,6 +27,7 @@ const TABS = [
 
 const MobileParentLayout = ({ children }) => {
     const { user, logout } = useContext(AuthContext);
+    const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
     const location = useLocation();
     const navigate = useNavigate();
 
@@ -71,7 +73,7 @@ const MobileParentLayout = ({ children }) => {
                         </div>
                         <span className="mpl-online-dot"></span>
                     </div>
-                    <button className="mpl-logout-action" onClick={() => { logout(); navigate('/login'); }}>
+                    <button className="mpl-logout-action" onClick={() => setIsLogoutModalOpen(true)}>
                         <svg viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
                     </button>
                 </div>
@@ -115,6 +117,15 @@ const MobileParentLayout = ({ children }) => {
             </nav>
 
             {/* Fee Reminder Modal is rendered inside MobileDashboard.jsx (once-per-session) */}
+            
+            <LogoutConfirmModal 
+                isOpen={isLogoutModalOpen} 
+                onClose={() => setIsLogoutModalOpen(false)} 
+                onConfirm={() => {
+                    logout();
+                    navigate('/login');
+                }} 
+            />
         </div>
     );
 };
