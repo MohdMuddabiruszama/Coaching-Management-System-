@@ -14,6 +14,10 @@ const Terms = lazy(() => import("../pages/public/TermsPage"));
 const Privacy = lazy(() => import("../pages/public/PrivacyPage"));
 const BookDemoPage = lazy(() => import("../pages/public/BookDemoPage"));
 const InstitutePage = lazy(() => import("../pages/public/InstitutePage"));
+/* ── New standalone SEO pages ── */
+const FeaturesPage = lazy(() => import("../pages/public/FeaturesPage"));
+const AboutPage = lazy(() => import("../pages/public/AboutPage"));
+const ContactPage = lazy(() => import("../pages/public/ContactPage"));
 
 const Login = lazy(() => import("../pages/auth/Login"));
 const Register = lazy(() => import("../pages/public/RegisterPage"));
@@ -178,9 +182,9 @@ export default function WebAppRoutes() {
         <Route path="/privacy" element={isNative ? <Navigate to="/login" replace /> : <Privacy />} />
         <Route path="/renew-plan" element={isNative ? <Navigate to="/login" replace /> : <Home />} />
         <Route path="/checkout" element={isNative ? <Navigate to="/login" replace /> : <PaymentAndCheckout />} />
-        <Route path="/features" element={isNative ? <Navigate to="/login" replace /> : <Home />} />
-        <Route path="/about" element={isNative ? <Navigate to="/login" replace /> : <Home />} />
-        <Route path="/contact" element={isNative ? <Navigate to="/login" replace /> : <Navigate to="/#contact" replace />} />
+        <Route path="/features" element={isNative ? <Navigate to="/login" replace /> : <FeaturesPage />} />
+        <Route path="/about"    element={isNative ? <Navigate to="/login" replace /> : <AboutPage />} />
+        <Route path="/contact"  element={isNative ? <Navigate to="/login" replace /> : <ContactPage />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
