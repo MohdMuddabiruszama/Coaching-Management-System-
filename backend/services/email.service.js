@@ -9,8 +9,8 @@ const resend = process.env.EMAIL_PROVIDER === 'resend' && process.env.RESEND_API
 // Create transporter once — reused for all emails
 const createTransporter = () => {
   return nodemailer.createTransport({
-    host: 'smtp.gmail.com',
-    port: 587,
+    host: process.env.EMAIL_HOST,
+    port: parseInt(process.env.EMAIL_PORT) || 587,
     secure: false,       // false for port 587 (STARTTLS)
     requireTLS: true,    // force TLS upgrade
     auth: {
