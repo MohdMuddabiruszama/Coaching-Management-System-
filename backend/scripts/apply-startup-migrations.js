@@ -59,6 +59,9 @@ const queries = [
     `CREATE INDEX IF NOT EXISTS idx_exams_inst ON exams(institute_id, class_id);`,
     `CREATE INDEX IF NOT EXISTS idx_chat_messages_room_created ON chat_messages(room_id, created_at);`,
     `CREATE INDEX IF NOT EXISTS idx_chat_participants_user_room ON chat_participants(user_id, room_id);`,
+
+    `ALTER TABLE institutes ADD COLUMN IF NOT EXISTS is_test_account BOOLEAN DEFAULT false;`,
+    `ALTER TABLE subscriptions ADD COLUMN IF NOT EXISTS is_test BOOLEAN DEFAULT false;`,
 ];
 
 async function run() {
