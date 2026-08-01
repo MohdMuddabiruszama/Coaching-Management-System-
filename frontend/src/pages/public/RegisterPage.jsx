@@ -438,7 +438,7 @@ function RegisterPage() {
                                             background: d && otpTestMode
                                                 ? "rgba(16, 185, 129, 0.08)"
                                                 : "var(--pro-glass-bg,rgba(255,255,255,0.05))",
-                                            color: "var(--text-primary,#1f2937)",
+                                            color: "var(--text-primary, #ffffff)",
                                             outline: "none", transition: "border-color 0.2s, background 0.2s", cursor: "text"
                                         }}
                                     />

@@ -44,6 +44,46 @@
             "date": 1784087269689,
             "name": "D:\\Pre Production\\Coaching-Management-System-\\backend\\logs\\error-2026-07-15.log",
             "hash": "5851d88f5229116285f94ae454e858a3a3c669835bb171ec16663bc6f7cff7ee"
+        },
+        {
+            "date": 1784143933316,
+            "name": "D:\\Pre Production\\Coaching-Management-System-\\backend\\logs\\error-2026-07-16.log",
+            "hash": "2583cc20d1ced14eaf8b9481b30ddb9602df8b4c8806449c372a48fa138277b5"
+        },
+        {
+            "date": 1784358884652,
+            "name": "D:\\Pre Production\\Coaching-Management-System-\\backend\\logs\\error-2026-07-18.log",
+            "hash": "a2785bd552a1cad70ff3eec6a53eb903c63c3bf24f48044c78ab8af38aeb79ef"
+        },
+        {
+            "date": 1784530951277,
+            "name": "D:\\Pre Production\\Coaching-Management-System-\\backend\\logs\\error-2026-07-20.log",
+            "hash": "a48750dfd016162ea7750ab71b780547a8e6570351abbbdb525605a46ecf607d"
+        },
+        {
+            "date": 1785170702226,
+            "name": "D:\\Pre Production\\Coaching-Management-System-\\backend\\logs\\error-2026-07-27.log",
+            "hash": "595a8bbcac7e16714b380c6cb9630d46a9453537d9e6740bb0ab8a45a77bd006"
+        },
+        {
+            "date": 1785219381408,
+            "name": "D:\\Pre Production\\Coaching-Management-System-\\backend\\logs\\error-2026-07-28.log",
+            "hash": "077a4ab7e464ee38ee20b25678e879aad00a8e251f136a39f9c5cb2dc474f827"
+        },
+        {
+            "date": 1785406402449,
+            "name": "D:\\Pre Production\\Coaching-Management-System-\\backend\\logs\\error-2026-07-30.log",
+            "hash": "b3d585bc12b43994d3a41bee69000b683164f9bcd9d4ef49aa80fbe0174dde97"
+        },
+        {
+            "date": 1785512053404,
+            "name": "D:\\Pre Production\\Coaching-Management-System-\\backend\\logs\\error-2026-07-31.log",
+            "hash": "0978d5116f5c8683279d505eebb01e4ae808332bbc8a517dbbc6b688e92cd9e4"
+        },
+        {
+            "date": 1785558706474,
+            "name": "D:\\Pre Production\\Coaching-Management-System-\\backend\\logs\\error-2026-08-01.log",
+            "hash": "f29c0e1c8a4fc416207e32a33dd948eeb487ec785d1585b44c167a9af20a7223"
         }
     ],
     "hashType": "sha256"
