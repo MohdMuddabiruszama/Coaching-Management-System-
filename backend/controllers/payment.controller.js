@@ -1,6 +1,9 @@
 const { Plan, Subscription, Institute, RazorpayPayment, RazorpayOrder, Invoice } = require("../models");
 const paymentService = require("../services/payment.service");
-const invoiceService = require("../services/invoice.service");const { catchAsync } = require("../utils/catchAsync");
+const invoiceService = require("../services/invoice.service");
+const { catchAsync } = require("../utils/catchAsync");
+const { bustAnalyticsCache } = require("./superadmin.controller");
+const socketUtils = require("../utils/socket");
 
 const getPlanAmountForCycle = (plan, billingCycle = "monthly") => {
   if (plan.is_lifetime) {
@@ -100,7 +103,8 @@ exports.initiatePayment = catchAsync(async (req, res) => {
         status: "trialing",
         payment_status: "paid",
         transaction_reference: "free_trial",
-        amount_paid: 0
+        amount_paid: 0,
+        is_test: institute.is_test_account
       });
 
       // Update Institute
@@ -113,6 +117,9 @@ exports.initiatePayment = catchAsync(async (req, res) => {
         trial_ends_at: endDate,
         ...getPlanSnapshot(plan, "monthly")
       });
+      bustAnalyticsCache();
+      const io = socketUtils.getIo();
+      if (io) io.to('superadmin').emit('subscription_updated', { type: 'trial_activated' });
 
       return res.json({ success: true, trial_activated: true });
     } else if (plan.is_free_trial && institute.has_used_trial) {
@@ -257,6 +264,8 @@ exports.verifyPayment = catchAsync(async (req, res) => {
       }
     });
 
+    const institute = await Institute.findByPk(instituteId);
+
     const subscription = await Subscription.create({
       institute_id: instituteId,
       plan_id: planId,
@@ -273,7 +282,8 @@ exports.verifyPayment = catchAsync(async (req, res) => {
       razorpay_payment_id,
       invoice_number: invoiceNumber,
       tax_amount,
-      paid_at: new Date()
+      paid_at: new Date(),
+      is_test: institute ? institute.is_test_account : false
     });
 
     // Generate PDF Invoice
@@ -323,6 +333,9 @@ exports.verifyPayment = catchAsync(async (req, res) => {
       },
       { where: { id: instituteId } }
     );
+    bustAnalyticsCache();
+    const io = socketUtils.getIo();
+    if (io) io.to('superadmin').emit('subscription_updated', { type: 'payment_verified' });
 
     res.json({
       success: true,
@@ -386,6 +399,8 @@ exports.verifyFailure = catchAsync(async (req, res) => {
     // Generate Invoice Number for reference (even if failed)
     const invoiceNumber = `INV-${new Date().getFullYear()}-${instituteId}-${String(Date.now()).slice(-4)}`;
 
+    const institute = await Institute.findByPk(instituteId);
+
     await Subscription.create({
       institute_id: instituteId,
       plan_id: planId,
@@ -401,8 +416,12 @@ exports.verifyFailure = catchAsync(async (req, res) => {
       razorpay_order_id,
       invoice_number: invoiceNumber,
       tax_amount: tax_amount,
-      paid_at: null
+      paid_at: null,
+      is_test: institute ? institute.is_test_account : false
     });
+    bustAnalyticsCache();
+    const io = socketUtils.getIo();
+    if (io) io.to('superadmin').emit('subscription_updated', { type: 'payment_failed' });
 
     res.json({
       success: true,

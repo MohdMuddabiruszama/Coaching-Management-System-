@@ -53,6 +53,11 @@ const Subscription = sequelize.define("Subscription", {
     invoice_number: { type: DataTypes.STRING(50), unique: true },
     tax_amount: { type: DataTypes.DECIMAL(10, 2), defaultValue: 0 },
     paid_at: DataTypes.DATE,
+    is_test: {
+        type: DataTypes.BOOLEAN,
+        defaultValue: false,
+        comment: 'Excluded from revenue metrics when true'
+    },
 });
 
 module.exports = Subscription;

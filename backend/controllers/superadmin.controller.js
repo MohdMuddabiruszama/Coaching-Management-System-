@@ -4,7 +4,6 @@ const {
     Class, Subject, Attendance, FeesStructure, Payment, Announcement,
     Exam, Mark, ClassSession, Expense, Assignment, StudentParent,
     InstituteDiscount,
-    // All models needed for cascade delete
     StudentFee, StudentFeePayment, AssignmentSubmission,
     ChatRoom, ChatMessage, ChatParticipant,
     Timetable, TimetableSlot,
@@ -18,7 +17,13 @@ const {
     SlowRequestLog, AuditLog, BulkImportLog, UsageTracker, InstituteAddOn, SubscriptionEvent,
     Lead
 } = require("../models");
-const { Op, fn, col, literal } = require("sequelize");
+const { Op, fn, col, literal, Sequelize } = require("sequelize");
+const NodeCache = require('node-cache');
+
+// TTL 30 min, checkperiod 60s
+const analyticsCache = new NodeCache({ stdTTL: 1800, checkperiod: 60 });
+const CACHE_KEY = 'superadmin:analytics';
+
 
 // ─────────────────────────────────────────────────────────────
 // PHASE 1: ENHANCED DASHBOARD STATS
@@ -52,12 +57,13 @@ exports.getDashboardStats = async (req, res) => {
         const [revenueResult, monthRevenueResult, totalPlans, freePlan] = await Promise.all([
             Subscription.findAll({
                 attributes: [[fn("SUM", col("amount_paid")), "total"]],
-                where: { payment_status: "paid" }
+                where: { payment_status: "paid", is_test: false }
             }),
             Subscription.findAll({
                 attributes: [[fn("SUM", col("amount_paid")), "total"]],
                 where: {
                     payment_status: "paid",
+                    is_test: false,
                     createdAt: { [Op.gte]: monthStart }
                 }
             }),
@@ -141,62 +147,164 @@ exports.getDashboardStats = async (req, res) => {
 // PHASE 2: ENHANCED ANALYTICS (with managers)
 // ─────────────────────────────────────────────────────────────
 exports.getAnalytics = async (req, res) => {
-    try {
-        // Monthly Revenue (by month of subscription creation) — PostgreSQL compatible
-        const monthlyRevenue = await Subscription.findAll({
-            attributes: [
-                [literal("EXTRACT(MONTH FROM created_at)"), "month"],
-                [literal("EXTRACT(YEAR FROM created_at)"), "year"],
-                [fn("SUM", col("amount_paid")), "totalRevenue"]
-            ],
-            where: { payment_status: "paid" },
-            group: [literal("EXTRACT(YEAR FROM created_at)"), literal("EXTRACT(MONTH FROM created_at)")],
-            order: [[literal("EXTRACT(YEAR FROM created_at)"), "ASC"], [literal("EXTRACT(MONTH FROM created_at)"), "ASC"]],
-            limit: 12
-        });
-
-        // Plan Distribution
-        const planDistribution = await Subscription.findAll({
-            attributes: [
-                "plan_id",
-                [fn("COUNT", col("Subscription.plan_id")), "count"]
-            ],
-            include: [{ model: Plan, attributes: ["name"] }],
-            group: ["plan_id", "Plan.id", "Plan.name"]
-        });
-
-        // Active vs Expired Institutes
-        const activeCount = await Institute.count({ where: { status: "active" } });
-        const expiredCount = await Institute.count({ where: { status: "expired" } });
-        const suspendedCount = await Institute.count({ where: { status: "suspended" } });
-
-        // User Demographics: Students, Faculty, Managers, Parents, Admins
-        const totalStudents = await Student.count();
-        const totalFaculty = await Faculty.count();
-        const totalManagers = await User.count({ where: { role: "manager" } });
-        const totalParents = await User.count({ where: { role: "parent" } });
-        const totalAdmins = await User.count({ where: { role: "admin" } });
-
-        res.json({
-            monthlyRevenue,
-            planDistribution,
-            instituteStatus: {
-                active: activeCount,
-                expired: expiredCount,
-                suspended: suspendedCount
-            },
-            userDemographics: {
-                students: totalStudents,
-                faculty: totalFaculty,
-                managers: totalManagers,
-                parents: totalParents,
-                admins: totalAdmins
-            }
-        });
-    } catch (error) {
-        console.error("getAnalytics error:", error);
-        res.status(500).json({ error: error.message });
+  try {
+    const { startDate, endDate, trendType = 'monthly' } = req.query;
+    
+    // 1. Determine Current Period Boundaries
+    let currentStart = new Date();
+    currentStart.setMonth(currentStart.getMonth() - 12);
+    currentStart.setDate(1);
+    currentStart.setHours(0, 0, 0, 0);
+    
+    let currentEnd = new Date();
+    
+    if (startDate && endDate) {
+      currentStart = new Date(startDate);
+      currentEnd = new Date(endDate);
+      currentEnd.setHours(23, 59, 59, 999);
     }
+    
+    // 2. Determine Previous Period Boundaries
+    const durationMs = currentEnd.getTime() - currentStart.getTime();
+    const previousStart = new Date(currentStart.getTime() - durationMs);
+    const previousEnd = new Date(currentEnd.getTime() - durationMs);
+    
+    // 3. Dynamic Cache Key
+    const cacheKey = `analytics_${currentStart.toISOString().split('T')[0]}_${currentEnd.toISOString().split('T')[0]}_${trendType}`;
+    const cached = analyticsCache.get(cacheKey);
+    if (cached) {
+      return res.json({ ...cached, cached: true });
+    }
+  
+    // 4. Concurrent Queries
+    const [
+      monthlyRevenueRaw, 
+      planDistributionRaw,
+      currentAggregates,
+      previousAggregates,
+      activeCount,
+      expiredCount,
+      suspendedCount,
+      totalStudents,
+      totalFaculty,
+      totalManagers,
+      totalParents,
+      totalAdmins
+    ] = await Promise.all([
+      // Monthly Revenue Trend (Current Period)
+      Subscription.findAll({
+        attributes: [
+          [Sequelize.fn('EXTRACT', Sequelize.literal(trendType === 'weekly' ? 'WEEK FROM "created_at"' : 'MONTH FROM "created_at"')), 'period'],
+          [Sequelize.fn('EXTRACT', Sequelize.literal('YEAR FROM "created_at"')), 'year'],
+          [Sequelize.fn('SUM', Sequelize.col('amount_paid')), 'totalRevenue'],
+        ],
+        where: {
+          payment_status: "paid",
+          is_test: false,
+          createdAt: { [Op.between]: [currentStart, currentEnd] },
+        },
+        group: [
+          Sequelize.literal('EXTRACT(YEAR FROM "created_at")'),
+          Sequelize.literal(`EXTRACT(${trendType === 'weekly' ? 'WEEK' : 'MONTH'} FROM "created_at")`),
+        ],
+        order: [
+          [Sequelize.literal('EXTRACT(YEAR FROM "created_at")'), 'ASC'],
+          [Sequelize.literal(`EXTRACT(${trendType === 'weekly' ? 'WEEK' : 'MONTH'} FROM "created_at")`), 'ASC'],
+        ],
+        raw: true,
+      }),
+      
+      // Plan Distribution (Current Period)
+      Subscription.findAll({
+        attributes: [
+          'plan_id',
+          [Sequelize.fn('COUNT', Sequelize.col('Subscription.id')), 'count'],
+          [Sequelize.fn('SUM', Sequelize.col('amount_paid')), 'revenue'],
+        ],
+        include: [{ model: Plan, attributes: ["name"] }],
+        where: {
+          is_test: false,
+          payment_status: "paid",
+          createdAt: { [Op.between]: [currentStart, currentEnd] },
+        },
+        group: ['plan_id', 'Plan.id', 'Plan.name'],
+        raw: true,
+      }),
+      
+      // Current Period Metrics (Revenue, Discounts, Subscriptions)
+      Subscription.findAll({
+        attributes: [
+          [Sequelize.fn('SUM', Sequelize.col('amount_paid')), 'totalRevenue'],
+          [Sequelize.fn('SUM', Sequelize.col('discount_amount')), 'totalDiscounts'],
+          [Sequelize.fn('COUNT', Sequelize.col('id')), 'totalSubscriptions'],
+          [Sequelize.fn('SUM', Sequelize.literal(`CASE WHEN status = 'active' THEN 1 ELSE 0 END`)), 'activeSubscriptions']
+        ],
+        where: {
+          payment_status: "paid",
+          is_test: false,
+          createdAt: { [Op.between]: [currentStart, currentEnd] }
+        },
+        raw: true
+      }),
+      
+      // Previous Period Metrics (Revenue, Discounts, Subscriptions)
+      Subscription.findAll({
+        attributes: [
+          [Sequelize.fn('SUM', Sequelize.col('amount_paid')), 'totalRevenue'],
+          [Sequelize.fn('SUM', Sequelize.col('discount_amount')), 'totalDiscounts'],
+          [Sequelize.fn('COUNT', Sequelize.col('id')), 'totalSubscriptions'],
+          [Sequelize.fn('SUM', Sequelize.literal(`CASE WHEN status = 'active' THEN 1 ELSE 0 END`)), 'activeSubscriptions']
+        ],
+        where: {
+          payment_status: "paid",
+          is_test: false,
+          createdAt: { [Op.between]: [previousStart, previousEnd] }
+        },
+        raw: true
+      }),
+
+      Institute.count({ where: { status: "active" } }),
+      Institute.count({ where: { status: "expired" } }),
+      Institute.count({ where: { status: "suspended" } }),
+      Student.count(),
+      Faculty.count(),
+      User.count({ where: { role: "manager" } }),
+      User.count({ where: { role: "parent" } }),
+      User.count({ where: { role: "admin" } })
+    ]);
+ 
+    const payload = {
+      monthlyRevenue: monthlyRevenueRaw,
+      planDistribution: planDistributionRaw,
+      currentPeriod: currentAggregates[0],
+      previousPeriod: previousAggregates[0],
+      instituteStatus: {
+        active: activeCount,
+        expired: expiredCount,
+        suspended: suspendedCount
+      },
+      userDemographics: {
+        students: totalStudents,
+        faculty: totalFaculty,
+        managers: totalManagers,
+        parents: totalParents,
+        admins: totalAdmins
+      },
+      dateRange: { currentStart, currentEnd, previousStart, previousEnd },
+      generatedAt: new Date().toISOString(),
+    };
+ 
+    analyticsCache.set(cacheKey, payload);
+    return res.json({ ...payload, cached: false });
+  } catch (err) {
+    console.error('getAnalytics error:', err);
+    return res.status(500).json({ message: 'Failed to load analytics' });
+  }
+};
+
+// Export so any write path (webhook, admin create/update) can bust it
+exports.bustAnalyticsCache = () => {
+  analyticsCache.flushAll();
 };
 
 // ─────────────────────────────────────────────────────────────

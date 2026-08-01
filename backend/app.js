@@ -484,6 +484,35 @@ const syncDatabase = async () => {
       } catch (e) { }
 
       try {
+        await sequelize.query(`ALTER TABLE "Institutes" ADD COLUMN IF NOT EXISTS is_test_account BOOLEAN DEFAULT false;`);
+      } catch (e) {
+        // Fallback in case table name is not quoted/capitalized
+        try {
+          await sequelize.query(`ALTER TABLE institutes ADD COLUMN IF NOT EXISTS is_test_account BOOLEAN DEFAULT false;`);
+        } catch (e2) { }
+      }
+
+      try {
+        await sequelize.query(`ALTER TABLE "Subscriptions" ADD COLUMN IF NOT EXISTS is_test BOOLEAN DEFAULT false;`);
+      } catch (e) {
+        // Fallback in case table name is not quoted/capitalized
+        try {
+          await sequelize.query(`ALTER TABLE subscriptions ADD COLUMN IF NOT EXISTS is_test BOOLEAN DEFAULT false;`);
+        } catch (e2) { }
+      }
+
+      // ─── Revenue Analytics Indexes ───
+      try {
+        await sequelize.query(`CREATE INDEX IF NOT EXISTS idx_subs_created_at ON subscriptions (created_at);`);
+        await sequelize.query(`CREATE INDEX IF NOT EXISTS idx_subs_is_test_created_at ON subscriptions (is_test, created_at);`);
+      } catch (e) {
+        try {
+            await sequelize.query(`CREATE INDEX IF NOT EXISTS idx_subs_created_at ON "Subscriptions" ("createdAt");`);
+            await sequelize.query(`CREATE INDEX IF NOT EXISTS idx_subs_is_test_created_at ON "Subscriptions" (is_test, "createdAt");`);
+        } catch (e2) { }
+      }
+
+      try {
         await sequelize.query(`ALTER TABLE faculty ADD COLUMN IF NOT EXISTS address VARCHAR(500);`);
         await sequelize.query(`ALTER TABLE faculty DROP COLUMN IF EXISTS salary;`);
       } catch (e) { }

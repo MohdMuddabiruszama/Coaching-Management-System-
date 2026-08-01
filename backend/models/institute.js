@@ -218,6 +218,11 @@ const Institute = sequelize.define("Institute", {
     custom_subdomain: {
         type: DataTypes.STRING(100),
         allowNull: true
+    },
+    is_test_account: {
+        type: DataTypes.BOOLEAN,
+        defaultValue: false,
+        comment: 'Super admin marks institute as test. All subscriptions excluded from revenue.'
     }
 });
 

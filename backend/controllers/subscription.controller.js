@@ -1,220 +1,262 @@
 /**
  * Subscription Controller
- * Handles subscription management
+ * Handles subscription management for Super Admin
+ * Enhanced with: test mode toggle, metrics, server-side export, mark-paid, delete
  */
 
 const { Subscription, Institute, Plan } = require("../models");
+const { bustAnalyticsCache } = require("./superadmin.controller");
+const subService = require("../services/subscription.service");
+const { catchAsync } = require("../utils/catchAsync");
+const { exportExcel, exportPDF } = require("../utils/exportSubscriptions");
+const socketUtils = require("../utils/socket");
+const AppError = require("../utils/AppError");
 
-exports.createSubscription = async (req, res) => {
-    try {
-        const { institute_id, plan_id, amount_paid, discount_amount, subscription_start, subscription_end } = req.body;
+// ─── GET: Enhanced List + Metrics (parallel) ──────────────────
+exports.getAllSubscriptions = catchAsync(async (req, res) => {
+    const filters = {
+        page: req.query.page || 1,
+        limit: req.query.limit || 50,
+        search: req.query.search || '',
+        status: req.query.status || 'all',
+        startDate: req.query.startDate || null,
+        endDate: req.query.endDate || null,
+    };
 
-        const subscription = await Subscription.create({
-            institute_id,
-            plan_id,
-            amount_paid,
-            discount_amount: discount_amount || 0,
-            payment_status: "pending",
-            start_date: subscription_start,
-            end_date: subscription_end,
-        });
+    // Run BOTH queries in parallel
+    const [metrics, list] = await Promise.all([
+        subService.getMetrics(filters),
+        subService.getSubscriptionList(filters),
+    ]);
 
-        res.status(201).json({
-            success: true,
-            message: "Subscription created successfully",
-            data: subscription,
-        });
-    } catch (error) {
-        res.status(500).json({
-            success: false,
-            message: error.message,
+    return res.status(200).json({
+        success: true,
+        metrics,
+        data: {
+            subscriptions: list.data,
+            pagination: list.pagination,
+        },
+    });
+});
+
+// ─── POST: Create Subscription ────────────────────────────────
+exports.createSubscription = catchAsync(async (req, res) => {
+    const { institute_id, plan_id, amount_paid, discount_amount, subscription_start, subscription_end } = req.body;
+
+    // Inherit is_test from institute
+    const institute = await Institute.findByPk(institute_id);
+    const isTest = institute ? institute.is_test_account : false;
+
+    const subscription = await Subscription.create({
+        institute_id,
+        plan_id,
+        amount_paid,
+        discount_amount: discount_amount || 0,
+        payment_status: "pending",
+        start_date: subscription_start,
+        end_date: subscription_end,
+        is_test: isTest,
+    });
+
+    subService.bustMetricsCache();
+
+    res.status(201).json({
+        success: true,
+        message: "Subscription created successfully",
+        data: subscription,
+    });
+});
+
+// ─── PATCH: Update Status ─────────────────────────────────────
+exports.updateSubscriptionStatus = catchAsync(async (req, res) => {
+    const { id } = req.params;
+    const { payment_status } = req.body;
+
+    const subscription = await Subscription.findByPk(id);
+    if (!subscription) {
+        return res.status(404).json({ success: false, message: "Subscription not found" });
+    }
+
+    await subscription.update({ payment_status });
+    bustAnalyticsCache();
+    subService.bustMetricsCache();
+
+    // Emit real-time update
+    const io = socketUtils.getIo();
+    if (io) {
+        io.to('superadmin').emit('subscription_updated', {
+            type: 'status_updated',
+            subscription_id: id,
+            payment_status,
         });
     }
-};
 
-exports.getAllSubscriptions = async (req, res) => {
-    try {
-        const {
-            page = 1,
-            limit = 50,
-            status,
-            plan_id,
-            search,
-            sort_by = "createdAt",
-            sort_order = "DESC",
-        } = req.query;
+    res.status(200).json({
+        success: true,
+        message: "Subscription status updated successfully",
+        data: subscription,
+    });
+});
 
-        // Clamp limit: min 1, max 200
-        const safeLimit = Math.min(Math.max(parseInt(limit) || 50, 1), 200);
-        const offset = (Math.max(parseInt(page) || 1, 1) - 1) * safeLimit;
+// ─── PATCH: Update Period ─────────────────────────────────────
+exports.updateSubscriptionPeriod = catchAsync(async (req, res) => {
+    const { id } = req.params;
+    const { start_date, end_date } = req.body;
 
-        // Build subscription-level where clause
-        const whereClause = {};
-        if (status) whereClause.payment_status = status;
-        if (plan_id) whereClause.plan_id = parseInt(plan_id);
-
-        // Allowed sort columns (whitelist to prevent SQL injection)
-        const allowedSortCols = ["createdAt", "amount_paid", "discount_amount", "start_date", "end_date", "payment_status"];
-        const safeSortBy = allowedSortCols.includes(sort_by) ? sort_by : "createdAt";
-        const safeSortOrder = sort_order?.toUpperCase() === "ASC" ? "ASC" : "DESC";
-
-        // Build institute include — add name/email search if provided
-        const instituteInclude = {
-            model: Institute,
-            attributes: ["id", "name", "email"],
-        };
-        if (search && search.trim()) {
-            const { Op } = require("sequelize");
-            const term = `%${search.trim()}%`;
-            instituteInclude.where = {
-                [Op.or]: [
-                    { name: { [Op.iLike]: term } },
-                    { email: { [Op.iLike]: term } },
-                ],
-            };
-            // Required so we only return subscriptions whose institute matches
-            instituteInclude.required = true;
-        }
-
-        const { count, rows } = await Subscription.findAndCountAll({
-            where: whereClause,
-            limit: safeLimit,
-            offset,
-            order: [[safeSortBy, safeSortOrder]],
-            include: [
-                instituteInclude,
-                {
-                    model: Plan,
-                    attributes: ["id", "name", "price", "yearly_price", "lifetime_price"],
-                },
-            ],
-        });
-
-        // Annotate each subscription with a computed discount_applied flag for easy frontend use
-        const subscriptions = rows.map((sub) => {
-            const plain = sub.toJSON ? sub.toJSON() : sub;
-            
-            // Recompute discount if it's 0 but there should be an annual discount
-            // This fixes historical records before discount_amount was tracked
-            let savedDiscount = parseFloat(plain.discount_amount || 0);
-            let originalPreTax = plain.Plan?.price ? parseFloat(plain.Plan.price) : 0;
-            
-            if (plain.billing_cycle === 'yearly') {
-                originalPreTax *= 12;
-            }
-            
-            const gstPercent = plain.Plan?.gst_percent != null ? parseFloat(plain.Plan.gst_percent) : 2;
-            const originalPostTax = originalPreTax * (1 + (gstPercent / 100));
-            
-            if (savedDiscount === 0 && plain.billing_cycle === 'yearly') {
-                const paidAmt = parseFloat(plain.amount_paid || 0);
-                if (paidAmt < originalPostTax - 1) { // 1 rupee margin
-                    savedDiscount = originalPostTax - paidAmt;
-                }
-            }
-            
-            plain.discount_applied = savedDiscount > 0;
-            plain.original_price = plain.discount_applied ? originalPostTax : parseFloat(plain.amount_paid);
-            plain.discount_amount = savedDiscount;
-            
-            return plain;
-        });
-
-        res.status(200).json({
-            success: true,
-            message: "Subscriptions retrieved successfully",
-            data: {
-                subscriptions,
-                pagination: {
-                    total: count,
-                    page: parseInt(page),
-                    limit: safeLimit,
-                    totalPages: Math.ceil(count / safeLimit),
-                },
-            },
-        });
-    } catch (error) {
-        res.status(500).json({
-            success: false,
-            message: error.message,
-        });
+    const subscription = await Subscription.findByPk(id);
+    if (!subscription) {
+        return res.status(404).json({ success: false, message: "Subscription not found" });
     }
-};
 
-exports.updateSubscriptionStatus = async (req, res) => {
-    try {
-        const { id } = req.params;
-        const { payment_status } = req.body;
+    await subscription.update({ start_date, end_date });
+    bustAnalyticsCache();
 
-        const subscription = await Subscription.findByPk(id);
-
-        if (!subscription) {
-            return res.status(404).json({
-                success: false,
-                message: "Subscription not found",
+    // If this is the active subscription for the institute, update the institute's end date
+    if (subscription.status === 'active' || subscription.payment_status === 'paid') {
+        const institute = await Institute.findByPk(subscription.institute_id);
+        if (institute) {
+            const latestSub = await Subscription.findOne({
+                where: { institute_id: subscription.institute_id, payment_status: 'paid' },
+                order: [['end_date', 'DESC']]
             });
-        }
-
-        await subscription.update({ payment_status });
-
-        res.status(200).json({
-            success: true,
-            message: "Subscription status updated successfully",
-            data: subscription,
-        });
-    } catch (error) {
-        res.status(500).json({
-            success: false,
-            message: error.message,
-        });
-    }
-};
-
-exports.updateSubscriptionPeriod = async (req, res) => {
-    try {
-        const { id } = req.params;
-        const { start_date, end_date } = req.body;
-
-        const subscription = await Subscription.findByPk(id);
-
-        if (!subscription) {
-            return res.status(404).json({
-                success: false,
-                message: "Subscription not found",
-            });
-        }
-
-        await subscription.update({ start_date, end_date });
-
-        // If this is the active subscription for the institute, update the institute's end date
-        if (subscription.status === 'active' || subscription.payment_status === 'paid') {
-            const institute = await Institute.findByPk(subscription.institute_id);
-            if (institute) {
-                // Determine if this subscription is the latest active one
-                const latestSub = await Subscription.findOne({
-                    where: { institute_id: subscription.institute_id, payment_status: 'paid' },
-                    order: [['end_date', 'DESC']]
+            if (latestSub && latestSub.id === subscription.id) {
+                await institute.update({
+                    subscription_start: start_date,
+                    subscription_end: end_date
                 });
-                if (latestSub && latestSub.id === subscription.id) {
-                    await institute.update({ 
-                        subscription_start: start_date, 
-                        subscription_end: end_date 
-                    });
-                }
             }
         }
+    }
 
-        res.status(200).json({
-            success: true,
-            message: "Subscription period updated successfully",
-            data: subscription,
-        });
-    } catch (error) {
-        res.status(500).json({
-            success: false,
-            message: error.message,
+    subService.bustMetricsCache();
+
+    res.status(200).json({
+        success: true,
+        message: "Subscription period updated successfully",
+        data: subscription,
+    });
+});
+
+// ─── PATCH: Toggle Test Mode ──────────────────────────────────
+exports.toggleTest = catchAsync(async (req, res) => {
+    const { id } = req.params; // institute id
+    const { is_test } = req.body;
+
+    if (typeof is_test !== 'boolean') {
+        return res.status(400).json({ success: false, message: 'is_test must be a boolean' });
+    }
+
+    const institute = await Institute.findByPk(id);
+    if (!institute) {
+        return res.status(404).json({ success: false, message: 'Institute not found' });
+    }
+
+    const result = await subService.toggleTestMode(id, is_test);
+
+    // Emit real-time update
+    const io = socketUtils.getIo();
+    if (io) {
+        io.to('superadmin').emit('subscription_updated', {
+            type: 'test_mode_toggled',
+            institute_id: id,
+            is_test,
         });
     }
-};
+
+    return res.json({ success: true, data: result });
+});
+
+// ─── PUT: Mark as Paid ────────────────────────────────────────
+exports.markPaid = catchAsync(async (req, res) => {
+    const sub = await Subscription.findByPk(req.params.id);
+    if (!sub) {
+        return res.status(404).json({ success: false, message: 'Subscription not found' });
+    }
+    if (sub.payment_status === 'paid') {
+        return res.status(400).json({ success: false, message: 'Already paid' });
+    }
+
+    await sub.update({
+        payment_status: 'paid',
+        paid_at: new Date(),
+    });
+
+    bustAnalyticsCache();
+    subService.bustMetricsCache();
+
+    const io = socketUtils.getIo();
+    if (io) {
+        io.to('superadmin').emit('subscription_updated', {
+            type: 'payment_recorded',
+            subscription_id: sub.id,
+        });
+    }
+
+    return res.json({ success: true, message: 'Subscription marked as paid', data: sub });
+});
+
+// ─── DELETE: Remove Subscription ──────────────────────────────
+exports.deleteSubscription = catchAsync(async (req, res) => {
+    const { id } = req.params;
+    const subscription = await Subscription.findByPk(id);
+
+    if (!subscription) {
+        return res.status(404).json({ success: false, message: 'Subscription not found' });
+    }
+
+    if (subscription.payment_status === 'paid') {
+        return res.status(400).json({ success: false, message: 'Cannot delete a paid subscription' });
+    }
+
+    await subscription.destroy();
+    subService.bustMetricsCache();
+    return res.json({ success: true, message: 'Subscription deleted' });
+});
+
+// ─── PATCH: Exclude Transaction (Hide from Analytics) ─────────
+exports.excludeSubscription = catchAsync(async (req, res) => {
+    const { id } = req.params;
+    const subscription = await Subscription.findByPk(id);
+
+    if (!subscription) {
+        return res.status(404).json({ success: false, message: 'Subscription not found' });
+    }
+
+    await subscription.update({ is_test: true });
+    
+    const { bustAnalyticsCache } = require("./superadmin.controller");
+    bustAnalyticsCache();
+    subService.bustMetricsCache();
+    
+    // Emit real-time update
+    const io = socketUtils.getIo();
+    if (io) {
+        io.to('superadmin').emit('subscription_updated', {
+            type: 'subscription_excluded',
+            subscription_id: id
+        });
+    }
+
+    return res.json({ success: true, message: 'Transaction removed from analytics' });
+});
+
+// ─── GET: Export (Excel / PDF) ────────────────────────────────
+exports.exportData = catchAsync(async (req, res) => {
+    const { format = 'excel', ...filterParams } = req.query;
+    const filters = {
+        search: filterParams.search || '',
+        status: filterParams.status || 'all',
+        startDate: filterParams.startDate || null,
+        endDate: filterParams.endDate || null,
+        page: 1,
+        limit: 10000,
+    };
+
+    const { data } = await subService.getSubscriptionList(filters);
+
+    if (format === 'excel') return exportExcel(res, data);
+    if (format === 'pdf') return exportPDF(res, data);
+    return res.status(400).json({ success: false, message: 'format must be excel or pdf' });
+});
 
 module.exports = exports;

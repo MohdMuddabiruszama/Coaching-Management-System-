@@ -7,6 +7,8 @@ const crypto = require("crypto");
 const { Subscription, Institute, Plan } = require("../models");
 const emailService = require("../services/email.service");
 const invoiceService = require("../services/invoice.service");
+const { bustAnalyticsCache } = require("./superadmin.controller");
+const socketUtils = require("../utils/socket");
 
 /**
  * Handle Razorpay webhook events
@@ -103,6 +105,7 @@ async function handleSubscriptionCharged(subscriptionData) {
             end_date: new Date(subscriptionData.current_end * 1000),
             payment_status: "paid",
             transaction_reference: subscriptionData.id,
+            is_test: institute.is_test_account,
         });
 
         // Update institute status

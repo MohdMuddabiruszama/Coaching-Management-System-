@@ -38,9 +38,38 @@ const updatePeriod = {
     }),
 };
 
+const toggleTest = {
+    params: idParam,
+    body: Joi.object({
+        is_test: Joi.boolean().required(),
+    }),
+};
+
+const markPaid = {
+    params: idParam,
+};
+
+const deleteSubscription = {
+    params: idParam,
+};
+
+const exportData = {
+    query: Joi.object({
+        format: Joi.string().valid("excel", "pdf").optional(),
+        status: paymentStatusEnum.optional(),
+        search: Joi.string().allow("").optional(),
+        startDate: dateISO.optional(),
+        endDate: dateISO.optional(),
+    }),
+};
+
 module.exports = {
     createSubscription,
     getAllSubscriptions,
     updateStatus,
     updatePeriod,
+    toggleTest,
+    markPaid,
+    deleteSubscription,
+    exportData,
 };

@@ -11,9 +11,25 @@ const allowRoles = require("../middlewares/role.middleware");
 const validate = require("../middlewares/validate.middleware"); // ✅ Phase 7
 const subValidator = require("../validators/subscription.validator"); // ✅ Phase 7
 
+// Create
 router.post("/", verifyToken, allowRoles("super_admin", "admin"), validate(subValidator.createSubscription), subscriptionController.createSubscription);
+
+// Get all & Metrics
 router.get("/", verifyToken, allowRoles("super_admin"), validate(subValidator.getAllSubscriptions), subscriptionController.getAllSubscriptions);
+
+// Export (Must be placed before /:id routes to prevent 'export' from being treated as an id)
+router.get("/export", verifyToken, allowRoles("super_admin"), validate(subValidator.exportData), subscriptionController.exportData);
+
+// Update Status & Period
 router.patch("/:id/status", verifyToken, allowRoles("super_admin"), validate(subValidator.updateStatus), subscriptionController.updateSubscriptionStatus);
 router.patch("/:id/period", verifyToken, allowRoles("super_admin"), validate(subValidator.updatePeriod), subscriptionController.updateSubscriptionPeriod);
+
+// Mark Paid & Delete & Exclude
+router.put("/:id/pay", verifyToken, allowRoles("super_admin"), validate(subValidator.markPaid), subscriptionController.markPaid);
+router.delete("/:id", verifyToken, allowRoles("super_admin"), validate(subValidator.deleteSubscription), subscriptionController.deleteSubscription);
+router.patch("/:id/exclude", verifyToken, allowRoles("super_admin"), validate(subValidator.deleteSubscription), subscriptionController.excludeSubscription);
+
+// Toggle Test Mode (on Institute id)
+router.patch("/institute/:id/toggle-test", verifyToken, allowRoles("super_admin"), validate(subValidator.toggleTest), subscriptionController.toggleTest);
 
 module.exports = router;

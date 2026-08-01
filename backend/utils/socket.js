@@ -44,6 +44,16 @@ module.exports = {
                 socket.join(`chat_room_${roomId}`);
             });
 
+            // Super Admin room for real-time dashboard updates
+            socket.on("join_superadmin", () => {
+                // You can add role check here if needed, e.g. if(socket.user.role === 'super_admin')
+                socket.join("superadmin");
+            });
+
+            socket.on("leave_superadmin", () => {
+                socket.leave("superadmin");
+            });
+
             socket.on("leave_chat_room", (roomId) => {
                 socket.leave(`chat_room_${roomId}`);
             });
