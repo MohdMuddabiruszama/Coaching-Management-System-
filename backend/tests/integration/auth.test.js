@@ -102,7 +102,7 @@ describe("Auth Flow Integration Tests", () => {
       const response = await request(app)
         .post("/api/auth/login")
         .send({
-          email: validRegistrationData.email,
+          identifier: validRegistrationData.email,
           password: validRegistrationData.password,
         });
 
@@ -127,7 +127,7 @@ describe("Auth Flow Integration Tests", () => {
       const response = await request(app)
         .post("/api/auth/login")
         .send({
-          email: validRegistrationData.email,
+          identifier: validRegistrationData.email,
           password: "WrongPassword!",
         });
 
