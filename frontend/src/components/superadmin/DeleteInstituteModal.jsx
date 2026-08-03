@@ -1,6 +1,6 @@
 import { useState } from 'react';
 
-const DeleteInstituteModal = ({ institute, onConfirm, onCancel, loading }) => {
+const DeleteInstituteModal = ({ institute, onConfirm, onClose, loading }) => {
   const [confirmText, setConfirmText] = useState('');
   const [forceDelete, setForceDelete] = useState(false);
   const isMatch = confirmText.trim() === institute.name.trim();
@@ -139,7 +139,7 @@ const DeleteInstituteModal = ({ institute, onConfirm, onCancel, loading }) => {
         {/* Buttons */}
         <div style={{ display: 'flex', gap: 10, marginTop: 24 }}>
           <button
-            onClick={onCancel}
+            onClick={onClose}
             disabled={loading}
             style={{
               flex: 1, padding: '11px', borderRadius: 8,

@@ -459,6 +459,25 @@ const syncDatabase = async () => {
     // Plus a few one-time ALTERs wrapped in try/catch so they are
     // effectively no-ops once applied.
     // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ──────────────────────────────────────────────────────────────────────────────────────────────────
+    // CRITICAL HOTFIX: Always ensure these critical columns exist, even if RUN_STARTUP_MIGRATIONS is false on the live server
+    try {
+      await sequelize.query(`ALTER TABLE "Institutes" ADD COLUMN IF NOT EXISTS is_test_account BOOLEAN DEFAULT false;`);
+    } catch (e) {
+      try {
+        await sequelize.query(`ALTER TABLE institutes ADD COLUMN IF NOT EXISTS is_test_account BOOLEAN DEFAULT false;`);
+      } catch (e2) { }
+    }
+
+    try {
+      await sequelize.query(`ALTER TABLE "Subscriptions" ADD COLUMN IF NOT EXISTS is_test BOOLEAN DEFAULT false;`);
+    } catch (e) {
+      try {
+        await sequelize.query(`ALTER TABLE subscriptions ADD COLUMN IF NOT EXISTS is_test BOOLEAN DEFAULT false;`);
+      } catch (e2) { }
+    }
+    // ──────────────────────────────────────────────────────────────────────────────────────────────────
+
     if (runStartupMigrations) {
       console.log("Startup schema migrations enabled via RUN_STARTUP_MIGRATIONS=true");
 
@@ -483,23 +502,7 @@ const syncDatabase = async () => {
         await sequelize.query(`ALTER TABLE subscriptions ADD COLUMN tax_amount DECIMAL(10,2) DEFAULT 0;`);
       } catch (e) { }
 
-      try {
-        await sequelize.query(`ALTER TABLE "Institutes" ADD COLUMN IF NOT EXISTS is_test_account BOOLEAN DEFAULT false;`);
-      } catch (e) {
-        // Fallback in case table name is not quoted/capitalized
-        try {
-          await sequelize.query(`ALTER TABLE institutes ADD COLUMN IF NOT EXISTS is_test_account BOOLEAN DEFAULT false;`);
-        } catch (e2) { }
-      }
-
-      try {
-        await sequelize.query(`ALTER TABLE "Subscriptions" ADD COLUMN IF NOT EXISTS is_test BOOLEAN DEFAULT false;`);
-      } catch (e) {
-        // Fallback in case table name is not quoted/capitalized
-        try {
-          await sequelize.query(`ALTER TABLE subscriptions ADD COLUMN IF NOT EXISTS is_test BOOLEAN DEFAULT false;`);
-        } catch (e2) { }
-      }
+      // (Moved is_test_account and is_test above to run unconditionally)
 
       // ─── Revenue Analytics Indexes ───
       try {
