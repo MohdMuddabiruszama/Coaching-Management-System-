@@ -36,6 +36,7 @@ const SuperAdminExpenses = lazy(() => import("../pages/superadmin/Expenses"));
 const LandingPage = lazy(() => import("../pages/superadmin/LandingPage"));
 const InstituteLimits = lazy(() => import("../pages/superadmin/InstituteLimits"));
 const Enquiries = lazy(() => import("../pages/superadmin/Enquiries"));
+const SuperAdminReports = lazy(() => import("../pages/superadmin/Reports"));
 
 const AdminDashboard = lazy(() => import("../pages/admin/Dashboard"));
 const Students = lazy(() => import("../pages/admin/Students"));
@@ -72,6 +73,7 @@ import { Capacitor } from "@capacitor/core";
 const isNativeEnv  = Capacitor.isNativePlatform();
 
 const AdminLayout = lazy(() => import("../components/layout/AdminLayout"));
+const SuperAdminLayout = lazy(() => import("../components/layout/SuperAdminLayout"));
 const StudentLayout = isNativeEnv 
   ? lazy(() => import("../components/layout/MobileStudentLayout"))
   : lazy(() => import("../components/layout/StudentLayout"));
@@ -201,23 +203,24 @@ export default function WebAppRoutes() {
           path="/superadmin/*"
           element={
             <ProtectedRoute allowedRoles={["super_admin"]}>
-              <Routes>
-                <Route path="dashboard" element={<SuperAdminDashboard />} />
-                <Route path="institutes" element={<Institutes />} />
-                <Route path="plans" element={<Plans />} />
-                <Route path="subscriptions" element={<Subscriptions />} />
-                <Route path="analytics" element={<Analytics />} />
-                <Route path="revenue" element={<Revenue />} />
-                <Route path="expenses" element={<SuperAdminExpenses />} />
-                <Route path="settings" element={<SuperAdminSettings />} />
-                <Route path="landing-page" element={<LandingPage />} />
-                <Route path="institute-limits" element={<InstituteLimits />} />
-                <Route path="enquiries" element={<Enquiries />} />
-                <Route path="*" element={<Navigate to="/superadmin/dashboard" />} />
-              </Routes>
+              <SuperAdminLayout />
             </ProtectedRoute>
           }
-        />
+        >
+          <Route path="dashboard" element={<SuperAdminDashboard />} />
+          <Route path="institutes" element={<Institutes />} />
+          <Route path="plans" element={<Plans />} />
+          <Route path="subscriptions" element={<Subscriptions />} />
+          <Route path="analytics" element={<Analytics />} />
+          <Route path="revenue" element={<Revenue />} />
+          <Route path="expenses" element={<SuperAdminExpenses />} />
+          <Route path="settings" element={<SuperAdminSettings />} />
+          <Route path="landing-page" element={<LandingPage />} />
+          <Route path="institute-limits" element={<InstituteLimits />} />
+          <Route path="enquiries" element={<Enquiries />} />
+          <Route path="reports" element={<SuperAdminReports />} />
+          <Route path="*" element={<Navigate to="/superadmin/dashboard" />} />
+        </Route>
 
         <Route
           path="/admin/*"

@@ -23,6 +23,8 @@ import {
     FiArrowLeft, FiDownload, FiCreditCard, FiTag, 
     FiFileText, FiUsers, FiTrendingUp, FiTrendingDown, FiTrash2 
 } from "react-icons/fi";
+import { jsPDF } from "jspdf";
+import html2canvas from "html2canvas";
 
 import "./Revenue.css";
 
@@ -54,9 +56,31 @@ function Revenue() {
     });
     const [revenueChartType, setRevenueChartType] = useState("Monthly");
     const [planDistType, setPlanDistType] = useState("By Revenue");
+    const [exporting, setExporting] = useState(false);
 
     const socketRef = useRef(null);
     const debounceRef = useRef(null);
+
+    const handleExport = async () => {
+        setExporting(true);
+        try {
+            const input = document.getElementById('revenue-dashboard-content');
+            const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+            const canvas = await html2canvas(input, { scale: 2, useCORS: true, backgroundColor: isDark ? '#0f172a' : '#f9fafb' });
+            const imgData = canvas.toDataURL('image/png');
+            
+            const pdf = new jsPDF('p', 'mm', 'a4');
+            const pdfWidth = pdf.internal.pageSize.getWidth();
+            const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+            
+            pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+            pdf.save(`Revenue_Analytics_${new Date().toISOString().split('T')[0]}.pdf`);
+        } catch (error) {
+            console.error("Error exporting report:", error);
+        } finally {
+            setExporting(false);
+        }
+    };
 
     const fetchData = useCallback(async (silent = false) => {
         try {
@@ -266,8 +290,8 @@ function Revenue() {
                             onChange={(e) => setEndDate(e.target.value)} 
                         />
                     </div>
-                    <button className="btn-export">
-                        <FiDownload /> Export
+                    <button className="btn-export" onClick={handleExport} disabled={exporting}>
+                        <FiDownload /> {exporting ? "Exporting..." : "Export"}
                     </button>
                     <Link to="/superadmin/dashboard" className="btn-dashboard">
                         <FiArrowLeft /> Back to Dashboard
@@ -275,6 +299,7 @@ function Revenue() {
                 </div>
             </div>
 
+            <div id="revenue-dashboard-content">
             <div className="revenue-summary-grid">
                 <div className="summary-card">
                     <div className="summary-icon purple"><FiCreditCard /></div>
@@ -469,6 +494,8 @@ function Revenue() {
                         </tbody>
                     </table>
                 </div>
+            </div>
+            
             </div>
         </div>
     );

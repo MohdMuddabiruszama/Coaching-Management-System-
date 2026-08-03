@@ -62,6 +62,40 @@ exports.addExpense = async (req, res) => {
     }
 };
 
+exports.updateExpense = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { title, amount, category, date, description, method } = req.body;
+        const { role, institute_id } = req.user;
+
+        const whereClause = { id };
+        if (role !== "super_admin") {
+            whereClause.institute_id = institute_id;
+        } else {
+            whereClause.institute_id = null;
+        }
+
+        const expense = await Expense.findOne({ where: whereClause });
+        if (!expense) {
+            return res.status(404).json({ success: false, message: "Expense not found" });
+        }
+
+        await expense.update({
+            title: title || expense.title,
+            amount: amount || expense.amount,
+            category: category || expense.category,
+            date: date || expense.date,
+            description: description !== undefined ? description : expense.description,
+            method: method || expense.method
+        });
+
+        res.status(200).json({ success: true, expense, message: "Expense updated successfully" });
+    } catch (error) {
+        console.error("Error updating expense:", error);
+        res.status(500).json({ success: false, message: "Failed to update expense" });
+    }
+};
+
 exports.deleteExpense = async (req, res) => {
     try {
         const { id } = req.params;

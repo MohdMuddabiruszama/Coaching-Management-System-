@@ -4,6 +4,7 @@
  */
 
 import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import api from "../../services/api";
 import BackButton from "../../components/common/BackButton";
 import ThemeSelector from "../../components/ThemeSelector";
@@ -16,6 +17,11 @@ function Plans() {
     const [loading, setLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
     const [editMode, setEditMode] = useState(false);
+    const [expandedPlans, setExpandedPlans] = useState({});
+
+    const toggleFeatures = (id) => {
+        setExpandedPlans(prev => ({...prev, [id]: !prev[id]}));
+    };
 
     // Initial State Matching Database Model
     const initialFormState = {
@@ -165,159 +171,237 @@ function Plans() {
     };
 
     if (loading) {
-        return <div className="dashboard-container">Loading...</div>;
+        return <div className="pm-container" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}><p>Loading...</p></div>;
     }
 
+    const totalPlans = plans.length;
+    const activePlans = plans.filter(p => !p.is_hidden).length; // assuming active is not hidden
+    const trialPlans = plans.filter(p => p.is_free_trial).length;
+    const inactivePlans = plans.filter(p => p.is_hidden).length;
+
     return (
-        <div className="dashboard-container">
-            <div className="dashboard-header">
-                <div>
-                    <h1>📋 Plans Management</h1>
-                    <p>Create and manage subscription plans & feature limits</p>
+        <div className="pm-container">
+            <div className="pm-breadcrumb">
+                <Link to="/superadmin/dashboard">🏠 Dashboard</Link> &gt; <span>Plans Management</span>
+            </div>
+
+            {/* Header */}
+            <div className="pm-header">
+                <div className="pm-header-left" style={{ display: 'flex', gap: '1rem' }}>
+                    <div className="pm-header-icon">📋</div>
+                    <div>
+                        <h1>Plans Management</h1>
+                        <p>Create and manage subscription plans & feature limits</p>
+                    </div>
                 </div>
-                <div className="dashboard-header-right">
-                    <ThemeSelector />
-                    <BackButton />
-                    <button
-                        onClick={() => {
-                            resetForm();
-                            setShowModal(true);
-                        }}
-                        className="btn btn-primary"
-                    >
-                        + Create Plan
+                <div className="pm-header-right">
+                    <button className="pm-btn-secondary" onClick={() => alert("Export functionality coming soon!")}>
+                        <span style={{ fontSize: '1.2rem' }}>📥</span> Export Plans
+                    </button>
+                    <button className="pm-btn-primary" onClick={() => { resetForm(); setShowModal(true); }}>
+                        + Create New Plan
                     </button>
                 </div>
             </div>
 
+            {/* Stats Grid */}
+            <div className="pm-stats-grid">
+                <div className="pm-stat-card">
+                    <div className="pm-stat-icon-wrap total">📋</div>
+                    <div className="pm-stat-content">
+                        <h3>{totalPlans}</h3>
+                        <p>Total Plans</p>
+                        <span>All subscription plans</span>
+                    </div>
+                </div>
+                <div className="pm-stat-card">
+                    <div className="pm-stat-icon-wrap active">✅</div>
+                    <div className="pm-stat-content">
+                        <h3>{activePlans}</h3>
+                        <p>Active Plans</p>
+                        <span>Currently active</span>
+                    </div>
+                </div>
+                <div className="pm-stat-card">
+                    <div className="pm-stat-icon-wrap trial">🕒</div>
+                    <div className="pm-stat-content">
+                        <h3>{trialPlans}</h3>
+                        <p>Trial Plan</p>
+                        <span>Free trial available</span>
+                    </div>
+                </div>
+                <div className="pm-stat-card">
+                    <div className="pm-stat-icon-wrap inactive">⏸️</div>
+                    <div className="pm-stat-content">
+                        <h3>{inactivePlans}</h3>
+                        <p>Inactive Plans</p>
+                        <span>Currently inactive</span>
+                    </div>
+                </div>
+            </div>
+
             {/* Plans Grid */}
-            <div className="stats-grid">
+            <div className="pm-plans-grid">
                 {plans.length === 0 ? (
-                    <div style={{ gridColumn: "1/-1", textAlign: "center", padding: "2rem" }}>
+                    <div style={{ gridColumn: "1/-1", textAlign: "center", padding: "3rem", color: '#64748b' }}>
                         No plans found. Create one to get started.
                     </div>
                 ) : (
-                    plans.map((plan) => (
-                        <div key={plan.id} className="card" style={{ padding: "1.5rem", position: 'relative', ...(plan.is_lifetime ? { border: '2px solid #7c3aed', background: 'linear-gradient(135deg, rgba(124,58,237,0.08), rgba(0,0,0,0))' } : {}) }}>
-                            {plan.is_popular && (
-                                <div style={{
-                                    position: 'absolute', top: 10, right: 10,
-                                    background: '#fcd34d', padding: '2px 8px',
-                                    borderRadius: '12px', fontSize: '0.75rem', fontWeight: 'bold'
-                                }}>
-                                    Most Popular
-                                </div>
-                            )}
-                            {plan.is_lifetime && (
-                                <div style={{ position: 'absolute', top: 10, left: 10, background: 'linear-gradient(90deg,#7c3aed,#4f46e5)', color: '#fff', padding: '2px 10px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: 'bold' }}>
-                                    💎 LIFETIME
-                                </div>
-                            )}
-                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start", marginBottom: "1rem" }}>
-                                <h3 style={{ margin: 0, fontSize: "1.5rem", color: "#6366f1" }}>{plan.name}</h3>
-                            </div>
+                    plans.map((plan) => {
+                        // Calculate features
+                        const mainFeatures = [
+                            { name: 'Basic Attendance', active: plan.feature_attendance !== 'none' },
+                            { name: 'Reports', active: plan.feature_reports !== 'none' },
+                            { name: 'Fees Management', active: plan.feature_fees },
+                            { name: 'Finance Dashboard', active: plan.feature_finance },
+                        ];
+                        
+                        const allFeatures = [
+                            { name: 'Smart Attendance', active: plan.feature_auto_attendance },
+                            { name: 'Faculty Salary', active: plan.feature_salary },
+                            { name: 'Announcements', active: plan.feature_announcements },
+                            { name: 'Exams', active: plan.feature_exams },
+                            { name: 'Timetable', active: plan.feature_timetable },
+                            { name: 'Notes', active: plan.feature_notes },
+                            { name: 'Academic Chat', active: plan.feature_chat },
+                            { name: 'Export Data', active: plan.feature_export },
+                            { name: 'Email Notifs', active: plan.feature_email },
+                            { name: 'SMS', active: plan.feature_sms },
+                            { name: 'WhatsApp', active: plan.feature_whatsapp },
+                            { name: 'Custom Branding', active: plan.feature_custom_branding },
+                            { name: 'Multi-Branch', active: plan.feature_multi_branch },
+                            { name: 'API Access', active: plan.feature_api_access },
+                            { name: 'Parent Portal', active: plan.feature_parent_portal },
+                            { name: 'Mobile App', active: plan.feature_mobile_app },
+                            { name: 'Public Page', active: plan.feature_public_page },
+                            { name: 'Assignments', active: plan.feature_assignment },
+                            { name: 'Performance Hub', active: plan.feature_performance_hub },
+                            { name: 'Finances & Transport', active: plan.feature_transport }
+                        ];
+                        const activeMoreFeaturesCount = allFeatures.filter(f => f.active).length;
 
-                            <div style={{ fontSize: "2rem", fontWeight: "bold", marginBottom: "1rem" }}>
+                        return (
+                            <div key={plan.id} className="pm-plan-card">
+                                {plan.is_popular && <div className="pm-plan-tag">⭐ Most Popular</div>}
+                                {plan.is_lifetime && <div className="pm-plan-tag best-value">💎 Best Value</div>}
+                                
+                                <div className="pm-plan-header">
+                                    <h2>{plan.name}</h2>
+                                    <p>{plan.description || "Comprehensive plan for your institute."}</p>
+                                </div>
+
+                                <div className="pm-plan-price">
+                                    {plan.is_free_trial ? (
+                                        <>
+                                            <span className="pm-price-main">₹0.00</span>
+                                            <span className="pm-price-old">₹{plan.price}</span>
+                                            <span className="pm-price-period">/ month</span>
+                                        </>
+                                    ) : plan.is_lifetime ? (
+                                        <>
+                                            <span className="pm-price-main">₹{plan.lifetime_price || plan.price}</span>
+                                            <span className="pm-price-period">/ one-time</span>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <span className="pm-price-main">₹{plan.price}</span>
+                                            <span className="pm-price-period">/ month</span>
+                                        </>
+                                    )}
+                                </div>
+
                                 {plan.is_free_trial ? (
-                                    <>
-                                        <span style={{ textDecoration: "line-through", color: "#9ca3af", marginRight: "0.5rem", fontSize: "1.2rem" }}>
-                                            ₹{plan.price}
-                                        </span>
-                                        <span style={{ color: "#10b981" }}>$0.00</span>
-                                    </>
+                                    <div className="pm-plan-badge trial">Trial Plan</div>
+                                ) : plan.is_hidden ? (
+                                    <div className="pm-plan-badge inactive">Inactive Plan</div>
                                 ) : (
-                                    <>₹{plan.price}</>
+                                    <div className="pm-plan-badge active">Active Plan</div>
                                 )}
-                                <span style={{ fontSize: "0.875rem", fontWeight: "normal", color: "#6b7280" }}> / month</span>
-                            </div>
 
-                            <div style={{ marginBottom: "1rem", paddingBottom: "1rem", borderBottom: "1px solid #e5e7eb", fontSize: "0.9rem" }}>
-                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '5px' }}>
-                                    <div><strong>Students:</strong> {plan.max_students}</div>
-                                    <div><strong>Faculty:</strong> {plan.max_faculty}</div>
-                                    <div><strong>Classes:</strong> {plan.max_classes}</div>
-                                    <div><strong>Admins:</strong> {plan.max_admin_users}</div>
-                                    <div><strong>Managers:</strong> {plan.max_managers}</div>
-                                    {plan.feature_chat && (
-                                        <div style={{ gridColumn: '1 / -1', color: '#6366f1' }}>
-                                            <strong>💬 Chat Limit:</strong> {plan.max_chat_messages === -1 ? '∞ Unlimited' : `${plan.max_chat_messages} msgs/mo`}
-                                        </div>
-                                    )}
-                                    {plan.is_free_trial && (
-                                        <div style={{ gridColumn: '1 / -1', color: '#10b981', fontWeight: 'bold' }}>
-                                            <strong>Trial Days:</strong> {plan.trial_days}
-                                        </div>
-                                    )}
+                                <ul className="pm-limits-list">
+                                    <li className="pm-limit-item">
+                                        <div className="pm-limit-left"><span className="pm-limit-icon">🧑‍🎓</span> Students</div>
+                                        <span className="pm-limit-value">{plan.max_students}</span>
+                                    </li>
+                                    <li className="pm-limit-item">
+                                        <div className="pm-limit-left"><span className="pm-limit-icon">👨‍🏫</span> Faculty</div>
+                                        <span className="pm-limit-value">{plan.max_faculty}</span>
+                                    </li>
+                                    <li className="pm-limit-item">
+                                        <div className="pm-limit-left"><span className="pm-limit-icon">🏫</span> Classes</div>
+                                        <span className="pm-limit-value">{plan.max_classes}</span>
+                                    </li>
+                                    <li className="pm-limit-item">
+                                        <div className="pm-limit-left"><span className="pm-limit-icon">👨‍💼</span> Admins</div>
+                                        <span className="pm-limit-value">{plan.max_admin_users}</span>
+                                    </li>
+                                    <li className="pm-limit-item">
+                                        <div className="pm-limit-left"><span className="pm-limit-icon">👥</span> Managers</div>
+                                        <span className="pm-limit-value">{plan.max_managers}</span>
+                                    </li>
+                                </ul>
+
+                                <div className="pm-features-title">Key Features</div>
+                                <ul className="pm-features-list">
+                                    {mainFeatures.map((feat, idx) => (
+                                        <li key={idx} className="pm-feature-item">
+                                            {feat.active ? (
+                                                <span className="pm-feature-check">✓</span>
+                                            ) : (
+                                                <span className="pm-feature-cross">✕</span>
+                                            )}
+                                            {feat.name}
+                                        </li>
+                                    ))}
+                                </ul>
+                                
+                                {activeMoreFeaturesCount > 0 && (
+                                    <button 
+                                        className="pm-more-features" 
+                                        onClick={() => toggleFeatures(plan.id)}
+                                        style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.25rem' }}
+                                    >
+                                        {expandedPlans[plan.id] ? '- Hide features' : `+ ${activeMoreFeaturesCount} more features`}
+                                    </button>
+                                )}
+
+                                {expandedPlans[plan.id] && (
+                                    <ul className="pm-features-list" style={{ marginTop: '0.5rem', maxHeight: '200px', overflowY: 'auto' }}>
+                                        {allFeatures.map((feat, idx) => (
+                                            <li key={`ext-${idx}`} className="pm-feature-item">
+                                                {feat.active ? (
+                                                    <span className="pm-feature-check">✓</span>
+                                                ) : (
+                                                    <span className="pm-feature-cross">✕</span>
+                                                )}
+                                                {feat.name}
+                                            </li>
+                                        ))}
+                                    </ul>
+                                )}
+
+                                <div className="pm-plan-actions">
+                                    <button className="pm-btn-edit" onClick={() => handleEdit(plan)}>Edit</button>
+                                    <button className="pm-btn-more" onClick={() => handleDelete(plan.id)} title="Delete Plan">⋮</button>
                                 </div>
                             </div>
-
-                            <ul style={{ listStyle: "none", padding: 0, margin: 0, fontSize: "0.85rem" }}>
-                                <li style={{ marginBottom: "0.3rem", display: "flex", justifyContent: "space-between" }}>
-                                    Attendance: <strong>{plan.feature_attendance !== 'none' ? plan.feature_attendance.toUpperCase() : "❌"}</strong>
-                                </li>
-                                <li style={{ marginBottom: "0.3rem", display: "flex", justifyContent: "space-between" }}>
-                                    Smart Attendance: <span>{plan.feature_auto_attendance ? "✅" : "❌"}</span>
-                                </li>
-                                <li style={{ marginBottom: "0.3rem", display: "flex", justifyContent: "space-between" }}>
-                                    Reports: <strong>{plan.feature_reports !== 'none' ? plan.feature_reports.toUpperCase() : "❌"}</strong>
-                                </li>
-                                <li style={{ marginBottom: "0.3rem", display: "flex", justifyContent: "space-between" }}>
-                                    Fees: <span>{plan.feature_fees ? "✅" : "❌"}</span>
-                                </li>
-                                <li style={{ marginBottom: "0.3rem", display: "flex", justifyContent: "space-between" }}>
-                                    Finance Dashboard: <span>{plan.feature_finance ? "✅" : "❌"}</span>
-                                </li>
-                                <li style={{ marginBottom: "0.3rem", display: "flex", justifyContent: "space-between" }}>
-                                    Faculty Salary: <span>{plan.feature_salary ? "✅" : "❌"}</span>
-                                </li>
-                                <li style={{ marginBottom: "0.3rem", display: "flex", justifyContent: "space-between" }}>
-                                    Exams: <span>{plan.feature_exams ? "✅" : "❌"}</span>
-                                </li>
-                                <li style={{ marginBottom: "0.3rem", display: "flex", justifyContent: "space-between" }}>
-                                    Timetable: <span>{plan.feature_timetable ? "✅" : "❌"}</span>
-                                </li>
-                                <li style={{ marginBottom: "0.3rem", display: "flex", justifyContent: "space-between" }}>
-                                    Assignments: <span>{plan.feature_assignment ? "✅" : "❌"}</span>
-                                </li>
-                                <li style={{ marginBottom: "0.3rem", display: "flex", justifyContent: "space-between" }}>
-                                    Performance Hub: <span>{plan.feature_performance_hub ? "✅" : "❌"}</span>
-                                </li>
-                                <li style={{ marginBottom: "0.3rem", display: "flex", justifyContent: "space-between" }}>
-                                    Finances & Transport: <span>{plan.feature_transport ? "✅" : "❌"}</span>
-                                </li>
-                                <li style={{ marginBottom: "0.3rem", display: "flex", justifyContent: "space-between" }}>
-                                    Notes: <span>{plan.feature_notes ? "✅" : "❌"}</span>
-                                </li>
-                                <li style={{ marginBottom: "0.3rem", display: "flex", justifyContent: "space-between" }}>
-                                    Academic Chat: <span>{plan.feature_chat ? "✅" : "❌"}</span>
-                                </li>
-                                <li style={{ marginBottom: "0.3rem", display: "flex", justifyContent: "space-between" }}>
-                                    Export Data: <span>{plan.feature_export ? "✅" : "❌"}</span>
-                                </li>
-                                <li style={{ marginBottom: "0.3rem", display: "flex", justifyContent: "space-between" }}>
-                                    Announcements: <span>{plan.feature_announcements ? "✅" : "❌"}</span>
-                                </li>
-                            </ul>
-
-                            <div style={{ display: "flex", gap: "0.5rem", marginTop: '1rem' }}>
-                                <button
-                                    className="btn btn-sm btn-primary"
-                                    onClick={() => handleEdit(plan)}
-                                    style={{ flex: 1 }}
-                                >
-                                    Edit
-                                </button>
-                                <button
-                                    className="btn btn-sm btn-danger"
-                                    onClick={() => handleDelete(plan.id)}
-                                    style={{ flex: 1 }}
-                                >
-                                    Delete
-                                </button>
-                            </div>
-                        </div>
-                    ))
+                        );
+                    })
                 )}
+            </div>
+
+            {/* Bottom Banner */}
+            <div className="pm-bottom-banner">
+                <div className="pm-banner-content">
+                    <div className="pm-banner-icon">⚙️</div>
+                    <div className="pm-banner-text">
+                        <h3>Need a custom plan?</h3>
+                        <p>Create a plan that perfectly fits your institute's requirements.</p>
+                    </div>
+                </div>
+                <button className="pm-btn-custom" onClick={() => { resetForm(); setShowModal(true); }}>
+                    <span>📝</span> Create Custom Plan
+                </button>
             </div>
 
             {/* Modal */}

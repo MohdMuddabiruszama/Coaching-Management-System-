@@ -31,8 +31,7 @@ router.get("/stats", requireExpensePerm("read"), expenseController.getExpenseSta
 
 // POST add expense — admin, super_admin, manager with expenses.create
 router.post("/", requireExpensePerm("create"), validate(expenseValidator.addExpense), expenseController.addExpense);
-
-// DELETE expense — admin, super_admin, manager with expenses.delete
+router.put("/:id", requireExpensePerm("update"), validate(expenseValidator.updateExpense), expenseController.updateExpense);
 router.delete("/:id", requireExpensePerm("delete"), validate(expenseValidator.deleteExpense), expenseController.deleteExpense);
 
 module.exports = router;

@@ -221,206 +221,257 @@ function Subscriptions() {
     };
 
     return (
-        <div className="dashboard-container" style={{ padding: '2rem', maxWidth: '1400px', margin: '0 auto' }}>
-            
+        <div className="sm-container">
+            <div className="sm-breadcrumb">
+                <Link to="/superadmin/dashboard">🏠 Dashboard</Link> &gt; <span>Subscriptions Management</span>
+            </div>
+
             {/* Header */}
-            <div className="subscriptions-header-modern">
-                <div>
-                    <h1>Subscriptions Management</h1>
-                    <p>Track and manage institute subscriptions, billing and revenue.</p>
+            <div className="sm-header">
+                <div className="sm-header-left">
+                    <div className="sm-header-icon">
+                        <FiCreditCard />
+                    </div>
+                    <div>
+                        <h1>Subscriptions Management</h1>
+                        <p>Track and manage institute subscriptions, billing and revenue.</p>
+                    </div>
                 </div>
-                <div className="subscriptions-actions">
-                    <ThemeSelector />
-                    
-                    <div className="action-menu-container">
-                        <button className="btn-export" onClick={() => setOpenActionId(openActionId === 'export' ? null : 'export')}>
+                <div className="sm-header-right">
+                    <div className="action-menu-container" style={{ position: 'relative' }}>
+                        <button className="sm-btn-export" onClick={() => setOpenActionId(openActionId === 'export' ? null : 'export')}>
                             <FiDownload /> Export
                         </button>
                         {openActionId === 'export' && (
-                            <div className="action-menu" style={{ right: 0, minWidth: '120px' }}>
-                                <div className="action-menu-item" onClick={() => { handleExport('excel'); setOpenActionId(null); }}>Excel (.xlsx)</div>
-                                <div className="action-menu-item" onClick={() => { handleExport('pdf'); setOpenActionId(null); }}>PDF Document</div>
+                            <div className="sm-action-menu">
+                                <div className="sm-action-menu-item" onClick={() => { handleExport('excel'); setOpenActionId(null); }}>Excel (.xlsx)</div>
+                                <div className="sm-action-menu-item" onClick={() => { handleExport('pdf'); setOpenActionId(null); }}>PDF Document</div>
                             </div>
                         )}
                     </div>
-
-                    <Link to="/superadmin/dashboard" style={{ textDecoration: 'none' }}>
-                        <button className="btn-back-dash">
-                            <FiArrowLeft /> Back to Dashboard
-                        </button>
-                    </Link>
+                    <button className="sm-btn-primary" onClick={() => alert("Add Subscription coming soon!")}>
+                        + Add Subscription
+                    </button>
                 </div>
             </div>
 
-            {/* Metrics Cards */}
-            <div className="modern-stats-grid">
-                <div className="modern-stat-card">
-                    <div className="modern-stat-icon purple"><FiCreditCard /></div>
-                    <div className="modern-stat-content">
+            {/* Stats Grid */}
+            <div className="sm-stats-grid">
+                <div className="sm-stat-card">
+                    <div className="sm-stat-icon-wrap purple"><FiCreditCard /></div>
+                    <div className="sm-stat-content">
                         <h3>Total Revenue</h3>
-                        <p className="stat-value">₹{metrics.total_revenue.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</p>
-                        <span className="stat-trend trend-up">↑ 12.5% vs last month</span>
+                        <p className="sm-stat-value">₹{metrics.total_revenue.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</p>
+                        <span className="sm-stat-trend up">↑ 12.5% vs last month</span>
                     </div>
                 </div>
-                <div className="modern-stat-card">
-                    <div className="modern-stat-icon green"><FiTag /></div>
-                    <div className="modern-stat-content">
+                <div className="sm-stat-card">
+                    <div className="sm-stat-icon-wrap green"><FiTag /></div>
+                    <div className="sm-stat-content">
                         <h3>Discounts Given</h3>
-                        <p className="stat-value">₹{metrics.total_discounts.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</p>
-                        <span className="stat-trend trend-up">↑ 8.3% vs last month</span>
+                        <p className="sm-stat-value">₹{metrics.total_discounts.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</p>
+                        <span className="sm-stat-trend up">↑ 8.3% vs last month</span>
                     </div>
                 </div>
-                <div className="modern-stat-card">
-                    <div className="modern-stat-icon blue"><FiFileText /></div>
-                    <div className="modern-stat-content">
+                <div className="sm-stat-card">
+                    <div className="sm-stat-icon-wrap blue"><FiFileText /></div>
+                    <div className="sm-stat-content">
                         <h3>Total Subscriptions</h3>
-                        <p className="stat-value">{metrics.total_subscriptions}</p>
-                        <span className="stat-trend trend-up">↑ 5.7% vs last month</span>
+                        <p className="sm-stat-value">{metrics.total_subscriptions}</p>
+                        <span className="sm-stat-trend up">↑ 5.7% vs last month</span>
                     </div>
                 </div>
-                <div className="modern-stat-card">
-                    <div className="modern-stat-icon yellow"><FiRefreshCw /></div>
-                    <div className="modern-stat-content">
+                <div className="sm-stat-card">
+                    <div className="sm-stat-icon-wrap yellow"><FiRefreshCw /></div>
+                    <div className="sm-stat-content">
                         <h3>Active Subscriptions</h3>
-                        <p className="stat-value">{metrics.paid_count}</p>
-                        <span className="stat-trend trend-neutral">{metrics.total_subscriptions > 0 ? Math.round((metrics.paid_count / metrics.total_subscriptions)*100) : 0}% of total</span>
+                        <p className="sm-stat-value">{metrics.paid_count}</p>
+                        <span className="sm-stat-trend neutral">{metrics.total_subscriptions > 0 ? Math.round((metrics.paid_count / metrics.total_subscriptions)*100) : 0}% of total</span>
                     </div>
                 </div>
             </div>
 
             {/* Filter Bar */}
-            <div className="modern-filters-bar">
-                <div className="modern-filter-group search-group">
-                    <FiSearch className="modern-filter-icon" />
+            <div className="sm-filter-bar">
+                <div className="sm-search-wrap">
+                    <FiSearch className="sm-search-icon" />
                     <input 
                         type="text" 
-                        placeholder="Search institute name or email..." 
+                        className="sm-search-input"
+                        placeholder="Search by institute name, email or plan..." 
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                     />
                 </div>
                 
-                <div className="filter-wrapper">
-                    <span className="modern-filter-label">Date Range</span>
-                    <div className="modern-filter-group">
-                        <FiCalendar className="modern-filter-icon" />
-                        <select value={dateRangeFilter} onChange={(e) => { setDateRangeFilter(e.target.value); setPage(1); }}>
+                <div className="sm-filter-group">
+                    <span className="sm-filter-label">Date Range</span>
+                    <div className="sm-filter-select-wrap">
+                        <FiCalendar className="sm-filter-icon" />
+                        <select className="sm-filter-select" value={dateRangeFilter} onChange={(e) => { setDateRangeFilter(e.target.value); setPage(1); }}>
                             <option value="all_time">All Time</option>
                             <option value="this_month">This Month</option>
                             <option value="last_month">Last Month</option>
                         </select>
+                        <span className="sm-select-arrow">▼</span>
                     </div>
                 </div>
 
-                <div className="filter-wrapper">
-                    <span className="modern-filter-label">Plan</span>
-                    <div className="modern-filter-group">
-                        <select value={planFilter} onChange={(e) => { setPlanFilter(e.target.value); setPage(1); }}>
+                <div className="sm-filter-group">
+                    <span className="sm-filter-label">Plan</span>
+                    <div className="sm-filter-select-wrap">
+                        <select className="sm-filter-select" value={planFilter} onChange={(e) => { setPlanFilter(e.target.value); setPage(1); }}>
                             <option value="">All Plans</option>
                             <option value="basic">Basic</option>
                             <option value="starter">Starter</option>
                             <option value="professional">Professional</option>
                             <option value="enterprise">Enterprise</option>
                         </select>
+                        <span className="sm-select-arrow">▼</span>
                     </div>
                 </div>
 
-                <div className="filter-wrapper">
-                    <span className="modern-filter-label">Status</span>
-                    <div className="modern-filter-group">
-                        <select value={statusFilter} onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}>
+                <div className="sm-filter-group">
+                    <span className="sm-filter-label">Status</span>
+                    <div className="sm-filter-select-wrap">
+                        <select className="sm-filter-select" value={statusFilter} onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}>
                             <option value="">All Status</option>
                             <option value="paid">Paid</option>
                             <option value="pending">Pending</option>
                             <option value="failed">Failed</option>
                         </select>
+                        <span className="sm-select-arrow">▼</span>
+                    </div>
+                </div>
+                
+                <div className="sm-filter-group">
+                    <span className="sm-filter-label" style={{ visibility: 'hidden' }}>Payment Status</span>
+                    <div className="sm-filter-select-wrap">
+                        <select className="sm-filter-select" disabled>
+                            <option value="">All Payments</option>
+                        </select>
+                        <span className="sm-select-arrow">▼</span>
                     </div>
                 </div>
 
-                <button className="btn-filter" onClick={() => { setSearchQuery(''); setDateRangeFilter('all_time'); setPlanFilter(''); setStatusFilter(''); }}>
-                    <FiFilter /> Filters
+                <button className="sm-btn-more-filters">
+                    <FiFilter /> More Filters
+                </button>
+                <button className="sm-btn-reset-filters" onClick={() => { setSearchQuery(''); setDateRangeFilter('this_month'); setPlanFilter(''); setStatusFilter(''); }}>
+                    Reset Filters
                 </button>
             </div>
 
             {/* Table */}
-            <div className="modern-table-card">
+            <div className="sm-table-container">
+                <h3 className="sm-table-title">Subscriptions ({totalRecords})</h3>
                 <div style={{ overflowX: 'auto' }}>
-                    <table className="modern-table">
+                    <table className="sm-table">
                         <thead>
                             <tr>
-                                <th>ID & Institute</th>
-                                <th>Plan Details</th>
-                                <th>Original Amount</th>
+                                <th>Institute</th>
+                                <th>Plan & Billing</th>
+                                <th>Amount</th>
                                 <th>Discount</th>
                                 <th>GST</th>
-                                <th>Total Amount</th>
+                                <th>Total</th>
                                 <th>Period</th>
                                 <th>Status</th>
+                                <th>Payment</th>
                                 <th style={{ textAlign: 'right' }}>Actions</th>
                             </tr>
                         </thead>
                         <tbody>
                             {loading ? (
                                 <tr>
-                                    <td colSpan="9" style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)' }}>
+                                    <td colSpan="10" style={{ textAlign: 'center', padding: '3rem', color: '#64748b' }}>
                                         Loading subscriptions...
                                     </td>
                                 </tr>
                             ) : subscriptions.length === 0 ? (
                                 <tr>
-                                    <td colSpan="9" style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)' }}>
+                                    <td colSpan="10" style={{ textAlign: 'center', padding: '3rem', color: '#64748b' }}>
                                         No results found.
                                     </td>
                                 </tr>
                             ) : (
-                                subscriptions.map(sub => (
-                                    <tr key={sub.id} style={{ backgroundColor: sub.is_test ? 'rgba(245, 158, 11, 0.03)' : 'transparent' }}>
+                                subscriptions.map(sub => {
+                                    // Calculate days left
+                                    let daysLeft = null;
+                                    if (sub.end_date && new Date(sub.end_date).getFullYear() > 1970) {
+                                        const end = new Date(sub.end_date);
+                                        const now = new Date();
+                                        const diffTime = end - now;
+                                        daysLeft = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                                    }
+                                    const instName = sub.Institute?.name || 'Unknown';
+                                    const nameParts = instName.split(' ').filter(p => p.length > 0);
+                                    const initial = nameParts.length > 1 
+                                        ? (nameParts[0][0] + nameParts[1][0]).toUpperCase() 
+                                        : instName.substring(0, 2).toUpperCase();
+                                    
+                                    // Generate a stable color based on name
+                                    const colors = ['#8b5cf6', '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#ec4899'];
+                                    const colorIdx = instName.charCodeAt(0) % colors.length;
+                                    const avatarBg = colors[colorIdx] + '20'; // 20% opacity
+                                    const avatarColor = colors[colorIdx];
+
+                                    return (
+                                    <tr key={sub.id}>
                                         <td>
-                                            <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
-                                                <div className="id-circle">#{sub.id}</div>
+                                            <div className="sm-inst-cell">
+                                                <div className="sm-avatar" style={{ backgroundColor: avatarBg, color: avatarColor }}>
+                                                    {initial}
+                                                </div>
                                                 <div>
-                                                    <span className="institute-name">
-                                                        {sub.Institute?.name || 'Unknown'} {sub.is_test && ' 🧪'}
-                                                    </span>
-                                                    <span className="institute-email">{sub.Institute?.email || '-'}</span>
+                                                    <div className="sm-inst-name">
+                                                        {instName}
+                                                        {!sub.is_test && <span className="sm-verified-badge">Verified</span>}
+                                                    </div>
+                                                    <div className="sm-inst-email">{sub.Institute?.email || '-'}</div>
                                                 </div>
                                             </div>
                                         </td>
                                         <td>
-                                            <span className="plan-name">{sub.Plan?.name || 'Custom'} {sub.Plan?.platform_type && `+ ${sub.Plan.platform_type}`}</span>
-                                            <span className="plan-billing">{sub.billing_cycle || 'monthly'} Billing</span>
+                                            <div className="sm-plan-details">{sub.Plan?.name || 'Custom'} {sub.Plan?.platform_type && `+ ${sub.Plan.platform_type}`}</div>
+                                            <div className="sm-billing-cycle">{sub.billing_cycle === 'yearly' ? 'Yearly Billing' : 'Monthly Billing'}</div>
                                         </td>
                                         <td>
-                                            <span className="amount-text">₹{(parseFloat(sub.original_price || sub.amount_paid)).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                                            <div className="sm-amount-text">₹{(parseFloat(sub.original_price || sub.amount_paid)).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>
                                         </td>
                                         <td>
                                             {sub.discount_applied ? (
                                                 <div>
-                                                    <span className="discount-text-percent">
+                                                    <div className="sm-discount-percent">
                                                         {Math.round((parseFloat(sub.discount_amount) / parseFloat(sub.original_price)) * 100)}% Off
-                                                    </span>
-                                                    <span className="discount-text-amount">-₹{parseFloat(sub.discount_amount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                                                    </div>
+                                                    <div className="sm-discount-amount">-₹{parseFloat(sub.discount_amount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>
                                                 </div>
                                             ) : (
-                                                <span style={{ color: 'var(--text-muted)' }}>-</span>
+                                                <span style={{ color: '#94a3b8' }}>-</span>
                                             )}
                                         </td>
                                         <td>
-                                            <span className="amount-text">₹{parseFloat(sub.tax_amount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                                            <div className="sm-amount-text">₹{parseFloat(sub.tax_amount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>
                                         </td>
                                         <td>
-                                            <span className="amount-text" style={{ fontSize: '1.05rem' }}>₹{parseFloat(sub.amount_paid || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                                            <div className="sm-amount-text">₹{parseFloat(sub.amount_paid || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>
                                         </td>
-                                        <td style={{ padding: '1rem' }}>
+                                        <td>
                                             {sub.start_date && new Date(sub.start_date).getFullYear() > 1970 ? (
                                                 <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
-                                                    <div style={{ fontSize: '0.85rem', color: 'var(--text-primary)' }}>
-                                                        <div><span style={{ color: 'var(--text-muted)', width: '35px', display: 'inline-block' }}>From:</span> {new Date(sub.start_date).toLocaleDateString('en-GB')}</div>
-                                                        <div><span style={{ color: 'var(--text-muted)', width: '35px', display: 'inline-block' }}>To:</span> {new Date(sub.end_date).toLocaleDateString('en-GB')}</div>
+                                                    <div>
+                                                        <div className="sm-period-date">{new Date(sub.start_date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</div>
+                                                        <div className="sm-period-to">to</div>
+                                                        <div className="sm-period-date">{new Date(sub.end_date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</div>
+                                                        {daysLeft !== null && (
+                                                            <div className={`sm-period-days ${daysLeft < 30 ? 'sm-days-danger' : 'sm-days-success'}`}>
+                                                                ({daysLeft} days left)
+                                                            </div>
+                                                        )}
                                                     </div>
                                                     <button 
-                                                        className="btn btn-sm btn-secondary"
-                                                        style={{ padding: '0.2rem 0.5rem', fontSize: '0.75rem', marginLeft: '0.5rem', cursor: 'pointer' }}
+                                                        style={{ padding: '0.2rem', marginLeft: '0.5rem', cursor: 'pointer', background: 'transparent', border: 'none', color: '#64748b', fontSize: '1rem' }}
                                                         onClick={() => handleOpenEditPeriod(sub)}
                                                         title="Edit Period"
                                                     >
@@ -428,39 +479,50 @@ function Subscriptions() {
                                                     </button>
                                                 </div>
                                             ) : (
-                                                <span className="period-text" style={{ color: 'var(--text-muted)' }}>Pending</span>
+                                                <span style={{ color: '#94a3b8' }}>Pending</span>
                                             )}
                                         </td>
                                         <td>
-                                            <div className={`status-badge ${sub.payment_status}`}>
-                                                <div className="status-dot"></div>
-                                                {sub.payment_status === 'paid' ? 'Paid' : sub.payment_status === 'pending' ? 'Pending' : 'Failed'}
+                                            <div className={`sm-badge ${sub.payment_status === 'paid' ? 'active' : sub.payment_status}`}>
+                                                <div className="sm-badge-dot"></div>
+                                                Active
                                             </div>
                                         </td>
+                                        <td>
+                                            <div className={`sm-badge ${sub.payment_status}`}>
+                                                <div className="sm-badge-dot"></div>
+                                                {sub.payment_status === 'paid' ? 'Paid' : sub.payment_status === 'pending' ? 'Pending' : 'Failed'}
+                                            </div>
+                                            {sub.payment_date && (
+                                                <span className="sm-payment-date">{new Date(sub.payment_date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
+                                            )}
+                                        </td>
                                         <td style={{ textAlign: 'right' }}>
-                                            <div className="action-menu-container" ref={openActionId === sub.id ? actionMenuRef : null} style={{ display: 'inline-block' }}>
-                                                <button className="btn-actions" onClick={() => setOpenActionId(openActionId === sub.id ? null : sub.id)}>
+                                            <div className="action-menu-container" ref={openActionId === sub.id ? actionMenuRef : null} style={{ display: 'inline-block', position: 'relative' }}>
+                                                <button className="sm-btn-actions" onClick={() => setOpenActionId(openActionId === sub.id ? null : sub.id)} style={{ background: 'transparent', border: 'none', cursor: 'pointer', fontSize: '1.2rem', padding: '0.25rem' }}>
                                                     <FiMoreVertical />
                                                 </button>
                                                 
                                                 {openActionId === sub.id && (
-                                                    <div className="action-menu">
+                                                    <div className="sm-action-menu">
+                                                        <div className="sm-action-menu-item" onClick={() => { setOpenActionId(null); handleOpenEditPeriod(sub); }}>Edit Period</div>
                                                         {sub.payment_status !== 'paid' && (
-                                                            <div className="action-menu-item" onClick={() => handleUpdateStatus(sub.id, 'paid')}>Mark Paid</div>
+                                                            <div className="sm-action-menu-item" onClick={() => handleUpdateStatus(sub.id, 'paid')}>Mark Paid</div>
                                                         )}
                                                         {sub.payment_status !== 'failed' && (
-                                                            <div className="action-menu-item" onClick={() => handleUpdateStatus(sub.id, 'failed')}>Mark Failed</div>
+                                                            <div className="sm-action-menu-item" onClick={() => handleUpdateStatus(sub.id, 'failed')}>Mark Failed</div>
                                                         )}
-                                                        <div className="action-menu-item" onClick={() => handleToggleTest(sub.institute_id, sub.is_test)}>
+                                                        <div className="sm-action-menu-item" onClick={() => handleToggleTest(sub.institute_id, sub.is_test)}>
                                                             {sub.is_test ? 'Switch to Live Account' : 'Switch to Test Account'}
                                                         </div>
-                                                        <div className="action-menu-item danger" onClick={() => handleUpdateStatus(sub.id, 'deleted')}>Delete Record</div>
+                                                        <div className="sm-action-menu-item danger" onClick={() => handleUpdateStatus(sub.id, 'deleted')}>Delete Record</div>
                                                     </div>
                                                 )}
                                             </div>
                                         </td>
                                     </tr>
-                                ))
+                                    );
+                                })
                             )}
                         </tbody>
                     </table>
@@ -468,28 +530,35 @@ function Subscriptions() {
 
                 {/* Pagination */}
                 {totalRecords > 0 && (
-                    <div className="modern-pagination">
-                        <div className="pagination-info">
+                    <div className="sm-pagination">
+                        <div className="sm-pagination-text">
                             Showing {(page - 1) * limit + 1} to {Math.min(page * limit, totalRecords)} of {totalRecords} results
                         </div>
-                        <div className="pagination-controls">
-                            <button className="page-btn" disabled={page === 1} onClick={() => setPage(p => p - 1)}>&lt;</button>
-                            {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                                // Simple sliding window for page numbers
-                                let pageNum = i + 1;
-                                if (totalPages > 5 && page > 3) pageNum = page - 2 + i;
-                                if (pageNum > totalPages) return null;
-                                return (
-                                    <button 
-                                        key={pageNum} 
-                                        className={`page-btn ${page === pageNum ? 'active' : ''}`}
-                                        onClick={() => setPage(pageNum)}
-                                    >
-                                        {pageNum}
-                                    </button>
-                                );
-                            })}
-                            <button className="page-btn" disabled={page === totalPages} onClick={() => setPage(p => p + 1)}>&gt;</button>
+                        <div className="sm-pagination-controls">
+                            <div className="sm-per-page">
+                                Rows per page:
+                                <select defaultValue="10" disabled>
+                                    <option value="10">10</option>
+                                </select>
+                            </div>
+                            <div className="sm-page-buttons">
+                                <button className="sm-page-btn" disabled={page === 1} onClick={() => setPage(p => p - 1)}>&lt;</button>
+                                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                                    let pageNum = i + 1;
+                                    if (totalPages > 5 && page > 3) pageNum = page - 2 + i;
+                                    if (pageNum > totalPages) return null;
+                                    return (
+                                        <button 
+                                            key={pageNum} 
+                                            className={`sm-page-btn ${page === pageNum ? 'active' : ''}`}
+                                            onClick={() => setPage(pageNum)}
+                                        >
+                                            {pageNum}
+                                        </button>
+                                    );
+                                })}
+                                <button className="sm-page-btn" disabled={page === totalPages} onClick={() => setPage(p => p + 1)}>&gt;</button>
+                            </div>
                         </div>
                     </div>
                 )}
@@ -497,44 +566,42 @@ function Subscriptions() {
             
             {/* Edit Period Modal */}
             {editPeriodModal.show && (
-                <div className="modal-overlay">
-                    <div className="modal-content" style={{ maxWidth: '400px' }}>
-                        <div className="modal-header">
+                <div className="sm-modal-overlay">
+                    <div className="sm-modal-content">
+                        <div className="sm-modal-header">
                             <h2>Edit Subscription Period</h2>
-                            <button onClick={() => setEditPeriodModal({ show: false, subscription: null, start_date: '', end_date: '' })} className="close-btn">&times;</button>
+                            <button onClick={() => setEditPeriodModal({ show: false, subscription: null, start_date: '', end_date: '' })} className="sm-close-btn">&times;</button>
                         </div>
-                        <div className="modal-body">
-                            <div className="form-group" style={{ marginBottom: "1rem" }}>
-                                <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: "500" }}>Start Date</label>
+                        <div className="sm-modal-body">
+                            <div style={{ marginBottom: "1rem" }}>
+                                <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: "500", color: '#475569' }}>Start Date</label>
                                 <input 
                                     type="date" 
-                                    className="form-control" 
                                     value={editPeriodModal.start_date}
                                     onChange={(e) => setEditPeriodModal({...editPeriodModal, start_date: e.target.value})}
-                                    style={{ width: "100%", padding: "0.5rem", borderRadius: "4px", border: "1px solid var(--border-color)" }}
+                                    style={{ width: "100%", padding: "0.6rem", borderRadius: "8px", border: "1px solid #e2e8f0", outline: "none" }}
                                 />
                             </div>
-                            <div className="form-group" style={{ marginBottom: "1.5rem" }}>
-                                <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: "500" }}>End Date</label>
+                            <div style={{ marginBottom: "1.5rem" }}>
+                                <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: "500", color: '#475569' }}>End Date</label>
                                 <input 
                                     type="date" 
-                                    className="form-control" 
                                     value={editPeriodModal.end_date}
                                     onChange={(e) => setEditPeriodModal({...editPeriodModal, end_date: e.target.value})}
-                                    style={{ width: "100%", padding: "0.5rem", borderRadius: "4px", border: "1px solid var(--border-color)" }}
+                                    style={{ width: "100%", padding: "0.6rem", borderRadius: "8px", border: "1px solid #e2e8f0", outline: "none" }}
                                 />
                             </div>
                         </div>
-                        <div className="modal-footer" style={{ display: "flex", justifyContent: "flex-end", gap: "1rem", marginTop: '1rem', borderTop: '1px solid var(--border-color)', paddingTop: '1rem' }}>
+                        <div className="sm-modal-footer">
                             <button 
-                                className="btn btn-secondary"
                                 onClick={() => setEditPeriodModal({ show: false, subscription: null, start_date: '', end_date: '' })}
+                                style={{ padding: '0.6rem 1.2rem', borderRadius: '8px', border: '1px solid #e2e8f0', background: 'transparent', cursor: 'pointer', fontWeight: '600', color: '#475569' }}
                             >
                                 Cancel
                             </button>
                             <button 
-                                className="btn btn-primary"
                                 onClick={handleUpdatePeriod}
+                                style={{ padding: '0.6rem 1.2rem', borderRadius: '8px', border: 'none', background: '#4f46e5', color: 'white', cursor: 'pointer', fontWeight: '600' }}
                             >
                                 Save Changes
                             </button>

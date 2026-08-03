@@ -49,8 +49,26 @@ const deleteExpense = {
     params: idParam,
 };
 
+const updateExpense = {
+    params: idParam,
+    body: Joi.object({
+        title: Joi.string().trim().min(1).max(255).optional(),
+        category: Joi.string().trim().min(1).max(100).optional(),
+        amount: Joi.alternatives().try(
+            Joi.number().positive().max(100000000),
+            Joi.string().pattern(/^\d+(\.\d{1,2})?$/)
+        ).optional(),
+        date: Joi.alternatives().try(
+            dateISO,
+            Joi.string().pattern(/^\d{4}-\d{2}-\d{2}$/)
+        ).optional().allow(null, ""),
+        description: Joi.string().max(500).optional().allow("", null),
+    }),
+};
+
 module.exports = {
     addExpense,
     getExpenses,
     deleteExpense,
+    updateExpense,
 };
