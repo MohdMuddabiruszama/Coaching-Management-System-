@@ -17,16 +17,20 @@ const isStudentLinked = async (parent_id, student_id) => {
  */
 exports.createParent = async (req, res) => {
     try {
-        const { name, email, phone, password, student_ids, relationships } = req.body;
+        const { name, phone, password, student_ids, relationships } = req.body;
+        // Normalize: treat empty string as no email provided
+        const email = req.body.email ? req.body.email.trim().toLowerCase() || null : null;
         const institute_id = req.user.institute_id;
 
-        if (!name || !email || !phone) {
-            return res.status(400).json({ success: false, message: "Name, email and phone are required" });
+        if (!name || !phone) {
+            return res.status(400).json({ success: false, message: "Name and phone are required" });
         }
 
-        const existingUser = await User.findOne({ where: { email, institute_id } });
-        if (existingUser) {
-            return res.status(409).json({ success: false, message: "User with this email already exists" });
+        if (email) {
+            const existingUser = await User.findOne({ where: { email, institute_id } });
+            if (existingUser) {
+                return res.status(409).json({ success: false, message: "User with this email already exists" });
+            }
         }
 
         const { generateTempPassword } = require('../utils/passwordGenerator');

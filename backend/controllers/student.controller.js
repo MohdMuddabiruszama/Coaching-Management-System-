@@ -19,7 +19,6 @@ exports.createStudent = catchAsync(async (req, res) => {
   try {
     const {
       name,
-      email,
       phone,
       password,
       roll_number,
@@ -28,10 +27,12 @@ exports.createStudent = catchAsync(async (req, res) => {
       date_of_birth,
       gender,
       address,
-      subject_ids, // New array of selected subject ids
-      class_ids, // New array of selected class ids
-      status // New field for account status
+      subject_ids,
+      class_ids,
+      status
     } = req.body;
+    // Normalize: treat empty string as no email provided
+    const email = req.body.email ? req.body.email.trim().toLowerCase() || null : null;
 
     const institute_id = req.user.institute_id;
 
@@ -56,19 +57,21 @@ exports.createStudent = catchAsync(async (req, res) => {
       }
     }
 
-    // Check if student email already exists in this institute
-    const existingUser = await User.findOne({
-      where: { email, institute_id },
-      transaction
-    });
-
-    if (existingUser) {
-      await transaction.rollback();
-      transaction = null;
-      return res.status(409).json({
-        success: false,
-        message: "Student with this email already exists in your institute"
+    // Check if student email already exists in this institute (only when email is provided)
+    if (email) {
+      const existingUser = await User.findOne({
+        where: { email, institute_id },
+        transaction
       });
+
+      if (existingUser) {
+        await transaction.rollback();
+        transaction = null;
+        return res.status(409).json({
+          success: false,
+          message: "Student with this email already exists in your institute"
+        });
+      }
     }
 
     // Validate mandatory date fields BEFORE creating any DB records

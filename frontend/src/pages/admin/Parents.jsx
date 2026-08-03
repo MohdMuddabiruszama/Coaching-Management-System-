@@ -809,7 +809,7 @@ function Parents() {
                                         />
                                     </div>
                                     <div className="ap-form-group">
-                                        <label className="ap-form-label">Email Address <span>*</span></label>
+                                        <label className="ap-form-label">Email Address <span style={{color:'#6b7280', fontWeight: 400, fontSize: '0.78rem'}}>(optional)</span></label>
                                         <div className="ap-input-wrapper">
                                             <input
                                                 type="email"
@@ -818,7 +818,6 @@ function Parents() {
                                                 placeholder="e.g., rajesh.kumar@example.com"
                                                 value={formData.email}
                                                 onChange={handleChange}
-                                                required
                                             />
                                             <div className="ap-input-icon"><MailIcon /></div>
                                         </div>

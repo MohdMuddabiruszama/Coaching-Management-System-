@@ -9,7 +9,7 @@ const createStudent = {
     body: Joi.object({
         name: Joi.string().trim().min(2).max(100).required()
             .messages({ "string.min": "Student name must be at least 2 characters" }),
-        email: email.required(),
+        email: email.optional().allow('', null),
         phone: phone.optional().allow("", null),
         roll_number: Joi.string().max(50).optional().allow("", null),
         class_id: Joi.number().integer().positive().optional().allow(null),

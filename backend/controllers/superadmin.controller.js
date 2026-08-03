@@ -15,7 +15,7 @@ const {
     StudentClass, StudentSubject, TransportFee,
     BiometricSettings, AssignmentSubmissionHistory,
     SlowRequestLog, AuditLog, BulkImportLog, UsageTracker, InstituteAddOn, SubscriptionEvent,
-    Lead
+    Lead, RefreshToken, DeviceToken, Notification, NotificationPref, AnnouncementRead
 } = require("../models");
 const { Op, fn, col, literal, Sequelize } = require("sequelize");
 const NodeCache = require('node-cache');
@@ -761,13 +761,29 @@ exports.deleteInstitute = async (req, res) => {
         await InstituteAddOn.destroy({ where: { institute_id: id }, transaction: t });
         await SubscriptionEvent.destroy({ where: { institute_id: id }, transaction: t });
 
-        await User.destroy({
+        // ── Tier 6: Users (admin, managers, faculty, student for this institute) ─
+        // We must first delete any dependent records (tokens, notifications) 
+        // to prevent Foreign Key constraint violations before deleting the Users.
+        const users = await User.findAll({
             where: {
                 institute_id: id,
                 role: { [Op.in]: ['admin', 'manager', 'faculty', 'student'] }
             },
+            attributes: ['id'],
             transaction: t
         });
+
+        const userIds = users.map(u => u.id);
+
+        if (userIds.length > 0) {
+            await RefreshToken.destroy({ where: { user_id: { [Op.in]: userIds } }, transaction: t });
+            await DeviceToken.destroy({ where: { user_id: { [Op.in]: userIds } }, transaction: t });
+            await Notification.destroy({ where: { user_id: { [Op.in]: userIds } }, transaction: t });
+            await NotificationPref.destroy({ where: { user_id: { [Op.in]: userIds } }, transaction: t });
+            await AnnouncementRead.destroy({ where: { user_id: { [Op.in]: userIds } }, transaction: t });
+
+            await User.destroy({ where: { id: { [Op.in]: userIds } }, transaction: t });
+        }
 
         // ── Tier 7: Public page & institute-level data ────────────────
         await InstitutePublicProfile.destroy({ where: { institute_id: id }, transaction: t });
