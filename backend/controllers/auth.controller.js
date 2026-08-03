@@ -187,16 +187,16 @@ exports.registerInstitute = catchAsync(async (req, res) => {
  */
 exports.login = catchAsync(async (req, res) => {
   try {
-    const { email, password, source } = req.body;
+    const { identifier, password, source } = req.body;
 
-    if (!email || !password) {
+    if (!identifier || !password) {
       return res.status(400).json({
         success: false,
-        message: "Email and password are required"
+        message: "Email/Mobile number and password are required"
       });
     }
 
-    const user = await authService.loginUser(email, password);
+    const user = await authService.loginUser(identifier.trim(), password);
 
     // Check if user's institute is suspended
     if (user.role !== 'super_admin' && user.Institute) {
@@ -331,7 +331,9 @@ exports.login = catchAsync(async (req, res) => {
     console.error("Login error:", error);
     res.status(401).json({
       success: false,
-      message: error.message || "Login failed"
+      message: error.message === "User not found"
+        ? "Account not found. Please check your email or mobile number."
+        : error.message || "Login failed"
     });
   }
 });

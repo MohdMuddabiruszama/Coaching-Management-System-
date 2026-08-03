@@ -25,7 +25,7 @@ function Login() {
   const { setTheme, isDark } = useContext(ThemeContext);
   const branding = useContext(BrandingContext);
 
-  const [formData, setFormData] = useState({ email: "", password: "" });
+  const [formData, setFormData] = useState({ identifier: "", password: "" });
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
   const [showPass, setShowPass] = useState(false);
@@ -111,7 +111,15 @@ function Login() {
 
     // Local Validation Check to prevent unnecessary network requests
     let localErrors = {};
-    if (!formData.email.trim()) localErrors.email = "Please enter your email";
+    const raw = formData.identifier.trim();
+    const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(raw);
+    const isPhone = /^[6-9]\d{9}$/.test(raw);
+
+    if (!raw) {
+      localErrors.identifier = "Please enter your email or mobile number";
+    } else if (!isEmail && !isPhone) {
+      localErrors.identifier = "Enter a valid email or a 10-digit mobile number";
+    }
     if (!formData.password) localErrors.password = "Please enter your password";
 
     if (Object.keys(localErrors).length > 0) {
@@ -176,8 +184,8 @@ function Login() {
 
       const msg = err.response?.data?.message || "Login failed. Please check your credentials.";
 
-      if (msg.toLowerCase().includes("not found") || msg.toLowerCase().includes("email")) {
-        setErrors({ email: "Email not registered. Please check again." });
+      if (msg.toLowerCase().includes("not found") || msg.toLowerCase().includes("account not found")) {
+        setErrors({ identifier: "No account found. Please check your email or mobile number." });
         scrollToErr();
       } else if (msg.toLowerCase().includes("incorrect password") || msg.toLowerCase().includes("credentials")) {
         setErrors({ password: "Incorrect password. Please try again." });
@@ -287,22 +295,26 @@ function Login() {
           {/* Form */}
           <form onSubmit={handleSubmit} className="auth-form">
             <div className="auth-field">
-              <label htmlFor="email" className="auth-label">
-                <span className="auth-label__icon">✉️</span>
-                Email Address
+              <label htmlFor="identifier" className="auth-label">
+                <span className="auth-label__icon">👤</span>
+                Email or Mobile Number
               </label>
               <input
-                type="email"
-                id="email"
-                name="email"
-                className={`auth-input${errors.email ? " auth-input--error" : ""}`}
-                placeholder="you@example.com"
-                value={formData.email}
+                type="text"
+                id="identifier"
+                name="identifier"
+                className={`auth-input${errors.identifier ? " auth-input--error" : ""}`}
+                placeholder="Email or 10-digit mobile number"
+                value={formData.identifier}
                 onChange={handleChange}
+                autoComplete="username"
+                autoCapitalize="off"
+                autoCorrect="off"
+                spellCheck="false"
                 required
                 autoFocus
               />
-              {errors.email && <span className="auth-field-error" style={{ color: "#EF4444", fontSize: "0.85rem", marginTop: "4px", display: "block" }}>{errors.email}</span>}
+              {errors.identifier && <span className="auth-field-error" style={{ color: "#EF4444", fontSize: "0.85rem", marginTop: "4px", display: "block" }}>{errors.identifier}</span>}
             </div>
 
             <div className="auth-field">

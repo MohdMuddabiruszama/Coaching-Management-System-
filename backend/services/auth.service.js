@@ -149,9 +149,15 @@ exports.registerInstitute = async (data) => {
     return { institute, adminUser };
 };
 
-exports.loginUser = async (email, password) => {
+exports.loginUser = async (identifier, password) => {
+    // ─── Auto-detect: email contains '@', phone is 10-digit Indian mobile ───
+    const isPhone = /^[6-9]\d{9}$/.test(identifier);
+    const whereClause = isPhone
+        ? { phone: identifier }
+        : { email: identifier.toLowerCase() };
+
     const user = await User.findOne({
-        where: { email },
+        where: whereClause,
         include: [
             {
                 model: Institute,

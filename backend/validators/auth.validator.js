@@ -6,8 +6,12 @@ const Joi = require("joi");
 
 const login = {
     body: Joi.object({
-        email: Joi.string().email().required().trim().lowercase()
-            .messages({ "string.email": "Please enter a valid email address" }),
+        // Accept either a valid email OR a 10-digit Indian mobile number
+        identifier: Joi.string().required().trim()
+            .messages({
+                "any.required": "Email or mobile number is required",
+                "string.empty": "Email or mobile number is required"
+            }),
         password: Joi.string().min(1).required()
             .messages({ "string.empty": "Password is required" }),
         source: Joi.string().valid("web", "mobile").optional(),
