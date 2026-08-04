@@ -32,12 +32,26 @@ const getAddress = (inst) => {
 const parseDevice = (userAgent) => {
     if (!userAgent) return "Unknown Device";
     const ua = userAgent.toLowerCase();
+    
+    // 1. Tablets
+    if (ua.includes('ipad') || (ua.includes('macintosh') && ua.includes('touch'))) return "Tablet (iOS)";
+    if (ua.includes('tablet') || (ua.includes('android') && !ua.includes('mobile'))) return "Tablet (Android)";
+    
+    // 2. Mobiles
+    if (ua.includes('iphone')) return "Mobile (iOS)";
+    if (ua.includes('android') && ua.includes('mobile')) return "Mobile (Android)";
+    if (ua.includes('mobile')) return "Mobile Device";
+    
+    // 3. Desktop / Web
     if (ua.includes('windows')) return "Windows PC";
-    if (ua.includes('macintosh') || ua.includes('mac os')) return "Mac";
-    if (ua.includes('android')) return "Android Mobile";
-    if (ua.includes('iphone') || ua.includes('ipad')) return "iOS Mobile";
-    if (ua.includes('linux')) return "Linux PC";
-    return "Unknown Device";
+    if (ua.includes('macintosh') || ua.includes('mac os')) return "Mac OS";
+    // Avoid classifying mobile emulator strings as Linux PC just because they have 'linux' but lack 'android'
+    if (ua.includes('linux') && !ua.includes('android') && !ua.includes('mobile')) return "Linux PC";
+    
+    // API tools or generic fallback
+    if (ua.includes('postman') || ua.includes('thunder') || ua.includes('axios')) return "API Client";
+    
+    return "Web Browser";
 };
 
 const formatLimit = (val) => {
