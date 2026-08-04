@@ -97,4 +97,27 @@ router.delete(
     controller.deleteInstituteDiscount
 );
 
+// ─── Phase 3: DB Safety Architecture — Archive & Restore Routes ─────────────
+
+router.patch(
+    "/students/:id/archive",
+    verifyToken,
+    allowRoles("super_admin"),
+    controller.archiveStudent
+);
+
+router.get(
+    "/students/archived",
+    verifyToken,
+    allowRoles("super_admin"),
+    controller.getArchivedStudents
+);
+
+router.post(
+    "/recovery/:table/:id/restore",
+    verifyToken,
+    allowRoles("super_admin"),
+    controller.restoreDeletedData
+);
+
 module.exports = router;

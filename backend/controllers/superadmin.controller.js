@@ -1054,3 +1054,113 @@ exports.deleteInstituteDiscount = async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 };
+
+// ─── Phase 3: DB Safety Architecture — Archive & Restore Endpoints ──────────
+
+const { auditLog } = require('../utils/audit');
+
+exports.archiveStudent = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { status } = req.body; // 'archived', 'graduated'
+        const { Student } = require("../models");
+
+        const student = await Student.findByPk(id);
+        if (!student) return res.status(404).json({ error: "Student not found" });
+
+        const oldData = student.toJSON();
+        student.student_status = status || 'archived';
+        await student.save();
+
+        // Log the archive action
+        await auditLog({
+            req,
+            action: `student.archive`,
+            entity_type: 'Student',
+            entity_id: student.id,
+            old_value: oldData,
+            new_value: student.toJSON(),
+            remarks: `Student marked as ${student.student_status} by SuperAdmin`
+        });
+
+        res.json({ success: true, message: `Student successfully marked as ${student.student_status}` });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+};
+
+exports.getArchivedStudents = async (req, res) => {
+    try {
+        const { Student, User, Institute } = require("../models");
+        const { Op } = require("sequelize");
+
+        const students = await Student.findAll({
+            where: {
+                student_status: { [Op.in]: ['archived', 'graduated'] }
+            },
+            include: [
+                { model: User, as: "user", attributes: ["name", "email", "phone"] },
+                { model: Institute, as: "institute", attributes: ["name"] }
+            ],
+            // Also include students who were soft deleted
+            paranoid: false
+        });
+
+        res.json({ success: true, data: students });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+};
+
+exports.restoreDeletedData = async (req, res) => {
+    try {
+        const { table, id } = req.params;
+        const models = require("../models");
+        
+        // Map table name param to Sequelize Model name
+        const modelMap = {
+            'students': 'Student',
+            'users': 'User',
+            'institutes': 'Institute',
+            'classes': 'Class',
+            'subjects': 'Subject',
+            'fees': 'FeesStructure',
+            'attendances': 'Attendance',
+            'marks': 'Mark',
+            'faculty_salaries': 'FacultySalary',
+        };
+
+        const modelName = modelMap[table];
+        if (!modelName || !models[modelName]) {
+            return res.status(400).json({ error: "Invalid table or model not found for recovery" });
+        }
+
+        const Model = models[modelName];
+        
+        // Verify it was actually deleted
+        const record = await Model.findOne({
+            where: { id },
+            paranoid: false
+        });
+
+        if (!record) return res.status(404).json({ error: "Record not found" });
+        if (record.deleted_at === null) return res.status(400).json({ error: "Record is not deleted" });
+
+        // Restore it
+        await record.restore();
+
+        await auditLog({
+            req,
+            action: `${table}.restore`,
+            entity_type: modelName,
+            entity_id: id,
+            old_value: { deleted_at: record.deleted_at },
+            new_value: { deleted_at: null },
+            remarks: `Record recovered from soft delete by SuperAdmin`
+        });
+
+        res.json({ success: true, message: `Record in ${table} successfully restored.` });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+};

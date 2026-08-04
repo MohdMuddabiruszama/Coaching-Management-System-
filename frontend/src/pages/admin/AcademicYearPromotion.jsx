@@ -74,8 +74,8 @@ export default function AcademicYearPromotion() {
     const loadStudentsForReview = async () => {
         setLoading(true);
         try {
-            const res = await api.get("/students?limit=1000");
-            const studs = res.data.data?.students || res.data.data || [];
+            const res = await api.get("/academic-years/promotion/eligible-students");
+            const studs = res.data.data?.students || [];
             setStudents(studs);
             // Default action from promotion rules
             const defaultOverrides = {};

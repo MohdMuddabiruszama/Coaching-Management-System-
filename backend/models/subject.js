@@ -8,10 +8,11 @@ const Subject = sequelize.define("Subject", {
     code: DataTypes.STRING,
     faculty_id: DataTypes.INTEGER,
 }, {
-    tableName: 'subjects',
+    tableName:  'subjects',
     timestamps: true,
-    createdAt: 'created_at',
-    updatedAt: 'updated_at'
+    createdAt:  'created_at',
+    updatedAt:  'updated_at',
+    paranoid:   true,   // ✅ Soft delete
 });
 
 module.exports = Subject;

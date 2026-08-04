@@ -58,6 +58,10 @@ const User = sequelize.define("User", {
         defaultValue: null,
         allowNull: true,
     },
+}, {
+    tableName:  'users',
+    timestamps: true,
+    paranoid:   true,   // ✅ Soft delete: destroy() sets deleted_at; findAll() filters deleted rows
 });
 
 module.exports = User;

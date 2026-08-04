@@ -9,7 +9,8 @@ const Class = sequelize.define("Class", {
     tableName: 'classes',
     timestamps: true,
     createdAt: 'created_at',
-    updatedAt: false
+    updatedAt: false,
+    paranoid:  true,    // ✅ Soft delete
 });
 
 module.exports = Class;

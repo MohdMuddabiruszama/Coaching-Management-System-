@@ -40,8 +40,9 @@ const Student = sequelize.define("Student", {
         comment: "FK to academic_years (fast-read cache); updated on each promotion",
     },
 }, {
-    tableName: "students",
+    tableName:  "students",
     timestamps: true,
+    paranoid:   true,   // ✅ Soft delete: destroy() sets deleted_at; findAll() filters deleted rows
 });
 
 

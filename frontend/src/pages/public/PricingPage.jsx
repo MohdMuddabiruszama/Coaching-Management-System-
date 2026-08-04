@@ -71,6 +71,7 @@ const COMPARISON_FEATURES = [
     { section: "Limits" },
     { label: "Max Students",  key: "max_students",   format: v => v === -1 ? "Unlimited" : `Up to ${v?.toLocaleString('en-IN')}` },
     { label: "Max Admins",    key: "max_admin_users",format: v => v === -1 ? "Unlimited" : `${v}` },
+    { label: "Max Managers",  key: "max_managers",   format: v => v === -1 ? "Unlimited" : `${v}` },
     { label: "Max Faculty",   key: "max_faculty",    format: v => v === -1 ? "Unlimited" : `${v}` },
     { label: "Storage",       key: "max_storage_mb", format: v => storageLabel(v) },
     { section: "Mobile (Web + Mobile only)" },

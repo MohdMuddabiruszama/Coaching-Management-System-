@@ -90,8 +90,9 @@ const FacultySalary = sequelize.define("FacultySalary", {
         comment: 'TRUE if created by cron job automatically'
     },
 }, {
-    tableName: "faculty_salaries",
-    timestamps: true
+    tableName:  "faculty_salaries",
+    timestamps: true,
+    paranoid:   true,   // ✅ Soft delete
 });
 
 module.exports = FacultySalary;

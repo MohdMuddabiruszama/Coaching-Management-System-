@@ -11,6 +11,7 @@
  * Exports:
  *  - previewPromotion(instituteId)
  *  - executePromotion(instituteId, newYearLabel, overrides, performedBy)
+ *  - getEligibleStudents(instituteId)
  *  - getPromotionHistory(studentId, instituteId)
  *  - getAcademicYears(instituteId)
  *  - createAcademicYear(instituteId, data)
@@ -161,6 +162,30 @@ const previewPromotion = async (instituteId) => {
     };
 };
 
+// ─── 3.5 Get Eligible Students ───────────────────────────────────────────────
+/**
+ * Fast endpoint to fetch only the students eligible for promotion.
+ * Avoids the heavy generic /students endpoint overhead.
+ */
+const getEligibleStudents = async (instituteId) => {
+    return Student.findAll({
+        where: {
+            institute_id: instituteId,
+            student_status: { [Op.in]: SYNC_STUDENT_STATUSES },
+            class_id: { [Op.not]: null },
+        },
+        attributes: ["id", "roll_number", "class_id", "student_status"],
+        include: [
+            {
+                model: User,
+                attributes: ["id", "name", "email", "phone"],
+                required: false, // In case some students don't have users
+            }
+        ],
+        order: [["class_id", "ASC"], ["roll_number", "ASC"]],
+    });
+};
+
 // ─── 4. Execute Promotion ─────────────────────────────────────────────────────
 /**
  * Core promotion engine — runs inside ONE transaction.
@@ -169,13 +194,13 @@ const previewPromotion = async (instituteId) => {
  * overrides: array of { studentId, action: 'promote'|'repeat'|'graduate'|'transfer'|'drop', toClassId? }
  */
 const executePromotion = async (instituteId, newYearLabel, overrides = [], performedBy) => {
-    // Find current year
-    const currentYear = await AcademicYear.findOne({
-        where: { institute_id: instituteId, is_current: true },
-    });
-    if (!currentYear) {
-        throw new Error("No current academic year found.");
-    }
+    // 1. Validation & Initialization
+    const currentYear = await AcademicYear.findOne({ where: { institute_id: instituteId, is_current: true } });
+    if (!currentYear) throw new Error("No active academic year found.");
+
+    // Check if new year label already exists
+    const existingYear = await AcademicYear.findOne({ where: { institute_id: instituteId, label: newYearLabel } });
+    if (existingYear) throw new Error(`An academic year with label '${newYearLabel}' already exists. Please choose a different label.`);
 
     // Get promotion rules
     const rules = await PromotionRule.findAll({
@@ -355,12 +380,17 @@ const executePromotion = async (instituteId, newYearLabel, overrides = [], perfo
         }
 
         // Step 6: Write audit log
+        const user = await User.findByPk(performedBy);
         await AuditLog.create({
             institute_id: instituteId,
             user_id: performedBy,
+            user_name: user ? user.name : null,
+            user_role: user ? user.role : null,
             action: "academic_year_promotion",
             resource: "academic_years",
             method: "POST",
+            path: "/api/academic-years/promotion/execute",
+            status_code: 200,
             metadata: {
                 fromYearId: currentYear.id,
                 fromYearLabel: currentYear.label,
@@ -561,7 +591,7 @@ const rollbackPromotion = async (fromYearId, toYearId, instituteId, performedBy)
         );
 
         // 3. Flip year flags
-        await AcademicYear.update({ is_current: false, status: "rolled_back" }, { where: { id: toYearId }, transaction: t });
+        await AcademicYear.update({ is_current: false, status: "closed" }, { where: { id: toYearId }, transaction: t });
         await AcademicYear.update({ is_current: true, status: "active" }, { where: { id: fromYearId }, transaction: t });
 
         // 4. Restore student class_id from reopened enrollment rows
@@ -595,6 +625,7 @@ module.exports = {
     getAcademicYears,
     createAcademicYear,
     previewPromotion,
+    getEligibleStudents,
     executePromotion,
     sendPromotionNotifications,
     getPromotionHistory,

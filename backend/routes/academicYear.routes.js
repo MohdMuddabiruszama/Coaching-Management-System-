@@ -109,6 +109,14 @@ router.get(
     ctrl.promotionPreview
 );
 
+// GET /api/academic-years/promotion/eligible-students — get fast student list
+router.get(
+    "/promotion/eligible-students",
+    allowRoles("admin", "manager", "super_admin"),
+    checkManagerPermission("academic_year_promotion"),
+    ctrl.getEligibleStudents
+);
+
 // POST /api/academic-years/promotion/execute — execute the promotion (Phase 4 + 7)
 router.post(
     "/promotion/execute",

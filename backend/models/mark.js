@@ -18,6 +18,10 @@ const Mark = sequelize.define("Mark", {
         type: DataTypes.STRING(200),
         allowNull: true,
     },
+}, {
+    tableName:  'marks',
+    timestamps: true,
+    paranoid:   true,   // ✅ Soft delete
 });
 
 module.exports = Mark;

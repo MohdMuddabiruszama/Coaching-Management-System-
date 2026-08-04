@@ -30,6 +30,7 @@ const Assignment = sequelize.define("Assignment", {
     timestamps: true,
     createdAt: 'created_at',
     updatedAt: 'updated_at',
+    paranoid:  true,    // ✅ Soft delete
     indexes: [
         { fields: ['institute_id', 'class_id', 'subject_id', 'status'] },
         { fields: ['faculty_id', 'due_date'] }

@@ -23,6 +23,10 @@ const Announcement = sequelize.define("Announcement", {
     expires_at:   { type: DataTypes.DATE, allowNull: true },
     target_class: { type: DataTypes.INTEGER, allowNull: true },
     updated_at:   { type: DataTypes.DATE, allowNull: true },
+}, {
+    tableName:  'announcements',
+    timestamps: true,
+    paranoid:   true,   // ✅ Soft delete
 });
 
 module.exports = Announcement;

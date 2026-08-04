@@ -224,6 +224,10 @@ const Institute = sequelize.define("Institute", {
         defaultValue: false,
         comment: 'Super admin marks institute as test. All subscriptions excluded from revenue.'
     }
+}, {
+    tableName:  'institutes',
+    timestamps: true,
+    paranoid:   true,   // ✅ Soft delete
 });
 
 module.exports = Institute;

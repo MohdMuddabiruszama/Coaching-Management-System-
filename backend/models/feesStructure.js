@@ -16,6 +16,10 @@ const FeesStructure = sequelize.define("FeesStructure", {
     amount: DataTypes.DECIMAL(10, 2),
     due_date: DataTypes.DATEONLY,
     description: DataTypes.TEXT,
+}, {
+    tableName:  'fee_structures',
+    timestamps: true,
+    paranoid:   true,   // ✅ Soft delete
 });
 
 module.exports = FeesStructure;

@@ -28,9 +28,10 @@ const Attendance = sequelize.define("Attendance", {
     source_meta: { type: DataTypes.JSON, allowNull: true },
     version: { type: DataTypes.INTEGER, defaultValue: 1 },
 }, {
-    tableName: "attendances",
-    timestamps: true,
+    tableName:   "attendances",
+    timestamps:  true,
     underscored: true,
+    paranoid:    true,  // ✅ Soft delete
     indexes: [
         {
             // Named index — Sequelize tracks by name, preventing duplicates on restart

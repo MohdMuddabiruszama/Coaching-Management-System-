@@ -1,0 +1,2 @@
+# This folder holds weekly database backups (*.sql files).
+# SQL files are excluded from git — only this .gitkeep is tracked.

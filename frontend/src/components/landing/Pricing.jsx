@@ -75,6 +75,7 @@ const COMPARE_ROWS = [
     { section: 'Limits' },
     { label: 'Max Students',               key: 'max_students',  fmt: v => v === -1 ? 'Unlimited' : v?.toLocaleString('en-IN') },
     { label: 'Max Admins',                 key: 'max_admin_users', fmt: v => v === -1 ? 'Unlimited' : String(v) },
+    { label: 'Max Managers',               key: 'max_managers',   fmt: v => v === -1 ? 'Unlimited' : String(v) },
     { label: 'Max Faculty',                key: 'max_faculty',   fmt: v => v === -1 ? 'Unlimited' : v?.toLocaleString('en-IN') },
     { label: 'Storage',                    key: 'max_storage_mb',fmt: v => storageLabel(v) },
     { section: 'Mobile (Web + Mobile only)' },

@@ -81,6 +81,16 @@ const promotionPreview = async (req, res) => {
     }
 };
 
+const getEligibleStudents = async (req, res) => {
+    try {
+        const students = await promotionService.getEligibleStudents(req.user.institute_id);
+        return sendSuccess(res, { students }, "Eligible students fetched");
+    } catch (err) {
+        console.error("getEligibleStudents error:", err.message);
+        return sendError(res, err.message || "Failed to fetch eligible students", 500);
+    }
+};
+
 // ─── Execute Promotion ────────────────────────────────────────────────────────
 
 const executePromotion = async (req, res) => {
@@ -264,6 +274,7 @@ module.exports = {
     createAcademicYear,
     updateAcademicYear,
     promotionPreview,
+    getEligibleStudents,
     executePromotion,
     rollbackPromotion,
     getPromotionHistory,
