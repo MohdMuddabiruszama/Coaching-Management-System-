@@ -44,6 +44,7 @@ const AdminLayout = () => {
         unreadChatCount: 0,
         unreadEnquiryCount: 0
     });
+    const [activeYearLabel, setActiveYearLabel] = useState(null);
 
     useEffect(() => {
         const fetchSidebarStats = async () => {
@@ -69,6 +70,13 @@ const AdminLayout = () => {
             api.get("/admin/usage").then(res => {
                 setPlanDetails(res.data.data);
             }).catch(err => console.error("Error fetching usage stats:", err));
+
+            api.get("/academic-years").then(res => {
+                if (res.data && res.data.years) {
+                    const active = res.data.years.find(y => y.is_current);
+                    if (active) setActiveYearLabel(active.label);
+                }
+            }).catch(err => console.error("Error fetching academic years:", err));
         }
     }, [user, isAdmin]);
 
@@ -646,6 +654,11 @@ const AdminLayout = () => {
                             </svg>
                         </button>
                         <button className="al-mobile-toggle" onClick={() => setSidebarOpen(true)}>☰</button>
+                        {activeYearLabel && (
+                            <div className="al-academic-badge" style={{ marginLeft: '1rem', padding: '4px 12px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '20px', fontSize: '0.8rem', fontWeight: '600', color: '#475569', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                <span style={{ fontSize: '1rem' }}>🎓</span> {activeYearLabel}
+                            </div>
+                        )}
                     </div>
                     <div className="al-topbar-right">
                         <button 

@@ -347,7 +347,8 @@ exports.getInstituteDetails = async (req, res) => {
             discounts,
             totalExams,
             totalNotes,
-            storageTracker
+            storageTracker,
+            activeSessions
         ] = await Promise.all([
             Student.count({ where: { institute_id: id } }),
             Faculty.count({ where: { institute_id: id } }),
@@ -378,7 +379,19 @@ exports.getInstituteDetails = async (req, res) => {
             }),
             Exam.count({ where: { institute_id: id } }),
             Note.count({ where: { institute_id: id } }),
-            UsageTracker.findOne({ where: { institute_id: id, metric: "storage_mb" } })
+            UsageTracker.findOne({ where: { institute_id: id, metric: "storage_mb" } }),
+            RefreshToken.findAll({
+                where: {
+                    is_revoked: false,
+                    expires_at: { [Op.gt]: new Date() }
+                },
+                include: [{
+                    model: User,
+                    where: { institute_id: id, role: 'admin' },
+                    attributes: ['id', 'name', 'email']
+                }],
+                order: [['created_at', 'DESC']]
+            })
         ]);
 
         // Count enabled features in current institute config
@@ -424,7 +437,8 @@ exports.getInstituteDetails = async (req, res) => {
                 storageUsed: storageTracker ? storageTracker.current_value : 0
             },
             latestSubscription,
-            discounts: discounts || []
+            discounts: discounts || [],
+            activeSessions: activeSessions || []
         });
     } catch (error) {
         console.error("getInstituteDetails error:", error);

@@ -42,6 +42,7 @@ export default function AcademicYearPromotion() {
     const [filterClass, setFilterClass] = useState("all");
     const [filterFlag, setFilterFlag] = useState("all");
     const [searchText, setSearchText] = useState("");
+    const [reviewPage, setReviewPage] = useState(1);
 
     // ── Fetch preview on mount ────────────────────────────────────────────────
     useEffect(() => {
@@ -144,6 +145,10 @@ export default function AcademicYearPromotion() {
         if (searchText && !((s.User?.name || s.name) || "").toLowerCase().includes(searchText.toLowerCase())) return false;
         return true;
     });
+
+    const REVIEW_PAGE_LIMIT = 10;
+    const totalReviewPages = Math.ceil(filteredStudents.length / REVIEW_PAGE_LIMIT) || 1;
+    const paginatedStudents = filteredStudents.slice((reviewPage - 1) * REVIEW_PAGE_LIMIT, reviewPage * REVIEW_PAGE_LIMIT);
 
     // ── Execute promotion ─────────────────────────────────────────────────────
     const handleExecutePromotion = async () => {
@@ -376,15 +381,15 @@ export default function AcademicYearPromotion() {
                         className="ayp-input ayp-search-input"
                         placeholder="🔍 Search students..."
                         value={searchText}
-                        onChange={(e) => setSearchText(e.target.value)}
+                        onChange={(e) => { setSearchText(e.target.value); setReviewPage(1); }}
                     />
-                    <select className="ayp-select" value={filterClass} onChange={(e) => setFilterClass(e.target.value)}>
+                    <select className="ayp-select" value={filterClass} onChange={(e) => { setFilterClass(e.target.value); setReviewPage(1); }}>
                         <option value="all">All Classes</option>
                         {classOptions.map((c) => (
                             <option key={c.classId} value={String(c.classId)}>{c.className}{c.classSection ? ` (${c.classSection})` : ""}</option>
                         ))}
                     </select>
-                    <select className="ayp-select" value={filterFlag} onChange={(e) => setFilterFlag(e.target.value)}>
+                    <select className="ayp-select" value={filterFlag} onChange={(e) => { setFilterFlag(e.target.value); setReviewPage(1); }}>
                         <option value="all">All Students</option>
                         <option value="flagged">⚠️ Flagged (Pending Fees)</option>
                     </select>
@@ -427,7 +432,7 @@ export default function AcademicYearPromotion() {
                                 </tr>
                             </thead>
                             <tbody>
-                                {filteredStudents.map((student) => {
+                                {paginatedStudents.map((student) => {
                                     const isFlagged = preview?.flaggedStudentIds?.includes(student.id);
                                     const override = overrides[student.id] || { action: "promote", toClassId: null };
                                     const currentClass = preview?.classes?.find((c) => c.classId === student.class_id);
@@ -495,8 +500,32 @@ export default function AcademicYearPromotion() {
                     </div>
                 )}
 
+                {filteredStudents.length > REVIEW_PAGE_LIMIT && (
+                    <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center', alignItems: 'center', marginTop: '1.25rem' }}>
+                        <button 
+                            className="ayp-btn ayp-btn-ghost" 
+                            disabled={reviewPage === 1} 
+                            onClick={() => setReviewPage(p => p - 1)}
+                            style={{ padding: '0.4rem 0.8rem' }}
+                        >
+                            ← Prev
+                        </button>
+                        <span style={{ fontSize: '0.85rem', color: '#64748b', fontWeight: '500' }}>
+                            Page {reviewPage} of {totalReviewPages}
+                        </span>
+                        <button 
+                            className="ayp-btn ayp-btn-ghost" 
+                            disabled={reviewPage === totalReviewPages} 
+                            onClick={() => setReviewPage(p => p + 1)}
+                            style={{ padding: '0.4rem 0.8rem' }}
+                        >
+                            Next →
+                        </button>
+                    </div>
+                )}
+
                 <div className="ayp-footer-actions">
-                    <span className="ayp-count-hint">{filteredStudents.length} of {students.length} students shown</span>
+                    <span className="ayp-count-hint">Showing {(reviewPage - 1) * REVIEW_PAGE_LIMIT + 1}–{Math.min(reviewPage * REVIEW_PAGE_LIMIT, filteredStudents.length)} of {filteredStudents.length} filtered students</span>
                     <button className="ayp-btn ayp-btn-primary ayp-btn-lg" onClick={() => setScreen(SCREENS.CONFIRM)}>
                         Confirm Promotion →
                     </button>

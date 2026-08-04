@@ -29,6 +29,17 @@ const getAddress = (inst) => {
     return parts.length > 0 ? parts.join(', ') : "N/A";
 };
 
+const parseDevice = (userAgent) => {
+    if (!userAgent) return "Unknown Device";
+    const ua = userAgent.toLowerCase();
+    if (ua.includes('windows')) return "Windows PC";
+    if (ua.includes('macintosh') || ua.includes('mac os')) return "Mac";
+    if (ua.includes('android')) return "Android Mobile";
+    if (ua.includes('iphone') || ua.includes('ipad')) return "iOS Mobile";
+    if (ua.includes('linux')) return "Linux PC";
+    return "Unknown Device";
+};
+
 const formatLimit = (val) => {
     if (val === undefined || val === null) return "N/A";
     if (val === -1) return "∞ Unlimited";
@@ -541,6 +552,52 @@ function InstituteLimits() {
                                             <div style={{ fontSize: "11px", fontWeight: 700, color: "var(--text-secondary)", textTransform: "uppercase", marginBottom: "4px" }}>Address</div>
                                             <div style={{ fontWeight: 600 }}>{inst?.address || "Not provided"}</div>
                                         </div>
+                                    </div>
+
+                                    {/* Active Admin Sessions */}
+                                    <div style={{ marginTop: "2rem" }}>
+                                        <h3 style={{ fontSize: "1.2rem", marginBottom: "1rem", color: "var(--text-primary)", display: "flex", alignItems: "center", gap: "8px" }}>
+                                            💻 Active Admin Sessions
+                                            <span style={{ fontSize: "12px", background: "rgba(99, 102, 241, 0.1)", color: "#6366f1", padding: "2px 8px", borderRadius: "10px", fontWeight: 600 }}>
+                                                {details?.activeSessions?.length || 0} Total
+                                            </span>
+                                        </h3>
+                                        {details?.activeSessions?.length > 0 ? (
+                                            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px,1fr))", gap: "1rem" }}>
+                                                {details.activeSessions.map((session, idx) => (
+                                                    <div key={idx} style={{ padding: "14px 16px", background: "var(--card-bg, #f9fafb)", borderRadius: "12px", border: "1px solid var(--border-color)", display: "flex", flexDirection: "column", gap: "8px", boxShadow: "0 2px 4px rgba(0,0,0,0.02)" }}>
+                                                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                                                            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                                                                <div style={{ width: "28px", height: "28px", borderRadius: "50%", background: "#6366f1", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "12px", fontWeight: "bold" }}>
+                                                                    {(session.User?.name || "A").charAt(0).toUpperCase()}
+                                                                </div>
+                                                                <span style={{ fontWeight: 600, fontSize: "14px", color: "var(--text-primary)" }}>{session.User?.name || "Admin"}</span>
+                                                            </div>
+                                                            <span style={{ fontSize: "11px", background: "rgba(16, 185, 129, 0.1)", color: "#10b981", padding: "3px 8px", borderRadius: "12px", fontWeight: 700 }}>ACTIVE</span>
+                                                        </div>
+                                                        <div style={{ height: "1px", background: "var(--border-color)", margin: "4px 0" }}></div>
+                                                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px", fontSize: "12px" }}>
+                                                            <div style={{ color: "var(--text-secondary)", display: "flex", alignItems: "center", gap: "6px" }}>
+                                                                <span title="Device Platform">🖥️</span> <strong style={{ color: "var(--text-primary)" }}>{parseDevice(session.device_info)}</strong>
+                                                            </div>
+                                                            <div style={{ color: "var(--text-secondary)", display: "flex", alignItems: "center", gap: "6px" }}>
+                                                                <span title="Source Type">📱</span> <strong style={{ color: "var(--text-primary)", textTransform: "capitalize" }}>{session.source || "Web"}</strong>
+                                                            </div>
+                                                        </div>
+                                                        <div style={{ fontSize: "12px", color: "var(--text-secondary)", display: "flex", alignItems: "center", gap: "6px" }}>
+                                                            <span title="IP Address">🌐</span> <strong style={{ color: "var(--text-primary)" }}>{session.ip_address || "Unknown IP"}</strong>
+                                                        </div>
+                                                        <div style={{ fontSize: "11px", color: "var(--text-secondary)", marginTop: "4px", display: "flex", alignItems: "center", gap: "6px" }}>
+                                                            🕒 <span>Started: {fmtDate(session.created_at || session.createdAt)}</span>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        ) : (
+                                            <div style={{ padding: "1.5rem", background: "var(--card-bg, #f9fafb)", borderRadius: "10px", border: "1px dashed var(--border-color)", color: "var(--text-secondary)", fontSize: "14px", textAlign: "center" }}>
+                                                No active admin sessions found for this institute.
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             )}
