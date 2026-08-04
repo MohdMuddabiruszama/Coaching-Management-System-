@@ -445,6 +445,7 @@ exports.updateInstituteLimits = async (req, res) => {
             current_limit_faculty,
             current_limit_classes,
             current_limit_admins,
+            current_limit_managers,
             current_limit_chat_messages,
             // Feature overrides
             current_feature_attendance,
@@ -478,6 +479,7 @@ exports.updateInstituteLimits = async (req, res) => {
         if (current_limit_faculty !== undefined) updates.current_limit_faculty = parseInt(current_limit_faculty);
         if (current_limit_classes !== undefined) updates.current_limit_classes = parseInt(current_limit_classes);
         if (current_limit_admins !== undefined) updates.current_limit_admins = parseInt(current_limit_admins);
+        if (current_limit_managers !== undefined) updates.current_limit_managers = parseInt(current_limit_managers);
         if (current_limit_chat_messages !== undefined) updates.current_limit_chat_messages = parseInt(current_limit_chat_messages);
         if (current_feature_attendance !== undefined) updates.current_feature_attendance = current_feature_attendance;
         if (current_feature_auto_attendance !== undefined) updates.current_feature_auto_attendance = !!current_feature_auto_attendance;

@@ -290,6 +290,8 @@ const AdminLayout = () => {
         if (isAdmin) {
             routes.push({ name: "Manage Managers (Admins)", path: "/admin/admins", icon: "👨‍💼" });
             routes.push({ name: "Public Page Website", path: "/admin/public-page", icon: "🌐" });
+            routes.push({ name: "Academic Year & Promotion", path: "/admin/academic-year-promotion", icon: "🎓" });
+            routes.push({ name: "Academic Year Settings", path: "/admin/academic-year-settings", icon: "📆" });
             routes.push({ name: "Settings", path: "/admin/settings", icon: "⚙️" });
         }
 
@@ -587,6 +589,13 @@ const AdminLayout = () => {
                         <Link to="/admin/settings" className={navLinkClass('/admin/settings')} onClick={() => setSidebarOpen(false)}>
                             <span className="al-nav-icon">⚙️</span>
                             <span className="al-nav-text">Settings</span>
+                        </Link>
+                    )}
+                    {/* ── Academic Year Promotion (Phase 9) ── */}
+                    {(isAdmin || hasPermission('academic_year_promotion')) && (
+                        <Link to="/admin/academic-year-promotion" className={navLinkClass('/admin/academic-year-promotion')} onClick={() => setSidebarOpen(false)}>
+                            <span className="al-nav-icon">🎓</span>
+                            <span className="al-nav-text">Academic Year</span>
                         </Link>
                     )}
                 </div>

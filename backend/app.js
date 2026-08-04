@@ -373,6 +373,8 @@ app.use("/api/performance", [verifyToken, tenantScope], require("./routes/perfor
 app.use("/api/biometric", [verifyToken, tenantScope], require("./routes/biometric.routes"));
 app.use("/api/mobile", [verifyToken, tenantScope], require("./routes/mobileDashboard.routes"));
 app.use("/api/notifications", [verifyToken, tenantScope], require("./routes/notification.routes"));
+// ── Academic Year Promotion Engine (Phase 5) ─────────────────────────────────
+app.use("/api/academic-years", [verifyToken, tenantScope], require("./routes/academicYear.routes"));
 // Subscription, payment, plans — no tenantScope (cross-institute billing routes)
 app.use("/api/subscriptions", require("./routes/subscription.routes"));
 app.use("/api/plans", require("./routes/plan.routes"));
@@ -753,6 +755,94 @@ const syncDatabase = async () => {
       } catch (e) { /* table already exists */ }
       try { await sequelize.query(`CREATE INDEX IF NOT EXISTS idx_fss_institute ON faculty_salary_settings(institute_id);`); } catch (e) { }
       console.log('✅ Faculty Salary Management schema ensured (payment_due_date, settings table, indexes)');
+
+      // ── Academic Year Promotion Engine — Phase 1 Schema (Academic year promotion.md) ──────────
+      // academic_years table
+      try {
+        await sequelize.query(`
+          CREATE TABLE IF NOT EXISTS academic_years (
+            id           SERIAL PRIMARY KEY,
+            institute_id INTEGER NOT NULL REFERENCES institutes(id) ON DELETE CASCADE,
+            label        VARCHAR(20) NOT NULL,
+            start_date   DATE,
+            end_date     DATE,
+            is_current   BOOLEAN DEFAULT false,
+            status       VARCHAR(20) DEFAULT 'active',
+            created_at   TIMESTAMP DEFAULT NOW(),
+            updated_at   TIMESTAMP DEFAULT NOW()
+          );
+        `);
+      } catch (e) { /* already exists */ }
+      try { await sequelize.query(`CREATE UNIQUE INDEX IF NOT EXISTS uq_one_current_year ON academic_years(institute_id) WHERE is_current = true;`); } catch (e) { }
+
+      // promotion_rules table
+      try {
+        await sequelize.query(`
+          CREATE TABLE IF NOT EXISTS promotion_rules (
+            id           SERIAL PRIMARY KEY,
+            institute_id INTEGER NOT NULL REFERENCES institutes(id) ON DELETE CASCADE,
+            from_class_id INTEGER REFERENCES classes(id) ON DELETE SET NULL,
+            to_class_id  INTEGER REFERENCES classes(id) ON DELETE SET NULL,
+            end_action   VARCHAR(20) DEFAULT NULL,
+            sort_order   INTEGER DEFAULT 0,
+            created_at   TIMESTAMP DEFAULT NOW(),
+            updated_at   TIMESTAMP DEFAULT NOW()
+          );
+        `);
+      } catch (e) { /* already exists */ }
+      try { await sequelize.query(`CREATE INDEX IF NOT EXISTS idx_promo_rules_inst ON promotion_rules(institute_id, sort_order);`); } catch (e) { }
+
+      // Extend student_classes into enrollment journal
+      try { await sequelize.query(`ALTER TABLE student_classes ADD COLUMN IF NOT EXISTS academic_year_id INTEGER REFERENCES academic_years(id);`); } catch (e) { }
+      try { await sequelize.query(`ALTER TABLE student_classes ADD COLUMN IF NOT EXISTS enrollment_status VARCHAR(20) DEFAULT 'active';`); } catch (e) { }
+      try { await sequelize.query(`ALTER TABLE student_classes ADD COLUMN IF NOT EXISTS enrolled_at DATE DEFAULT NOW();`); } catch (e) { }
+      try { await sequelize.query(`ALTER TABLE student_classes ADD COLUMN IF NOT EXISTS exited_at DATE;`); } catch (e) { }
+      try { await sequelize.query(`CREATE UNIQUE INDEX IF NOT EXISTS uq_one_active_enrollment ON student_classes(student_id) WHERE enrollment_status = 'active';`); } catch (e) { }
+      try { await sequelize.query(`CREATE INDEX IF NOT EXISTS idx_sc_year ON student_classes(academic_year_id, class_id);`); } catch (e) { }
+
+      // Extend students with promotion tracking columns
+      try { await sequelize.query(`ALTER TABLE students ADD COLUMN IF NOT EXISTS student_status VARCHAR(20) DEFAULT 'active';`); } catch (e) { }
+      try { await sequelize.query(`ALTER TABLE students ADD COLUMN IF NOT EXISTS current_academic_year_id INTEGER REFERENCES academic_years(id);`); } catch (e) { }
+
+      // Backfill: one academic_years row per institute that doesn't have one yet
+      try {
+        await sequelize.query(`
+          INSERT INTO academic_years (institute_id, label, is_current, status, created_at, updated_at)
+          SELECT DISTINCT i.id,
+            TO_CHAR(NOW(), 'YYYY') || '-' || TO_CHAR((NOW() + INTERVAL '1 year'), 'YY'),
+            true, 'active', NOW(), NOW()
+          FROM institutes i
+          WHERE NOT EXISTS (SELECT 1 FROM academic_years ay WHERE ay.institute_id = i.id);
+        `);
+      } catch (e) { /* non-fatal */ }
+
+      // Backfill: active student_classes enrollment for students without one
+      try {
+        await sequelize.query(`
+          INSERT INTO student_classes (student_id, class_id, institute_id, academic_year_id, enrollment_status, enrolled_at, created_at, updated_at)
+          SELECT s.id, s.class_id, s.institute_id, ay.id, 'active', NOW(), NOW(), NOW()
+          FROM students s
+          INNER JOIN academic_years ay ON ay.institute_id = s.institute_id AND ay.is_current = true
+          WHERE s.class_id IS NOT NULL
+            AND NOT EXISTS (
+              SELECT 1 FROM student_classes sc
+              WHERE sc.student_id = s.id AND sc.enrollment_status = 'active'
+            );
+        `);
+      } catch (e) { /* non-fatal */ }
+
+      // Backfill: set current_academic_year_id on students
+      try {
+        await sequelize.query(`
+          UPDATE students s SET current_academic_year_id = ay.id
+          FROM academic_years ay
+          WHERE ay.institute_id = s.institute_id AND ay.is_current = true
+            AND s.current_academic_year_id IS NULL;
+        `);
+        await sequelize.query(`UPDATE students SET student_status = 'active' WHERE student_status IS NULL;`);
+      } catch (e) { /* non-fatal */ }
+
+      console.log('✅ Academic Year Promotion Engine schema ensured (academic_years, promotion_rules, enrollment journal)');
 
       // Auto-sync other schema changes using alter for the explicit models to make sure everything matches
       try {

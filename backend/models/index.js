@@ -75,6 +75,10 @@ const Notification = require("./notification");
 const DeviceToken = require("./deviceToken");
 const NotificationPref = require("./notificationPref");
 
+// ── Academic Year Promotion Engine (Phase 2) ──────────────────────────────────
+const AcademicYear = require("./academicYear.model");
+const PromotionRule = require("./promotionRule.model");
+
 // Associations
 
 Plan.hasMany(Subscription, { foreignKey: "plan_id" });
@@ -532,6 +536,30 @@ User.hasMany(DeviceToken, { foreignKey: "user_id" });
 NotificationPref.belongsTo(User, { foreignKey: "user_id" });
 User.hasMany(NotificationPref, { foreignKey: "user_id" });
 
+// ── Academic Year Promotion Associations (Phase 2) ────────────────────────────
+Institute.hasMany(AcademicYear, { foreignKey: "institute_id" });
+AcademicYear.belongsTo(Institute, { foreignKey: "institute_id" });
+
+// AcademicYear ↔ StudentClass (enrollment history)
+AcademicYear.hasMany(StudentClass, { foreignKey: "academic_year_id", as: "enrollments" });
+StudentClass.belongsTo(AcademicYear, { foreignKey: "academic_year_id", as: "academicYear" });
+
+// Student → AcademicYear (current year fast-read cache)
+Student.belongsTo(AcademicYear, { foreignKey: "current_academic_year_id", as: "currentAcademicYear" });
+AcademicYear.hasMany(Student, { foreignKey: "current_academic_year_id", as: "currentStudents" });
+
+// Student → StudentClass (full enrollment history)
+Student.hasMany(StudentClass, { foreignKey: "student_id", as: "enrollmentHistory" });
+
+// PromotionRule associations
+Institute.hasMany(PromotionRule, { foreignKey: "institute_id" });
+PromotionRule.belongsTo(Institute, { foreignKey: "institute_id" });
+
+PromotionRule.belongsTo(Class, { as: "fromClass", foreignKey: "from_class_id" });
+PromotionRule.belongsTo(Class, { as: "toClass", foreignKey: "to_class_id" });
+Class.hasMany(PromotionRule, { as: "rulesFrom", foreignKey: "from_class_id" });
+Class.hasMany(PromotionRule, { as: "rulesTo", foreignKey: "to_class_id" });
+
 module.exports = {
     sequelize,
     Plan,
@@ -602,4 +630,7 @@ module.exports = {
     Notification,
     DeviceToken,
     NotificationPref,
+    // ── Academic Year Promotion Engine ────────────────────────────────────────
+    AcademicYear,
+    PromotionRule,
 };

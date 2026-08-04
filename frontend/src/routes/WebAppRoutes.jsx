@@ -67,6 +67,8 @@ const AdminPublicPage = lazy(() => import("../pages/admin/PublicPage"));
 const LifetimeAccess = lazy(() => import("../pages/admin/LifetimeAccess"));
 const AdminPerformance = lazy(() => import("../pages/admin/Performance"));
 const AttendanceSettings = lazy(() => import("../pages/admin/AttendanceSettings"));
+const AcademicYearPromotion = lazy(() => import("../pages/admin/AcademicYearPromotion"));
+const AcademicYearSettings = lazy(() => import("../pages/admin/AcademicYearSettings"));
 const FacultyViewAttendance = lazy(() => import("../pages/faculty/ViewAttendance"));
 import { Capacitor } from "@capacitor/core";
 
@@ -261,6 +263,9 @@ export default function WebAppRoutes() {
           <Route path="profile" element={<Profile />} />
           <Route path="lifetime" element={<LifetimeAccess />} />
           <Route path="performance" element={<AdminPerformance />} />
+          {/* ── Academic Year Promotion Engine (Phase 9) ── */}
+          <Route path="academic-year-promotion" element={<AcademicYearPromotion />} />
+          <Route path="academic-year-settings" element={<AcademicYearSettings />} />
           <Route path="*" element={<Navigate to="/admin/dashboard" />} />
         </Route>
 

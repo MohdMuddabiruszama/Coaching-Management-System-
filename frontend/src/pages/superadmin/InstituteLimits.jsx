@@ -29,6 +29,28 @@ const getAddress = (inst) => {
     return parts.length > 0 ? parts.join(', ') : "N/A";
 };
 
+const formatLimit = (val) => {
+    if (val === undefined || val === null) return "N/A";
+    if (val === -1) return "∞ Unlimited";
+    return val;
+};
+
+const renderLimitDifference = (baseVal, overrideVal) => {
+    if (overrideVal === undefined || overrideVal === null || String(baseVal) === String(overrideVal)) {
+        return formatLimit(baseVal);
+    }
+    return (
+        <div style={{ display: "flex", flexDirection: "column", lineHeight: "1.2" }}>
+            <span style={{ fontSize: "11px", color: "#ef4444", textDecoration: "line-through", opacity: 0.8 }}>
+                {formatLimit(baseVal)}
+            </span>
+            <span style={{ color: "#10b981", fontSize: "1.1rem" }}>
+                {formatLimit(overrideVal)}
+            </span>
+        </div>
+    );
+};
+
 // Smart Attendance is index 0 — the Feature Toggles renderer treats it specially
 // (shows QR sub-feature dependency cards beneath it)
 const BOOL_FEATURES = [
@@ -143,6 +165,7 @@ function InstituteLimits() {
                 current_limit_faculty: inst.current_limit_faculty || 0,
                 current_limit_classes: inst.current_limit_classes || 0,
                 current_limit_admins: inst.current_limit_admins || 1,
+                current_limit_managers: inst.current_limit_managers || 1,
                 current_feature_attendance: inst.current_feature_attendance || "basic",
                 current_feature_reports: inst.current_feature_reports || "none",
                 current_feature_auto_attendance: !!inst.current_feature_auto_attendance,
@@ -230,6 +253,7 @@ function InstituteLimits() {
             current_limit_faculty: plan.max_faculty,
             current_limit_classes: plan.max_classes,
             current_limit_admins: plan.max_admin_users,
+            current_limit_managers: plan.max_managers,
             current_feature_attendance: plan.feature_attendance,
             current_feature_reports: plan.feature_reports,
             current_feature_auto_attendance: !!plan.feature_auto_attendance,
@@ -533,16 +557,19 @@ function InstituteLimits() {
                                                     <div style={{ opacity: 0.85, fontSize: "13px" }}>{inst.Plan.description || "No description"}</div>
                                                 </div>
                                                 {[
-                                                    { label: "Max Students", value: inst.Plan.max_students },
-                                                    { label: "Max Faculty", value: inst.Plan.max_faculty },
-                                                    { label: "Max Classes", value: inst.Plan.max_classes },
-                                                    { label: "Max Admins", value: inst.Plan.max_admin_users },
-                                                    { label: "Attendance", value: inst.Plan.feature_attendance?.toUpperCase() },
-                                                    { label: "Reports", value: inst.Plan.feature_reports?.toUpperCase() },
+                                                    { label: "Max Students", base: inst.Plan.max_students, override: inst.current_limit_students },
+                                                    { label: "Max Faculty", base: inst.Plan.max_faculty, override: inst.current_limit_faculty },
+                                                    { label: "Max Classes", base: inst.Plan.max_classes, override: inst.current_limit_classes },
+                                                    { label: "Max Admins", base: inst.Plan.max_admin_users, override: inst.current_limit_admins },
+                                                    { label: "Max Managers", base: inst.Plan.max_managers, override: inst.current_limit_managers },
+                                                    { label: "Attendance", base: inst.Plan.feature_attendance?.toUpperCase(), override: inst.current_feature_attendance?.toUpperCase() },
+                                                    { label: "Reports", base: inst.Plan.feature_reports?.toUpperCase(), override: inst.current_feature_reports?.toUpperCase() },
                                                 ].map(item => (
-                                                    <div key={item.label} style={{ padding: "12px 16px", background: "var(--card-bg, #f9fafb)", borderRadius: "10px", border: "1px solid var(--border-color)" }}>
+                                                    <div key={item.label} style={{ padding: "12px 16px", background: "var(--card-bg, #f9fafb)", borderRadius: "10px", border: "1px solid var(--border-color)", display: "flex", flexDirection: "column", justifyContent: "center" }}>
                                                         <div style={{ fontSize: "11px", color: "var(--text-secondary)", fontWeight: 700, textTransform: "uppercase", marginBottom: "4px" }}>{item.label}</div>
-                                                        <div style={{ fontWeight: 700, fontSize: "1.1rem" }}>{item.value}</div>
+                                                        <div style={{ fontWeight: 700, fontSize: "1.1rem", display: "flex", alignItems: "center", minHeight: "26px" }}>
+                                                            {renderLimitDifference(item.base, item.override)}
+                                                        </div>
                                                     </div>
                                                 ))}
                                             </div>
@@ -662,6 +689,7 @@ function InstituteLimits() {
                                             { key: "current_limit_faculty", label: "Max Faculty", icon: "👩‍🏫" },
                                             { key: "current_limit_classes", label: "Max Classes", icon: "🏫" },
                                             { key: "current_limit_admins", label: "Max Admins", icon: "🛡️" },
+                                            { key: "current_limit_managers", label: "Max Managers", icon: "🧑‍💼" },
                                         ].map(field => (
                                             <div key={field.key} style={{ padding: "14px", background: "var(--card-bg, #f9fafb)", borderRadius: "12px", border: "1px solid var(--border-color)" }}>
                                                 <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "8px" }}>
@@ -669,15 +697,18 @@ function InstituteLimits() {
                                                     <label style={{ fontWeight: 600, fontSize: "13px" }}>{field.label}</label>
                                                 </div>
                                                 {editMode ? (
-                                                    <input
-                                                        type="number"
-                                                        className="form-input"
-                                                        value={formData[field.key] || 0}
-                                                        min={0}
-                                                        onChange={e => setFormData(p => ({ ...p, [field.key]: e.target.value }))}
-                                                    />
+                                                    <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                                                        <input
+                                                            type="number"
+                                                            className="form-input"
+                                                            value={formData[field.key] ?? 0}
+                                                            min={-1}
+                                                            onChange={e => setFormData(p => ({ ...p, [field.key]: e.target.value }))}
+                                                        />
+                                                        <span style={{ fontSize: "10px", color: "var(--text-secondary)" }}>Set -1 for Unlimited</span>
+                                                    </div>
                                                 ) : (
-                                                    <div style={{ fontSize: "1.5rem", fontWeight: 800, color: "#6366f1" }}>{inst[field.key] ?? "—"}</div>
+                                                    <div style={{ fontSize: "1.5rem", fontWeight: 800, color: "#6366f1" }}>{formatLimit(inst[field.key])}</div>
                                                 )}
                                             </div>
                                         ))}

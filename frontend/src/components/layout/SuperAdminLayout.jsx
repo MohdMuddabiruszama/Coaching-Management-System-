@@ -83,6 +83,10 @@ const SuperAdminLayout = () => {
                         <span className="sal-nav-icon">🏢</span>
                         <span className="sal-nav-text">Institutes</span>
                     </Link>
+                    <Link to="/superadmin/institute-limits" className={navLinkClass('/superadmin/institute-limits')} onClick={() => setSidebarOpen(false)}>
+                        <span className="sal-nav-icon">📊</span>
+                        <span className="sal-nav-text">Institute Limits</span>
+                    </Link>
                     <Link to="/superadmin/plans" className={navLinkClass('/superadmin/plans')} onClick={() => setSidebarOpen(false)}>
                         <span className="sal-nav-icon">📋</span>
                         <span className="sal-nav-text">Plans & Pricing</span>

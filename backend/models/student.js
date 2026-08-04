@@ -1,7 +1,15 @@
+/**
+ * Student Model
+ *
+ * Phase 2 (Academic Year Promotion): Added student_status and
+ * current_academic_year_id as fast-read cache columns.
+ * The authoritative enrollment history lives in student_classes.
+ */
 const { DataTypes } = require("sequelize");
 const sequelize = require("../config/database");
 
 const Student = sequelize.define("Student", {
+    // ── Original fields (preserved) ──────────────────────────────────────────
     institute_id: DataTypes.INTEGER,
     user_id: DataTypes.INTEGER,
     roll_number: DataTypes.STRING,
@@ -19,9 +27,22 @@ const Student = sequelize.define("Student", {
         type: DataTypes.BOOLEAN,
         defaultValue: false
     },
-}, {
-    tableName: 'students'
 
+    // ── Academic Year Promotion fields (Phase 2) ──────────────────────────────
+    student_status: {
+        type: DataTypes.STRING(20),
+        defaultValue: "active",
+        comment: "active | graduated | alumni | dropped | transferred | archived | promoted",
+    },
+    current_academic_year_id: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+        comment: "FK to academic_years (fast-read cache); updated on each promotion",
+    },
+}, {
+    tableName: "students",
+    timestamps: true,
 });
+
 
 module.exports = Student;

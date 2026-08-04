@@ -1,0 +1,907 @@
+/* ============================================================
+   AcademicYearPromotion.css
+   Phase 9 — Academic Year Promotion Engine
+   Styled to match ZenithFlows premium design system
+   ============================================================ */
+
+/* ── Container & Layout ──────────────────────────────────────── */
+.ayp-container {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 2rem 1.5rem 3rem;
+    font-family: var(--font-family, 'Inter', 'Segoe UI', sans-serif);
+    color: var(--text-primary, #1e293b);
+}
+
+/* ── Header ──────────────────────────────────────────────────── */
+.ayp-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 1.75rem;
+    flex-wrap: wrap;
+}
+
+.ayp-header-left {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.ayp-title-icon {
+    font-size: 2.4rem;
+    line-height: 1;
+}
+
+.ayp-title {
+    margin: 0;
+    font-size: 1.65rem;
+    font-weight: 700;
+    background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 60%, #a855f7 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.ayp-subtitle {
+    margin: 0.2rem 0 0;
+    font-size: 0.9rem;
+    color: var(--text-muted, #64748b);
+}
+
+.ayp-header-actions {
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+/* ── Steps Progress Bar ──────────────────────────────────────── */
+.ayp-steps {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    margin-bottom: 2rem;
+    background: var(--card-bg, #f8fafc);
+    border: 1px solid var(--border-color, #e2e8f0);
+    border-radius: 12px;
+    padding: 1rem 1.5rem;
+    overflow-x: auto;
+}
+
+.ayp-step {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.85rem;
+    color: var(--text-muted, #94a3b8);
+    white-space: nowrap;
+    flex: 1;
+    position: relative;
+}
+
+.ayp-step:not(:last-child)::after {
+    content: '→';
+    position: absolute;
+    right: -0.25rem;
+    color: #cbd5e1;
+    font-size: 1rem;
+}
+
+.ayp-step-dot {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: var(--hover-bg, #e2e8f0);
+    color: var(--text-muted, #94a3b8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 0.8rem;
+    flex-shrink: 0;
+    transition: all 0.2s ease;
+}
+
+.ayp-step-active .ayp-step-dot {
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    color: #fff;
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+}
+
+.ayp-step-active {
+    color: #6366f1;
+    font-weight: 600;
+}
+
+.ayp-step-done .ayp-step-dot {
+    background: #22c55e;
+    color: #fff;
+}
+
+.ayp-step-done {
+    color: #22c55e;
+}
+
+/* ── Buttons ─────────────────────────────────────────────────── */
+.ayp-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.55rem 1.1rem;
+    border-radius: 8px;
+    font-size: 0.88rem;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    transition: all 0.18s ease;
+    text-decoration: none;
+    white-space: nowrap;
+}
+
+.ayp-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.ayp-btn-primary {
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    color: #fff;
+    box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3);
+}
+
+.ayp-btn-primary:hover:not(:disabled) {
+    background: linear-gradient(135deg, #4f46e5, #7c3aed);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
+}
+
+.ayp-btn-ghost {
+    background: var(--card-bg, #f1f5f9);
+    color: var(--text-primary, #475569);
+    border: 1px solid var(--border-color, #e2e8f0);
+}
+
+.ayp-btn-ghost:hover:not(:disabled) {
+    background: var(--hover-bg, #e2e8f0);
+}
+
+.ayp-btn-danger {
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+    color: #fff;
+    box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
+}
+
+.ayp-btn-danger:hover:not(:disabled) {
+    background: linear-gradient(135deg, #dc2626, #b91c1c);
+    transform: translateY(-1px);
+}
+
+.ayp-btn-lg {
+    padding: 0.75rem 1.75rem;
+    font-size: 1rem;
+}
+
+.ayp-inline-link {
+    background: none;
+    border: none;
+    color: #6366f1;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: underline;
+    font-size: inherit;
+}
+
+/* ── Summary Banner ──────────────────────────────────────────── */
+.ayp-summary-banner {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.75rem;
+}
+
+.ayp-summary-card {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1.2rem 1.4rem;
+    border-radius: 12px;
+    background: var(--card-bg, #fff);
+    border: 1px solid var(--border-color, #e2e8f0);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    transition: transform 0.15s ease;
+}
+
+.ayp-summary-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+}
+
+.ayp-summary-icon {
+    font-size: 1.8rem;
+}
+
+.ayp-summary-value {
+    font-size: 1.6rem;
+    font-weight: 800;
+    line-height: 1;
+    color: var(--text-primary, #1e293b);
+}
+
+.ayp-summary-label {
+    font-size: 0.78rem;
+    color: var(--text-muted, #64748b);
+    margin-top: 0.2rem;
+}
+
+/* ── Warning Banner ──────────────────────────────────────────── */
+.ayp-warning-banner {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 1rem 1.25rem;
+    background: #fffbeb;
+    border: 1px solid #fcd34d;
+    border-radius: 10px;
+    margin-bottom: 1.5rem;
+    font-size: 0.9rem;
+    color: #92400e;
+}
+
+/* ── Class Grid ──────────────────────────────────────────────── */
+.ayp-class-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.ayp-class-card {
+    background: var(--card-bg, #fff);
+    border: 1px solid var(--border-color, #e2e8f0);
+    border-radius: 12px;
+    padding: 1.2rem;
+    transition: all 0.2s ease;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+}
+
+.ayp-class-card:hover {
+    box-shadow: 0 4px 16px rgba(99, 102, 241, 0.12);
+    border-color: #a5b4fc;
+    transform: translateY(-2px);
+}
+
+.ayp-class-card-empty {
+    opacity: 0.5;
+}
+
+.ayp-class-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+}
+
+.ayp-class-name {
+    font-size: 1rem;
+    font-weight: 700;
+    margin: 0;
+    color: var(--text-primary, #1e293b);
+}
+
+.ayp-class-badge {
+    font-size: 0.75rem;
+    padding: 0.2rem 0.6rem;
+    border-radius: 20px;
+    font-weight: 600;
+}
+
+.ayp-badge-ok {
+    background: #dcfce7;
+    color: #15803d;
+}
+
+.ayp-badge-warn {
+    background: #fef9c3;
+    color: #854d0e;
+}
+
+.ayp-class-arrow {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: var(--hover-bg, #f8fafc);
+    border-radius: 8px;
+    padding: 0.75rem;
+}
+
+.ayp-class-from, .ayp-class-to {
+    flex: 1;
+    text-align: center;
+}
+
+.ayp-class-label {
+    font-size: 0.7rem;
+    color: var(--text-muted, #94a3b8);
+    display: block;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.ayp-class-value {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-primary, #1e293b);
+    display: block;
+    margin-top: 0.2rem;
+}
+
+.ayp-arrow-icon {
+    font-size: 1.2rem;
+    color: #6366f1;
+    flex-shrink: 0;
+}
+
+.ayp-class-empty-note {
+    font-size: 0.78rem;
+    color: var(--text-muted, #94a3b8);
+    margin-top: 0.5rem;
+    text-align: center;
+}
+
+/* ── Year Label Input ────────────────────────────────────────── */
+.ayp-year-input-section {
+    background: var(--card-bg, #fff);
+    border: 1px solid var(--border-color, #e2e8f0);
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.ayp-label {
+    display: block;
+    font-weight: 600;
+    font-size: 0.88rem;
+    color: var(--text-primary, #374151);
+    margin-bottom: 0.6rem;
+}
+
+.ayp-year-input-row {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.ayp-input {
+    padding: 0.65rem 0.9rem;
+    border: 1.5px solid var(--border-color, #d1d5db);
+    border-radius: 8px;
+    font-size: 0.95rem;
+    color: var(--text-primary, #1e293b);
+    background: var(--input-bg, #fff);
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    outline: none;
+    width: 100%;
+    max-width: 220px;
+}
+
+.ayp-input:focus {
+    border-color: #6366f1;
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+}
+
+.ayp-input-valid {
+    border-color: #22c55e !important;
+    box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.15) !important;
+}
+
+.ayp-hint {
+    font-size: 0.8rem;
+    color: var(--text-muted, #64748b);
+    margin: 0;
+}
+
+/* ── Footer Actions ──────────────────────────────────────────── */
+.ayp-footer-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 1rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--border-color, #e2e8f0);
+    flex-wrap: wrap;
+}
+
+.ayp-count-hint {
+    font-size: 0.85rem;
+    color: var(--text-muted, #64748b);
+    margin-right: auto;
+}
+
+/* ── Review Toolbar ──────────────────────────────────────────── */
+.ayp-review-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+}
+
+.ayp-search-input {
+    max-width: 260px;
+    flex: 1;
+}
+
+.ayp-select {
+    padding: 0.6rem 0.8rem;
+    border: 1.5px solid var(--border-color, #d1d5db);
+    border-radius: 8px;
+    font-size: 0.88rem;
+    color: var(--text-primary, #374151);
+    background: var(--input-bg, #fff);
+    cursor: pointer;
+    outline: none;
+}
+
+.ayp-select:focus {
+    border-color: #6366f1;
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.12);
+}
+
+/* ── Bulk Actions Bar ────────────────────────────────────────── */
+.ayp-bulk-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem;
+    background: linear-gradient(135deg, #f0f4ff, #ede9fe);
+    border: 1px solid #c7d2fe;
+    border-radius: 10px;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+}
+
+.ayp-bulk-label {
+    font-weight: 600;
+    font-size: 0.85rem;
+    color: #4f46e5;
+    margin-right: 0.5rem;
+}
+
+.ayp-bulk-btn {
+    padding: 0.4rem 0.8rem;
+    border-radius: 6px;
+    border: 1.5px solid var(--action-color, #6366f1);
+    background: #fff;
+    color: var(--action-color, #6366f1);
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.ayp-bulk-btn:hover {
+    background: var(--action-color, #6366f1);
+    color: #fff;
+}
+
+/* ── Table ───────────────────────────────────────────────────── */
+.ayp-table-wrapper {
+    overflow-x: auto;
+    border: 1px solid var(--border-color, #e2e8f0);
+    border-radius: 12px;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+.ayp-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.88rem;
+}
+
+.ayp-table th {
+    padding: 0.9rem 1rem;
+    text-align: left;
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-muted, #64748b);
+    background: var(--hover-bg, #f8fafc);
+    border-bottom: 1px solid var(--border-color, #e2e8f0);
+    white-space: nowrap;
+}
+
+.ayp-table td {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--border-color, #f1f5f9);
+    vertical-align: middle;
+}
+
+.ayp-table-row:last-child td {
+    border-bottom: none;
+}
+
+.ayp-table-row:hover {
+    background: var(--hover-bg, #f8fafc);
+}
+
+.ayp-row-flagged {
+    background: #fffbeb !important;
+}
+
+.ayp-row-selected {
+    background: #f0f4ff !important;
+}
+
+.ayp-student-cell {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.ayp-student-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 0.85rem;
+    flex-shrink: 0;
+}
+
+.ayp-student-name {
+    font-weight: 600;
+    color: var(--text-primary, #1e293b);
+}
+
+.ayp-student-roll {
+    font-size: 0.75rem;
+    color: var(--text-muted, #94a3b8);
+}
+
+.ayp-td-class {
+    font-weight: 500;
+    color: var(--text-primary, #374151);
+}
+
+.ayp-flag-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: 0.75rem;
+    padding: 0.2rem 0.5rem;
+    background: #fef3c7;
+    color: #92400e;
+    border-radius: 20px;
+    border: 1px solid #fcd34d;
+    font-weight: 600;
+}
+
+.ayp-action-select {
+    padding: 0.4rem 0.6rem;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 6px;
+    font-size: 0.83rem;
+    background: #fff;
+    cursor: pointer;
+    outline: none;
+    min-width: 120px;
+}
+
+.ayp-badge-small {
+    display: inline-block;
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.ayp-badge-green { background: #dcfce7; color: #15803d; }
+.ayp-badge-red   { background: #fee2e2; color: #991b1b; }
+.ayp-badge-blue  { background: #dbeafe; color: #1d4ed8; }
+
+.ayp-td-empty {
+    text-align: center;
+    padding: 2rem;
+    color: var(--text-muted, #94a3b8);
+}
+
+/* ── Confirmation Screen ─────────────────────────────────────── */
+.ayp-confirm-card {
+    background: var(--card-bg, #fff);
+    border: 1px solid var(--border-color, #e2e8f0);
+    border-radius: 16px;
+    padding: 2rem;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+    max-width: 700px;
+    margin: 0 auto;
+}
+
+.ayp-confirm-year-change {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 2rem;
+    padding: 1.5rem;
+    background: linear-gradient(135deg, #f0f4ff, #ede9fe);
+    border-radius: 12px;
+    border: 1px solid #c7d2fe;
+}
+
+.ayp-confirm-year-from, .ayp-confirm-year-to {
+    flex: 1;
+    text-align: center;
+}
+
+.ayp-confirm-year-label {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-muted, #64748b);
+    font-weight: 600;
+}
+
+.ayp-confirm-year-value {
+    font-size: 1.6rem;
+    font-weight: 800;
+    color: var(--text-primary, #1e293b);
+    margin-top: 0.3rem;
+}
+
+.ayp-confirm-year-new {
+    color: #6366f1;
+}
+
+.ayp-confirm-arrow {
+    font-size: 2rem;
+    color: #6366f1;
+}
+
+.ayp-confirm-breakdown-title {
+    font-size: 0.95rem;
+    font-weight: 700;
+    margin: 0 0 1rem;
+    color: var(--text-primary, #374151);
+}
+
+.ayp-confirm-breakdown-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+}
+
+.ayp-confirm-breakdown-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 0.75rem 1.25rem;
+    background: #f8fafc;
+    border: 1.5px solid var(--action-color, #e2e8f0);
+    border-radius: 10px;
+    min-width: 90px;
+    gap: 0.25rem;
+}
+
+.ayp-confirm-breakdown-icon { font-size: 1.4rem; }
+.ayp-confirm-breakdown-count { font-size: 1.5rem; font-weight: 800; color: var(--text-primary, #1e293b); }
+.ayp-confirm-breakdown-label { font-size: 0.75rem; color: var(--text-muted, #64748b); }
+
+.ayp-confirm-total {
+    font-size: 0.88rem;
+    color: var(--text-muted, #64748b);
+    margin-bottom: 1.25rem;
+}
+
+.ayp-confirm-warning {
+    display: flex;
+    gap: 0.75rem;
+    padding: 1rem 1.25rem;
+    background: #fff7ed;
+    border: 1px solid #fed7aa;
+    border-radius: 10px;
+    font-size: 0.87rem;
+    color: #9a3412;
+    margin-bottom: 1.75rem;
+}
+
+.ayp-confirm-type-section { margin-bottom: 1.5rem; }
+
+.ayp-confirm-input {
+    max-width: 200px;
+    font-size: 1rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-align: center;
+}
+
+/* ── Result Screen ───────────────────────────────────────────── */
+.ayp-result-card {
+    text-align: center;
+    max-width: 600px;
+    margin: 0 auto;
+    background: var(--card-bg, #fff);
+    border: 1px solid var(--border-color, #e2e8f0);
+    border-radius: 20px;
+    padding: 3rem 2rem;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.08);
+}
+
+.ayp-result-icon {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+    display: block;
+    animation: ayp-bounce 0.6s ease;
+}
+
+@keyframes ayp-bounce {
+    0% { transform: scale(0.5); opacity: 0; }
+    70% { transform: scale(1.15); }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+.ayp-result-title {
+    font-size: 1.8rem;
+    font-weight: 800;
+    margin: 0 0 0.5rem;
+    background: linear-gradient(135deg, #22c55e, #16a34a);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.ayp-result-async .ayp-result-title {
+    background: linear-gradient(135deg, #f59e0b, #d97706) !important;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.ayp-result-subtitle {
+    font-size: 1rem;
+    color: var(--text-muted, #64748b);
+    margin-bottom: 1.75rem;
+}
+
+.ayp-result-stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.ayp-result-stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 1rem;
+    background: #f8fafc;
+    border-radius: 10px;
+    border: 1px solid #e2e8f0;
+}
+
+.ayp-result-stat-value {
+    font-size: 1.8rem;
+    font-weight: 800;
+    color: var(--text-primary, #1e293b);
+}
+
+.ayp-result-stat-label {
+    font-size: 0.75rem;
+    color: var(--text-muted, #64748b);
+    margin-top: 0.25rem;
+}
+
+.ayp-result-note {
+    font-size: 0.85rem;
+    color: var(--text-muted, #94a3b8);
+    margin-bottom: 2rem;
+}
+
+.ayp-result-actions {
+    display: flex;
+    gap: 0.75rem;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+/* ── Async Progress Bar ──────────────────────────────────────── */
+.ayp-async-progress-bar {
+    width: 100%;
+    height: 8px;
+    background: var(--hover-bg, #e2e8f0);
+    border-radius: 8px;
+    overflow: hidden;
+    margin: 1rem 0;
+}
+
+.ayp-async-progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #f59e0b, #d97706, #f59e0b);
+    background-size: 200% 100%;
+    animation: ayp-progress-shimmer 1.5s ease infinite;
+    border-radius: 8px;
+    width: 60%;
+}
+
+@keyframes ayp-progress-shimmer {
+    0% { background-position: 0% 50%; }
+    100% { background-position: 200% 50%; }
+}
+
+/* ── Loading & Error States ──────────────────────────────────── */
+.ayp-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    padding: 3rem;
+    color: var(--text-muted, #64748b);
+}
+
+.ayp-spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid #e2e8f0;
+    border-top-color: #6366f1;
+    border-radius: 50%;
+    animation: ayp-spin 0.7s linear infinite;
+}
+
+@keyframes ayp-spin {
+    to { transform: rotate(360deg); }
+}
+
+.ayp-error {
+    padding: 0.9rem 1.25rem;
+    background: #fef2f2;
+    border: 1px solid #fca5a5;
+    border-radius: 10px;
+    color: #991b1b;
+    font-size: 0.9rem;
+    margin-bottom: 1.25rem;
+}
+
+.ayp-no-students {
+    color: var(--text-muted, #94a3b8);
+    font-size: 0.9rem;
+}
+
+.ayp-empty-state {
+    text-align: center;
+    padding: 3rem;
+    color: var(--text-muted, #94a3b8);
+    font-size: 0.95rem;
+}
+
+
+    .ayp-table th { background: #1e293b; }
+    .ayp-table-row:hover { background: #1e293b; }
+    .ayp-steps { background: #1e293b; border-color: #334155; }
+}
+
+/* ── Responsive ──────────────────────────────────────────────── */
+@media (max-width: 768px) {
+    .ayp-container { padding: 1rem; }
+    .ayp-title { font-size: 1.3rem; }
+    .ayp-class-grid { grid-template-columns: 1fr 1fr; }
+    .ayp-result-stats { grid-template-columns: repeat(2, 1fr); }
+    .ayp-confirm-year-change { flex-direction: column; text-align: center; }
+    .ayp-header { flex-direction: column; }
+    .ayp-steps { font-size: 0.75rem; }
+}
+
+@media (max-width: 480px) {
+    .ayp-class-grid { grid-template-columns: 1fr; }
+    .ayp-summary-banner { grid-template-columns: 1fr 1fr; }
+    .ayp-result-stats { grid-template-columns: repeat(2, 1fr); }
+}
