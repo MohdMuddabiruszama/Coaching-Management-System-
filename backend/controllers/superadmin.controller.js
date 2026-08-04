@@ -1163,4 +1163,310 @@ exports.restoreDeletedData = async (req, res) => {
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
-};
+};
+
+
+// ─────────────────────────────────────────────────────────────
+// SYSTEM LOGS — Audit Logs + Slow Request Logs
+// ─────────────────────────────────────────────────────────────
+
+/**
+ * GET /api/superadmin/system-logs
+ * Returns paginated audit_logs with optional filters.
+ * Single query with WHERE conditions — minimum DB round-trips.
+ */
+exports.getSystemLogs = async (req, res) => {
+    try {
+        const {
+            page       = 1,
+            limit      = 50,
+            type       = 'audit',      // 'audit' | 'slow'
+            action,
+            role,
+            institute_id,
+            entity_type,
+            start_date,
+            end_date,
+            search,
+            level,                     // 'error' | 'warn' | 'info' — for slow logs
+        } = req.query;
+
+        const offset = (parseInt(page) - 1) * parseInt(limit);
+        const pageLimit = Math.min(parseInt(limit), 200); // cap at 200 rows
+
+        if (type === 'slow') {
+            // ── Slow Request Logs ────────────────────────────────────────────
+            const where = {};
+            if (institute_id) where.institute_id = parseInt(institute_id);
+            if (role)         where.user_role    = role;
+            if (search)       where.path         = { [Op.iLike]: `%${search}%` };
+            if (level === 'error')  where.status_code = { [Op.gte]: 500 };
+            else if (level === 'warn') where.status_code = { [Op.between]: [400, 499] };
+            if (start_date || end_date) {
+                where.createdAt = {};
+                if (start_date) where.createdAt[Op.gte] = new Date(start_date);
+                if (end_date)   where.createdAt[Op.lte] = new Date(new Date(end_date).setHours(23,59,59,999));
+            }
+
+            const { count, rows } = await SlowRequestLog.findAndCountAll({
+                where,
+                order: [['createdAt', 'DESC']],
+                limit: pageLimit,
+                offset,
+                raw: true,
+            });
+
+            return res.json({
+                success: true,
+                data:    rows,
+                total:   count,
+                page:    parseInt(page),
+                limit:   pageLimit,
+                pages:   Math.ceil(count / pageLimit),
+            });
+        }
+
+        // ── Audit Logs (default) ─────────────────────────────────────────────
+        const where = {};
+        if (action)       where.action       = { [Op.iLike]: `%${action}%` };
+        if (role)         where.user_role    = role;
+        if (institute_id) where.institute_id = parseInt(institute_id);
+        if (entity_type)  where.entity_type  = entity_type;
+        if (search) {
+            where[Op.or] = [
+                { action:      { [Op.iLike]: `%${search}%` } },
+                { entity_type: { [Op.iLike]: `%${search}%` } },
+                { user_name:   { [Op.iLike]: `%${search}%` } },
+                { path:        { [Op.iLike]: `%${search}%` } },
+                { remarks:     { [Op.iLike]: `%${search}%` } },
+            ];
+        }
+        if (level === 'error') where.status_code = { [Op.gte]: 500 };
+        else if (level === 'warn') where.status_code = { [Op.between]: [400, 499] };
+        if (start_date || end_date) {
+            where.createdAt = {};
+            if (start_date) where.createdAt[Op.gte] = new Date(start_date);
+            if (end_date)   where.createdAt[Op.lte] = new Date(new Date(end_date).setHours(23,59,59,999));
+        }
+
+        const { count, rows } = await AuditLog.findAndCountAll({
+            where,
+            order: [['createdAt', 'DESC']],
+            limit: pageLimit,
+            offset,
+            raw: true,
+        });
+
+        return res.json({
+            success: true,
+            data:    rows,
+            total:   count,
+            page:    parseInt(page),
+            limit:   pageLimit,
+            pages:   Math.ceil(count / pageLimit),
+        });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+};
+
+/**
+ * GET /api/superadmin/system-logs/stats
+ * Returns summary stats for the System Logs dashboard header.
+ * All 4 counts fired in parallel — single round-trip.
+ */
+exports.getSystemLogStats = async (req, res) => {
+    try {
+        const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+        const oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+
+        const [
+            totalAuditLogs,
+            auditLast24h,
+            totalSlowRequests,
+            errorCount,
+            criticalActions,
+        ] = await Promise.all([
+            AuditLog.count(),
+            AuditLog.count({ where: { createdAt: { [Op.gte]: oneDayAgo } } }),
+            SlowRequestLog.count(),
+            SlowRequestLog.count({ where: { status_code: { [Op.gte]: 500 } } }),
+            AuditLog.count({
+                where: {
+                    action: {
+                        [Op.or]: [
+                            { [Op.like]: '%delete%' },
+                            { [Op.like]: '%suspend%' },
+                            { [Op.like]: '%cancel%' }
+                        ]
+                    },
+                    createdAt: { [Op.gte]: oneWeekAgo },
+                }
+            }),
+        ]);
+
+        return res.json({
+            success: true,
+            stats: {
+                totalAuditLogs,
+                auditLast24h,
+                totalSlowRequests,
+                errorCount,
+                criticalActions,
+            }
+        });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+};
+
+// ─────────────────────────────────────────────────────────────
+// USERS MANAGEMENT — List all platform users (paginated + filtered)
+// GET /api/superadmin/users
+// ─────────────────────────────────────────────────────────────
+exports.getUsers = async (req, res) => {
+    try {
+        const {
+            page = 1,
+            limit = 20,
+            search = '',
+            role = '',
+            status = '',
+            institute_id = '',
+            sortBy = 'createdAt',
+            sortOrder = 'DESC',
+        } = req.query;
+
+        const offset = (parseInt(page) - 1) * parseInt(limit);
+
+        // Build where clause
+        const where = {};
+
+        // Exclude super_admin from listing (security)
+        where.role = { [Op.ne]: 'super_admin' };
+
+        if (role && role !== 'all') {
+            where.role = role;
+        }
+        if (status && status !== 'all') {
+            where.status = status;
+        }
+        if (institute_id) {
+            where.institute_id = parseInt(institute_id);
+        }
+        if (search && search.trim()) {
+            where[Op.or] = [
+                { name: { [Op.iLike]: `%${search.trim()}%` } },
+                { email: { [Op.iLike]: `%${search.trim()}%` } },
+                { phone: { [Op.iLike]: `%${search.trim()}%` } },
+            ];
+        }
+
+        // Whitelist sort columns to prevent SQL injection
+        const allowedSortCols = ['createdAt', 'name', 'email', 'role', 'status'];
+        const safeSort = allowedSortCols.includes(sortBy) ? sortBy : 'createdAt';
+        const safeOrder = sortOrder === 'ASC' ? 'ASC' : 'DESC';
+
+        const { count, rows } = await User.findAndCountAll({
+            where,
+            attributes: [
+                'id', 'name', 'email', 'phone', 'role', 'status',
+                'institute_id', 'createdAt', 'updatedAt',
+                'manager_type', 'manager_type_label',
+                'credentials_sent_at', 'last_announcement_seen_at'
+            ],
+            include: [
+                {
+                    model: Institute,
+                    as: 'Institute',
+                    attributes: ['id', 'name'],
+                    required: false,
+                }
+            ],
+            order: [[safeSort, safeOrder]],
+            limit: parseInt(limit),
+            offset,
+        });
+
+        // Summary counts — run in parallel for speed
+        const [totalAll, totalActive, totalBlocked, byRole] = await Promise.all([
+            User.count({ where: { role: { [Op.ne]: 'super_admin' } } }),
+            User.count({ where: { role: { [Op.ne]: 'super_admin' }, status: 'active' } }),
+            User.count({ where: { role: { [Op.ne]: 'super_admin' }, status: 'blocked' } }),
+            User.findAll({
+                attributes: ['role', [fn('COUNT', col('id')), 'count']],
+                where: { role: { [Op.ne]: 'super_admin' } },
+                group: ['role'],
+                raw: true,
+            }),
+        ]);
+
+        const roleCounts = {};
+        byRole.forEach(r => { roleCounts[r.role] = parseInt(r.count); });
+
+        return res.json({
+            success: true,
+            users: rows,
+            pagination: {
+                total: count,
+                page: parseInt(page),
+                limit: parseInt(limit),
+                totalPages: Math.ceil(count / parseInt(limit)),
+            },
+            summary: {
+                total: totalAll,
+                active: totalActive,
+                blocked: totalBlocked,
+                byRole: roleCounts,
+            },
+        });
+    } catch (error) {
+        console.error('getUsers error:', error);
+        res.status(500).json({ error: error.message });
+    }
+};
+
+// ─────────────────────────────────────────────────────────────
+// UPDATE USER STATUS — block / unblock
+// PUT /api/superadmin/users/:id/status
+// ─────────────────────────────────────────────────────────────
+exports.updateUserStatus = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { status } = req.body;
+
+        if (!['active', 'blocked'].includes(status)) {
+            return res.status(400).json({ error: 'Status must be "active" or "blocked"' });
+        }
+
+        const user = await User.findByPk(id);
+        if (!user) return res.status(404).json({ error: 'User not found' });
+        if (user.role === 'super_admin') return res.status(403).json({ error: 'Cannot modify super admin' });
+
+        await user.update({ status });
+        return res.json({ success: true, message: `User ${status === 'active' ? 'unblocked' : 'blocked'} successfully`, user });
+    } catch (error) {
+        console.error('updateUserStatus error:', error);
+        res.status(500).json({ error: error.message });
+    }
+};
+
+// ─────────────────────────────────────────────────────────────
+// DELETE USER — soft-delete
+// DELETE /api/superadmin/users/:id
+// ─────────────────────────────────────────────────────────────
+exports.deleteUser = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const user = await User.findByPk(id);
+        if (!user) return res.status(404).json({ error: 'User not found' });
+        if (user.role === 'super_admin') return res.status(403).json({ error: 'Cannot delete super admin' });
+
+        await user.destroy(); // soft-delete (paranoid: true)
+        return res.json({ success: true, message: 'User deleted successfully' });
+    } catch (error) {
+        console.error('deleteUser error:', error);
+        res.status(500).json({ error: error.message });
+    }
+};
+

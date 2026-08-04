@@ -37,6 +37,8 @@ const LandingPage = lazy(() => import("../pages/superadmin/LandingPage"));
 const InstituteLimits = lazy(() => import("../pages/superadmin/InstituteLimits"));
 const Enquiries = lazy(() => import("../pages/superadmin/Enquiries"));
 const SuperAdminReports = lazy(() => import("../pages/superadmin/Reports"));
+const SystemLogs = lazy(() => import("../pages/superadmin/SystemLogs"));
+const SuperAdminUsers = lazy(() => import("../pages/superadmin/Users"));
 
 const AdminDashboard = lazy(() => import("../pages/admin/Dashboard"));
 const Students = lazy(() => import("../pages/admin/Students"));
@@ -221,6 +223,8 @@ export default function WebAppRoutes() {
           <Route path="institute-limits" element={<InstituteLimits />} />
           <Route path="enquiries" element={<Enquiries />} />
           <Route path="reports" element={<SuperAdminReports />} />
+          <Route path="system-logs" element={<SystemLogs />} />
+          <Route path="users" element={<SuperAdminUsers />} />
           <Route path="*" element={<Navigate to="/superadmin/dashboard" />} />
         </Route>
 

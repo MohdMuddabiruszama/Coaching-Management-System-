@@ -120,4 +120,41 @@ router.post(
     controller.restoreDeletedData
 );
 
+// ─── System Logs ─────────────────────────────────────────────────────────────
+router.get(
+    "/system-logs/stats",
+    verifyToken,
+    allowRoles("super_admin"),
+    controller.getSystemLogStats
+);
+
+router.get(
+    "/system-logs",
+    verifyToken,
+    allowRoles("super_admin"),
+    controller.getSystemLogs
+);
+
+// ─── Users Management ──────────────────────────────────────────────────────────
+router.get(
+    "/users",
+    verifyToken,
+    allowRoles("super_admin"),
+    controller.getUsers
+);
+
+router.put(
+    "/users/:id/status",
+    verifyToken,
+    allowRoles("super_admin"),
+    controller.updateUserStatus
+);
+
+router.delete(
+    "/users/:id",
+    verifyToken,
+    allowRoles("super_admin"),
+    controller.deleteUser
+);
+
 module.exports = router;
