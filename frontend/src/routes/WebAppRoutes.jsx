@@ -136,6 +136,7 @@ const ParentMobileAssignments = lazy(() => import("../pages/parent/MobileAssignm
 const NotFound = lazy(() => import("../pages/common/NotFound"));
 const Unauthorized = lazy(() => import("../pages/common/Unauthorized"));
 
+const ManagerArea = lazy(() => import("./MobileManagerRoutes").then(module => ({ default: module.ManagerArea || module.default })));
 import { useSubdomain } from "../hooks/useSubdomain";
 
 const PageLoader = () => (
@@ -228,14 +229,20 @@ export default function WebAppRoutes() {
           <Route path="*" element={<Navigate to="/superadmin/dashboard" />} />
         </Route>
 
-        <Route
-          path="/admin/*"
-          element={
-            <ProtectedRoute allowedRoles={["admin", "manager"]}>
-              <AdminLayout />
-            </ProtectedRoute>
+        {["/admin/*", "/manager/*"].map(basePath => {
+          if (basePath === "/manager/*" && isNativeEnv) {
+              return <Route key={basePath} path={basePath} element={<ProtectedRoute allowedRoles={["manager"]}><ManagerArea /></ProtectedRoute>} />;
           }
-        >
+          return (
+          <Route
+            key={basePath}
+            path={basePath}
+            element={
+              <ProtectedRoute allowedRoles={["admin", "manager"]}>
+                <AdminLayout />
+              </ProtectedRoute>
+            }
+          >
           <Route path="dashboard" element={<AdminDashboard />} />
           <Route path="admins" element={<ManageAdmins />} />
           <Route path="parents" element={<Parents />} />
@@ -272,6 +279,8 @@ export default function WebAppRoutes() {
           <Route path="academic-year-settings" element={<AcademicYearSettings />} />
           <Route path="*" element={<Navigate to="/admin/dashboard" />} />
         </Route>
+        );
+        })}
 
         <Route
           path="/faculty/*"

@@ -707,7 +707,7 @@ exports.getAssignedStudentFees = catchAsync(async (req, res) => {
           final_amount: 0,
           paid_amount: 0,
           due_amount: 0,
-          status: 'pending', // show as pending so they appear by default!
+          status: 'unassigned', // Changed from pending to avoid inflating pending stats
           Student: s,
           Class: s.Classes?.[0] || null,
           FeesStructure: null

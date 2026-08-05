@@ -1,0 +1,160 @@
+/* ManagerMobileDashboard.css */
+.mmd-page {
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    min-height: 100%;
+}
+
+/* Greeting Banner */
+.mmd-greeting-card {
+    background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 60%, #3b82f6 100%);
+    border-radius: 20px;
+    padding: 20px 20px 16px;
+    color: #fff;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 8px 32px rgba(29,78,216,0.28);
+}
+.mmd-greeting-card::before {
+    content: '';
+    position: absolute;
+    top: -40px; right: -40px;
+    width: 140px; height: 140px;
+    background: rgba(255,255,255,0.08);
+    border-radius: 50%;
+}
+.mmd-greeting-card::after {
+    content: '';
+    position: absolute;
+    bottom: -30px; right: 20px;
+    width: 100px; height: 100px;
+    background: rgba(255,255,255,0.06);
+    border-radius: 50%;
+}
+.mmd-greeting-sub { font-size: 13px; opacity: 0.8; margin: 0 0 4px; }
+.mmd-greeting-name { font-size: 22px; font-weight: 800; margin: 0 0 2px; }
+.mmd-greeting-role {
+    font-size: 12px;
+    background: rgba(255,255,255,0.2);
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 20px;
+    margin-top: 4px;
+    font-weight: 600;
+}
+
+/* Stats Grid */
+.mmd-stats-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+
+.mmd-stat-card {
+    background: #fff;
+    border-radius: 16px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+    border: 1px solid rgba(0,0,0,0.04);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+}
+.mmd-stat-card:active { transform: scale(0.97); box-shadow: 0 1px 6px rgba(0,0,0,0.1); }
+
+.mmd-stat-icon-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+.mmd-stat-icon {
+    width: 40px; height: 40px;
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px;
+}
+.mmd-stat-badge {
+    font-size: 10px; font-weight: 700;
+    padding: 3px 8px; border-radius: 20px;
+}
+.mmd-stat-badge.green  { background: #dcfce7; color: #15803d; }
+.mmd-stat-badge.red    { background: #fee2e2; color: #dc2626; }
+.mmd-stat-badge.blue   { background: #dbeafe; color: #1d4ed8; }
+.mmd-stat-badge.amber  { background: #fef3c7; color: #d97706; }
+
+.mmd-stat-value { font-size: 26px; font-weight: 800; color: #0f172a; margin: 0; line-height: 1; }
+.mmd-stat-label { font-size: 12px; color: #64748b; font-weight: 500; margin: 0; }
+
+/* Quick Actions */
+.mmd-section-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: #0f172a;
+    margin: 4px 0 0;
+}
+
+.mmd-actions-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+}
+
+.mmd-action-btn {
+    background: #fff;
+    border: 1px solid rgba(0,0,0,0.06);
+    border-radius: 14px;
+    padding: 14px 8px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    transition: transform 0.15s, box-shadow 0.15s;
+    -webkit-tap-highlight-color: transparent;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+.mmd-action-btn:active { transform: scale(0.94); }
+.mmd-action-btn span:first-child { font-size: 26px; }
+.mmd-action-btn span:nth-child(2) { font-size: 11px; font-weight: 600; color: #475569; text-align: center; line-height: 1.2; }
+
+/* Locked State */
+.mmd-action-btn.locked {
+    opacity: 0.6;
+    background: #f8fafc;
+    position: relative;
+}
+.mmd-action-locked {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    font-size: 12px !important;
+    background: rgba(0, 0, 0, 0.05);
+    border-radius: 50%;
+    padding: 2px;
+}
+
+/* Loading & Error */
+.mmd-loading {
+    display: flex; align-items: center; justify-content: center;
+    gap: 10px; padding: 48px 0; color: #64748b; font-size: 15px;
+}
+.mmd-spinner {
+    width: 24px; height: 24px;
+    border: 3px solid #e2e8f0;
+    border-top-color: #1d4ed8;
+    border-radius: 50%;
+    animation: mmd-spin 0.7s linear infinite;
+}
+@keyframes mmd-spin { to { transform: rotate(360deg); } }
+
+/* Responsive */
+@media (min-width: 768px) {
+    .mmd-stats-grid { grid-template-columns: repeat(4, 1fr); }
+    .mmd-actions-grid { grid-template-columns: repeat(6, 1fr); }
+    .mmd-page { padding: 24px 32px; max-width: 900px; margin: 0 auto; }
+}

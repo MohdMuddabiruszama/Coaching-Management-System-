@@ -27,6 +27,7 @@ const AdminLayout = () => {
         setOpenMenus(prev => ({ ...prev, [key]: !prev[key] }));
     };
 
+    const rolePrefix = user?.role === "manager" ? "manager" : "admin";
     const isAdmin = user?.role === 'admin' || user?.role === 'super_admin';
 
     const hasPermission = (featureKey) => {
@@ -45,6 +46,14 @@ const AdminLayout = () => {
         unreadEnquiryCount: 0
     });
     const [activeYearLabel, setActiveYearLabel] = useState(null);
+
+    useEffect(() => {
+        if (user?.role === 'manager' && location.pathname.startsWith('/admin')) {
+            navigate(location.pathname.replace(/^\/admin/, '/manager'), { replace: true });
+        } else if ((user?.role === 'admin' || user?.role === 'super_admin') && location.pathname.startsWith('/manager')) {
+            navigate(location.pathname.replace(/^\/manager/, '/admin'), { replace: true });
+        }
+    }, [user, location.pathname, navigate]);
 
     useEffect(() => {
         const fetchSidebarStats = async () => {
@@ -123,21 +132,21 @@ const AdminLayout = () => {
         const path = location.pathname;
         let featureKey = null;
 
-        if (path.startsWith('/admin/finance')) featureKey = 'finance';
-        else if (path.startsWith('/admin/salary')) featureKey = 'salary';
-        else if (path.startsWith('/admin/attendance') || path.startsWith('/admin/view-attendance')) featureKey = 'attendance';
-        else if (path.startsWith('/admin/reports')) featureKey = 'reports';
-        else if (path.startsWith('/admin/fees')) featureKey = 'fees';
-        else if (path.startsWith('/admin/announcements')) featureKey = 'announcements';
-        else if (path.startsWith('/admin/smart-attendance') || path.startsWith('/admin/scan-faculty-qr')) featureKey = 'auto_attendance';
-        else if (path.startsWith('/admin/timetable')) featureKey = 'timetable';
-        else if (path.startsWith('/admin/exams')) featureKey = 'exams';
-        else if (path.startsWith('/admin/performance')) featureKey = 'performance_hub';
-        else if (path.startsWith('/admin/notes')) featureKey = 'notes';
-        else if (path.startsWith('/admin/chat-monitor')) featureKey = 'chat';
-        else if (path.startsWith('/admin/assignments')) featureKey = 'assignments';
-        else if (path.startsWith('/admin/expenses')) featureKey = 'expenses';
-        else if (path.startsWith('/admin/biometric')) featureKey = 'biometric';
+        if (path.startsWith(`/${rolePrefix}/finance`)) featureKey = 'finance';
+        else if (path.startsWith(`/${rolePrefix}/salary`)) featureKey = 'salary';
+        else if (path.startsWith(`/${rolePrefix}/attendance`) || path.startsWith(`/${rolePrefix}/view-attendance`)) featureKey = 'attendance';
+        else if (path.startsWith(`/${rolePrefix}/reports`)) featureKey = 'reports';
+        else if (path.startsWith(`/${rolePrefix}/fees`)) featureKey = 'fees';
+        else if (path.startsWith(`/${rolePrefix}/announcements`)) featureKey = 'announcements';
+        else if (path.startsWith(`/${rolePrefix}/smart-attendance`) || path.startsWith(`/${rolePrefix}/scan-faculty-qr`)) featureKey = 'auto_attendance';
+        else if (path.startsWith(`/${rolePrefix}/timetable`)) featureKey = 'timetable';
+        else if (path.startsWith(`/${rolePrefix}/exams`)) featureKey = 'exams';
+        else if (path.startsWith(`/${rolePrefix}/performance`)) featureKey = 'performance_hub';
+        else if (path.startsWith(`/${rolePrefix}/notes`)) featureKey = 'notes';
+        else if (path.startsWith(`/${rolePrefix}/chat-monitor`)) featureKey = 'chat';
+        else if (path.startsWith(`/${rolePrefix}/assignments`)) featureKey = 'assignments';
+        else if (path.startsWith(`/${rolePrefix}/expenses`)) featureKey = 'expenses';
+        else if (path.startsWith(`/${rolePrefix}/biometric`)) featureKey = 'biometric';
 
         if (featureKey) {
             const isTrialLocked = planDetails.plan.is_free_trial && getTrialDaysLeft() <= 0;
@@ -161,8 +170,8 @@ const AdminLayout = () => {
         if (user) {
             // Update Document Title
             document.title = user.institute_name 
-                ? `${user.institute_name} — Admin Portal` 
-                : "Admin Portal";
+                ? `${user.institute_name} — ${user?.role === "manager" ? "Manager" : "Admin"} Portal` 
+                : `${user?.role === "manager" ? "Manager" : "Admin"} Portal`;
 
             // Update Favicon with Border Radius (Circle)
             if (user.institute_logo) {
@@ -214,19 +223,19 @@ const AdminLayout = () => {
         try {
             if (type === 'assignments' && sidebarStats.unreadAssignmentCount > 0) {
                 setSidebarStats(s => ({ ...s, unreadAssignmentCount: 0 }));
-                await api.post("/admin/clear-unread-assignments");
+                await api.post(`/${rolePrefix}/clear-unread-assignments`);
             } else if (type === 'notes' && sidebarStats.unreadNotesCount > 0) {
                 setSidebarStats(s => ({ ...s, unreadNotesCount: 0 }));
-                await api.post("/admin/clear-unread-notes");
+                await api.post(`/${rolePrefix}/clear-unread-notes`);
             } else if (type === 'announcements' && sidebarStats.unreadAnnouncementCount > 0) {
                 setSidebarStats(s => ({ ...s, unreadAnnouncementCount: 0 }));
-                await api.post("/admin/clear-unread-announcements");
+                await api.post(`/${rolePrefix}/clear-unread-announcements`);
             } else if (type === 'chat' && sidebarStats.unreadChatCount > 0) {
                 setSidebarStats(s => ({ ...s, unreadChatCount: 0 }));
-                await api.post("/admin/clear-unread-chats");
+                await api.post(`/${rolePrefix}/clear-unread-chats`);
             } else if (type === 'public_page' && sidebarStats.unreadEnquiryCount > 0) {
                 setSidebarStats(s => ({ ...s, unreadEnquiryCount: 0 }));
-                await api.post("/admin/clear-unread-enquiries");
+                await api.post(`/${rolePrefix}/clear-unread-enquiries`);
             }
         } catch (error) {
             console.error("Error clearing unread counts", error);
@@ -257,50 +266,50 @@ const AdminLayout = () => {
     // Define searchable routes based on permissions
     const getSearchableRoutes = () => {
         const routes = [
-            { name: "Dashboard", path: "/admin/dashboard", icon: "🏠" },
-            { name: "My Profile", path: "/admin/profile", icon: "👤" }
+            { name: "Dashboard", path: `/${rolePrefix}/dashboard`, icon: "🏠" },
+            { name: "My Profile", path: `/${rolePrefix}/profile`, icon: "👤" }
         ];
         const isLifetime = user?.is_lifetime_member || user?.Institute?.is_lifetime_member;
         if (isLifetime) {
-            routes.push({ name: "Lifetime Access", path: "/admin/lifetime", icon: "💎" });
+            routes.push({ name: "Lifetime Access", path: `/${rolePrefix}/lifetime`, icon: "💎" });
         }
         if (hasPermission('students')) {
-            routes.push({ name: "Students", path: "/admin/students", icon: "👥" });
-            routes.push({ name: "Parents", path: "/admin/parents", icon: "👨‍👩‍👧" });
+            routes.push({ name: "Students", path: `/${rolePrefix}/students`, icon: "👥" });
+            routes.push({ name: "Parents", path: `/${rolePrefix}/parents`, icon: "👨‍👩‍👧" });
         }
         if (hasPermission('faculty')) {
-            routes.push({ name: "Faculty", path: "/admin/faculty", icon: "👩‍🏫" });
-            routes.push({ name: "Manage Faculty Attendance", path: "/admin/faculty-attendance", icon: "📋" });
-            routes.push({ name: "View Faculty Attendance", path: "/admin/view-faculty-attendance", icon: "👀" });
-            routes.push({ name: "Scan Faculty QR", path: "/admin/scan-faculty-qr", icon: "📷" });
+            routes.push({ name: "Faculty", path: `/${rolePrefix}/faculty`, icon: "👩‍🏫" });
+            routes.push({ name: "Manage Faculty Attendance", path: `/${rolePrefix}/faculty-attendance`, icon: "📋" });
+            routes.push({ name: "View Faculty Attendance", path: `/${rolePrefix}/view-faculty-attendance`, icon: "👀" });
+            routes.push({ name: "Scan Faculty QR", path: `/${rolePrefix}/scan-faculty-qr`, icon: "📷" });
         }
-        if (hasPermission('classes')) routes.push({ name: "Classes", path: "/admin/classes", icon: "📚" });
-        if (hasPermission('subjects')) routes.push({ name: "Subjects", path: "/admin/subjects", icon: "📖" });
+        if (hasPermission('classes')) routes.push({ name: "Classes", path: `/${rolePrefix}/classes`, icon: "📚" });
+        if (hasPermission('subjects')) routes.push({ name: "Subjects", path: `/${rolePrefix}/subjects`, icon: "📖" });
         if (hasPermission('attendance')) {
-            routes.push({ name: "Student Attendance", path: "/admin/attendance", icon: "📋" });
-            routes.push({ name: "Smart Attendance (QR)", path: "/admin/smart-attendance", icon: "📱" });
+            routes.push({ name: "Student Attendance", path: `/${rolePrefix}/attendance`, icon: "📋" });
+            routes.push({ name: "Smart Attendance (QR)", path: `/${rolePrefix}/smart-attendance`, icon: "📱" });
         }
-        if (hasPermission('fees') || hasPermission('collect_fees')) routes.push({ name: "Fees & Payments", path: "/admin/fees", icon: "💰" });
-        if (hasPermission('expenses')) routes.push({ name: "Expenses", path: "/admin/expenses", icon: "💸" });
-        if (isAdmin || hasPermission('finance')) routes.push({ name: "Discounts & Finance Dashboard", path: "/admin/finance", icon: "📊" });
-        if (hasPermission('salary')) routes.push({ name: "Faculty Salary", path: "/admin/salary", icon: "💼" });
-        if (hasPermission('reports')) routes.push({ name: "Reports & Analytics", path: "/admin/reports", icon: "📉" });
-        if (hasPermission('announcements')) routes.push({ name: "Announcements", path: "/admin/announcements", icon: "📢" });
-        if (hasPermission('exams')) routes.push({ name: "Exams", path: "/admin/exams", icon: "📝" });
-        if (hasPermission('performance')) routes.push({ name: "Performance Hub", path: "/admin/performance", icon: "📈" });
-        if (hasPermission('assignments')) routes.push({ name: "Assignments", path: "/admin/assignments", icon: "📄" });
-        if (hasPermission('notes')) routes.push({ name: "Notes", path: "/admin/notes", icon: "📓" });
-        if (hasPermission('chat')) routes.push({ name: "Chat Monitor", path: "/admin/chat-monitor", icon: "💬" });
-        if (hasPermission('biometric')) routes.push({ name: "Biometric Integration", path: "/admin/biometric", icon: "🔐" });
+        if (hasPermission('fees') || hasPermission('collect_fees')) routes.push({ name: "Fees & Payments", path: `/${rolePrefix}/fees`, icon: "💰" });
+        if (hasPermission('expenses')) routes.push({ name: "Expenses", path: `/${rolePrefix}/expenses`, icon: "💸" });
+        if (isAdmin || hasPermission('finance')) routes.push({ name: "Discounts & Finance Dashboard", path: `/${rolePrefix}/finance`, icon: "📊" });
+        if (hasPermission('salary')) routes.push({ name: "Faculty Salary", path: `/${rolePrefix}/salary`, icon: "💼" });
+        if (hasPermission('reports')) routes.push({ name: "Reports & Analytics", path: `/${rolePrefix}/reports`, icon: "📉" });
+        if (hasPermission('announcements')) routes.push({ name: "Announcements", path: `/${rolePrefix}/announcements`, icon: "📢" });
+        if (hasPermission('exams')) routes.push({ name: "Exams", path: `/${rolePrefix}/exams`, icon: "📝" });
+        if (hasPermission('performance')) routes.push({ name: "Performance Hub", path: `/${rolePrefix}/performance`, icon: "📈" });
+        if (hasPermission('assignments')) routes.push({ name: "Assignments", path: `/${rolePrefix}/assignments`, icon: "📄" });
+        if (hasPermission('notes')) routes.push({ name: "Notes", path: `/${rolePrefix}/notes`, icon: "📓" });
+        if (hasPermission('chat')) routes.push({ name: "Chat Monitor", path: `/${rolePrefix}/chat-monitor`, icon: "💬" });
+        if (hasPermission('biometric')) routes.push({ name: "Biometric Integration", path: `/${rolePrefix}/biometric`, icon: "🔐" });
         
-        routes.push({ name: "Batches & Timetable", path: "/admin/timetable", icon: "📅" });
+        routes.push({ name: "Batches & Timetable", path: `/${rolePrefix}/timetable`, icon: "📅" });
         
         if (isAdmin) {
-            routes.push({ name: "Manage Managers (Admins)", path: "/admin/admins", icon: "👨‍💼" });
-            routes.push({ name: "Public Page Website", path: "/admin/public-page", icon: "🌐" });
-            routes.push({ name: "Academic Year & Promotion", path: "/admin/academic-year-promotion", icon: "🎓" });
-            routes.push({ name: "Academic Year Settings", path: "/admin/academic-year-settings", icon: "📆" });
-            routes.push({ name: "Settings", path: "/admin/settings", icon: "⚙️" });
+            routes.push({ name: "Manage Managers (Admins)", path: `/${rolePrefix}/admins`, icon: "👨‍💼" });
+            routes.push({ name: "Public Page Website", path: `/${rolePrefix}/public-page`, icon: "🌐" });
+            routes.push({ name: "Academic Year & Promotion", path: `/${rolePrefix}/academic-year-promotion`, icon: "🎓" });
+            routes.push({ name: "Academic Year Settings", path: `/${rolePrefix}/academic-year-settings`, icon: "📆" });
+            routes.push({ name: "Settings", path: `/${rolePrefix}/settings`, icon: "⚙️" });
         }
 
         return routes;
@@ -352,14 +361,14 @@ const AdminLayout = () => {
                         <InstituteLogo size="sm" />
                         <div className="al-logo-text">
                             <h3>{user?.institute_name || "Institute"}</h3>
-                            <p>Admin Portal</p>
+                            <p>{user?.role === "manager" ? "Manager" : "Admin"} Portal</p>
                         </div>
                     </div>
                     <button className="al-sidebar-close" onClick={() => setSidebarOpen(false)}>✕</button>
                 </div>
 
                 <div className="al-sidebar-menu">
-                    <Link to="/admin/dashboard" className={navLinkClass('/admin/dashboard')} onClick={() => setSidebarOpen(false)}>
+                    <Link to={`/${rolePrefix}/dashboard`} className={navLinkClass(`/${rolePrefix}/dashboard`)} onClick={() => setSidebarOpen(false)}>
                         <span className="al-nav-icon">🏠</span>
                         <span className="al-nav-text">Dashboard</span>
                     </Link>
@@ -378,22 +387,22 @@ const AdminLayout = () => {
                             </button>
                             {openMenus['students'] && (
                                 <div className="al-nav-submenu">
-                                    <Link to="/admin/students" className={navLinkClass('/admin/students')} onClick={() => setSidebarOpen(false)}>
+                                    <Link to={`/${rolePrefix}/students`} className={navLinkClass(`/${rolePrefix}/students`)} onClick={() => setSidebarOpen(false)}>
                                         <span className="al-nav-icon">👤</span> Manage Students
                                     </Link>
-                                    <Link to="/admin/attendance" className={navLinkClass('/admin/attendance')} onClick={() => setSidebarOpen(false)}>
+                                    <Link to={`/${rolePrefix}/attendance`} className={navLinkClass(`/${rolePrefix}/attendance`)} onClick={() => setSidebarOpen(false)}>
                                         <span className="al-nav-icon">📋</span> Student Attendance
                                         {renderLockIcon('attendance')}
                                     </Link>
-                                    <Link to="/admin/view-attendance" className={navLinkClass('/admin/view-attendance')} onClick={() => setSidebarOpen(false)}>
+                                    <Link to={`/${rolePrefix}/view-attendance`} className={navLinkClass(`/${rolePrefix}/view-attendance`)} onClick={() => setSidebarOpen(false)}>
                                         <span className="al-nav-icon">👀</span> View Attendance
                                         {renderLockIcon('attendance')}
                                     </Link>
-                                    <Link to="/admin/smart-attendance" className={navLinkClass('/admin/smart-attendance')} onClick={() => setSidebarOpen(false)}>
+                                    <Link to={`/${rolePrefix}/smart-attendance`} className={navLinkClass(`/${rolePrefix}/smart-attendance`)} onClick={() => setSidebarOpen(false)}>
                                         <span className="al-nav-icon">📷</span> Scan Student QR
                                         {renderLockIcon('auto_attendance')}
                                     </Link>
-                                    <Link to="/admin/attendance-settings" className={navLinkClass('/admin/attendance-settings')} onClick={() => setSidebarOpen(false)}>
+                                    <Link to={`/${rolePrefix}/attendance-settings`} className={navLinkClass(`/${rolePrefix}/attendance-settings`)} onClick={() => setSidebarOpen(false)}>
                                         <span className="al-nav-icon">⚙️</span> Attendance Settings
                                         {renderLockIcon('attendance')}
                                     </Link>
@@ -414,18 +423,18 @@ const AdminLayout = () => {
                             </button>
                             {openMenus['faculty'] && (
                                 <div className="al-nav-submenu">
-                                    <Link to="/admin/faculty" className={navLinkClass('/admin/faculty')} onClick={() => setSidebarOpen(false)}>
+                                    <Link to={`/${rolePrefix}/faculty`} className={navLinkClass(`/${rolePrefix}/faculty`)} onClick={() => setSidebarOpen(false)}>
                                         <span className="al-nav-icon">🧑‍🏫</span> Manage Faculty
                                     </Link>
-                                    <Link to="/admin/faculty-attendance" className={navLinkClass('/admin/faculty-attendance')} onClick={() => setSidebarOpen(false)}>
+                                    <Link to={`/${rolePrefix}/faculty-attendance`} className={navLinkClass(`/${rolePrefix}/faculty-attendance`)} onClick={() => setSidebarOpen(false)}>
                                         <span className="al-nav-icon">📋</span> Manage Attendance
                                         {renderLockIcon('attendance')}
                                     </Link>
-                                    <Link to="/admin/view-faculty-attendance" className={navLinkClass('/admin/view-faculty-attendance')} onClick={() => setSidebarOpen(false)}>
+                                    <Link to={`/${rolePrefix}/view-faculty-attendance`} className={navLinkClass(`/${rolePrefix}/view-faculty-attendance`)} onClick={() => setSidebarOpen(false)}>
                                         <span className="al-nav-icon">👀</span> View Attendance
                                         {renderLockIcon('attendance')}
                                     </Link>
-                                    <Link to="/admin/scan-faculty-qr" className={navLinkClass('/admin/scan-faculty-qr')} onClick={() => setSidebarOpen(false)}>
+                                    <Link to={`/${rolePrefix}/scan-faculty-qr`} className={navLinkClass(`/${rolePrefix}/scan-faculty-qr`)} onClick={() => setSidebarOpen(false)}>
                                         <span className="al-nav-icon">📷</span> Scan Faculty QR
                                         {renderLockIcon('auto_attendance')}
                                     </Link>
@@ -447,23 +456,23 @@ const AdminLayout = () => {
                             {openMenus['academics'] && (
                                 <div className="al-nav-submenu">
                                     {hasPermission('classes') && (
-                                        <Link to="/admin/classes" className={navLinkClass('/admin/classes')} onClick={() => setSidebarOpen(false)}>
+                                        <Link to={`/${rolePrefix}/classes`} className={navLinkClass(`/${rolePrefix}/classes`)} onClick={() => setSidebarOpen(false)}>
                                             <span className="al-nav-icon">🏫</span> Classes
                                         </Link>
                                     )}
                                     {hasPermission('subjects') && (
-                                        <Link to="/admin/subjects" className={navLinkClass('/admin/subjects')} onClick={() => setSidebarOpen(false)}>
+                                        <Link to={`/${rolePrefix}/subjects`} className={navLinkClass(`/${rolePrefix}/subjects`)} onClick={() => setSidebarOpen(false)}>
                                             <span className="al-nav-icon">📖</span> Subjects
                                         </Link>
                                     )}
                                     {hasPermission('exams') && (
-                                        <Link to="/admin/exams" className={navLinkClass('/admin/exams')} onClick={() => setSidebarOpen(false)}>
+                                        <Link to={`/${rolePrefix}/exams`} className={navLinkClass(`/${rolePrefix}/exams`)} onClick={() => setSidebarOpen(false)}>
                                             <span className="al-nav-icon">📝</span> Exams
                                             {renderLockIcon('exams')}
                                         </Link>
                                     )}
                                     {hasPermission('assignments') && (
-                                        <Link to="/admin/assignments" className={navLinkClass('/admin/assignments')} onClick={() => handleMenuClick('assignments')}>
+                                        <Link to={`/${rolePrefix}/assignments`} className={navLinkClass(`/${rolePrefix}/assignments`)} onClick={() => handleMenuClick('assignments')}>
                                             <span className="al-nav-icon">📄</span> Assignments
                                             {renderLockIcon('assignments')}
                                             {sidebarStats.unreadAssignmentCount > 0 && (
@@ -474,7 +483,7 @@ const AdminLayout = () => {
                                         </Link>
                                     )}
                                     {hasPermission('notes') && (
-                                        <Link to="/admin/notes" className={navLinkClass('/admin/notes')} onClick={() => handleMenuClick('notes')}>
+                                        <Link to={`/${rolePrefix}/notes`} className={navLinkClass(`/${rolePrefix}/notes`)} onClick={() => handleMenuClick('notes')}>
                                             <span className="al-nav-icon">📓</span> Notes
                                             {renderLockIcon('notes')}
                                             {sidebarStats.unreadNotesCount > 0 && (
@@ -489,12 +498,12 @@ const AdminLayout = () => {
                         </div>
                     )}
                     {hasPermission('students') && (
-                        <Link to="/admin/parents" className={navLinkClass('/admin/parents')} onClick={() => setSidebarOpen(false)}>
+                        <Link to={`/${rolePrefix}/parents`} className={navLinkClass(`/${rolePrefix}/parents`)} onClick={() => setSidebarOpen(false)}>
                             <span className="al-nav-icon">👨‍👩‍👧</span>
                             <span className="al-nav-text">Parents</span>
                         </Link>
                     )}
-                    <Link to="/admin/timetable" className={navLinkClass('/admin/timetable')} onClick={() => setSidebarOpen(false)}>
+                    <Link to={`/${rolePrefix}/timetable`} className={navLinkClass(`/${rolePrefix}/timetable`)} onClick={() => setSidebarOpen(false)}>
                         <span className="al-nav-icon">📅</span>
                         <span className="al-nav-text">Batches & Timetable</span>
                         {renderLockIcon('timetable')}
@@ -502,35 +511,35 @@ const AdminLayout = () => {
 
                     <div className="al-nav-section">FINANCE</div>
                     {(hasPermission('fees') || hasPermission('collect_fees')) && (
-                        <Link to="/admin/fees" className={navLinkClass('/admin/fees')} onClick={() => setSidebarOpen(false)}>
+                        <Link to={`/${rolePrefix}/fees`} className={navLinkClass(`/${rolePrefix}/fees`)} onClick={() => setSidebarOpen(false)}>
                             <span className="al-nav-icon">💰</span>
                             <span className="al-nav-text">Fees & Payments</span>
                             {renderLockIcon('fees')}
                         </Link>
                     )}
                     {hasPermission('expenses') && (
-                        <Link to="/admin/expenses" className={navLinkClass('/admin/expenses')} onClick={() => setSidebarOpen(false)}>
+                        <Link to={`/${rolePrefix}/expenses`} className={navLinkClass(`/${rolePrefix}/expenses`)} onClick={() => setSidebarOpen(false)}>
                             <span className="al-nav-icon">💸</span>
                             <span className="al-nav-text">Expenses</span>
                             {renderLockIcon('expenses')}
                         </Link>
                     )}
                     {hasPermission('salary') && (
-                        <Link to="/admin/salary" className={navLinkClass('/admin/salary')} onClick={() => setSidebarOpen(false)}>
+                        <Link to={`/${rolePrefix}/salary`} className={navLinkClass(`/${rolePrefix}/salary`)} onClick={() => setSidebarOpen(false)}>
                             <span className="al-nav-icon">💼</span>
                             <span className="al-nav-text">Faculty Salary</span>
                             {renderLockIcon('salary')}
                         </Link>
                     )}
                     {(isAdmin || hasPermission('finance')) && (
-                        <Link to="/admin/finance" className={navLinkClass('/admin/finance')} onClick={() => setSidebarOpen(false)}>
+                        <Link to={`/${rolePrefix}/finance`} className={navLinkClass(`/${rolePrefix}/finance`)} onClick={() => setSidebarOpen(false)}>
                             <span className="al-nav-icon">📊</span>
                             <span className="al-nav-text">Finance Dashboard</span>
                             {renderLockIcon('finance')}
                         </Link>
                     )}
                     {hasPermission('reports') && (
-                        <Link to="/admin/reports" className={navLinkClass('/admin/reports')} onClick={() => setSidebarOpen(false)}>
+                        <Link to={`/${rolePrefix}/reports`} className={navLinkClass(`/${rolePrefix}/reports`)} onClick={() => setSidebarOpen(false)}>
                             <span className="al-nav-icon">📉</span>
                             <span className="al-nav-text">Reports</span>
                             {renderLockIcon('reports')}
@@ -539,13 +548,13 @@ const AdminLayout = () => {
 
                     <div className="al-nav-section">SYSTEM</div>
                     {isAdmin && (
-                        <Link to="/admin/admins" className={navLinkClass('/admin/admins')} onClick={() => setSidebarOpen(false)}>
+                        <Link to={`/${rolePrefix}/admins`} className={navLinkClass(`/${rolePrefix}/admins`)} onClick={() => setSidebarOpen(false)}>
                             <span className="al-nav-icon">👨‍💼</span>
                             <span className="al-nav-text">Managers</span>
                         </Link>
                     )}
                     {hasPermission('announcements') && (
-                        <Link to="/admin/announcements" className={navLinkClass('/admin/announcements')} onClick={() => handleMenuClick('announcements')}>
+                        <Link to={`/${rolePrefix}/announcements`} className={navLinkClass(`/${rolePrefix}/announcements`)} onClick={() => handleMenuClick('announcements')}>
                             <span className="al-nav-icon">📢</span>
                             <span className="al-nav-text">Announcements</span>
                             {renderLockIcon('announcements')}
@@ -557,7 +566,7 @@ const AdminLayout = () => {
                         </Link>
                     )}
                     {hasPermission('chat') && (
-                        <Link to="/admin/chat-monitor" className={navLinkClass('/admin/chat-monitor')} onClick={() => handleMenuClick('chat')}>
+                        <Link to={`/${rolePrefix}/chat-monitor`} className={navLinkClass(`/${rolePrefix}/chat-monitor`)} onClick={() => handleMenuClick('chat')}>
                             <span className="al-nav-icon">💬</span>
                             <span className="al-nav-text">Chat Monitor</span>
                             {renderLockIcon('chat')}
@@ -569,21 +578,21 @@ const AdminLayout = () => {
                         </Link>
                     )}
                     {hasPermission('performance') && (
-                        <Link to="/admin/performance" className={navLinkClass('/admin/performance')} onClick={() => setSidebarOpen(false)}>
+                        <Link to={`/${rolePrefix}/performance`} className={navLinkClass(`/${rolePrefix}/performance`)} onClick={() => setSidebarOpen(false)}>
                             <span className="al-nav-icon">📈</span>
                             <span className="al-nav-text">Performance Hub</span>
                             {renderLockIcon('performance_hub')}
                         </Link>
                     )}
                     {(isAdmin || hasPermission('biometric')) && (
-                        <Link to="/admin/biometric" className={navLinkClass('/admin/biometric')} onClick={() => setSidebarOpen(false)}>
+                        <Link to={`/${rolePrefix}/biometric`} className={navLinkClass(`/${rolePrefix}/biometric`)} onClick={() => setSidebarOpen(false)}>
                             <span className="al-nav-icon">🔐</span>
                             <span className="al-nav-text">Biometric Attendance</span>
                             {renderLockIcon('biometric')}
                         </Link>
                     )}
                     {isAdmin && (
-                        <Link to="/admin/public-page" className={navLinkClass('/admin/public-page')} onClick={() => handleMenuClick('public_page')}>
+                        <Link to={`/${rolePrefix}/public-page`} className={navLinkClass(`/${rolePrefix}/public-page`)} onClick={() => handleMenuClick('public_page')}>
                             <span className="al-nav-icon">🌐</span>
                             <span className="al-nav-text">Public Website</span>
                             {sidebarStats.unreadEnquiryCount > 0 && (
@@ -594,14 +603,14 @@ const AdminLayout = () => {
                         </Link>
                     )}
                     {isAdmin && (
-                        <Link to="/admin/settings" className={navLinkClass('/admin/settings')} onClick={() => setSidebarOpen(false)}>
+                        <Link to={`/${rolePrefix}/settings`} className={navLinkClass(`/${rolePrefix}/settings`)} onClick={() => setSidebarOpen(false)}>
                             <span className="al-nav-icon">⚙️</span>
                             <span className="al-nav-text">Settings</span>
                         </Link>
                     )}
                     {/* ── Academic Year Promotion (Phase 9) ── */}
                     {(isAdmin || hasPermission('academic_year_promotion')) && (
-                        <Link to="/admin/academic-year-promotion" className={navLinkClass('/admin/academic-year-promotion')} onClick={() => setSidebarOpen(false)}>
+                        <Link to={`/${rolePrefix}/academic-year-promotion`} className={navLinkClass(`/${rolePrefix}/academic-year-promotion`)} onClick={() => setSidebarOpen(false)}>
                             <span className="al-nav-icon">🎓</span>
                             <span className="al-nav-text">Academic Year</span>
                         </Link>
@@ -615,7 +624,7 @@ const AdminLayout = () => {
                             <div className="al-lifetime-content">
                                 <h4>Lifetime Member</h4>
                                 <p>No recurring billing — ever.</p>
-                                <Link to="/admin/lifetime" className="al-lifetime-btn">View Details</Link>
+                                <Link to={`/${rolePrefix}/lifetime`} className="al-lifetime-btn">View Details</Link>
                             </div>
                         </div>
                     ) : (isAdmin && planDetails && planDetails.plan) ? (
@@ -716,7 +725,7 @@ const AdminLayout = () => {
                                     <div style={{ padding: '0.5rem' }}>
                                         {isAdmin && (
                                             <div 
-                                                onClick={() => { setProfileOpen(false); navigate('/admin/settings'); }}
+                                                onClick={() => { setProfileOpen(false); navigate(`/${rolePrefix}/settings`); }}
                                                 style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.75rem 1rem', cursor: 'pointer', borderRadius: '8px', color: '#334155', fontSize: '0.9rem', transition: 'background 0.2s' }}
                                                 onMouseOver={(e) => e.currentTarget.style.background = '#f1f5f9'}
                                                 onMouseOut={(e) => e.currentTarget.style.background = 'transparent'}

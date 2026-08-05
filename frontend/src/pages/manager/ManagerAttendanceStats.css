@@ -1,0 +1,139 @@
+/* ManagerAttendanceStats.css */
+.mas-page {
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    min-height: 100%;
+}
+
+.mas-header {}
+.mas-title { font-size: 20px; font-weight: 800; color: #0f172a; margin: 0 0 4px; }
+.mas-subtitle { font-size: 13px; color: #64748b; margin: 0; }
+
+/* Date selector */
+.mas-date-row {
+    display: flex; gap: 8px; align-items: center;
+}
+.mas-date-input {
+    flex: 1; padding: 11px 14px;
+    border: 1.5px solid #e2e8f0; border-radius: 12px;
+    font-size: 14px; background: #fff; outline: none;
+    transition: border-color 0.2s;
+}
+.mas-date-input:focus { border-color: #1d4ed8; }
+.mas-refresh-btn {
+    padding: 11px 14px; border: none; border-radius: 12px;
+    background: linear-gradient(135deg, #1e3a8a, #2563eb);
+    color: #fff; font-size: 16px; cursor: pointer;
+    transition: opacity 0.2s;
+}
+.mas-refresh-btn:active { opacity: 0.85; }
+
+/* Summary Card */
+.mas-summary-card {
+    background: linear-gradient(135deg, #1e3a8a, #2563eb);
+    border-radius: 18px;
+    padding: 20px;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    box-shadow: 0 6px 24px rgba(29,78,216,0.3);
+}
+.mas-summary-stat { text-align: center; }
+.mas-summary-num { font-size: 32px; font-weight: 800; margin: 0; }
+.mas-summary-lbl { font-size: 12px; opacity: 0.8; margin: 0; font-weight: 500; }
+.mas-summary-divider { width: 1px; height: 50px; background: rgba(255,255,255,0.25); }
+
+/* Class Cards */
+.mas-section-title {
+    font-size: 14px; font-weight: 700; color: #475569;
+    text-transform: uppercase; letter-spacing: 0.5px; margin: 4px 0 0;
+}
+.mas-class-list {
+    display: flex; flex-direction: column; gap: 10px;
+}
+.mas-class-card {
+    background: #fff;
+    border-radius: 16px;
+    padding: 14px 16px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.07);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+.mas-class-top {
+    display: flex; align-items: center; justify-content: space-between;
+}
+.mas-class-name { font-size: 14px; font-weight: 700; color: #0f172a; margin: 0; }
+.mas-class-pct {
+    font-size: 16px; font-weight: 800;
+}
+.mas-class-pct.high { color: #15803d; }
+.mas-class-pct.mid  { color: #d97706; }
+.mas-class-pct.low  { color: #dc2626; }
+
+/* Progress bar */
+.mas-progress-track {
+    height: 8px; background: #f1f5f9; border-radius: 10px; overflow: hidden;
+}
+.mas-progress-fill {
+    height: 100%; border-radius: 10px; transition: width 0.5s ease;
+}
+.mas-progress-fill.high { background: linear-gradient(90deg, #22c55e, #16a34a); }
+.mas-progress-fill.mid  { background: linear-gradient(90deg, #f59e0b, #d97706); }
+.mas-progress-fill.low  { background: linear-gradient(90deg, #f87171, #ef4444); }
+
+.mas-class-meta { font-size: 12px; color: #64748b; }
+
+/* Absent List */
+.mas-absent-section {
+    background: #fff; border-radius: 16px;
+    padding: 14px 16px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.07);
+}
+.mas-absent-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 10px;
+}
+.mas-absent-title { font-size: 14px; font-weight: 700; color: #0f172a; margin: 0; }
+.mas-absent-count {
+    background: #fee2e2; color: #dc2626;
+    padding: 3px 10px; border-radius: 20px;
+    font-size: 12px; font-weight: 700;
+}
+.mas-absent-list { display: flex; flex-direction: column; gap: 6px; }
+.mas-absent-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 0;
+    border-bottom: 1px solid #f1f5f9;
+}
+.mas-absent-item:last-child { border-bottom: none; }
+.mas-absent-dot {
+    width: 8px; height: 8px; border-radius: 50%; background: #ef4444; flex-shrink: 0;
+}
+.mas-absent-name { font-size: 13px; font-weight: 600; color: #0f172a; flex: 1; }
+.mas-absent-class { font-size: 11px; color: #94a3b8; }
+
+/* Loading / Empty */
+.mas-loading {
+    display: flex; align-items: center; justify-content: center;
+    gap: 10px; padding: 40px 0; color: #64748b; font-size: 14px;
+}
+.mas-spinner {
+    width: 22px; height: 22px;
+    border: 3px solid #e2e8f0; border-top-color: #1d4ed8;
+    border-radius: 50%;
+    animation: mas-spin 0.7s linear infinite;
+}
+@keyframes mas-spin { to { transform: rotate(360deg); } }
+
+.mas-empty { text-align: center; padding: 40px 0; color: #94a3b8; font-size: 14px; }
+.mas-empty-icon { font-size: 40px; display: block; margin-bottom: 8px; }
+
+/* Responsive */
+@media (min-width: 768px) {
+    .mas-page { padding: 24px 32px; max-width: 860px; margin: 0 auto; }
+    .mas-class-list { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+}

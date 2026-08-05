@@ -10,6 +10,7 @@ function resolveMobileShell(variant) {
     if (v === 'parent') return path.resolve(__dirname, 'src/routes/MobileParentRoutes.jsx')
     if (v === 'faculty') return path.resolve(__dirname, 'src/routes/MobileFacultyRoutes.jsx')
     if (v === 'student') return path.resolve(__dirname, 'src/routes/MobileStudentRoutes.jsx')
+    if (v === 'manager') return path.resolve(__dirname, 'src/routes/MobileManagerRoutes.jsx')
     if (v === 'universal') return path.resolve(__dirname, 'src/routes/WebAppRoutes.jsx')
     return path.resolve(__dirname, 'src/routes/MobileShellEmpty.jsx')
 }
@@ -17,7 +18,7 @@ function resolveMobileShell(variant) {
 export default defineConfig(({ mode }) => {
     const env = loadEnv(mode, process.cwd(), '')
     const variant = env.VITE_APP_VARIANT || process.env.VITE_APP_VARIANT || ''
-    const isMobileBuild = ['student', 'parent', 'faculty', 'universal'].includes(
+    const isMobileBuild = ['student', 'parent', 'faculty', 'manager', 'universal'].includes(
         String(variant).toLowerCase()
     )
 

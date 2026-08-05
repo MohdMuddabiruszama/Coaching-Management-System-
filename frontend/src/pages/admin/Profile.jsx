@@ -278,7 +278,7 @@ function Profile() {
             <div className="profile-grid">
                 {/* LEFT CARD */}
                 <div className="profile-card-left">
-                    <div className="profile-avatar-wrapper" onClick={user?.role !== "student" && user?.role !== "parent" ? handlePhotoUpdate : undefined} style={{ cursor: user?.role !== "student" && user?.role !== "parent" ? 'pointer' : 'default', position: 'relative' }}>
+                    <div className="profile-avatar-wrapper" onClick={user?.role !== "student" && user?.role !== "parent" && !Capacitor.isNativePlatform() ? handlePhotoUpdate : undefined} style={{ cursor: user?.role !== "student" && user?.role !== "parent" && !Capacitor.isNativePlatform() ? 'pointer' : 'default', position: 'relative' }}>
                         <div className="profile-avatar">
                             {profile?.photo_url ? (
                                 <img src={profile.photo_url} alt="Profile" style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} />
@@ -286,7 +286,7 @@ function Profile() {
                                 getInitials(formData.name)
                             )}
                         </div>
-                        {user?.role !== "student" && user?.role !== "parent" && (
+                        {user?.role !== "student" && user?.role !== "parent" && !Capacitor.isNativePlatform() && (
                             <div style={{ position: 'absolute', bottom: 0, right: 0, background: '#4f46e5', color: 'white', borderRadius: '50%', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 4px rgba(0,0,0,0.2)' }}>
                                 📷
                             </div>

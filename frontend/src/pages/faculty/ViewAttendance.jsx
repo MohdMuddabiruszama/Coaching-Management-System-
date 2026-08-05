@@ -14,9 +14,11 @@ import MobileViewAttendance from "./MobileViewAttendance";
 
 function ViewAttendance() {
     const { user } = useContext(AuthContext);
-    const dashboardPath = user?.role === "admin" || user?.role === "superadmin" || user?.role === "super_admin" || user?.role === "manager"
+    const dashboardPath = user?.role === "admin" || user?.role === "superadmin" || user?.role === "super_admin"
         ? "/admin/dashboard"
-        : "/faculty/dashboard";
+        : user?.role === "manager"
+            ? (Capacitor.isNativePlatform() ? "/manager/dashboard" : "/manager/dashboard") // Or use specific manager dashboard if different
+            : "/faculty/dashboard";
 
     const [loading, setLoading] = useState(false);
     const [classes, setClasses] = useState([]);

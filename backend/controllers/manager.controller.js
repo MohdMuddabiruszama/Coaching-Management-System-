@@ -42,6 +42,10 @@ exports.getManagerDashboardStats = async (req, res) => {
                 where: { institute_id }
             }) || 0;
 
+            result.pendingFeesCount = await StudentFee.count({
+                where: { institute_id, status: { [Op.in]: ['pending', 'partial'] } }
+            });
+
             // Recent 5 payments
             result.recentPayments = await Payment.findAll({
                 where: { institute_id, status: "success" },

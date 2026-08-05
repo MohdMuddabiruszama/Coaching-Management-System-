@@ -792,3 +792,10 @@ html.dark-mode .fd-schedule-end, html.dark-mode .fd-schedule-room { color: #6474
 html.dark-mode .fd-badge-upcoming { background: rgba(109, 40, 217, 0.15); color: #a78bfa; }
 html.dark-mode .fd-badge-ongoing  { background: rgba(21, 128, 61, 0.15);  color: #4ade80; }
 html.dark-mode .fd-badge-completed { background: #1e293b; color: #475569; }
+
+/* Locked Action Card */
+.fd-action-card.locked { opacity: 0.6; background: #f8fafc; position: relative; cursor: not-allowed; }
+.fd-action-card.locked:hover { transform: none; box-shadow: none; border-color: #f1f5f9; }
+.fd-action-lock { color: #94a3b8; font-size: 14px; margin-left: auto; }
+html.dark-mode .fd-action-card.locked { background: #1e293b; border-color: #334155; }
+html.dark-mode .fd-action-card.locked:hover { border-color: #334155; }

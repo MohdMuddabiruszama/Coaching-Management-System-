@@ -16,6 +16,7 @@ function mobileAppLabel() {
   if (!isMobileApp || !MOBILE_ALLOWED_ROLE) return null;
   if (MOBILE_ALLOWED_ROLE === "student") return "Student app";
   if (MOBILE_ALLOWED_ROLE === "parent") return "Parent app";
+  if (MOBILE_ALLOWED_ROLE === "manager") return "Manager app";
   return "Faculty app";
 }
 
@@ -76,7 +77,7 @@ function Login() {
         logout();
         return;
       }
-      if (!MOBILE_ALLOWED_ROLE && !["student", "parent", "faculty"].includes(userObj.role)) {
+      if (!MOBILE_ALLOWED_ROLE && !["student", "parent", "faculty", "manager"].includes(userObj.role)) {
         logout();
         return;
       }
@@ -91,7 +92,7 @@ function Login() {
         case "admin": navigate("/admin/dashboard"); break;
         case "faculty": navigate("/faculty/dashboard"); break;
         case "student": navigate("/student/dashboard"); break;
-        case "manager": navigate("/admin/dashboard"); break;
+        case "manager": navigate("/manager/dashboard"); break;
         case "parent": navigate("/parent/dashboard"); break;
         default: navigate("/");
       }
@@ -145,9 +146,9 @@ function Login() {
           setErrors({ general: `This app is for ${MOBILE_ALLOWED_ROLE === "faculty" ? "faculty" : MOBILE_ALLOWED_ROLE} accounts only.` });
           return;
         }
-        if (!MOBILE_ALLOWED_ROLE && !["student", "parent", "faculty"].includes(user.role)) {
+        if (!MOBILE_ALLOWED_ROLE && !["student", "parent", "faculty", "manager"].includes(user.role)) {
           logout();
-          setErrors({ general: "Admin and Manager dashboards are not available on the mobile application." });
+          setErrors({ general: "Admin dashboards are not available on the mobile application." });
           return;
         }
       }
@@ -160,7 +161,7 @@ function Login() {
         case "admin": navigate("/admin/dashboard"); break;
         case "faculty": navigate("/faculty/dashboard"); break;
         case "student": navigate("/student/dashboard"); break;
-        case "manager": navigate("/admin/dashboard"); break;
+        case "manager": navigate("/manager/dashboard"); break;
         case "parent": navigate("/parent/dashboard"); break;
         default: navigate("/");
       }

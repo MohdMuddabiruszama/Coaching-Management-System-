@@ -98,10 +98,10 @@ function AdminNotes() {
         setLoading(true);
         try {
             const [notesRes, clsRes, subRes, facRes] = await Promise.all([
-                api.get("/notes"),
-                api.get("/classes"),
-                api.get("/subjects"),
-                api.get("/faculty")
+                api.get("/notes").catch(err => ({ data: { success: false, data: [] } })),
+                api.get("/classes").catch(err => ({ data: { success: false, data: [] } })),
+                api.get("/subjects").catch(err => ({ data: { success: false, data: [] } })),
+                api.get("/faculty").catch(err => ({ data: { success: false, data: [] } }))
             ]);
             
             if (notesRes.data.success) setNotes(notesRes.data.data || []);
