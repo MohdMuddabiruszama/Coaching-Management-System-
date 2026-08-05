@@ -6,7 +6,13 @@ const sequelize = require("../config/database");
  */
 exports.getAllPlans = async (req, res) => {
     try {
+        const whereClause = {};
+        if (req.query.include_hidden !== 'true') {
+            whereClause.is_hidden = false;
+        }
+
         const plans = await Plan.findAll({
+            where: whereClause,
             order: [["price", "ASC"]],
         });
         res.status(200).json({

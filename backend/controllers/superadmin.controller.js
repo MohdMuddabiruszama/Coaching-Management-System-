@@ -18,6 +18,8 @@ const {
     Lead, RefreshToken, DeviceToken, Notification, NotificationPref, AnnouncementRead
 } = require("../models");
 const { Op, fn, col, literal, Sequelize } = require("sequelize");
+const emailService = require("../services/email.service");
+const invoiceService = require("../services/invoice.service");
 const NodeCache = require('node-cache');
 
 // TTL 30 min, checkperiod 60s
@@ -1481,6 +1483,124 @@ exports.deleteUser = async (req, res) => {
     } catch (error) {
         console.error('deleteUser error:', error);
         res.status(500).json({ error: error.message });
+    }
+};
+
+// ─────────────────────────────────────────────────────────────
+// RECORD OFFLINE / CASH PAYMENT
+// POST /api/superadmin/institutes/:id/offline-payment
+// ─────────────────────────────────────────────────────────────
+exports.recordOfflinePayment = async (req, res) => {
+    const t = await sequelize.transaction();
+    try {
+        const instituteId = req.params.id;
+        const { plan_id, amount_paid, payment_mode, reference_number, notes } = req.body;
+
+        const institute = await Institute.findByPk(instituteId, { transaction: t });
+        if (!institute) throw new Error("Institute not found");
+
+        const plan = await Plan.findByPk(plan_id, { transaction: t });
+        if (!plan) throw new Error("Plan not found");
+
+        // Calculate subscription end date (assume 1 month by default unless yearly price matches amount)
+        const isYearly = parseFloat(amount_paid) >= parseFloat(plan.yearly_price || 999999);
+        const durationMonths = isYearly ? 12 : 1;
+        const startDate = new Date();
+        const endDate = new Date();
+        endDate.setMonth(endDate.getMonth() + durationMonths);
+
+        // 1. Create Subscription
+        const subscription = await Subscription.create({
+            institute_id: instituteId,
+            plan_id: plan.id,
+            start_date: startDate,
+            end_date: endDate,
+            payment_status: "paid",
+            transaction_reference: `${payment_mode.toUpperCase()}-${reference_number || Date.now()}`,
+            amount_paid: amount_paid,
+            is_test: institute.is_test_account,
+            paid_at: new Date()
+        }, { transaction: t });
+
+        // 2. Snapshot plan limits & features to Institute
+        await institute.update({
+            plan_id: plan.id,
+            subscription_start: startDate,
+            subscription_end: endDate,
+            status: "active",
+            current_limit_students: plan.max_students,
+            current_limit_faculty: plan.max_faculty,
+            current_limit_classes: plan.max_classes,
+            current_limit_admins: plan.max_admin_users,
+            current_limit_chat_messages: plan.max_chat_messages || 500,
+            current_feature_attendance: plan.feature_attendance,
+            current_feature_auto_attendance: plan.feature_auto_attendance,
+            current_feature_fees: plan.feature_fees,
+            current_feature_finance: plan.feature_finance,
+            current_feature_salary: plan.feature_salary,
+            current_feature_reports: plan.feature_reports,
+            current_feature_announcements: plan.feature_announcements,
+            current_feature_export: plan.feature_export,
+            current_feature_timetable: plan.feature_timetable,
+            current_feature_whatsapp: plan.feature_whatsapp,
+            current_feature_custom_branding: plan.feature_custom_branding,
+            current_feature_multi_branch: plan.feature_multi_branch,
+            current_feature_api_access: plan.feature_api_access,
+        }, { transaction: t });
+
+        await t.commit();
+        
+        // 3. Generate Invoice (Soft failure if it crashes)
+        try {
+            const invoiceData = await invoiceService.generateInvoice({
+                institute,
+                plan,
+                subscription,
+            });
+            if (invoiceData && invoiceData.filePath) {
+                await Invoice.create({
+                    institute_id: instituteId,
+                    payment_id: subscription.id,
+                    invoice_type: 'subscription',
+                    invoice_number: invoiceData.invoiceNumber,
+                    invoice_date: new Date(),
+                    subtotal: amount_paid,
+                    tax_amount: 0,
+                    total_amount: amount_paid,
+                    pdf_url: invoiceData.filePath
+                });
+            }
+        } catch (invErr) {
+            console.error("Offline invoice generation failed:", invErr);
+        }
+        
+        // Clear all analytics caches
+        analyticsCache.flushAll();
+
+        // 4. Send Email Notification
+        try {
+            await emailService.sendEmail(
+                institute.email,
+                "Payment Received & Subscription Activated",
+                `<h2>Payment Received Successfully</h2>
+                <p>Dear ${institute.name},</p>
+                <p>We have successfully received your payment via <strong>${payment_mode}</strong>.</p>
+                <p><strong>Plan:</strong> ${plan.name}</p>
+                <p><strong>Amount Paid:</strong> ₹${amount_paid}</p>
+                <p><strong>Valid Until:</strong> ${endDate.toLocaleDateString()}</p>
+                <p>Your subscription is now active! Please login to your dashboard to access your features.</p>
+                <br>
+                <p>Best regards,<br>ZenithFlows Team</p>`
+            );
+        } catch (emailErr) {
+            console.error("Email sending failed:", emailErr);
+        }
+
+        res.status(200).json({ success: true, message: "Offline payment recorded successfully" });
+    } catch (error) {
+        await t.rollback();
+        console.error("Offline payment error:", error);
+        res.status(500).json({ success: false, message: error.message });
     }
 };
 

@@ -525,7 +525,7 @@ exports.registerInit = catchAsync(async (req, res) => {
  */
 exports.verifyRegistrationOtp = catchAsync(async (req, res) => {
   try {
-    const { email, otp, name, phone, password, plan_id, address, city, state, pincode } = req.body;
+    const { email, otp, name, phone, password, plan_id, address, city, state, pincode, organization_type } = req.body;
 
     if (!email || !otp) {
       return res.status(400).json({ success: false, message: "Email and OTP are required." });
@@ -545,6 +545,7 @@ exports.verifyRegistrationOtp = catchAsync(async (req, res) => {
       city: city?.trim(),
       state: state?.trim(),
       pincode: pincode?.trim(),
+      organization_type: organization_type?.trim(),
       plan_id,
       status: "pending", // stays pending until payment
       logo: req.file ? req.file.path : null

@@ -96,7 +96,7 @@ function Plans() {
 
     const fetchPlans = async () => {
         try {
-            const response = await api.get("/plans");
+            const response = await api.get("/plans?include_hidden=true");
             setPlans(response.data.data || []);
         } catch (error) {
             console.error("Error fetching plans:", error);
@@ -406,28 +406,60 @@ function Plans() {
 
             {/* Modal */}
             {showModal && (
-                <div className="plans-modal-overlay">
-                    <div className="plans-modal">
-                        <div className="plans-modal-header">
-                            <h2 className="plans-modal-title">{editMode ? "Edit Subscription Plan" : "Create New Subscription Plan"}</h2>
-                            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                <div style={{
+                    position: 'fixed', inset: 0,
+                    background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(4px)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    zIndex: 9999, padding: '1rem'
+                }} onClick={() => setShowModal(false)}>
+                    <div style={{
+                        background: '#fff', borderRadius: 16, padding: '0', maxWidth: 850,
+                        width: '100%', boxShadow: '0 25px 80px rgba(79, 70, 229, 0.2)',
+                        color: '#1f2937', animation: 'fadeIn 0.2s ease', maxHeight: '90vh',
+                        display: 'flex', flexDirection: 'column', overflow: 'hidden'
+                    }} onClick={e => e.stopPropagation()}>
+                        
+                        <div style={{
+                            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                            padding: '1.5rem 2rem', background: 'linear-gradient(to right, #F8FAFC, #FFFFFF)',
+                            borderBottom: '1px solid #E2E8F0'
+                        }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                                <div style={{
+                                    background: 'linear-gradient(135deg, #E0E7FF, #C7D2FE)',
+                                    borderRadius: '50%', width: 52, height: 52,
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                    flexShrink: 0
+                                }}>
+                                    <span style={{ fontSize: 24 }}>{editMode ? "✏️" : "✨"}</span>
+                                </div>
+                                <div>
+                                    <h2 style={{ margin: 0, color: '#3730A3', fontSize: 20, fontWeight: 700 }}>
+                                        {editMode ? "Edit Subscription Plan" : "Create New Subscription Plan"}
+                                    </h2>
+                                    <p style={{ margin: '2px 0 0', color: '#6B7280', fontSize: 13 }}>
+                                        {editMode ? "Update plan features and pricing." : "Configure a new subscription package for institutes."}
+                                    </p>
+                                </div>
+                            </div>
+                            <div style={{ display: "flex", alignItems: "center", gap: "15px" }}>
                                 <ThemeSelector />
                                 <button
                                     onClick={() => setShowModal(false)}
                                     style={{
-                                        background: 'transparent',
-                                        border: 'none',
-                                        fontSize: '1.5rem',
-                                        cursor: 'pointer',
-                                        color: 'var(--text-secondary)'
+                                        background: '#F3F4F6', border: 'none',
+                                        width: 36, height: 36, borderRadius: '50%',
+                                        fontSize: '1.25rem', cursor: 'pointer', color: '#4B5563',
+                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                        transition: 'background 0.2s'
                                     }}
                                 >
-                                    ×
+                                    ✕
                                 </button>
                             </div>
                         </div>
 
-                        <div className="plans-modal-body">
+                        <div className="plans-modal-body" style={{ padding: '2rem', overflowY: 'auto' }}>
                             <form id="planForm" onSubmit={handleSubmit}>
                                 {/* Basic Info Section */}
                                 <div className="form-section">
@@ -710,12 +742,27 @@ function Plans() {
                             </form>
                         </div>
 
-                        <div className="plans-modal-footer">
-                            <button type="button" className="btn btn-secondary" onClick={() => setShowModal(false)}>
+                        <div style={{
+                            padding: '1.25rem 2rem', background: '#F8FAFC',
+                            borderTop: '1px solid #E2E8F0', display: 'flex',
+                            justifyContent: 'flex-end', gap: '1rem'
+                        }}>
+                            <button type="button" onClick={() => setShowModal(false)}
+                                style={{
+                                    padding: '10px 20px', borderRadius: 8, border: '1px solid #D1D5DB',
+                                    background: '#fff', cursor: 'pointer', fontSize: 14,
+                                    color: '#4B5563', fontWeight: 600, transition: 'all 0.2s'
+                                }}>
                                 Cancel
                             </button>
-                            <button type="submit" form="planForm" className="btn btn-primary">
-                                {editMode ? "Save Changes" : "Create Plan"}
+                            <button type="submit" form="planForm"
+                                style={{
+                                    padding: '10px 24px', borderRadius: 8, border: 'none',
+                                    background: 'linear-gradient(135deg, #4F46E5, #4338CA)',
+                                    color: '#fff', cursor: 'pointer', fontSize: 14, fontWeight: 700,
+                                    boxShadow: '0 4px 15px rgba(79, 70, 229, 0.3)', transition: 'all 0.2s'
+                                }}>
+                                {editMode ? "✅ Save Changes" : "✨ Create Plan"}
                             </button>
                         </div>
                     </div>

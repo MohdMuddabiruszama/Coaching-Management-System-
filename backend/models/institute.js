@@ -4,6 +4,7 @@ const sequelize = require("../config/database");
 const Institute = sequelize.define("Institute", {
     plan_id: DataTypes.INTEGER,
     name: DataTypes.STRING,
+    organization_type: { type: DataTypes.STRING(50), defaultValue: 'Coaching Center' },
     email: { type: DataTypes.STRING, allowNull: false, unique: 'unique_institute_email' },
     phone: DataTypes.STRING,
     address: DataTypes.TEXT,

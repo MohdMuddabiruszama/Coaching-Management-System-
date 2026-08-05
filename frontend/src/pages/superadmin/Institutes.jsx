@@ -9,6 +9,7 @@ import api from "../../services/api";
 import ThemeSelector from "../../components/ThemeSelector";
 import DeleteInstituteModal from "../../components/superadmin/DeleteInstituteModal";
 import SuspendInstituteModal from "../../components/superadmin/SuspendInstituteModal";
+import OfflinePaymentModal from "../../components/superadmin/OfflinePaymentModal";
 import "./Institutes.css";
 
 function Institutes() {
@@ -24,6 +25,7 @@ function Institutes() {
     const [selectedInstitute, setSelectedInstitute] = useState(null);
     const [deleteModal, setDeleteModal] = useState(null);
     const [suspendModal, setSuspendModal] = useState(null);
+    const [paymentModal, setPaymentModal] = useState(null);
     const [actionLoading, setActionLoading] = useState(false);
     const [dropdownOpen, setDropdownOpen] = useState(null);
     
@@ -267,6 +269,7 @@ function Institutes() {
                         <thead>
                             <tr>
                                 <th>Institute</th>
+                                <th>Type</th>
                                 <th>Admin Details</th>
                                 <th>Plan</th>
                                 <th>Status</th>
@@ -278,7 +281,7 @@ function Institutes() {
                         <tbody>
                             {filteredInstitutes.length === 0 ? (
                                 <tr>
-                                    <td colSpan="7" style={{ textAlign: "center", padding: "3rem", color: '#64748b' }}>
+                                    <td colSpan="8" style={{ textAlign: "center", padding: "3rem", color: '#64748b' }}>
                                         No institutes found matching your criteria.
                                     </td>
                                 </tr>
@@ -320,6 +323,13 @@ function Institutes() {
                                                             {institute.subdomain ? `${institute.subdomain}.zenithflows.in` : institute.email.split('@')[1] || 'domain.com'}
                                                         </a>
                                                     </div>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <div className="im-cell-type">
+                                                    <span className="im-badge-verified" style={{background: 'var(--pro-glass-bg, rgba(255, 255, 255, 0.1))', color: 'var(--text-primary)', border: '1px solid var(--pro-glass-border)'}}>
+                                                        {institute.organization_type || 'Coaching Center'}
+                                                    </span>
                                                 </div>
                                             </td>
                                             <td>
@@ -376,6 +386,13 @@ function Institutes() {
                                                         {dropdownOpen === institute.id && (
                                                             <div ref={dropdownRef} className="im-dropdown-menu">
                                                                 <button 
+                                                                    className="im-dropdown-item"
+                                                                    style={{ color: '#10b981' }}
+                                                                    onClick={() => { setPaymentModal(institute); setDropdownOpen(null); }} 
+                                                                >
+                                                                    💰 Record Payment
+                                                                </button>
+                                                                <button 
                                                                     className="im-dropdown-item warning"
                                                                     onClick={() => { setSuspendModal(institute); setDropdownOpen(null); }} 
                                                                 >
@@ -425,6 +442,17 @@ function Institutes() {
                     onClose={() => setDeleteModal(null)}
                     onConfirm={handleDeleteConfirm}
                     loading={actionLoading}
+                />
+            )}
+
+            {paymentModal && (
+                <OfflinePaymentModal
+                    institute={paymentModal}
+                    onClose={() => setPaymentModal(null)}
+                    onSuccess={() => {
+                        setPaymentModal(null);
+                        fetchInstitutes();
+                    }}
                 />
             )}
 

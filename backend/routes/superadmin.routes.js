@@ -31,6 +31,14 @@ router.post(
     controller.upgradePlan
 );
 
+// Offline / Cash Payment
+router.post(
+    "/institutes/:id/offline-payment",
+    verifyToken,
+    allowRoles("super_admin"),
+    controller.recordOfflinePayment
+);
+
 router.get(
     "/institutes",
     verifyToken,

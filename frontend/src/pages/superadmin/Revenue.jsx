@@ -100,7 +100,7 @@ function Revenue() {
             setRecentPayments(paymentsRes.data.data?.subscriptions || []);
 
             // Fetch plans for mapping names
-            const plansRes = await api.get("/plans");
+            const plansRes = await api.get("/plans?include_hidden=true");
             const plansMap = {};
             if (plansRes.data.data) {
                 plansRes.data.data.forEach(p => {

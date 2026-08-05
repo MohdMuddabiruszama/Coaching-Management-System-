@@ -6,7 +6,7 @@ exports.registerInstitute = async (data) => {
     // Handle both snake_case and camelCase inputs
     const instituteName = data.instituteName || data.name;
     const planId = data.planId || data.plan_id;
-    const { email, password, phone, address, city, state, pincode, zip_code } = data;
+    const { email, password, phone, address, city, state, pincode, zip_code, organization_type } = data;
     const finalZipCode = zip_code || pincode; // Handle both keys
 
     if (!instituteName || !email || !password || !phone || !address || !planId) {
@@ -60,6 +60,7 @@ exports.registerInstitute = async (data) => {
     // Create Institute
     const institute = await Institute.create({
         name: instituteName,
+        organization_type: organization_type || 'Coaching Center',
         email,
         phone,
         address,

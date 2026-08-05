@@ -61,7 +61,7 @@ function RegisterPage() {
     const otpRefs = useRef([]);
 
     const [formData, setFormData] = useState({
-        instituteName: "", email: "", password: "", confirmPassword: "",
+        instituteName: "", organization_type: "Coaching Center", email: "", password: "", confirmPassword: "",
         phone: "", address: "", city: "", state: "", pincode: "", planId: "",
         agreedToTerms: false, logo: null
     });
@@ -151,6 +151,8 @@ function RegisterPage() {
 
         if (!formData.instituteName.trim() || formData.instituteName.trim().length < 3)
             errs.instituteName = "Institute name must be at least 3 characters";
+        if (!formData.organization_type)
+            errs.organization_type = "Please select an organization type";
         if (!formData.email.trim() || !emailRx.test(formData.email))
             errs.email = "Please enter a valid email address";
         if (!formData.password || formData.password.length < 8)
@@ -294,6 +296,7 @@ function RegisterPage() {
             submitData.append("city", formData.city.trim());
             submitData.append("state", formData.state.trim());
             submitData.append("pincode", formData.pincode.trim());
+            submitData.append("organization_type", formData.organization_type);
             submitData.append("plan_id", formData.planId);
             
             if (formData.logo) {
@@ -541,6 +544,17 @@ function RegisterPage() {
                                     <input type="text" name="instituteName" className={`auth-input${errors.instituteName ? " auth-input--error" : ""}`}
                                         placeholder="e.g. Sunrise Academy" value={formData.instituteName} onChange={handleChange} />
                                     {errors.instituteName && <span className="reg-error">{errors.instituteName}</span>}
+                                </div>
+                                <div className="auth-field">
+                                    <label className="auth-label"><span className="auth-label__icon">🏢</span> Organization Type *</label>
+                                    <select name="organization_type" className={`auth-input${errors.organization_type ? " auth-input--error" : ""}`} value={formData.organization_type} onChange={handleChange} style={{ appearance: 'auto', paddingRight: '1rem', cursor: 'pointer' }}>
+                                        <option value="Coaching Center">Coaching Center</option>
+                                        <option value="Institute">Institute</option>
+                                        <option value="Private School">Private School</option>
+                                        <option value="College">College</option>
+                                        <option value="Other">Other</option>
+                                    </select>
+                                    {errors.organization_type && <span className="reg-error">{errors.organization_type}</span>}
                                 </div>
                                 <div className="reg-row">
                                     <div className="auth-field">
