@@ -5,7 +5,7 @@
     height: 100dvh;
     width: 100%;
     overflow: hidden;
-    background: #f5f6fa;
+    background: #f0f4ff;
 }
 .mpl-content {
     flex: 1;
@@ -27,9 +27,8 @@
     left: 0;
     right: 0;
     z-index: 1000;
-    background-color: #ffffff;
     padding: calc(16px + env(safe-area-inset-top, 0px)) 20px 16px;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    box-shadow: 0 2px 20px rgba(30, 58, 138, 0.35);
 }
 
 .mpl-inst-brand {
@@ -46,15 +45,14 @@
 .mpl-inst-name {
     font-size: 16px;
     font-weight: 800;
-    color: #0f172a;
     margin: 0;
     line-height: 1.2;
 }
 
 .mpl-inst-portal {
     font-size: 11px;
-    color: #64748b;
     margin: 0;
+    font-weight: 500;
 }
 
 .mpl-header-actions {
@@ -83,14 +81,15 @@
 .mpl-avatar-circle {
     width: 34px;
     height: 34px;
-    background: #8b5cf6;
+    background: rgba(255,255,255,0.25);
+    border: 2px solid rgba(255,255,255,0.5);
     color: white;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-weight: 700;
-    font-size: 16px;
+    font-weight: 800;
+    font-size: 15px;
 }
 
 .mpl-online-dot {
@@ -99,15 +98,16 @@
     right: -2px;
     width: 10px;
     height: 10px;
-    background: #10b981;
-    border: 2px solid white;
+    background: #22c55e;
+    border: 2px solid #1d4ed8;
     border-radius: 50%;
 }
 
 .mpl-logout-action {
-    background: transparent;
-    border: none;
-    padding: 0;
+    background: rgba(255,255,255,0.12);
+    border: 1px solid rgba(255,255,255,0.25);
+    border-radius: 8px;
+    padding: 6px 8px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -115,8 +115,8 @@
 }
 
 .mpl-logout-action svg {
-    width: 22px;
-    height: 22px;
+    width: 18px;
+    height: 18px;
 }
 .mpl-bottom-nav {
     position: fixed;
@@ -160,7 +160,7 @@
     touch-action: manipulation;
 }
 .mpl-nav-item:active { transform: scale(0.9); }
-.mpl-nav-item.active { color: #f59e0b; }
+.mpl-nav-item.active { color: #1d4ed8; }
 .mpl-tab-icon { font-size: 22px; line-height: 1; position: relative; display: flex; align-items: center; justify-content: center; }
 .mpl-tab-label { font-size: 10px; font-weight: 600; letter-spacing: 0.2px; line-height: 1; }
 .mpl-active-indicator {
@@ -168,7 +168,7 @@
     top: 0; left: 50%;
     transform: translateX(-50%);
     width: 24px; height: 3px;
-    background: linear-gradient(90deg, #f59e0b, #d97706);
+    background: linear-gradient(90deg, #1d4ed8, #3b82f6);
     border-radius: 0 0 4px 4px;
     animation: mpl-slide-in 0.2s ease;
 }

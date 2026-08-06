@@ -46,7 +46,7 @@ const MobileParentLayout = ({ children }) => {
     const getHeaderBackground = () => {
         if (headerBgColor === 'red') return 'linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%)';
         if (headerBgColor === 'orange') return 'linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%)';
-        return '#ffffff';
+        return 'linear-gradient(135deg, #1e3a8a 0%, #1d4ed8 100%)';
     };
 
 
@@ -59,8 +59,8 @@ const MobileParentLayout = ({ children }) => {
                 <div className="mpl-inst-brand">
                     <InstituteLogo size="sm" />
                     <div className="mpl-inst-text">
-                        <h1 className="mpl-inst-name">{user?.institute_name || "IT Hub"}</h1>
-                        <p className="mpl-inst-portal">Parent Portal</p>
+                        <h1 className="mpl-inst-name" style={{ color: headerBgColor === 'normal' ? '#ffffff' : '#0f172a' }}>{user?.institute_name || "IT Hub"}</h1>
+                        <p className="mpl-inst-portal" style={{ color: headerBgColor === 'normal' ? 'rgba(255,255,255,0.75)' : '#64748b' }}>Parent Portal</p>
                     </div>
                 </div>
                 <div className="mpl-header-actions">
@@ -74,7 +74,7 @@ const MobileParentLayout = ({ children }) => {
                         <span className="mpl-online-dot"></span>
                     </div>
                     <button className="mpl-logout-action" onClick={() => setIsLogoutModalOpen(true)}>
-                        <svg viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+                        <svg viewBox="0 0 24 24" fill="none" stroke={headerBgColor === 'normal' ? '#ffffff' : '#ef4444'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
                     </button>
                 </div>
             </header>

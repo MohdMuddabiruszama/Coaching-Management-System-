@@ -24,6 +24,9 @@ router.post("/send-otp",           authController.sendOtp);
 // ── Public: OTP Mode status (no auth required) ───────────────────────────────
 router.get("/otp-mode", authController.getOtpMode);
 
+// ── Public: System Settings (no auth required) ───────────────────────────────
+router.get("/system-settings", authController.getPublicSystemSettings);
+
 // ── Public: App Version Config (no auth required) ────────────────────────────
 router.get("/app-version", (req, res) => {
     res.json({

@@ -27,6 +27,7 @@ function Login() {
   const branding = useContext(BrandingContext);
 
   const [formData, setFormData] = useState({ identifier: "", password: "" });
+  const [rememberMe, setRememberMe] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
   const [showPass, setShowPass] = useState(false);
@@ -138,7 +139,7 @@ function Login() {
     setLoading(true);
     setErrors({});
     try {
-      await login({ ...formData, source: isMobileApp ? 'mobile' : 'web' });
+      await login({ ...formData, source: isMobileApp ? 'mobile' : 'web' }, rememberMe);
       const user = JSON.parse(sessionStorage.getItem("user"));
       if (isMobileApp) {
         if (MOBILE_ALLOWED_ROLE && user.role !== MOBILE_ALLOWED_ROLE) {
@@ -348,7 +349,11 @@ function Login() {
 
             <div className="auth-row">
               <label className="auth-checkbox">
-                <input type="checkbox" />
+                <input 
+                  type="checkbox" 
+                  checked={rememberMe}
+                  onChange={(e) => setRememberMe(e.target.checked)}
+                />
                 <span>Remember me</span>
               </label>
               <Link to="/forgot-password" className="auth-forgot">Forgot password?</Link>

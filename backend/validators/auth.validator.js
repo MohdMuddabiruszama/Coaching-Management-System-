@@ -4,6 +4,9 @@
  */
 const Joi = require("joi");
 
+const passwordPattern = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+const passwordMessage = "Password must be at least 8 characters long and contain at least 1 uppercase letter, 1 lowercase letter, 1 number, and 1 special character (@$!%*?&).";
+
 const login = {
     body: Joi.object({
         // Accept either a valid email OR a 10-digit Indian mobile number
@@ -25,8 +28,11 @@ const registerInit = {
         email: Joi.string().email().required().trim().lowercase(),
         phone: Joi.string().pattern(/^[0-9]{10,15}$/).required()
             .messages({ "string.pattern.base": "Phone must be 10-15 digits" }),
-        password: Joi.string().min(6).max(100).required()
-            .messages({ "string.min": "Password must be at least 6 characters" }),
+        password: Joi.string().pattern(passwordPattern).required()
+            .messages({ 
+                "string.pattern.base": passwordMessage,
+                "string.empty": "Password is required"
+            }),
         admin_name: Joi.string().min(2).max(100).optional().trim(),
         testMode: Joi.boolean().optional(),
         address: Joi.string().max(500).optional().allow(""),
@@ -44,7 +50,8 @@ const verifyRegistration = {
             .messages({ "string.length": "OTP must be exactly 6 digits" }),
         name: Joi.string().min(2).max(100).required().trim(),
         phone: Joi.string().pattern(/^[0-9]{10,15}$/).required(),
-        password: Joi.string().min(6).max(100).required(),
+        password: Joi.string().pattern(passwordPattern).required()
+            .messages({ "string.pattern.base": passwordMessage }),
         admin_name: Joi.string().min(2).max(100).optional().trim(),
         address: Joi.string().max(500).optional().allow(""),
         city: Joi.string().max(100).optional().allow(""),
@@ -64,10 +71,10 @@ const resetPassword = {
     body: Joi.object({
         email: Joi.string().email().required().trim().lowercase(),
         otp: Joi.string().length(6).pattern(/^[0-9]+$/).required(),
-        new_password: Joi.string().min(6).max(100).required()
-            .messages({ "string.min": "New password must be at least 6 characters" }),
-        confirm_password: Joi.string().min(6).max(100).required()
-            .messages({ "string.min": "Confirm password must be at least 6 characters" }),
+        new_password: Joi.string().pattern(passwordPattern).required()
+            .messages({ "string.pattern.base": passwordMessage }),
+        confirm_password: Joi.string().valid(Joi.ref('new_password')).required()
+            .messages({ "any.only": "Confirm password must match new password" }),
     }),
 };
 
@@ -75,9 +82,9 @@ const changePassword = {
     body: Joi.object({
         oldPassword: Joi.string().min(1).required()
             .messages({ "string.empty": "Current password is required" }),
-        newPassword: Joi.string().min(8).max(100).required()
+        newPassword: Joi.string().pattern(passwordPattern).required()
             .messages({ 
-                "string.min": "New password must be at least 8 characters",
+                "string.pattern.base": passwordMessage,
                 "string.empty": "New password is required"
             }),
     }),

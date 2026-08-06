@@ -144,24 +144,33 @@ export default function SystemLogs() {
   const [role, setRole]             = useState("");
   const [level, setLevel]           = useState("");
   const [entityType, setEntityType] = useState("");
-  const [startDate, setStartDate]   = useState("");
-  const [endDate, setEndDate]       = useState("");
+  
+  // Month wise filter (Defaults to current month)
+  const [filterMonth, setFilterMonth] = useState(new Date().toISOString().slice(0, 7));
   const [filtersOpen, setFiltersOpen] = useState(false);
 
   const debouncedSearch = useDebounce(search, 350);
+
+  // Compute start/end dates based on selected month
+  const computedStartDate = filterMonth ? new Date(filterMonth.split('-')[0], parseInt(filterMonth.split('-')[1]) - 1, 1).toISOString().split('T')[0] : "";
+  const computedEndDate   = filterMonth ? new Date(filterMonth.split('-')[0], parseInt(filterMonth.split('-')[1]), 0).toISOString().split('T')[0] : "";
 
   // ── Fetch stats ────────────────────────────────────────────────────────────
   const fetchStats = useCallback(async () => {
     setStatsLoading(true);
     try {
-      const r = await api.get("/superadmin/system-logs/stats");
+      const params = {};
+      if (computedStartDate) params.start_date = computedStartDate;
+      if (computedEndDate)   params.end_date = computedEndDate;
+      
+      const r = await api.get("/superadmin/system-logs/stats", { params });
       setStats(r.data.stats);
     } catch {
       setStats(null);
     } finally {
       setStatsLoading(false);
     }
-  }, []);
+  }, [computedStartDate, computedEndDate]);
 
   useEffect(() => { fetchStats(); }, [fetchStats]);
 
@@ -178,8 +187,8 @@ export default function SystemLogs() {
         ...(role        && { role }),
         ...(level       && { level }),
         ...(entityType  && { entity_type: entityType }),
-        ...(startDate   && { start_date: startDate }),
-        ...(endDate     && { end_date: endDate }),
+        ...(computedStartDate   && { start_date: computedStartDate }),
+        ...(computedEndDate     && { end_date: computedEndDate }),
       };
       const { data } = await api.get("/superadmin/system-logs", { params });
       setLogs(data.data || []);
@@ -191,7 +200,7 @@ export default function SystemLogs() {
     } finally {
       setLoading(false);
     }
-  }, [activeTab, page, debouncedSearch, role, level, entityType, startDate, endDate]);
+  }, [activeTab, page, debouncedSearch, role, level, entityType, computedStartDate, computedEndDate]);
 
   useEffect(() => { fetchLogs(); }, [fetchLogs]);
 
@@ -201,7 +210,7 @@ export default function SystemLogs() {
   };
 
   // Reset page to 1 when filters change
-  useEffect(() => { setPage(1); }, [activeTab, debouncedSearch, role, level, entityType, startDate, endDate]);
+  useEffect(() => { setPage(1); }, [activeTab, debouncedSearch, role, level, entityType, filterMonth]);
 
   // ── CSV Export ─────────────────────────────────────────────────────────────
   const handleExport = () => {
@@ -226,10 +235,10 @@ export default function SystemLogs() {
 
   const clearFilters = () => {
     setSearch(""); setRole(""); setLevel("");
-    setEntityType(""); setStartDate(""); setEndDate("");
+    setEntityType(""); setFilterMonth("");
   };
 
-  const hasActiveFilter = search || role || level || entityType || startDate || endDate;
+  const hasActiveFilter = search || role || level || entityType || filterMonth;
 
   return (
     <div className="sl-page">
@@ -285,6 +294,19 @@ export default function SystemLogs() {
           />
           {search && <button className="sl-search-clear" onClick={()=>setSearch("")}>✕</button>}
         </div>
+        
+        {/* Month Picker */}
+        <div style={{display: 'flex', alignItems: 'center', gap: '0.5rem', marginLeft: 'auto'}}>
+          <label style={{fontSize: '0.9rem', color: '#6b7280', fontWeight: '500'}}>Month:</label>
+          <input 
+            type="month" 
+            className="sl-search" 
+            style={{padding: '0.5rem', width: 'auto'}}
+            value={filterMonth}
+            onChange={e => setFilterMonth(e.target.value)}
+          />
+        </div>
+
         <button className={`sl-btn sl-btn-ghost${filtersOpen?" active":""}`} onClick={()=>setFiltersOpen(v=>!v)}>
           🔧 Filters {hasActiveFilter && <span className="sl-filter-dot"/>}
         </button>
@@ -326,14 +348,6 @@ export default function SystemLogs() {
               </select>
             </div>
           )}
-          <div className="sl-filter-group">
-            <label>From Date</label>
-            <input type="date" value={startDate} onChange={e=>setStartDate(e.target.value)}/>
-          </div>
-          <div className="sl-filter-group">
-            <label>To Date</label>
-            <input type="date" value={endDate} onChange={e=>setEndDate(e.target.value)}/>
-          </div>
         </div>
       )}
 

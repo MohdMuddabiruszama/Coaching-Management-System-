@@ -4,21 +4,39 @@
     display: flex;
     flex-direction: column;
     padding-bottom: 24px;
-    background-color: #f8f9fa; /* slightly lighter than before for modern feel */
+    background-color: transparent;
     min-height: 100vh;
 }
 
-/* 1. Purple Hero Banner */
+/* 1. Purple Hero Banner -> Blue Theme */
 .mfd-hero-banner {
-    background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
-    border-radius: 0 0 24px 24px;
-    padding: 24px;
+    background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 60%, #3b82f6 100%);
+    border-radius: 20px;
+    padding: 20px 20px 16px;
     display: flex;
     justify-content: space-between;
     align-items: center;
     color: white;
-    box-shadow: 0 10px 25px rgba(99, 102, 241, 0.2);
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 8px 32px rgba(29,78,216,0.28);
     margin-bottom: 20px;
+}
+.mfd-hero-banner::before {
+    content: '';
+    position: absolute;
+    top: -40px; right: -40px;
+    width: 140px; height: 140px;
+    background: rgba(255,255,255,0.08);
+    border-radius: 50%;
+}
+.mfd-hero-banner::after {
+    content: '';
+    position: absolute;
+    bottom: -30px; right: 20px;
+    width: 100px; height: 100px;
+    background: rgba(255,255,255,0.06);
+    border-radius: 50%;
 }
 
 .mfd-hero-content {
@@ -100,17 +118,18 @@
 }
 
 .mfd-action-btn {
-    background: white;
-    border-radius: 16px;
-    padding: 12px 4px;
+    background: #fff;
+    border: 1px solid rgba(0,0,0,0.06);
+    border-radius: 14px;
+    padding: 14px 8px;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 8px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
-    border: 1px solid rgba(0, 0, 0, 0.02);
+    gap: 6px;
     cursor: pointer;
-    transition: transform 0.2s, box-shadow 0.2s;
+    transition: transform 0.15s, box-shadow 0.15s;
+    -webkit-tap-highlight-color: transparent;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
     text-align: center;
 }
 
@@ -119,10 +138,9 @@
 }
 
 .mfd-action-icon-wrapper {
-    width: 48px;
-    height: 48px;
-    border-radius: 12px;
-    background: #f8fafc;
+    width: 40px;
+    height: 40px;
+    background: transparent;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -130,7 +148,7 @@
 }
 
 .mfd-action-icon {
-    font-size: 24px;
+    font-size: 26px;
 }
 
 .mfd-action-badge {

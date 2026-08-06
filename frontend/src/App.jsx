@@ -22,6 +22,8 @@ import MobileAppInit from "./components/MobileAppInit";
 import SplashOverlay from "./components/SplashOverlay";
 import MobileNotificationBanner from "./components/MobileNotificationBanner";
 import AppUpdateGuard from "./components/AppUpdateGuard";
+import ImpersonationBanner from "./components/common/ImpersonationBanner";
+import AutoLogoutWrapper from "./components/common/AutoLogoutWrapper";
 
 import { BrandingProvider } from "./context/BrandingContext";
 
@@ -52,7 +54,9 @@ function App() {
                                     {/* Phase 7: Unified mobile init — CSS, push (no-op on web) */}
                                     <MobileAppInit />
                                     <NetworkStatus />
+                                    <AutoLogoutWrapper />
                                     <Toaster position="top-right" />
+                                    <ImpersonationBanner />
                                     <MobileNotificationBanner />
                                     {isMobileShell ? <MobileShell /> : <WebAppRoutes />}
                                     <AnnouncementSidebar />

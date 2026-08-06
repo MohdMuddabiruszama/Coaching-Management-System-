@@ -1,8 +1,8 @@
 /* MobileDashboard.css - Redesign for img1 & img2 */
 :root {
   --mpd-bg: #f8fafc;
-  --mpd-primary: #6366f1;
-  --mpd-primary-grad: linear-gradient(135deg, #6366f1, #8b5cf6);
+  --mpd-primary: #1d4ed8;
+  --mpd-primary-grad: linear-gradient(135deg, #1e3a8a 0%, #1d4ed8 100%);
   --mpd-text-dark: #1e293b;
   --mpd-text-light: #64748b;
   --mpd-white: #ffffff;
@@ -10,7 +10,7 @@
 }
 
 body {
-  background-color: var(--mpd-bg);
+  background-color: transparent;
   margin: 0;
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
 }
@@ -21,7 +21,7 @@ body {
   flex-direction: column;
   gap: 16px;
   padding-bottom: 24px; /* Space adjusted since we use mpl-layout */
-  background-color: var(--mpd-bg);
+  background-color: transparent;
   min-height: 100vh;
 }
 
@@ -53,20 +53,23 @@ body {
   gap: 16px;
 }
 .mpd-welcome {
-  color: var(--mpd-text-light);
-  font-size: 14px;
-  margin: 0 0 2px;
+  display: none; /* removed */
 }
 .mpd-user-name {
   color: var(--mpd-text-dark);
-  font-size: 20px;
+  font-size: 22px;
   font-weight: 800;
   margin: 0 0 4px;
 }
 .mpd-student-context {
   color: var(--mpd-text-light);
-  font-size: 13px;
+  font-size: 14px;
   margin: 0;
+}
+@keyframes mpd-wave {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(-15deg); }
+  75% { transform: rotate(15deg); }
 }
 .mpd-logout-btn {
   background: #f1f5f9;
@@ -104,8 +107,9 @@ body {
   box-shadow: 0 4px 12px rgba(0,0,0,0.03);
 }
 .mpd-student-card.active {
-  background: #7452f3; /* Matching active student card purple */
+  background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 60%, #3b82f6 100%);
   color: white;
+  box-shadow: 0 8px 32px rgba(29,78,216,0.28);
 }
 .mpd-student-card.white-bg {
   background: white;
@@ -126,9 +130,9 @@ body {
   border-color: rgba(255,255,255,0.8);
 }
 .mpd-student-card.white-bg .mpd-student-avatar-circle {
-  background: #e0e7ff;
-  color: #4f46e5;
-  border-color: #c7d2fe;
+  background: #dbeafe;
+  color: #1d4ed8;
+  border-color: #bfdbfe;
 }
 .mpd-student-details h3 {
   margin: 0 0 2px;
@@ -153,7 +157,7 @@ body {
 }
 .mpd-student-card.white-bg .mpd-active-badge {
   background: #f1f5f9;
-  color: #4f46e5;
+  color: #1d4ed8;
 }
 
 /* Grid Actions (Like Image) */
@@ -198,9 +202,9 @@ body {
   text-align: center;
 }
 .msd-action-btn.active-tab .msd-action-label {
-  color: #4f46e5;
+  color: #1d4ed8;
   font-weight: 800;
-  border-bottom: 2px solid #4f46e5;
+  border-bottom: 2px solid #1d4ed8;
   padding-bottom: 2px;
 }
 

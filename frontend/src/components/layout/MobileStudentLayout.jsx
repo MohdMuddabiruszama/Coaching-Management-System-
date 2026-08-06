@@ -115,9 +115,9 @@ const MobileStudentLayout = () => {
     }, [feesData, dismissedReminders]);
 
     const getHeaderBackground = () => {
-        if (headerBgColor === 'red') return 'linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%)';
-        if (headerBgColor === 'orange') return 'linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%)';
-        return '#ffffff';
+        if (headerBgColor === 'red') return 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)';
+        if (headerBgColor === 'orange') return 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)';
+        return 'linear-gradient(135deg, #1e3a8a 0%, #1d4ed8 100%)';
     };
 
     // Fetch unread announcements badge
@@ -178,7 +178,7 @@ const MobileStudentLayout = () => {
                     <button className="msl-bell-btn" onClick={toggleSidebar} style={{ position: "relative", padding: "4px" }}>
                         <span style={{
                             fontSize: "22px",
-                            filter: unreadCount > 0 ? "none" : "grayscale(1) opacity(0.35)",
+                            filter: unreadCount > 0 ? "none" : "grayscale(1) opacity(0.8)",
                             display: "inline-block",
                             animation: isUrgent ? "bellRing 0.8s infinite" : (isHigh ? "bellRing 0.8s 1" : "none"),
                             transformOrigin: "top center",
@@ -218,17 +218,17 @@ const MobileStudentLayout = () => {
                         className="msl-logout-btn" 
                         onClick={() => setIsLogoutModalOpen(true)}
                         style={{
-                            background: "transparent",
-                            border: "none",
-                            padding: "6px",
+                            background: "rgba(255,255,255,0.12)",
+                            border: "1px solid rgba(255,255,255,0.25)",
+                            padding: "6px 8px",
                             marginLeft: "4px",
-                            fontSize: "20px",
-                            color: "#ef4444",
+                            fontSize: "18px",
+                            color: "#ffffff",
                             cursor: "pointer",
                             display: "flex",
                             alignItems: "center",
                             justifyContent: "center",
-                            borderRadius: "50%",
+                            borderRadius: "8px",
                             transition: "background 0.2s"
                         }}
                         aria-label="Logout"

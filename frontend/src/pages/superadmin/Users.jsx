@@ -13,7 +13,9 @@
  * • Dark mode aware
  */
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useContext } from "react";
+import { AuthContext } from "../../context/AuthContext";
+import { useNavigate } from "react-router-dom";
 import api from "../../services/api";
 import "./Users.css";
 
@@ -64,6 +66,8 @@ export default function Users() {
     const [summary, setSummary] = useState({ total: 0, active: 0, blocked: 0, byRole: {} });
     const [pagination, setPagination] = useState({ total: 0, page: 1, totalPages: 1 });
     const [loading, setLoading] = useState(true);
+    const { impersonate, user: currentUser } = useContext(AuthContext);
+    const navigate = useNavigate();
 
     // ── Filter state ─────────────────────────────────────────────
     const [search, setSearch] = useState("");
@@ -199,6 +203,49 @@ export default function Users() {
     };
 
     // ── Stat card quick-filter ────────────────────────────────────
+    
+    // ── Impersonate ──────────────────────────────────────────────
+    const handleImpersonate = async (targetUser) => {
+        if (targetUser.role === 'super_admin') {
+            showToast("Cannot impersonate another super admin", "error");
+            return;
+        }
+        
+        setConfirmModal({
+            type: "warning",
+            icon: "🔑",
+            title: "Impersonate User",
+            body: `Are you sure you want to log in as "${targetUser.name || targetUser.email}"? You will be redirected to their dashboard.`,
+            onConfirm: async () => {
+                setConfirmModal(null);
+                setActionLoading(targetUser.id);
+                try {
+                    const { data } = await api.post(`/superadmin/users/${targetUser.id}/impersonate`);
+                    if (data.success) {
+                        showToast(`Logged in as ${targetUser.name}`, "success");
+                        impersonate(data);
+                        
+                        // Redirect based on role using window.location.href to force a clean reload
+                        // and avoid React Router race conditions with the updated session state.
+                        if (data.user.role === 'admin' || data.user.role === 'manager') {
+                            window.location.href = '/admin/dashboard';
+                        } else if (data.user.role === 'faculty') {
+                            window.location.href = '/faculty/dashboard';
+                        } else if (data.user.role === 'student') {
+                            window.location.href = '/student/dashboard';
+                        } else if (data.user.role === 'parent') {
+                            window.location.href = '/parent/dashboard';
+                        }
+                    }
+                } catch (err) {
+                    console.error("Impersonation error detail:", err);
+                    showToast(err.response?.data?.error || err.response?.data?.message || err.message || "Impersonation failed", "error");
+                } finally {
+                    setActionLoading(null);
+                }
+            },
+        });
+    };
     const handleStatFilter = (type, value) => {
         if (type === "status") {
             setStatusFilter((prev) => (prev === value ? "all" : value));
@@ -443,6 +490,17 @@ export default function Users() {
                                     {/* Actions */}
                                     <td>
                                         <div className="usr-actions-cell" style={{ justifyContent: "flex-end" }}>
+                                            {user.role !== 'super_admin' && (
+                                                <button
+                                                    className="usr-action-btn"
+                                                    title="Login As (Master Key)"
+                                                    onClick={() => handleImpersonate(user)}
+                                                    disabled={actionLoading === user.id}
+                                                    style={{ background: '#f59e0b', color: '#fff', borderColor: '#d97706' }}
+                                                >
+                                                    🔑
+                                                </button>
+                                            )}
                                             <button
                                                 className="usr-action-btn view"
                                                 title="View Details"

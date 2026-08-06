@@ -57,22 +57,63 @@ function SuperAdminDashboard() {
     const fetchRevenueAnalytics = async () => {
         try {
             let trend = 'monthly';
-            if (revenueFilter === "This Year") trend = 'monthly';
-            if (revenueFilter === "This Month" || revenueFilter === "Last Month") trend = 'weekly';
+            const today = new Date();
+            let start = new Date(today.getFullYear(), 0, 1);
+            let end = new Date();
             
-            // Note: Since backend `getAnalytics` is complex, we will mock revenue data based on filter if API isn't exactly matching.
-            // For a robust implementation, we fetch from `/superadmin/analytics`
-            const res = await api.get(`/superadmin/analytics?trendType=${trend}`);
-            if (res.data && res.data.monthlyRevenueRaw) {
-                const formattedData = res.data.monthlyRevenueRaw.map(item => ({
-                    date: trend === 'weekly' ? `Week ${item.period}` : `Month ${item.period}`,
-                    revenue: parseFloat(item.totalRevenue)
-                }));
-                setRevenueData(formattedData.length > 0 ? formattedData : getMockRevenueData(revenueFilter));
+            if (revenueFilter === "This Year") {
+                trend = 'monthly';
+            } else if (revenueFilter === "This Month") {
+                trend = 'weekly';
+                start = new Date(today.getFullYear(), today.getMonth(), 1);
+            } else if (revenueFilter === "Last Month") {
+                trend = 'weekly';
+                start = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+                end = new Date(today.getFullYear(), today.getMonth(), 0);
+            }
+            
+            const startDate = start.toISOString().split('T')[0];
+            const endDate = end.toISOString().split('T')[0];
+            
+            const res = await api.get(`/superadmin/analytics?trendType=${trend}&startDate=${startDate}&endDate=${endDate}`);
+            if (res.data && res.data.monthlyRevenue) {
+                const formattedData = res.data.monthlyRevenue.map((item, index) => {
+                    let label = "";
+                    if (trend === 'weekly') {
+                        label = `Week ${index + 1}`;
+                    } else {
+                        const d = new Date();
+                        d.setMonth(item.period - 1);
+                        label = d.toLocaleString('default', { month: 'short' });
+                    }
+                    return {
+                        date: label,
+                        revenue: parseFloat(item.totalRevenue)
+                    };
+                });
+                
+                // If the data is empty, maybe return empty array or default zeros
+                if (formattedData.length === 0) {
+                    if (trend === 'weekly') {
+                        setRevenueData([
+                            { date: 'Week 1', revenue: 0 },
+                            { date: 'Week 2', revenue: 0 },
+                            { date: 'Week 3', revenue: 0 },
+                            { date: 'Week 4', revenue: 0 }
+                        ]);
+                    } else {
+                        setRevenueData([
+                            { date: 'Jan', revenue: 0 }, { date: 'Feb', revenue: 0 }, { date: 'Mar', revenue: 0 }
+                        ]);
+                    }
+                } else {
+                    setRevenueData(formattedData);
+                }
             } else {
                 setRevenueData(getMockRevenueData(revenueFilter));
             }
         } catch (error) {
+            console.error("Failed to fetch revenue analytics", error);
             setRevenueData(getMockRevenueData(revenueFilter));
         }
     };
@@ -266,10 +307,9 @@ function SuperAdminDashboard() {
                                 <option>This Year</option>
                             </select>
                             <div style={{ textAlign: 'right' }}>
-                                <div style={{ fontSize: '0.75rem', color: '#64748b' }}>Total Revenue</div>
+                                <div style={{ fontSize: '0.75rem', color: '#64748b' }}>Period Revenue</div>
                                 <div style={{ fontWeight: 'bold' }}>
-                                    ₹{Number(stats.totalRevenue || 13082.66).toLocaleString('en-IN')} 
-                                    <span style={{ color: '#22c55e', fontSize: '0.8rem', marginLeft: '8px' }}>+18.6%</span>
+                                    ₹{Number(revenueData.reduce((acc, curr) => acc + (curr.revenue || 0), 0)).toLocaleString('en-IN')} 
                                 </div>
                             </div>
                         </div>

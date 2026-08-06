@@ -128,7 +128,21 @@ router.post(
     controller.restoreDeletedData
 );
 
-// ─── System Logs ─────────────────────────────────────────────────────────────
+// ─── System Logs & Settings ──────────────────────────────────────────────────
+router.get(
+    "/system-settings",
+    verifyToken,
+    allowRoles("super_admin"),
+    controller.getSystemSettings
+);
+
+router.put(
+    "/system-settings/auto-logout",
+    verifyToken,
+    allowRoles("super_admin"),
+    controller.updateSystemSettings
+);
+
 router.get(
     "/system-logs/stats",
     verifyToken,
@@ -163,6 +177,14 @@ router.delete(
     verifyToken,
     allowRoles("super_admin"),
     controller.deleteUser
+);
+
+// ─── Super Admin Impersonation ────────────────────────────────────────────────
+router.post(
+    "/users/:id/impersonate",
+    verifyToken,
+    allowRoles("super_admin"),
+    controller.impersonateUser
 );
 
 module.exports = router;

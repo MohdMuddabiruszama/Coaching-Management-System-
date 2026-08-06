@@ -1,0 +1,39 @@
+.impersonation-banner {
+    background-color: #f59e0b;
+    color: #fff;
+    padding: 10px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: sticky;
+    top: 0;
+    z-index: 9999;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.impersonation-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.impersonation-icon {
+    font-size: 18px;
+}
+
+.impersonation-btn {
+    background-color: #fff;
+    color: #d97706;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 4px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.impersonation-btn:hover {
+    background-color: #fef3c7;
+}

@@ -428,10 +428,11 @@ export default function MobileDashboard() {
       <div className="mpd-user-banner">
         <div className="mpd-user-content">
           <div className="mpd-user-info">
-            <p className="mpd-welcome">Welcome back,</p>
-            <h2 className="mpd-user-name">{user?.name || "Parent"}!</h2>
+            <h2 className="mpd-user-name">
+              Hi, {user?.name ? user.name.split(" ")[0] : "Parent"} <span style={{display:'inline-block', animation:'mpd-wave 2s infinite', transformOrigin:'70% 70%'}}>👋</span>
+            </h2>
             <p className="mpd-student-context">
-              Here's how {selectedStudent?.User?.name ? selectedStudent.User.name.split(" ")[0] : "your child"} is doing.
+              Here is an overview for <strong>{selectedStudent?.User?.name ? selectedStudent.User.name.split(" ")[0] : "your child"}</strong>.
             </p>
           </div>
         </div>
@@ -711,7 +712,7 @@ export default function MobileDashboard() {
                 )}
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                {notifications.slice(0, 5).map((notif, idx) => {
+                {notifications.slice(0, 3).map((notif, idx) => {
                   const isGate = notif.type === 'biometric_gate_punch';
                   const isSmartQR = notif.type === 'attendance';
                   const isIn = notif.data_json?.punch_type === 'in' || notif.data_json?.scan_type === 'in' || notif.title?.includes('Entered') || notif.title?.includes('Attended');

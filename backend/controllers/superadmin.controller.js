@@ -21,6 +21,10 @@ const { Op, fn, col, literal, Sequelize } = require("sequelize");
 const emailService = require("../services/email.service");
 const invoiceService = require("../services/invoice.service");
 const NodeCache = require('node-cache');
+const fs = require('fs');
+const path = require('path');
+
+const SETTINGS_FILE_PATH = path.join(__dirname, '../config/systemSettings.json');
 
 // TTL 30 min, checkperiod 60s
 const analyticsCache = new NodeCache({ stdTTL: 1800, checkperiod: 60 });
@@ -1291,10 +1295,71 @@ exports.getSystemLogs = async (req, res) => {
  * Returns summary stats for the System Logs dashboard header.
  * All 4 counts fired in parallel — single round-trip.
  */
+// ─── System Logs & Settings ──────────────────────────────────────────────────
+exports.getSystemSettings = async (req, res) => {
+    try {
+        if (!fs.existsSync(SETTINGS_FILE_PATH)) {
+            return res.status(200).json({ success: true, settings: { autoLogoutTimer: 15 } });
+        }
+        const data = fs.readFileSync(SETTINGS_FILE_PATH, 'utf8');
+        res.status(200).json({ success: true, settings: JSON.parse(data) });
+    } catch (error) {
+        console.error("Error reading system settings:", error);
+        res.status(500).json({ success: false, message: "Error fetching system settings" });
+    }
+};
+
+exports.updateSystemSettings = async (req, res) => {
+    try {
+        const { autoLogoutTimer } = req.body;
+        
+        let settings = { autoLogoutTimer: 15 };
+        if (fs.existsSync(SETTINGS_FILE_PATH)) {
+            settings = JSON.parse(fs.readFileSync(SETTINGS_FILE_PATH, 'utf8'));
+        }
+        
+        if (autoLogoutTimer !== undefined) {
+            settings.autoLogoutTimer = parseInt(autoLogoutTimer, 10);
+        }
+        
+        fs.writeFileSync(SETTINGS_FILE_PATH, JSON.stringify(settings, null, 2));
+        res.status(200).json({ success: true, message: "Settings updated successfully", settings });
+    } catch (error) {
+        console.error("Error updating system settings:", error);
+        res.status(500).json({ success: false, message: "Error updating system settings" });
+    }
+};
+
 exports.getSystemLogStats = async (req, res) => {
     try {
+        const { start_date, end_date } = req.query;
+
+        let dateWhere = {};
+        if (start_date || end_date) {
+            dateWhere.createdAt = {};
+            if (start_date) dateWhere.createdAt[Op.gte] = new Date(start_date);
+            if (end_date)   dateWhere.createdAt[Op.lte] = new Date(new Date(end_date).setHours(23,59,59,999));
+        }
+
         const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
         const oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+
+        // For Last 24h & 7d, if there's a custom date range, we might just intersect or ignore it.
+        // Usually, in a filtered view, "Last 24h" means "Last 24h within that range", or just relative to now.
+        // We'll intersect it with dateWhere if present.
+        const last24hWhere = { ...dateWhere };
+        if (last24hWhere.createdAt) {
+             last24hWhere.createdAt = { ...last24hWhere.createdAt, [Op.gte]: new Date(Math.max(oneDayAgo, last24hWhere.createdAt[Op.gte] || 0)) };
+        } else {
+             last24hWhere.createdAt = { [Op.gte]: oneDayAgo };
+        }
+
+        const last7dWhere = { ...dateWhere };
+        if (last7dWhere.createdAt) {
+             last7dWhere.createdAt = { ...last7dWhere.createdAt, [Op.gte]: new Date(Math.max(oneWeekAgo, last7dWhere.createdAt[Op.gte] || 0)) };
+        } else {
+             last7dWhere.createdAt = { [Op.gte]: oneWeekAgo };
+        }
 
         const [
             totalAuditLogs,
@@ -1303,20 +1368,20 @@ exports.getSystemLogStats = async (req, res) => {
             errorCount,
             criticalActions,
         ] = await Promise.all([
-            AuditLog.count(),
-            AuditLog.count({ where: { createdAt: { [Op.gte]: oneDayAgo } } }),
-            SlowRequestLog.count(),
-            SlowRequestLog.count({ where: { status_code: { [Op.gte]: 500 } } }),
+            AuditLog.count({ where: dateWhere }),
+            AuditLog.count({ where: last24hWhere }),
+            SlowRequestLog.count({ where: dateWhere }),
+            SlowRequestLog.count({ where: { ...dateWhere, status_code: { [Op.gte]: 500 } } }),
             AuditLog.count({
                 where: {
+                    ...last7dWhere,
                     action: {
                         [Op.or]: [
                             { [Op.like]: '%delete%' },
                             { [Op.like]: '%suspend%' },
                             { [Op.like]: '%cancel%' }
                         ]
-                    },
-                    createdAt: { [Op.gte]: oneWeekAgo },
+                    }
                 }
             }),
         ]);
@@ -1600,6 +1665,91 @@ exports.recordOfflinePayment = async (req, res) => {
     } catch (error) {
         await t.rollback();
         console.error("Offline payment error:", error);
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+// ─────────────────────────────────────────────────────────────
+// SUPER ADMIN IMPERSONATION ("Login As")
+// POST /api/superadmin/users/:id/impersonate
+// ─────────────────────────────────────────────────────────────
+const { generateAccessToken, generateRefreshToken } = require("../utils/generateToken");
+
+exports.impersonateUser = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const targetUserId = parseInt(id, 10);
+        
+        // Ensure superadmin cannot impersonate another superadmin
+        const targetUser = await User.findByPk(targetUserId, {
+            include: [{ model: Institute }]
+        });
+        
+        if (!targetUser) {
+            return res.status(404).json({ success: false, message: "Target user not found" });
+        }
+        
+        if (targetUser.role === 'super_admin') {
+            return res.status(403).json({ success: false, message: "Cannot impersonate another super admin" });
+        }
+        
+        // Generate tokens for the target user
+        const instituteData = targetUser.Institute ? { name: targetUser.Institute.name } : null;
+        
+        const accessToken = generateAccessToken(targetUser, instituteData);
+        const refresh = generateRefreshToken('web');
+        
+        // Optional: Save refresh token to DB for the impersonated session
+        await RefreshToken.create({
+            user_id: targetUser.id,
+            token_hash: refresh.hash,
+            expires_at: refresh.expiresAt,
+            device_info: "Superadmin Impersonation",
+            source: 'web',
+            ip_address: req.ip
+        });
+        
+        let features = {};
+        if (targetUser.Institute && targetUser.Institute.plan_id) {
+            // Need to fetch plan since it might not be included
+            const plan = await Plan.findByPk(targetUser.Institute.plan_id);
+            if (plan) {
+                const { computeFeatures } = require('../middlewares/planLimits.middleware');
+                features = computeFeatures(targetUser.Institute, plan);
+                targetUser.Institute.Plan = plan; // Assign for below
+            }
+        }
+        
+        let instituteLogo = targetUser.Institute?.logo || null;
+        
+        res.json({
+            success: true,
+            message: `Successfully logged in as ${targetUser.name}`,
+            token: accessToken, // backward compatibility
+            accessToken,
+            refreshToken: refresh.token,
+            user: {
+                id: targetUser.id,
+                name: targetUser.name,
+                email: targetUser.email,
+                role: targetUser.role,
+                status: targetUser.status,
+                is_first_login: targetUser.is_first_login,
+                institute_id: targetUser.institute_id,
+                institute_name: targetUser.Institute?.name,
+                institute_status: targetUser.Institute?.status,
+                institute_logo: instituteLogo,
+                subscription_end: targetUser.Institute?.subscription_end,
+                is_lifetime_member: targetUser.Institute?.is_lifetime_member || false,
+                plan_name: targetUser.Institute?.Plan?.name,
+                features,
+                permissions: targetUser.permissions || [],
+                theme_dark: targetUser.theme_dark ?? false,
+                theme_style: targetUser.theme_style ?? "simple"
+            }
+        });
+    } catch (error) {
+        console.error("Impersonation error:", error);
         res.status(500).json({ success: false, message: error.message });
     }
 };

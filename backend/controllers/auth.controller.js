@@ -7,6 +7,10 @@ const { InstitutePublicProfile, RefreshToken } = require("../models");
 const { generateOtp, saveOtp, validateOtp, invalidateOtp } = require("../utils/otp.util");
 const { Institute, OtpVerification } = require("../models");
 const { Op } = require("sequelize");
+const fs = require("fs");
+const path = require("path");
+
+const SETTINGS_FILE_PATH = path.join(__dirname, '../config/systemSettings.json');
 
 // ─── Legacy in-memory cache (kept for backward compat with /send-otp) ───────
 const { catchAsync } = require("../utils/catchAsync");const otpCache = new Map();
@@ -22,6 +26,23 @@ const isTestMode = () => (process.env.OTP_TEST_MODE || "").toLowerCase() === "tr
  */
 exports.getOtpMode = (req, res) => {
   res.json({ success: true, testMode: isTestMode() });
+};
+
+/**
+ * GET /api/auth/system-settings
+ * Public endpoint — returns public system settings like autoLogoutTimer.
+ */
+exports.getPublicSystemSettings = (req, res) => {
+  try {
+    let settings = { autoLogoutTimer: 15 }; // default
+    if (fs.existsSync(SETTINGS_FILE_PATH)) {
+      settings = JSON.parse(fs.readFileSync(SETTINGS_FILE_PATH, 'utf8'));
+    }
+    res.json({ success: true, settings });
+  } catch (error) {
+    console.error("Error reading system settings:", error);
+    res.json({ success: true, settings: { autoLogoutTimer: 15 } }); // fallback
+  }
 };
 
 /**

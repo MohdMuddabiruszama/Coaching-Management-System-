@@ -7,11 +7,16 @@ import api from "../services/api";
 
 export const AuthContext = createContext();
 
-const persistSession = (token, user) => {
+const persistSession = (token, user, rememberMe = false) => {
   sessionStorage.setItem("token", token);
   sessionStorage.setItem("user", JSON.stringify(user));
-  localStorage.removeItem("token");
-  localStorage.removeItem("user");
+  if (Capacitor.isNativePlatform() || rememberMe) {
+    localStorage.setItem("token", token);
+    localStorage.setItem("user", JSON.stringify(user));
+  } else {
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+  }
 };
 
 export const AuthProvider = ({ children }) => {
@@ -25,11 +30,16 @@ export const AuthProvider = ({ children }) => {
     const verifySession = async () => {
       const legacyToken = localStorage.getItem("token");
       const legacyUser = localStorage.getItem("user");
+      const legacyRefresh = localStorage.getItem("refreshToken");
+      
       if (!sessionStorage.getItem("token") && legacyToken) {
         sessionStorage.setItem("token", legacyToken);
         if (legacyUser) sessionStorage.setItem("user", legacyUser);
-        localStorage.removeItem("token");
-        localStorage.removeItem("user");
+        if (legacyRefresh) sessionStorage.setItem("refreshToken", legacyRefresh);
+        
+        // We DO NOT remove from localStorage here anymore, because if it's there,
+        // it means the user explicitly chose "Remember Me" (or is on Mobile),
+        // and it should persist across multiple tabs/sessions.
       }
 
       const token = sessionStorage.getItem("token");
@@ -114,7 +124,7 @@ export const AuthProvider = ({ children }) => {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const login = async (data) => {
+  const login = async (data, rememberMe = false) => {
     const response = await loginUser(data);
 
     const { token, refreshToken, user } = response.data;
@@ -132,12 +142,21 @@ export const AuthProvider = ({ children }) => {
     user.isPlanExpired = isExpired;
     user.is_lifetime_member = isLifetime;
 
-    persistSession(token, user);
+    persistSession(token, user, rememberMe);
     sessionStorage.setItem("isPlanExpired", isExpired ? "true" : "false");
     sessionStorage.setItem("isLifetimeMember", isLifetime ? "true" : "false");
+    
+    if (Capacitor.isNativePlatform() || rememberMe) {
+        localStorage.setItem("isPlanExpired", isExpired ? "true" : "false");
+        localStorage.setItem("isLifetimeMember", isLifetime ? "true" : "false");
+    }
+
     // ✅ Phase 7: Store refresh token for auto-refresh
     if (refreshToken) {
         sessionStorage.setItem("refreshToken", refreshToken);
+        if (Capacitor.isNativePlatform() || rememberMe) {
+            localStorage.setItem("refreshToken", refreshToken);
+        }
     }
 
     // ── Dynamic branding: save institute branding after login ──
@@ -158,6 +177,9 @@ export const AuthProvider = ({ children }) => {
   const logout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
+    localStorage.removeItem("refreshToken");
+    localStorage.removeItem("isPlanExpired");
+    localStorage.removeItem("isLifetimeMember");
     sessionStorage.clear();
 
     // ── Dynamic branding: reset to ZF defaults on logout ──
@@ -166,8 +188,74 @@ export const AuthProvider = ({ children }) => {
     setUser(null);
   };
 
+  const impersonate = (data) => {
+    const { token, refreshToken, user } = data;
+    
+    // Save current superadmin session
+    const currentToken = sessionStorage.getItem("token");
+    const currentUser = sessionStorage.getItem("user");
+    const currentRefresh = sessionStorage.getItem("refreshToken");
+    
+    if (currentToken) sessionStorage.setItem("superadmin_token", currentToken);
+    if (currentUser) sessionStorage.setItem("superadmin_user", currentUser);
+    if (currentRefresh) sessionStorage.setItem("superadmin_refreshToken", currentRefresh);
+
+    // Set impersonated session
+    const isLifetime = user.is_lifetime_member || false;
+    let isExpired = false;
+    if (!isLifetime && user.subscription_end) {
+        const end = new Date(user.subscription_end);
+        end.setHours(23, 59, 59, 999);
+        if (new Date() > end) isExpired = true;
+    }
+    user.isPlanExpired = isExpired;
+    user.is_lifetime_member = isLifetime;
+
+    persistSession(token, user);
+    sessionStorage.setItem("isPlanExpired", isExpired ? "true" : "false");
+    sessionStorage.setItem("isLifetimeMember", isLifetime ? "true" : "false");
+    if (refreshToken) sessionStorage.setItem("refreshToken", refreshToken);
+    
+    // Intentionally NOT calling setUser(user) to avoid React Router ProtectedRoute 
+    // race conditions. The caller must use window.location.href to redirect and reload.
+  };
+
+  const stopImpersonating = () => {
+    const saToken = sessionStorage.getItem("superadmin_token");
+    const saUserStr = sessionStorage.getItem("superadmin_user");
+    const saRefresh = sessionStorage.getItem("superadmin_refreshToken");
+    
+    if (saToken && saUserStr) {
+      const saUser = JSON.parse(saUserStr);
+      
+      const isLifetime = saUser.is_lifetime_member || false;
+      let isExpired = false;
+      if (!isLifetime && saUser.subscription_end) {
+          const end = new Date(saUser.subscription_end);
+          end.setHours(23, 59, 59, 999);
+          if (new Date() > end) isExpired = true;
+      }
+      saUser.isPlanExpired = isExpired;
+      saUser.is_lifetime_member = isLifetime;
+
+      persistSession(saToken, saUser);
+      sessionStorage.setItem("isPlanExpired", isExpired ? "true" : "false");
+      sessionStorage.setItem("isLifetimeMember", isLifetime ? "true" : "false");
+      if (saRefresh) sessionStorage.setItem("refreshToken", saRefresh);
+      
+      sessionStorage.removeItem("superadmin_token");
+      sessionStorage.removeItem("superadmin_user");
+      sessionStorage.removeItem("superadmin_refreshToken");
+      
+      // Intentionally NOT calling setUser to avoid React Router race conditions.
+      // The caller must use window.location.href to redirect and reload.
+      return true;
+    }
+    return false;
+  };
+
   return (
-    <AuthContext.Provider value={{ user, setUser, login, logout, isInitializing }}>
+    <AuthContext.Provider value={{ user, setUser, login, logout, impersonate, stopImpersonating, isInitializing }}>
       {children}
     </AuthContext.Provider>
   );

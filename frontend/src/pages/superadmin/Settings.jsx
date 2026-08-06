@@ -15,14 +15,18 @@ function Settings() {
     const [loading, setLoading] = useState(true);
     const [message, setMessage] = useState({ type: "", text: "" });
 
-    // ── OTP Mode state ──
     const [otpTestMode, setOtpTestMode]       = useState(false);
     const [otpModeLoading, setOtpModeLoading] = useState(false);
     const [otpModeFetched, setOtpModeFetched] = useState(false);
 
+    // ── System Settings state ──
+    const [autoLogoutTimer, setAutoLogoutTimer] = useState(15);
+    const [savingSettings, setSavingSettings] = useState(false);
+
     useEffect(() => {
         fetchProfile();
         fetchOtpMode();
+        fetchSystemSettings();
     }, []);
 
     const fetchProfile = async () => {
@@ -44,6 +48,30 @@ function Settings() {
             console.warn("Could not fetch OTP mode:", e.message);
         } finally {
             setOtpModeFetched(true);
+        }
+    };
+
+    const fetchSystemSettings = async () => {
+        try {
+            const res = await api.get("/superadmin/system-settings");
+            if (res.data.settings?.autoLogoutTimer) {
+                setAutoLogoutTimer(res.data.settings.autoLogoutTimer);
+            }
+        } catch (e) {
+            console.warn("Could not fetch system settings:", e.message);
+        }
+    };
+
+    const saveSystemSettings = async () => {
+        setSavingSettings(true);
+        setMessage({ type: "", text: "" });
+        try {
+            await api.put("/superadmin/system-settings/auto-logout", { autoLogoutTimer });
+            setMessage({ type: "success", text: "System settings updated successfully" });
+        } catch (err) {
+            setMessage({ type: "error", text: err.response?.data?.message || "Failed to update system settings" });
+        } finally {
+            setSavingSettings(false);
         }
     };
 
@@ -97,7 +125,11 @@ function Settings() {
             setMessage({ type: "success", text: "Password changed successfully" });
             setPasswordData({ oldPassword: "", newPassword: "", confirmPassword: "" });
         } catch (error) {
-            setMessage({ type: "error", text: error.response?.data?.message || "Failed to change password" });
+            let errorText = error.response?.data?.message || "Failed to change password";
+            if (error.response?.data?.errors && error.response.data.errors.length > 0) {
+                errorText = error.response.data.errors[0].message;
+            }
+            setMessage({ type: "error", text: errorText });
         }
     };
 
@@ -212,9 +244,11 @@ function Settings() {
                                 value={passwordData.newPassword}
                                 onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
                                 required
-                                minLength="6"
                                 style={{ width: "100%", padding: "0.75rem", borderRadius: "0.375rem", border: "1px solid #d1d5db" }}
                             />
+                            <p style={{ fontSize: "0.8rem", color: "#6b7280", marginTop: "0.5rem" }}>
+                                Password must be at least 8 characters long and contain at least 1 uppercase letter, 1 lowercase letter, 1 number, and 1 special character.
+                            </p>
                         </div>
                         <div className="form-group" style={{ marginBottom: "1.5rem" }}>
                             <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: "500" }}>Confirm New Password</label>
@@ -224,7 +258,6 @@ function Settings() {
                                 value={passwordData.confirmPassword}
                                 onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
                                 required
-                                minLength="6"
                                 style={{ width: "100%", padding: "0.75rem", borderRadius: "0.375rem", border: "1px solid #d1d5db" }}
                             />
                         </div>
@@ -232,6 +265,33 @@ function Settings() {
                             Update Password
                         </button>
                     </form>
+                </div>
+            )}
+            
+            {activeTab === "security" && (
+                <div className="card" style={{ maxWidth: "600px", padding: "2rem", marginTop: "2rem" }}>
+                    <h3 style={{ marginBottom: "1.5rem" }}>Auto-Logout Settings</h3>
+                    <div className="form-group" style={{ marginBottom: "1.5rem" }}>
+                        <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: "500" }}>Global Auto-Logout Timer (Minutes)</label>
+                        <input 
+                            type="number" 
+                            min="1" 
+                            max="1440"
+                            className="form-input"
+                            value={autoLogoutTimer}
+                            onChange={(e) => setAutoLogoutTimer(e.target.value)}
+                            style={{ width: "100%", padding: "0.75rem", borderRadius: "0.375rem", border: "1px solid #d1d5db" }}
+                        />
+                        <p style={{ fontSize: "0.85rem", color: "#6b7280", marginTop: "0.5rem" }}>Users will be automatically logged out after this many minutes of inactivity.</p>
+                    </div>
+                    <button 
+                        className="btn btn-primary" 
+                        style={{ marginTop: "0.5rem" }}
+                        onClick={saveSystemSettings}
+                        disabled={savingSettings}
+                    >
+                        {savingSettings ? "Saving..." : "Save Auto-Logout Settings"}
+                    </button>
                 </div>
             )}
 
