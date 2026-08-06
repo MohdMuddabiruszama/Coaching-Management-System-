@@ -1,0 +1,128 @@
+.force-update-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  background-color: #f3f4f6; /* light gray background */
+  padding: 20px;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+.force-update-card {
+  background: white;
+  border-radius: 24px;
+  padding: 40px 32px;
+  max-width: 400px;
+  width: 100%;
+  box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.05);
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.force-update-icon-wrapper {
+  background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 24px;
+  box-shadow: 0 10px 25px -5px rgba(99, 102, 241, 0.4);
+}
+
+.force-update-icon {
+  font-size: 36px;
+  line-height: 1;
+}
+
+.force-update-title {
+  font-size: 24px;
+  font-weight: 700;
+  color: #111827;
+  margin: 0 0 12px 0;
+}
+
+.force-update-message {
+  font-size: 15px;
+  color: #4b5563;
+  line-height: 1.6;
+  margin: 0 0 32px 0;
+}
+
+.force-update-version-info {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 16px 24px;
+  margin-bottom: 32px;
+  width: 100%;
+}
+
+.version-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.version-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: 600;
+  color: #64748b;
+}
+
+.version-number {
+  font-size: 16px;
+  font-weight: 700;
+  padding: 4px 12px;
+  border-radius: 8px;
+}
+
+.version-number.current {
+  color: #ef4444;
+  background: #fef2f2;
+}
+
+.version-number.required {
+  color: #10b981;
+  background: #ecfdf5;
+}
+
+.version-arrow {
+  color: #cbd5e1;
+  font-size: 20px;
+  font-weight: bold;
+}
+
+.force-update-button {
+  width: 100%;
+  background: #111827;
+  color: white;
+  border: none;
+  border-radius: 12px;
+  padding: 16px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+.force-update-button:hover {
+  background: #1f2937;
+  transform: translateY(-2px);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+.force-update-button:active {
+  transform: translateY(0);
+}

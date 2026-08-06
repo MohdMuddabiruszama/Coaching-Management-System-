@@ -321,12 +321,22 @@ exports.login = catchAsync(async (req, res) => {
       } catch (_) {}
     }
 
+    // Read systemSettings.json for minMobileVersion
+    let minMobileVersion = "1.0.0";
+    try {
+      if (fs.existsSync(SETTINGS_FILE_PATH)) {
+        const settings = JSON.parse(fs.readFileSync(SETTINGS_FILE_PATH, 'utf8'));
+        if (settings.minMobileVersion) minMobileVersion = settings.minMobileVersion;
+      }
+    } catch (e) {}
+
     res.json({
       success: true,
       message: "Login successful",
       token,
       accessToken,
       refreshToken: refresh.token,
+      minMobileVersion,
       user: {
         id: user.id,
         name: user.name,
@@ -395,8 +405,18 @@ exports.logout = (req, res) => {
 exports.getProfile = catchAsync(async (req, res) => {
   try {
     const user = await authService.getProfile(req.user.id);
+    
+    let minMobileVersion = "1.0.0";
+    try {
+      if (fs.existsSync(SETTINGS_FILE_PATH)) {
+        const settings = JSON.parse(fs.readFileSync(SETTINGS_FILE_PATH, 'utf8'));
+        if (settings.minMobileVersion) minMobileVersion = settings.minMobileVersion;
+      }
+    } catch (e) {}
+
     res.status(200).json({
       success: true,
+      minMobileVersion,
       user
     });
   } catch (error) {

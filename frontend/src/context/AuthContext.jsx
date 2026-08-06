@@ -22,6 +22,7 @@ const persistSession = (token, user, rememberMe = false) => {
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [isInitializing, setIsInitializing] = useState(true);
+  const [minMobileVersion, setMinMobileVersion] = useState(null);
 
   // Access branding setters — BrandingProvider is mounted above us in App.jsx
   const { setBranding, clearBranding } = useContext(BrandingContext);
@@ -52,6 +53,9 @@ export const AuthProvider = ({ children }) => {
         const res = await getProfile();
         if (res.data && res.data.success) {
            const userData = res.data.user;
+           if (res.data.minMobileVersion) {
+               setMinMobileVersion(res.data.minMobileVersion);
+           }
 
            // === LIFETIME BYPASS: Lifetime members NEVER expire ===
            const isLifetime = userData.is_lifetime_member ||
@@ -127,7 +131,10 @@ export const AuthProvider = ({ children }) => {
   const login = async (data, rememberMe = false) => {
     const response = await loginUser(data);
 
-    const { token, refreshToken, user } = response.data;
+    const { token, refreshToken, user, minMobileVersion: loginMinVer } = response.data;
+    if (loginMinVer) {
+        setMinMobileVersion(loginMinVer);
+    }
 
     // === LIFETIME BYPASS: Lifetime members NEVER expire ===
     const isLifetime = user.is_lifetime_member || false;
@@ -255,7 +262,13 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, setUser, login, logout, impersonate, stopImpersonating, isInitializing }}>
+      <AuthContext.Provider value={{ 
+        user, setUser, 
+        isInitializing, 
+        login, logout, 
+        impersonate, stopImpersonating,
+        minMobileVersion 
+      }}>
       {children}
     </AuthContext.Provider>
   );
