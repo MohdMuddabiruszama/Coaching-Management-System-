@@ -38,7 +38,23 @@ const Institute = sequelize.define("Institute", {
     qr_notify_parent_on_late: { type: DataTypes.BOOLEAN, defaultValue: false },
     qr_notify_parent_on_absent: { type: DataTypes.BOOLEAN, defaultValue: false },
 
-
+    id_card_settings: {
+        type: DataTypes.JSONB,
+        defaultValue: {
+            theme: { primary_color: '#1e3a8a', text_color: '#ffffff' },
+            visible_fields: {
+                photo: true,
+                student_name: true,
+                roll_no: true,
+                parent_name: true,
+                email: true,
+                parent_phone: true,
+                class: true,
+                gender: true,
+                address: true
+            }
+        }
+    },
     // Snapshot of Plan Limits (for grandfathering)
     current_limit_students: {
         type: DataTypes.INTEGER,

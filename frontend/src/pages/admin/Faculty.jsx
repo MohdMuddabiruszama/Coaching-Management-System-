@@ -17,6 +17,15 @@ import BulkImportButton from "../../components/BulkImportButton";
 import CredentialRow from "../../components/common/CredentialRow";
 
 function Faculty() {
+    const hexToRgb = (hex) => {
+        let r = 30, g = 58, b = 138;
+        if (hex && hex.match(/^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i)) {
+            const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+            r = parseInt(result[1], 16); g = parseInt(result[2], 16); b = parseInt(result[3], 16);
+        }
+        return [r, g, b];
+    };
+
     const { user } = useContext(AuthContext);
     const [faculty, setFaculty] = useState([]);
     const [totalCount, setTotalCount] = useState(0);
@@ -122,6 +131,21 @@ function Faculty() {
     };
 
     const generateIdCard = async (doc, fm, logoBase64, instName, instPhone, qrDataUrl) => {
+        
+        const idSettings = user?.id_card_settings?.faculty || { theme: { primary_color: '#1e3a8a', text_color: '#ffffff' }, visible_fields: {} };
+        const [pRed, pGreen, pBlue] = hexToRgb(idSettings.theme.primary_color);
+        const [tRed, tGreen, tBlue] = hexToRgb(idSettings.theme.text_color);
+        // Lighten color by a percentage (0 to 1)
+        const lighten = (r, g, b, factor) => [
+            Math.round(r + (255 - r) * factor),
+            Math.round(g + (255 - g) * factor),
+            Math.round(b + (255 - b) * factor)
+        ];
+        const bgVeryLight = lighten(pRed, pGreen, pBlue, 0.95);
+        const bgLight = lighten(pRed, pGreen, pBlue, 0.85);
+        const borderLight = lighten(pRed, pGreen, pBlue, 0.7);
+
+
         const designation = fm.designation || 'Faculty';
         const fName = fm.User?.name || '';
         const fEmail = fm.User?.email || '';
@@ -134,11 +158,11 @@ function Faculty() {
         }
 
         // ── Faculty Distinct "Emerald Green" Theme ──
-        doc.setFillColor(240, 253, 244); // Green-50 background (instead of blue)
+        doc.setFillColor(...bgVeryLight); // Very light primary (instead of blue)
         doc.rect(0, 0, 85, 155, 'F');
-        doc.setFillColor(6, 78, 59); // Green-900 dark primary
+        doc.setFillColor(pRed, pGreen, pBlue); // Green-900 dark primary
         doc.rect(0, 0, 85, 28, 'F');
-        doc.setTextColor(255, 255, 255);
+        doc.setTextColor(tRed, tGreen, tBlue);
         doc.setFont('helvetica', 'bold');
 
         if (logoBase64) {
@@ -148,7 +172,7 @@ function Faculty() {
             if (instPhone) {
                 doc.setFont('helvetica', 'normal');
                 doc.setFontSize(7.5);
-                doc.setTextColor(209, 250, 229); // Green-100 highlight text
+                doc.setTextColor(...bgLight); // Light primary text
                 doc.text(`Ph: ${instPhone}`, 28, 20);
             }
         } else {
@@ -163,38 +187,39 @@ function Faculty() {
              }
         }
 
-        doc.setDrawColor(6, 78, 59); doc.setLineWidth(0.5); doc.line(6, 30, 79, 30);
+        doc.setDrawColor(pRed, pGreen, pBlue); doc.setLineWidth(0.5); doc.line(6, 30, 79, 30);
         doc.setTextColor(100, 100, 120); doc.setFontSize(6);
         doc.text('QR CODE', 21, 35, { align: 'center' });
-        doc.text('PHOTO', 64, 35, { align: 'center' });
+        if (idSettings.visible_fields.photo !== false) { doc.text('PHOTO', 64, 35, { align: 'center' }); }
 
         if (qrDataUrl) doc.addImage(qrDataUrl, 'PNG', 5, 37, 33, 33);
         
-        doc.setFillColor(209, 250, 229); doc.rect(47, 37, 33, 33, 'F'); // Green-100
-        doc.setDrawColor(167, 243, 208); doc.setLineWidth(0.3); doc.rect(47, 37, 33, 33); // Green-200
-        doc.setDrawColor(16, 185, 129); doc.setLineWidth(0.2); doc.circle(63.5, 47, 4, 'S'); // Green-500
+        doc.setFillColor(...bgLight); doc.rect(47, 37, 33, 33, 'F');
+        doc.setDrawColor(...borderLight); doc.setLineWidth(0.3); doc.rect(47, 37, 33, 33);
+        doc.setDrawColor(pRed, pGreen, pBlue); doc.setLineWidth(0.2); doc.circle(63.5, 47, 4, 'S'); // Green-500
         doc.line(55, 69, 55, 60); doc.line(55, 60, 72, 60); doc.line(72, 60, 72, 69);
-        doc.setTextColor(52, 211, 153); doc.setFontSize(5); doc.text('PHOTO', 63.5, 72, { align: 'center' }); // Green-400
+        doc.setTextColor(pRed, pGreen, pBlue); doc.setFontSize(5); doc.text('PHOTO', 63.5, 72, { align: 'center' });
 
-        doc.setDrawColor(167, 243, 208); doc.setLineWidth(0.3); doc.line(6, 74, 79, 74); // Green-200
+        doc.setDrawColor(...borderLight); doc.setLineWidth(0.3); doc.line(6, 74, 79, 74);
 
         const infoStartY = 80;
-        doc.setFillColor(5, 150, 105); doc.rect(5, infoStartY - 4, 75, 8, 'F'); // Green-600 Name Banner
-        doc.setTextColor(255, 255, 255); doc.setFont('helvetica', 'bold'); doc.setFontSize(9);
-        doc.text(fName.toUpperCase(), 42.5, infoStartY, { align: 'center' });
+        doc.setFillColor(pRed, pGreen, pBlue); doc.rect(5, infoStartY - 4, 75, 8, 'F'); // Name Banner
+        doc.setTextColor(tRed, tGreen, tBlue); doc.setFont('helvetica', 'bold'); doc.setFontSize(9);
+        if (idSettings.visible_fields.faculty_name !== false) { doc.text(fName.toUpperCase(), 42.5, infoStartY, { align: 'center' }); }
 
-        const rows = [
-            { label: 'Role', value: designation },
-            { label: 'Emp ID', value: `EMP-${fm.id}` },
-            { label: 'Email', value: fEmail },
-            { label: 'Phone', value: fPhone },
-            { label: 'Teaching', value: teachingText },
-            { label: 'Join Date', value: joinDate },
+        const allRows = [
+            { key: 'role', label: 'Role', value: designation },
+            { key: 'emp_id', label: 'Emp ID', value: `EMP-${fm.id}` },
+            { key: 'email', label: 'Email', value: fEmail },
+            { key: 'phone', label: 'Phone', value: fPhone },
+            { key: 'class', label: 'Teaching', value: teachingText },
+            { key: 'address', label: 'Join Date', value: joinDate },
         ];
+        const rows = allRows.filter(r => idSettings.visible_fields[r.key] !== false);
 
         let y = infoStartY + 7;
         rows.forEach((row, i) => {
-            doc.setFillColor(...(i % 2 === 0 ? [240, 253, 244] : [209, 250, 229])); // Green-50 / Green-100
+            doc.setFillColor(...(i % 2 === 0 ? bgVeryLight : bgLight));
             doc.rect(5, y - 3.5, 75, 6.5, 'F');
             doc.setTextColor(5, 150, 105); doc.setFont('helvetica', 'bold'); doc.setFontSize(6); // Green-600 text
             doc.text(`${row.label}:`, 8, y + 0.5);
@@ -203,7 +228,7 @@ function Faculty() {
             y += 7;
         });
 
-        doc.setFillColor(6, 78, 59); doc.rect(0, 149, 85, 6, 'F'); // Green-900 bottom footer
+        doc.setFillColor(pRed, pGreen, pBlue); doc.rect(0, 149, 85, 6, 'F'); // Green-900 bottom footer
         doc.setTextColor(255,255,255); doc.setFont('helvetica', 'normal'); doc.setFontSize(5.5);
         doc.text('Official Educational Staff Identity Card', 42.5, 152.5, { align: 'center' });
     };
@@ -1153,6 +1178,13 @@ function Faculty() {
 
                         {!qrLoading && qrFaculty && (
                             <>
+                        {(() => {
+                            const idSettings = user?.id_card_settings?.faculty || {
+                                theme: { primary_color: '#1e3a8a', text_color: '#ffffff' },
+                                visible_fields: { photo: true, faculty_name: true, emp_id: true, department: true, designation: true, email: true, phone: true, address: true }
+                            };
+                            
+                            return (
                                 <div style={{
                                     width: '100%',
                                     maxWidth: '350px',
@@ -1164,12 +1196,12 @@ function Faculty() {
                                 }}>
                                     {/* Header */}
                                     <div style={{
-                                        background: '#064e3b',
+                                        background: idSettings.theme.primary_color,
                                         padding: '12px',
                                         display: 'flex',
                                         alignItems: 'center',
                                         gap: '12px',
-                                        color: '#fff'
+                                        color: idSettings.theme.text_color
                                     }}>
                                         {user?.institute_logo ? (
                                             <img src={user.institute_logo} alt="Logo" style={{ width: '60px', height: '60px', objectFit: 'contain', background: '#fff', borderRadius: '50%', padding: '4px' }} />
@@ -1181,13 +1213,13 @@ function Faculty() {
                                                 {user?.institute_name?.toUpperCase() || 'INSTITUTE NAME'}
                                             </div>
                                             {user?.institute_phone && (
-                                                <div style={{ fontSize: '0.8rem', color: '#d1fae5', marginTop: '4px' }}>
+                                                <div style={{ fontSize: '0.8rem', opacity: 0.8, marginTop: '4px' }}>
                                                     Ph: {user.institute_phone}
                                                 </div>
                                             )}
                                         </div>
                                     </div>
-                                    <div style={{ height: '3px', background: '#064e3b', borderTop: '2px solid #fff' }}></div>
+                                    <div style={{ height: '3px', background: idSettings.theme.primary_color, borderTop: `2px solid ${idSettings.theme.text_color}` }}></div>
                                     
                                     {/* QR & Photo area */}
                                     <div style={{ padding: '15px 15px 5px 15px', display: 'flex', justifyContent: 'space-between', gap: '15px' }}>
@@ -1201,6 +1233,7 @@ function Faculty() {
                                                 style={{ display: 'block', margin: '0 auto' }}
                                             />
                                         </div>
+                                        {idSettings.visible_fields.photo && (
                                         <div style={{ flex: 1, textAlign: 'center' }}>
                                             <div style={{ fontSize: '0.7rem', fontWeight: 'bold', color: '#64748b', marginBottom: '4px' }}>PHOTO</div>
                                             <div style={{
@@ -1212,28 +1245,31 @@ function Faculty() {
                                                 <div style={{ position: 'absolute', bottom: '4px', width: '100%', textAlign: 'center', fontSize: '0.6rem', color: '#10b981' }}>PHOTO</div>
                                             </div>
                                         </div>
+                                        )}
                                     </div>
                                     
                                     <div style={{ borderTop: '2px solid #a7f3d0', margin: '10px 15px' }}></div>
                                     
                                     {/* Faculty Details */}
                                     <div style={{ padding: '0 15px 15px 15px' }}>
-                                        <div style={{ background: '#059669', color: '#fff', padding: '8px', textAlign: 'center', fontWeight: 'bold', fontSize: '1rem', marginBottom: '10px' }}>
+                                        {idSettings.visible_fields.student_name && (
+                                        <div style={{ background: idSettings.theme.primary_color, color: idSettings.theme.text_color, padding: '8px', textAlign: 'center', fontWeight: 'bold', fontSize: '1rem', marginBottom: '10px' }}>
                                             {qrFaculty.User?.name?.toUpperCase() || 'FACULTY NAME'}
                                         </div>
+                                        )}
                                         
                                         <table style={{ width: '100%', fontSize: '0.75rem', borderCollapse: 'collapse', textAlign: 'left' }}>
                                             <tbody>
                                                 {[
-                                                    { label: 'Role', value: qrFaculty.designation || 'Faculty' },
-                                                    { label: 'Emp ID', value: `EMP-${qrFaculty.id}` },
-                                                    { label: 'Email', value: qrFaculty.User?.email || 'N/A' },
-                                                    { label: 'Phone', value: qrFaculty.User?.phone || 'N/A' },
-                                                    { label: 'Teaching', value: (qrFaculty.Subjects && qrFaculty.Subjects.length > 0) ? qrFaculty.Subjects.map(s => s.name).join(', ') : 'N/A' },
-                                                    { label: 'Join Date', value: qrFaculty.join_date ? new Date(qrFaculty.join_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : 'N/A' }
-                                                ].map((row, i) => (
-                                                    <tr key={i} style={{ background: i % 2 === 0 ? '#f0fdf4' : '#d1fae5' }}>
-                                                        <td style={{ padding: '6px 8px', fontWeight: 'bold', color: '#059669', width: '70px' }}>{row.label}:</td>
+                                                    { key: 'role', label: 'Role', value: qrFaculty.designation || 'Faculty' },
+                                                    { key: 'roll_no', label: 'Emp ID', value: `EMP-${qrFaculty.id}` },
+                                                    { key: 'email', label: 'Email', value: qrFaculty.User?.email || 'N/A' },
+                                                    { key: 'parent_phone', label: 'Phone', value: qrFaculty.User?.phone || 'N/A' },
+                                                    { key: 'class', label: 'Teaching', value: (qrFaculty.Subjects && qrFaculty.Subjects.length > 0) ? qrFaculty.Subjects.map(s => s.name).join(', ') : 'N/A' },
+                                                    { key: 'address', label: 'Join Date', value: qrFaculty.join_date ? new Date(qrFaculty.join_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : 'N/A' }
+                                                ].filter(row => idSettings.visible_fields[row.key] !== false).map((row, i) => (
+                                                    <tr key={i} style={{ background: i % 2 === 0 ? '#f8fafc' : '#f1f5f9' }}>
+                                                        <td style={{ padding: '6px 8px', fontWeight: 'bold', color: idSettings.theme.primary_color, width: '70px' }}>{row.label}:</td>
                                                         <td style={{ padding: '6px 8px', color: '#022c22', wordBreak: 'break-word' }}>{row.value}</td>
                                                     </tr>
                                                 ))}
@@ -1241,6 +1277,8 @@ function Faculty() {
                                         </table>
                                     </div>
                                 </div>
+                                );
+                                })()}
 
                                 <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center', flexWrap: 'wrap' }}>
                                     <button

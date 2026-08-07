@@ -370,6 +370,7 @@ exports.login = catchAsync(async (req, res) => {
         institute_status: user.Institute?.status,
         institute_phone: user.Institute?.phone,
         institute_logo: instituteLogo,
+        id_card_settings: user.Institute?.id_card_settings,
         subscription_end: user.Institute?.subscription_end,
         is_lifetime_member: user.Institute?.is_lifetime_member || false,
         plan_name: user.Institute?.Plan?.name,
@@ -655,7 +656,8 @@ exports.verifyRegistrationOtp = catchAsync(async (req, res) => {
         role: result.adminUser.role,
         institute_id: result.institute.id,
         institute_name: result.institute.name,
-        institute_logo: result.institute.logo
+        institute_logo: result.institute.logo,
+        id_card_settings: result.institute.id_card_settings
       },
       data: {
         institute_id: result.institute.id,
@@ -856,7 +858,7 @@ exports.refreshAccessToken = catchAsync(async (req, res) => {
         model: require("../models").User,
         // ✅ Phase A: Include all fields needed for enriched JWT generation
         attributes: ["id", "role", "institute_id", "status", "name", "email"],
-        include: [{ model: require("../models").Institute, attributes: ["name"] }]
+        include: [{ model: require("../models").Institute, attributes: ["name", "id_card_settings"] }]
       }]
     });
 

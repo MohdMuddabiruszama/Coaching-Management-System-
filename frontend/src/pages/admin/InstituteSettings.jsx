@@ -23,6 +23,20 @@ function InstituteSettings() {
         phone: "",
         address: "",
         logo: "",
+        id_card_settings: {
+            theme: { primary_color: '#1e3a8a', text_color: '#ffffff' },
+            visible_fields: {
+                photo: true,
+                student_name: true,
+                roll_no: true,
+                parent_name: true,
+                email: true,
+                parent_phone: true,
+                class: true,
+                gender: true,
+                address: true
+            }
+        }
     });
 
     const [invoices, setInvoices] = useState([]);
@@ -53,6 +67,14 @@ function InstituteSettings() {
                 phone: institute.phone || "",
                 address: institute.address || "",
                 logo: institute.logo || "",
+                id_card_settings: institute.id_card_settings || {
+                    theme: { primary_color: '#1e3a8a', text_color: '#ffffff' },
+                    visible_fields: {
+                        photo: true, student_name: true, roll_no: true,
+                        parent_name: true, email: true, parent_phone: true,
+                        class: true, gender: true, address: true
+                    }
+                }
             });
         } catch (error) {
             console.error("Error fetching institute:", error);
@@ -63,6 +85,34 @@ function InstituteSettings() {
         setFormData({
             ...formData,
             [e.target.name]: e.target.value,
+        });
+        setError("");
+    };
+
+    const handleIdCardThemeChange = (field, value) => {
+        setFormData({
+            ...formData,
+            id_card_settings: {
+                ...formData.id_card_settings,
+                theme: {
+                    ...formData.id_card_settings.theme,
+                    [field]: value
+                }
+            }
+        });
+        setError("");
+    };
+
+    const handleIdCardFieldChange = (field, checked) => {
+        setFormData({
+            ...formData,
+            id_card_settings: {
+                ...formData.id_card_settings,
+                visible_fields: {
+                    ...formData.id_card_settings.visible_fields,
+                    [field]: checked
+                }
+            }
         });
         setError("");
     };
@@ -182,6 +232,65 @@ function InstituteSettings() {
                             </div>
                         </div>
                     )}
+
+                    <div className="card-header" style={{ marginTop: '2rem', paddingLeft: 0, paddingRight: 0 }}>
+                        <h3 className="card-title">ID Card Configuration</h3>
+                        <p style={{ color: 'var(--text-secondary, #6b7280)', fontSize: '0.875rem', marginTop: '0.25rem' }}>Customize the appearance and visible fields of the Student and Faculty ID cards.</p>
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '1.5rem' }}>
+                        <div className="form-group">
+                            <label className="form-label">Primary Color</label>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                <input
+                                    type="color"
+                                    value={formData.id_card_settings.theme.primary_color}
+                                    onChange={(e) => handleIdCardThemeChange('primary_color', e.target.value)}
+                                    style={{ width: '50px', height: '40px', padding: 0, border: 'none', cursor: 'pointer' }}
+                                />
+                                <span>{formData.id_card_settings.theme.primary_color}</span>
+                            </div>
+                        </div>
+                        <div className="form-group">
+                            <label className="form-label">Text Color (on Primary)</label>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                <input
+                                    type="color"
+                                    value={formData.id_card_settings.theme.text_color}
+                                    onChange={(e) => handleIdCardThemeChange('text_color', e.target.value)}
+                                    style={{ width: '50px', height: '40px', padding: 0, border: 'none', cursor: 'pointer' }}
+                                />
+                                <span>{formData.id_card_settings.theme.text_color}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="form-group">
+                        <label className="form-label">Visible Fields</label>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', background: '#f9fafb', padding: '1rem', borderRadius: '0.5rem', border: '1px solid #e5e7eb' }}>
+                            {Object.entries({
+                                photo: "Show Photo",
+                                student_name: "Show Name",
+                                roll_no: "Show Roll No / ID",
+                                parent_name: "Show Parent Name",
+                                email: "Show Email",
+                                parent_phone: "Show Parent Phone",
+                                class: "Show Class/Department",
+                                gender: "Show Gender",
+                                address: "Show Address"
+                            }).map(([key, label]) => (
+                                <label key={key} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+                                    <input
+                                        type="checkbox"
+                                        checked={formData.id_card_settings.visible_fields[key]}
+                                        onChange={(e) => handleIdCardFieldChange(key, e.target.checked)}
+                                        style={{ width: '1.25rem', height: '1.25rem', accentColor: 'var(--primary-color)' }}
+                                    />
+                                    <span>{label}</span>
+                                </label>
+                            ))}
+                        </div>
+                    </div>
 
                     <div style={{ display: "flex", gap: "1rem", marginTop: "1.5rem" }}>
                         <button

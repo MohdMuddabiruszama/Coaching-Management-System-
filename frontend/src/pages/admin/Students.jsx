@@ -18,6 +18,15 @@ import CredentialRow from "../../components/common/CredentialRow";
 
 
 function Students() {
+    const hexToRgb = (hex) => {
+        let r = 30, g = 58, b = 138;
+        if (hex && hex.match(/^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i)) {
+            const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+            r = parseInt(result[1], 16); g = parseInt(result[2], 16); b = parseInt(result[3], 16);
+        }
+        return [r, g, b];
+    };
+
     const { user } = useContext(AuthContext);
     const [students, setStudents] = useState([]);
     const [totalCount, setTotalCount] = useState(0);
@@ -100,6 +109,19 @@ function Students() {
             const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: [85, 148] });
 
             const instName = user?.institute_name || 'Institute Name';
+            const idSettings = user?.id_card_settings?.student || { theme: { primary_color: '#1e3a8a', text_color: '#ffffff' }, visible_fields: {} };
+            const [pRed, pGreen, pBlue] = hexToRgb(idSettings.theme.primary_color);
+            const [tRed, tGreen, tBlue] = hexToRgb(idSettings.theme.text_color);
+        // Lighten color by a percentage (0 to 1)
+        const lighten = (r, g, b, factor) => [
+            Math.round(r + (255 - r) * factor),
+            Math.round(g + (255 - g) * factor),
+            Math.round(b + (255 - b) * factor)
+        ];
+        const bgVeryLight = lighten(pRed, pGreen, pBlue, 0.95);
+        const bgLight = lighten(pRed, pGreen, pBlue, 0.85);
+        const borderLight = lighten(pRed, pGreen, pBlue, 0.7);
+
             const instPhone = user?.institute_phone || '';
 
             // Prefetch Logo natively once
@@ -150,12 +172,10 @@ function Students() {
                 const qrDataUrl = await QRCode.toDataURL(`STUDENT_QR_${student.id}`, { width: 300, margin: 1 });
 
                 // ── Draw Card Layout ──
-                doc.setFillColor(245, 247, 255);
+                doc.setFillColor(...bgVeryLight);
                 doc.rect(0, 0, 85, 155, 'F');
 
-                doc.setFillColor(30, 58, 138); 
-                doc.rect(0, 0, 85, 28, 'F');
-                doc.setTextColor(255, 255, 255);
+                doc.setFillColor(pRed, pGreen, pBlue); doc.rect(0, 0, 85, 28, 'F'); doc.setTextColor(tRed, tGreen, tBlue);
                 doc.setFont('helvetica', 'bold');
 
                 if (logoBase64) {
@@ -180,7 +200,7 @@ function Students() {
                     }
                 }
 
-                doc.setDrawColor(30, 58, 138);
+                doc.setDrawColor(pRed, pGreen, pBlue);
                 doc.setLineWidth(0.5);
                 doc.line(6, 30, 79, 30);
 
@@ -188,49 +208,48 @@ function Students() {
                 doc.setFont('helvetica', 'bold');
                 doc.setFontSize(6);
                 doc.text('QR CODE', 21, 35, { align: 'center' });
-                doc.text('PHOTO', 64, 35, { align: 'center' });
+                if (idSettings.visible_fields.photo !== false) { doc.text('PHOTO', 64, 35, { align: 'center' }); }
 
                 if (qrDataUrl) {
                     doc.addImage(qrDataUrl, 'PNG', 5, 37, 33, 33);
                 }
                 
-                doc.setFillColor(220, 224, 240);
+                if (idSettings.visible_fields.photo !== false) { doc.setFillColor(...bgLight);
                 doc.rect(47, 37, 33, 33, 'F');
-                doc.setDrawColor(180, 190, 220);
+                doc.setDrawColor(...borderLight);
                 doc.setLineWidth(0.3); doc.rect(47, 37, 33, 33);
                 doc.setDrawColor(150, 160, 190);
                 doc.setLineWidth(0.2); doc.circle(63.5, 47, 4, 'S');
                 doc.line(55, 69, 55, 60); doc.line(55, 60, 72, 60); doc.line(72, 60, 72, 69);
                 doc.setTextColor(140,150,185);
                 doc.setFontSize(5);
-                doc.text('PHOTO', 63.5, 72, { align: 'center' });
+                doc.text('PHOTO', 63.5, 72, { align: 'center' }); }
 
                 doc.setDrawColor(200, 205, 225);
                 doc.setLineWidth(0.3); doc.line(6, 74, 79, 74);
 
                 const infoStartY = 80;
-                doc.setFillColor(102, 126, 234);
-                doc.rect(5, infoStartY - 4, 75, 8, 'F');
-                doc.setTextColor(255, 255, 255);
+                doc.setFillColor(pRed, pGreen, pBlue); doc.rect(5, infoStartY - 4, 75, 8, 'F'); doc.setTextColor(tRed, tGreen, tBlue);
                 doc.setFont('helvetica', 'bold');
                 doc.setFontSize(9);
-                doc.text(studentName.toUpperCase(), 42.5, infoStartY, { align: 'center' });
+                if (idSettings.visible_fields.student_name !== false) { doc.text(studentName.toUpperCase(), 42.5, infoStartY, { align: 'center' }); }
 
-                const rows = [
-                    { label: 'Roll No', value: rollNo || 'N/A' },
-                    { label: 'Parent', value: parentName },
-                    { label: 'Email', value: studentEmail },
-                    { label: 'Parent Ph', value: parentPhone || 'N/A' },
-                    { label: 'Class', value: classText },
-                    { label: 'Gender', value: gender },
-                    { label: 'Address', value: address },
+                const allRows = [
+                    { key: 'roll_no', label: 'Roll No', value: rollNo || 'N/A' },
+                    { key: 'parent_name', label: 'Parent', value: parentName },
+                    { key: 'email', label: 'Email', value: studentEmail },
+                    { key: 'parent_phone', label: 'Parent Ph', value: parentPhone || 'N/A' },
+                    { key: 'class', label: 'Class', value: classText },
+                    { key: 'gender', label: 'Gender', value: gender },
+                    { key: 'address', label: 'Address', value: address },
                 ];
+                const rows = allRows.filter(r => idSettings.visible_fields[r.key] !== false);
 
                 let y = infoStartY + 7;
                 rows.forEach((row, i) => {
-                    doc.setFillColor(...(i % 2 === 0 ? [245, 247, 255] : [235, 238, 255]));
+                    doc.setFillColor(...(i % 2 === 0 ? bgVeryLight : bgLight));
                     doc.rect(5, y - 3.5, 75, 6.5, 'F');
-                    doc.setTextColor(102, 126, 234);
+                    doc.setTextColor(pRed, pGreen, pBlue);
                     doc.setFont('helvetica', 'bold');
                     doc.setFontSize(6);
                     doc.text(`${row.label}:`, 8, y + 0.5);
@@ -240,9 +259,7 @@ function Students() {
                     y += 7;
                 });
 
-                doc.setFillColor(102, 126, 234);
-                doc.rect(0, 149, 85, 6, 'F');
-                doc.setTextColor(255,255,255);
+                doc.setFillColor(pRed, pGreen, pBlue); doc.rect(0, 149, 85, 6, 'F'); doc.setTextColor(tRed, tGreen, tBlue);
                 doc.setFont('helvetica', 'normal');
                 doc.setFontSize(5.5);
                 doc.text('Official Student Identity Card', 42.5, 152.5, { align: 'center' });
@@ -1105,35 +1122,42 @@ function Students() {
                             position: 'relative',
                         }}
                     >
-                        {/* Loading state */}
-                        {qrLoading && (
-                            <div style={{ padding: '2rem', textAlign: 'center' }}>
-                                <div className="loading-spinner" style={{ margin: '0 auto 1rem' }} />
-                                <p style={{ color: 'var(--text-secondary, #6b7280)' }}>Loading QR Code...</p>
-                            </div>
-                        )}
+                    {/* Loading state */}
+                    {qrLoading && (
+                        <div style={{ padding: '2rem', textAlign: 'center' }}>
+                            <div className="loading-spinner" style={{ margin: '0 auto 1rem' }} />
+                            <p style={{ color: 'var(--text-secondary, #6b7280)' }}>Loading QR Code...</p>
+                        </div>
+                    )}
 
-                        {/* QR Content */}
-                        {!qrLoading && qrStudent && (<>
-                        {/* ID Card Preview Content */}
-                        <div style={{
-                            width: '100%',
-                            maxWidth: '350px',
-                            margin: '0 auto 1.5rem auto',
-                            background: '#fff',
-                            border: '1px solid #e5e7eb',
-                            boxShadow: '0 10px 25px rgba(0,0,0,0.1)',
-                            fontFamily: 'Helvetica, Arial, sans-serif'
-                        }}>
-                            {/* Header */}
-                            <div style={{
-                                background: '#1e3a8a',
-                                padding: '12px',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '12px',
-                                color: '#fff'
-                            }}>
+                    {/* QR Content */}
+                    {!qrLoading && qrStudent && (<>
+                    {/* ID Card Preview Content */}
+                    {(() => {
+                        const idSettings = user?.id_card_settings?.student || {
+                            theme: { primary_color: '#1e3a8a', text_color: '#ffffff' },
+                            visible_fields: { photo: true, student_name: true, roll_no: true, parent_name: true, email: true, parent_phone: true, class: true, gender: true, address: true }
+                        };
+                        
+                        return (
+                      <div style={{
+                          width: '100%',
+                          maxWidth: '350px',
+                          margin: '0 auto 1.5rem auto',
+                          background: '#fff',
+                          border: '1px solid #e5e7eb',
+                          boxShadow: '0 10px 25px rgba(0,0,0,0.1)',
+                          fontFamily: 'Helvetica, Arial, sans-serif'
+                      }}>
+                          {/* Header */}
+                          <div style={{
+                              background: idSettings.theme.primary_color,
+                              padding: '12px',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '12px',
+                              color: idSettings.theme.text_color
+                          }}>
                                 {user?.institute_logo ? (
                                     <img src={user.institute_logo} alt="Logo" style={{ width: '60px', height: '60px', objectFit: 'contain', background: '#fff', borderRadius: '50%', padding: '4px' }} />
                                 ) : (
@@ -1144,13 +1168,13 @@ function Students() {
                                         {user?.institute_name?.toUpperCase() || 'INSTITUTE NAME'}
                                     </div>
                                     {user?.institute_phone && (
-                                        <div style={{ fontSize: '0.8rem', color: '#dbeafe', marginTop: '4px' }}>
+                                        <div style={{ fontSize: '0.8rem', opacity: 0.8, marginTop: '4px' }}>
                                             Ph: {user.institute_phone}
                                         </div>
                                     )}
                                 </div>
                             </div>
-                            <div style={{ height: '3px', background: '#1e3a8a', borderTop: '2px solid #fff' }}></div>
+                            <div style={{ height: '3px', background: idSettings.theme.primary_color, borderTop: `2px solid ${idSettings.theme.text_color}` }}></div>
                             
                             {/* QR & Photo area */}
                             <div style={{ padding: '15px 15px 5px 15px', display: 'flex', justifyContent: 'space-between', gap: '15px' }}>
@@ -1164,6 +1188,7 @@ function Students() {
                                         style={{ display: 'block', margin: '0 auto' }}
                                     />
                                 </div>
+                                {idSettings.visible_fields.photo && (
                                 <div style={{ flex: 1, textAlign: 'center' }}>
                                     <div style={{ fontSize: '0.7rem', fontWeight: 'bold', color: '#64748b', marginBottom: '4px' }}>PHOTO</div>
                                     <div style={{
@@ -1175,29 +1200,32 @@ function Students() {
                                         <div style={{ position: 'absolute', bottom: '4px', width: '100%', textAlign: 'center', fontSize: '0.6rem', color: '#94a3b8' }}>PHOTO</div>
                                     </div>
                                 </div>
+                                )}
                             </div>
                             
                             <div style={{ borderTop: '2px solid #e2e8f0', margin: '10px 15px' }}></div>
                             
                             {/* Student Details */}
                             <div style={{ padding: '0 15px 15px 15px' }}>
-                                <div style={{ background: '#6366f1', color: '#fff', padding: '8px', textAlign: 'center', fontWeight: 'bold', fontSize: '1rem', marginBottom: '10px' }}>
+                                {idSettings.visible_fields.student_name && (
+                                <div style={{ background: idSettings.theme.primary_color, color: idSettings.theme.text_color, padding: '8px', textAlign: 'center', fontWeight: 'bold', fontSize: '1rem', marginBottom: '10px' }}>
                                     {qrStudent.User?.name?.toUpperCase() || 'STUDENT NAME'}
                                 </div>
+                                )}
                                 
                                 <table style={{ width: '100%', fontSize: '0.75rem', borderCollapse: 'collapse', textAlign: 'left' }}>
                                     <tbody>
                                         {[
-                                            { label: 'Roll No', value: qrStudent.roll_number || 'N/A' },
-                                            { label: 'Parent', value: qrStudent.Parents?.[0]?.name || qrStudent.parent_name || 'N/A' },
-                                            { label: 'Email', value: qrStudent.User?.email || 'N/A' },
-                                            { label: 'Parent Ph', value: qrStudent.Parents?.[0]?.phone || qrStudent.Parents?.[0]?.User?.phone || 'N/A' },
-                                            { label: 'Class', value: qrStudent.Classes?.map(c => `${c.name}${c.section ? ` - ${c.section}` : ''}`).join(', ') || 'N/A' },
-                                            { label: 'Gender', value: qrStudent.gender || 'N/A' },
-                                            { label: 'Address', value: qrStudent.address || 'N/A' }
-                                        ].map((row, i) => (
+                                            { key: 'roll_no', label: 'Roll No', value: qrStudent.roll_number || 'N/A' },
+                                            { key: 'parent_name', label: 'Parent', value: qrStudent.Parents?.[0]?.name || qrStudent.parent_name || 'N/A' },
+                                            { key: 'email', label: 'Email', value: qrStudent.User?.email || 'N/A' },
+                                            { key: 'parent_phone', label: 'Parent Ph', value: qrStudent.Parents?.[0]?.phone || qrStudent.Parents?.[0]?.User?.phone || 'N/A' },
+                                            { key: 'class', label: 'Class', value: qrStudent.Classes?.map(c => `${c.name}${c.section ? ` - ${c.section}` : ''}`).join(', ') || 'N/A' },
+                                            { key: 'gender', label: 'Gender', value: qrStudent.gender || 'N/A' },
+                                            { key: 'address', label: 'Address', value: qrStudent.address || 'N/A' }
+                                        ].filter(row => idSettings.visible_fields[row.key]).map((row, i) => (
                                             <tr key={i} style={{ background: i % 2 === 0 ? '#f8fafc' : '#f1f5f9' }}>
-                                                <td style={{ padding: '6px 8px', fontWeight: 'bold', color: '#6366f1', width: '70px' }}>{row.label}:</td>
+                                                <td style={{ padding: '6px 8px', fontWeight: 'bold', color: idSettings.theme.primary_color, width: '70px' }}>{row.label}:</td>
                                                 <td style={{ padding: '6px 8px', color: '#334155', wordBreak: 'break-word' }}>{row.value}</td>
                                             </tr>
                                         ))}
@@ -1205,6 +1233,8 @@ function Students() {
                                 </table>
                             </div>
                         </div>
+                        );
+                        })()}
 
                         {/* Action Buttons */}
                         <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center', flexWrap: 'wrap' }}>
@@ -1232,6 +1262,19 @@ function Students() {
                                         const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: [85, 148] });
 
                                         const instName = user?.institute_name || 'Institute Name';
+            const idSettings = user?.id_card_settings?.student || { theme: { primary_color: '#1e3a8a', text_color: '#ffffff' }, visible_fields: {} };
+            const [pRed, pGreen, pBlue] = hexToRgb(idSettings.theme.primary_color);
+            const [tRed, tGreen, tBlue] = hexToRgb(idSettings.theme.text_color);
+        // Lighten color by a percentage (0 to 1)
+        const lighten = (r, g, b, factor) => [
+            Math.round(r + (255 - r) * factor),
+            Math.round(g + (255 - g) * factor),
+            Math.round(b + (255 - b) * factor)
+        ];
+        const bgVeryLight = lighten(pRed, pGreen, pBlue, 0.95);
+        const bgLight = lighten(pRed, pGreen, pBlue, 0.85);
+        const borderLight = lighten(pRed, pGreen, pBlue, 0.7);
+
                                         const instPhone = user?.institute_phone || '';
                                         const studentName = qrStudent.User?.name || '';
                                         const studentEmail = qrStudent.User?.email || '';
@@ -1270,11 +1313,11 @@ function Students() {
                                         }
 
                                         // Background
-                                        doc.setFillColor(245, 247, 255);
+                                        doc.setFillColor(...bgVeryLight);
                                         doc.rect(0, 0, 85, 155, 'F');
 
                                         // Top header bar - Professional Dark Solid
-                                        doc.setFillColor(30, 58, 138); // Blue-900 (Professional dark blue)
+                                        doc.setFillColor(pRed, pGreen, pBlue); // Blue-900 (Professional dark blue)
                                         doc.rect(0, 0, 85, 28, 'F');
                                         
                                         doc.setTextColor(255, 255, 255);
@@ -1310,7 +1353,7 @@ function Students() {
                                         }
 
                                         // Divider below header
-                                        doc.setDrawColor(30, 58, 138);
+                                        doc.setDrawColor(pRed, pGreen, pBlue);
                                         doc.setLineWidth(0.5);
                                         doc.line(6, 30, 79, 30);
 
@@ -1319,13 +1362,13 @@ function Students() {
                                         doc.setFont('helvetica', 'bold');
                                         doc.setFontSize(6);
                                         doc.text('QR CODE', 21, 35, { align: 'center' });
-                                        doc.text('PHOTO', 64, 35, { align: 'center' });
+                                        if (idSettings.visible_fields.photo !== false) { doc.text('PHOTO', 64, 35, { align: 'center' }); }
 
                                         // QR Code image
                                         if (qrDataUrl) {
                                             doc.addImage(qrDataUrl, 'PNG', 5, 37, 33, 33);
                                         } else {
-                                            doc.setFillColor(230, 230, 240);
+                                            doc.setFillColor(...bgLight);
                                             doc.rect(5, 37, 33, 33, 'F');
                                             doc.setTextColor(150,150,150);
                                             doc.setFontSize(6);
@@ -1333,9 +1376,9 @@ function Students() {
                                         }
 
                                         // Photo placeholder box
-                                        doc.setFillColor(220, 224, 240);
+                                        if (idSettings.visible_fields.photo !== false) { doc.setFillColor(...bgLight);
                                         doc.rect(47, 37, 33, 33, 'F');
-                                        doc.setDrawColor(180, 190, 220);
+                                        doc.setDrawColor(...borderLight);
                                         doc.setLineWidth(0.3);
                                         doc.rect(47, 37, 33, 33);
                                         doc.setDrawColor(150, 160, 190);
@@ -1344,7 +1387,7 @@ function Students() {
                                         doc.line(55, 69, 55, 60); doc.line(55, 60, 72, 60); doc.line(72, 60, 72, 69);
                                         doc.setTextColor(140,150,185);
                                         doc.setFontSize(5);
-                                        doc.text('PHOTO', 63.5, 72, { align: 'center' });
+                                        doc.text('PHOTO', 63.5, 72, { align: 'center' }); }
 
                                         // Divider
                                         doc.setDrawColor(200, 205, 225);
@@ -1356,31 +1399,30 @@ function Students() {
                                         const lineH = 7;
 
                                         // Student Name banner
-                                        doc.setFillColor(102, 126, 234);
-                                        doc.rect(5, infoStartY - 4, 75, 8, 'F');
-                                        doc.setTextColor(255, 255, 255);
+                                        doc.setFillColor(pRed, pGreen, pBlue); doc.rect(5, infoStartY - 4, 75, 8, 'F'); doc.setTextColor(tRed, tGreen, tBlue);
                                         doc.setFont('helvetica', 'bold');
                                         doc.setFontSize(9);
-                                        doc.text(studentName.toUpperCase(), 42.5, infoStartY, { align: 'center' });
+                                        if (idSettings.visible_fields.student_name !== false) { doc.text(studentName.toUpperCase(), 42.5, infoStartY, { align: 'center' }); }
 
                                         // Info rows — Roll, Parent, Email, Parent Ph, Class, Gender, Address
-                                        const rows = [
-                                            { label: 'Roll No', value: rollNo || 'N/A' },
-                                            { label: 'Parent', value: parentName },
-                                            { label: 'Email', value: studentEmail },
-                                            { label: 'Parent Ph', value: parentPhone || 'N/A' },
-                                            { label: 'Class', value: classText },
-                                            { label: 'Gender', value: gender },
-                                            { label: 'Address', value: address },
-                                        ];
+                                        const allRows = [
+                    { key: 'roll_no', label: 'Roll No', value: rollNo || 'N/A' },
+                    { key: 'parent_name', label: 'Parent', value: parentName },
+                    { key: 'email', label: 'Email', value: studentEmail },
+                    { key: 'parent_phone', label: 'Parent Ph', value: parentPhone || 'N/A' },
+                    { key: 'class', label: 'Class', value: classText },
+                    { key: 'gender', label: 'Gender', value: gender },
+                    { key: 'address', label: 'Address', value: address },
+                ];
+                const rows = allRows.filter(r => idSettings.visible_fields[r.key] !== false);
 
                                         let y = infoStartY + lineH;
                                         rows.forEach((row, i) => {
-                                            const bg = i % 2 === 0 ? [245, 247, 255] : [235, 238, 255];
+                                            const bg = i % 2 === 0 ? bgVeryLight : bgLight;
                                             doc.setFillColor(...bg);
                                             doc.rect(5, y - 3.5, 75, 6.5, 'F');
 
-                                            doc.setTextColor(102, 126, 234);
+                                            doc.setTextColor(pRed, pGreen, pBlue);
                                             doc.setFont('helvetica', 'bold');
                                             doc.setFontSize(6);
                                             doc.text(`${row.label}:`, 8, y + 0.5);
@@ -1394,9 +1436,7 @@ function Students() {
                                         });
 
                                         // Footer strip
-                                        doc.setFillColor(102, 126, 234);
-                                        doc.rect(0, 149, 85, 6, 'F');
-                                        doc.setTextColor(255,255,255);
+                                        doc.setFillColor(pRed, pGreen, pBlue); doc.rect(0, 149, 85, 6, 'F'); doc.setTextColor(tRed, tGreen, tBlue);
                                         doc.setFont('helvetica', 'normal');
                                         doc.setFontSize(5.5);
                                         doc.text('Official Student Identity Card', 42.5, 152.5, { align: 'center' });

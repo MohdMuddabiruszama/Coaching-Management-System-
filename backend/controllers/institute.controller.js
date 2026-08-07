@@ -193,7 +193,7 @@ exports.getInstituteById = async (req, res) => {
 exports.updateInstitute = async (req, res) => {
     try {
         const { id } = req.params;
-        const { name, email, phone, address } = req.body;
+        const { name, email, phone, address, id_card_settings } = req.body;
         
         let newLogoPath = null;
         if (req.file) {
@@ -241,6 +241,7 @@ exports.updateInstitute = async (req, res) => {
             phone: phone !== undefined ? phone : institute.phone,
             address: address !== undefined ? address : institute.address,
             logo: newLogoPath || institute.logo,
+            id_card_settings: id_card_settings !== undefined ? (typeof id_card_settings === 'string' ? JSON.parse(id_card_settings) : id_card_settings) : institute.id_card_settings,
         });
 
         // Sync name and logo with public profile if it exists

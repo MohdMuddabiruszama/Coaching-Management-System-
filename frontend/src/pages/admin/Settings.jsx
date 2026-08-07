@@ -54,9 +54,22 @@ function Settings() {
         try {
             setLoading(true);
             const res = await api.get(`/institutes/${user.institute_id}`);
-            setInstitute(res.data.data);
-            if (res.data.data.logo) {
-                let logoPath = res.data.data.logo;
+            const data = res.data.data;
+            if (!data.id_card_settings || !data.id_card_settings.student) {
+                data.id_card_settings = {
+                    student: {
+                        theme: { primary_color: '#1e3a8a', text_color: '#ffffff' },
+                        visible_fields: { photo: true, student_name: true, roll_no: true, parent_name: true, email: true, parent_phone: true, class: true, gender: true, address: true }
+                    },
+                    faculty: {
+                        theme: { primary_color: '#1e3a8a', text_color: '#ffffff' },
+                        visible_fields: { photo: true, faculty_name: true, emp_id: true, department: true, designation: true, email: true, phone: true, address: true }
+                    }
+                };
+            }
+            setInstitute(data);
+            if (data.logo) {
+                let logoPath = data.logo;
                 if (logoPath.startsWith('/')) {
                     const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
                     const backendBase = apiUrl.replace(/\/api\/?$/, ""); 
@@ -91,6 +104,7 @@ function Settings() {
             if (institute.facebook) formData.append("facebook", institute.facebook);
             if (institute.twitter) formData.append("twitter", institute.twitter);
             if (institute.instagram) formData.append("instagram", institute.instagram);
+            if (institute.id_card_settings) formData.append("id_card_settings", JSON.stringify(institute.id_card_settings));
             if (logoFile) {
                 formData.append("logo", logoFile);
             }
@@ -105,6 +119,38 @@ function Settings() {
         } catch (error) {
             alert(error.response?.data?.message || "Error updating settings");
         }
+    };
+
+    const handleIdCardThemeChange = (type, field, value) => {
+        setInstitute(prev => ({
+            ...prev,
+            id_card_settings: {
+                ...prev.id_card_settings,
+                [type]: {
+                    ...prev.id_card_settings[type],
+                    theme: {
+                        ...prev.id_card_settings[type].theme,
+                        [field]: value
+                    }
+                }
+            }
+        }));
+    };
+
+    const handleIdCardFieldChange = (type, field, checked) => {
+        setInstitute(prev => ({
+            ...prev,
+            id_card_settings: {
+                ...prev.id_card_settings,
+                [type]: {
+                    ...prev.id_card_settings[type],
+                    visible_fields: {
+                        ...prev.id_card_settings[type].visible_fields,
+                        [field]: checked
+                    }
+                }
+            }
+        }));
     };
 
     const handlePasswordChange = async (e) => {
@@ -342,10 +388,125 @@ function Settings() {
                                         </div>
                                         <div style={{ fontSize: '0.75rem', color: '#6b7280', marginTop: '12px' }}>This will apply the selected theme across the entire dashboard instantly.</div>
                                     </div>
+                                    
+                                    <div style={{ marginTop: '2rem', paddingTop: '2rem', borderTop: '1px solid #e5e7eb' }}>
+                                        <h3 style={{ margin: '0 0 4px', fontSize: '1.25rem', fontWeight: 800, color: '#111827' }}>Student ID Card</h3>
+                                        <p style={{ margin: '0 0 24px', color: '#6b7280', fontSize: '0.9rem' }}>Customize the appearance and visible fields of the Student ID card.</p>
+                                        
+                                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', marginBottom: '24px' }}>
+                                            <div>
+                                                <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.85rem', fontWeight: 700, color: '#374151' }}>Primary Color</label>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                                    <input
+                                                        type="color"
+                                                        value={institute.id_card_settings?.student?.theme?.primary_color || '#1e3a8a'}
+                                                        onChange={(e) => handleIdCardThemeChange('student', 'primary_color', e.target.value)}
+                                                        style={{ width: '48px', height: '48px', padding: 0, border: 'none', borderRadius: '8px', cursor: 'pointer' }}
+                                                    />
+                                                    <span style={{ fontSize: '0.9rem', color: '#4b5563', fontFamily: 'monospace' }}>{institute.id_card_settings?.student?.theme?.primary_color || '#1e3a8a'}</span>
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.85rem', fontWeight: 700, color: '#374151' }}>Text Color (on Primary)</label>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                                    <input
+                                                        type="color"
+                                                        value={institute.id_card_settings?.student?.theme?.text_color || '#ffffff'}
+                                                        onChange={(e) => handleIdCardThemeChange('student', 'text_color', e.target.value)}
+                                                        style={{ width: '48px', height: '48px', padding: 0, border: 'none', borderRadius: '8px', cursor: 'pointer' }}
+                                                    />
+                                                    <span style={{ fontSize: '0.9rem', color: '#4b5563', fontFamily: 'monospace' }}>{institute.id_card_settings?.student?.theme?.text_color || '#ffffff'}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div style={{ marginBottom: '32px' }}>
+                                            <label style={{ display: 'block', marginBottom: '12px', fontSize: '0.85rem', fontWeight: 700, color: '#374151' }}>Visible Fields on Student ID Card</label>
+                                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', background: '#f9fafb', padding: '20px', borderRadius: '12px', border: '1px solid #e5e7eb' }}>
+                                                {Object.entries({
+                                                    photo: "Show Photo",
+                                                    student_name: "Show Name",
+                                                    roll_no: "Show Roll No / ID",
+                                                    parent_name: "Show Parent Name",
+                                                    email: "Show Email",
+                                                    parent_phone: "Show Parent Phone",
+                                                    class: "Show Class/Department",
+                                                    gender: "Show Gender",
+                                                    address: "Show Address"
+                                                }).map(([key, label]) => (
+                                                    <label key={key} style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer' }}>
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={institute.id_card_settings?.student?.visible_fields?.[key] !== false}
+                                                            onChange={(e) => handleIdCardFieldChange('student', key, e.target.checked)}
+                                                            style={{ width: '20px', height: '20px', accentColor: '#7e22ce' }}
+                                                        />
+                                                        <span style={{ fontSize: '0.9rem', color: '#374151', fontWeight: 500 }}>{label}</span>
+                                                    </label>
+                                                ))}
+                                            </div>
+                                        </div>
+
+                                        <h3 style={{ margin: '0 0 4px', fontSize: '1.25rem', fontWeight: 800, color: '#111827' }}>Faculty ID Card</h3>
+                                        <p style={{ margin: '0 0 24px', color: '#6b7280', fontSize: '0.9rem' }}>Customize the appearance and visible fields of the Faculty ID card.</p>
+                                        
+                                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', marginBottom: '24px' }}>
+                                            <div>
+                                                <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.85rem', fontWeight: 700, color: '#374151' }}>Primary Color</label>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                                    <input
+                                                        type="color"
+                                                        value={institute.id_card_settings?.faculty?.theme?.primary_color || '#1e3a8a'}
+                                                        onChange={(e) => handleIdCardThemeChange('faculty', 'primary_color', e.target.value)}
+                                                        style={{ width: '48px', height: '48px', padding: 0, border: 'none', borderRadius: '8px', cursor: 'pointer' }}
+                                                    />
+                                                    <span style={{ fontSize: '0.9rem', color: '#4b5563', fontFamily: 'monospace' }}>{institute.id_card_settings?.faculty?.theme?.primary_color || '#1e3a8a'}</span>
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.85rem', fontWeight: 700, color: '#374151' }}>Text Color (on Primary)</label>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                                    <input
+                                                        type="color"
+                                                        value={institute.id_card_settings?.faculty?.theme?.text_color || '#ffffff'}
+                                                        onChange={(e) => handleIdCardThemeChange('faculty', 'text_color', e.target.value)}
+                                                        style={{ width: '48px', height: '48px', padding: 0, border: 'none', borderRadius: '8px', cursor: 'pointer' }}
+                                                    />
+                                                    <span style={{ fontSize: '0.9rem', color: '#4b5563', fontFamily: 'monospace' }}>{institute.id_card_settings?.faculty?.theme?.text_color || '#ffffff'}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div>
+                                            <label style={{ display: 'block', marginBottom: '12px', fontSize: '0.85rem', fontWeight: 700, color: '#374151' }}>Visible Fields on Faculty ID Card</label>
+                                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', background: '#f9fafb', padding: '20px', borderRadius: '12px', border: '1px solid #e5e7eb' }}>
+                                                {Object.entries({
+                                                    photo: "Show Photo",
+                                                    faculty_name: "Show Name",
+                                                    emp_id: "Show Employee ID",
+                                                    department: "Show Department",
+                                                    designation: "Show Designation",
+                                                    email: "Show Email",
+                                                    phone: "Show Phone",
+                                                    address: "Show Address"
+                                                }).map(([key, label]) => (
+                                                    <label key={key} style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer' }}>
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={institute.id_card_settings?.faculty?.visible_fields?.[key] !== false}
+                                                            onChange={(e) => handleIdCardFieldChange('faculty', key, e.target.checked)}
+                                                            style={{ width: '20px', height: '20px', accentColor: '#7e22ce' }}
+                                                        />
+                                                        <span style={{ fontSize: '0.9rem', color: '#374151', fontWeight: 500 }}>{label}</span>
+                                                    </label>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </div>
                                 </>
                             )}
 
-                            {(activeSection === 'basic' || activeSection === 'contact' || activeSection === 'address' || activeSection === 'social') && (
+                            {(activeSection === 'basic' || activeSection === 'contact' || activeSection === 'address' || activeSection === 'social' || activeSection === 'appearance') && (
                                 <button type="submit" style={{ background: '#7e22ce', color: '#fff', border: 'none', padding: '10px 24px', borderRadius: '8px', fontSize: '0.9rem', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}>
                                     <span>💾</span> Save Changes
                                 </button>
