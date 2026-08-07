@@ -197,7 +197,6 @@ export const AuthProvider = ({ children }) => {
     setUser(null);
   };
 
-  const impersonate = (data) => {
   const impersonate = (data, redirectUrl) => {
     const { token, refreshToken, user } = data;
     
