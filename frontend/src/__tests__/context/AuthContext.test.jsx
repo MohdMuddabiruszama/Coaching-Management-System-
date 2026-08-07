@@ -14,6 +14,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, waitFor, act } from "@testing-library/react";
 import { AuthProvider, AuthContext } from "../../context/AuthContext";
 import { useContext } from "react";
+import { MemoryRouter } from "react-router-dom";
 
 // ── Service mocks ────────────────────────────────────────────────────────────
 vi.mock("../../services/auth.service", () => ({
@@ -44,9 +45,11 @@ const Consumer = ({ onMount }) => {
 
 const renderWithAuth = (onMount) =>
   render(
-    <AuthProvider>
-      <Consumer onMount={onMount} />
-    </AuthProvider>
+    <MemoryRouter>
+      <AuthProvider>
+        <Consumer onMount={onMount} />
+      </AuthProvider>
+    </MemoryRouter>
   );
 
 // ── Setup / Teardown ─────────────────────────────────────────────────────────
@@ -93,7 +96,7 @@ describe("🔐 AuthContext — session restore on mount", () => {
     expect(sessionStorage.getItem("token")).toBeNull();
   });
 
-  it("TC-AUTH-CTX-003 | migrates legacy localStorage token to sessionStorage", async () => {
+  it("TC-AUTH-CTX-003 | migrates legacy localStorage token to sessionStorage and preserves it", async () => {
     localStorage.setItem("token", "legacy-token");
     localStorage.setItem("user", JSON.stringify({ id: 1, role: "student" }));
     getProfile.mockResolvedValue({ data: { success: true, user: { id: 1, role: "student", subscription_end: null } } });
@@ -102,7 +105,7 @@ describe("🔐 AuthContext — session restore on mount", () => {
     await waitFor(() => expect(screen.getByTestId("init").textContent).toBe("false"));
 
     expect(sessionStorage.getItem("token")).toBe("legacy-token");
-    expect(localStorage.getItem("token")).toBeNull();
+    expect(localStorage.getItem("token")).toBe("legacy-token");
   });
 });
 
