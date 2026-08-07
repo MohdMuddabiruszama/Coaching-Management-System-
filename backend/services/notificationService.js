@@ -43,7 +43,9 @@ class NotificationService {
             // 3. Emit via WebSocket
             try {
                 const io = getIo();
-                io.to(`user_${userId}`).emit("notification", notification);
+                if (io) {
+                    io.to(`user_${userId}`).emit("notification", notification);
+                }
             } catch (wsError) {
                 console.error("WebSocket emit failed:", wsError.message);
             }

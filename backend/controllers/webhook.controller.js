@@ -42,11 +42,12 @@ exports.handleWebhook = async (req, res) => {
         const bodyObj = JSON.parse(rawBody.toString());
         const event = bodyObj.event;
         const subscriptionData = bodyObj.payload?.subscription?.entity;
+        const paymentData = bodyObj.payload?.payment?.entity;
 
         // Handle different webhook events
         switch (event) {
             case "subscription.charged":
-                await handleSubscriptionCharged(subscriptionData);
+                await handleSubscriptionCharged(subscriptionData, paymentData);
                 break;
 
             case "subscription.halted":
@@ -78,7 +79,7 @@ exports.handleWebhook = async (req, res) => {
  * Handle subscription.charged event
  * Creates subscription record and activates institute
  */
-async function handleSubscriptionCharged(subscriptionData) {
+async function handleSubscriptionCharged(subscriptionData, paymentData) {
     try {
         const instituteId = subscriptionData.notes?.institute_id;
         const planId = subscriptionData.plan_id;
@@ -151,7 +152,7 @@ async function handleSubscriptionCharged(subscriptionData) {
             if (invoiceData && invoiceData.filePath) {
                 await Invoice.create({
                     institute_id: instituteId,
-                    payment_id: rzpPayment.id,
+                    payment_id: paymentData?.id || subscriptionData.id,
                     invoice_type: 'subscription',
                     invoice_number: invoiceData.invoiceNumber,
                     invoice_date: new Date(),
