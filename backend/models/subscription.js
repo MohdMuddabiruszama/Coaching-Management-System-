@@ -58,6 +58,8 @@ const Subscription = sequelize.define("Subscription", {
         defaultValue: false,
         comment: 'Excluded from revenue metrics when true'
     },
+}, {
+    tableName: 'subscriptions',
 });
 
 module.exports = Subscription;

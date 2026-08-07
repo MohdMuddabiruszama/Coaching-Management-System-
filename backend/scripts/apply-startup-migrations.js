@@ -62,15 +62,20 @@ const queries = [
 
     `ALTER TABLE institutes ADD COLUMN IF NOT EXISTS is_test_account BOOLEAN DEFAULT false;`,
     `ALTER TABLE subscriptions ADD COLUMN IF NOT EXISTS is_test BOOLEAN DEFAULT false;`,
+    `ALTER TABLE institutes ADD COLUMN IF NOT EXISTS id_card_settings JSONB DEFAULT '{}'::jsonb;`,
 ];
 
 async function run() {
     try {
         await sequelize.authenticate();
         for (const query of queries) {
-            await sequelize.query(query);
+            try {
+                await sequelize.query(query);
+            } catch (err) {
+                console.warn(`Migration query failed (skipping): ${query}`, err.message);
+            }
         }
-        console.log(`Applied ${queries.length} safe migration/index statement(s).`);
+        console.log(`Applied safe migration/index statement(s).`);
     } catch (error) {
         console.error("Safe migration failed:", error);
         process.exitCode = 1;

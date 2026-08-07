@@ -4,7 +4,7 @@
  */
 
 const crypto = require("crypto");
-const { Subscription, Institute, Plan } = require("../models");
+const { Subscription, Institute, Plan, Invoice } = require("../models");
 const emailService = require("../services/email.service");
 const invoiceService = require("../services/invoice.service");
 const { bustAnalyticsCache } = require("./superadmin.controller");
