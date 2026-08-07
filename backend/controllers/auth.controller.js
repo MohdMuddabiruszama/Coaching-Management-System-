@@ -321,7 +321,6 @@ exports.login = catchAsync(async (req, res) => {
       } catch (_) {}
     }
 
-    // Read systemSettings.json for minMobileVersion
     let minMobileVersion = "1.0.0";
     try {
       if (fs.existsSync(SETTINGS_FILE_PATH)) {
@@ -329,6 +328,28 @@ exports.login = catchAsync(async (req, res) => {
         if (settings.minMobileVersion) minMobileVersion = settings.minMobileVersion;
       }
     } catch (e) {}
+
+    let linkedStudents = [];
+    if (user.role === 'parent') {
+      const { Student, User: UserModel } = require("../models");
+      const students = await Student.findAll({
+          include: [
+              {
+                  model: UserModel,
+                  as: "Parents",
+                  where: { id: user.id },
+                  attributes: [],
+                  through: { attributes: [] }
+              },
+              { model: UserModel, attributes: ["name", "email", "phone"] }
+          ]
+      });
+      linkedStudents = students.map(s => ({
+          id: s.id,
+          user_id: s.user_id,
+          name: s.User ? s.User.name : 'Unknown',
+      }));
+    }
 
     res.json({
       success: true,
@@ -355,7 +376,8 @@ exports.login = catchAsync(async (req, res) => {
         features,
         permissions: user.permissions || [],
         theme_dark: user.theme_dark ?? false,
-        theme_style: user.theme_style ?? "simple"
+        theme_style: user.theme_style ?? "simple",
+        linked_students: linkedStudents
       }
     });
   } catch (error) {
@@ -413,6 +435,27 @@ exports.getProfile = catchAsync(async (req, res) => {
         if (settings.minMobileVersion) minMobileVersion = settings.minMobileVersion;
       }
     } catch (e) {}
+
+    if (user.role === 'parent') {
+      const { Student, User: UserModel } = require("../models");
+      const students = await Student.findAll({
+          include: [
+              {
+                  model: UserModel,
+                  as: "Parents",
+                  where: { id: user.id },
+                  attributes: [],
+                  through: { attributes: [] }
+              },
+              { model: UserModel, attributes: ["name", "email", "phone"] }
+          ]
+      });
+      user.linked_students = students.map(s => ({
+          id: s.id,
+          user_id: s.user_id,
+          name: s.User ? s.User.name : 'Unknown',
+      }));
+    }
 
     res.status(200).json({
       success: true,

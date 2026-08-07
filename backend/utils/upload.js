@@ -66,7 +66,7 @@ if (isCloudinaryConfigured) {
             };
         },
     });
-    console.log("📁 Notes upload: using Cloudinary storage");
+    // using Cloudinary storage
 } else {
     // ── Local disk storage fallback (for dev without Cloudinary) ──
     const uploadDir = path.join(__dirname, "../uploads/notes");

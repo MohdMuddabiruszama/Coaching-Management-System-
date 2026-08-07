@@ -15,7 +15,6 @@ const initFirebase = () => {
                     credential: cert(serviceAccount)
                 });
                 isFirebaseInitialized = true;
-                console.log("✅ Firebase Admin initialized via Base64 ENV.");
             } 
             // Option 1.5: Provided via JSON ENV string
             else if (process.env.FIREBASE_SERVICE_ACCOUNT_JSON) {
@@ -24,7 +23,6 @@ const initFirebase = () => {
                     credential: cert(serviceAccount)
                 });
                 isFirebaseInitialized = true;
-                console.log("✅ Firebase Admin initialized via JSON ENV.");
             }
             // Option 2: Default application credentials (usually GOOGLE_APPLICATION_CREDENTIALS)
             else if (process.env.GOOGLE_APPLICATION_CREDENTIALS) {

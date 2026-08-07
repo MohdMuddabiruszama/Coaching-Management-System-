@@ -24,6 +24,7 @@ const Register = lazy(() => import("../pages/public/RegisterPage"));
 const ForgotPassword = lazy(() => import("../pages/auth/ForgotPassword"));
 const SuspendedPage = lazy(() => import("../pages/public/SuspendedPage"));
 const ChangePassword = lazy(() => import("../pages/auth/ChangePassword"));
+const RoleSelection = lazy(() => import("../pages/auth/RoleSelection"));
 
 const SuperAdminDashboard = lazy(() => import("../pages/superadmin/Dashboard"));
 const Institutes = lazy(() => import("../pages/superadmin/Institutes"));
@@ -200,6 +201,11 @@ export default function WebAppRoutes() {
         <Route path="/change-password" element={
           <ProtectedRoute allowedRoles={["student", "faculty", "parent"]} skipFirstLoginCheck={true}>
             <ChangePassword />
+          </ProtectedRoute>
+        } />
+        <Route path="/role-selection" element={
+          <ProtectedRoute allowedRoles={["parent"]} skipFirstLoginCheck={true}>
+            <RoleSelection />
           </ProtectedRoute>
         } />
         <Route path="/i/:slug" element={<InstitutePage />} />

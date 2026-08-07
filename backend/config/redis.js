@@ -29,19 +29,18 @@ if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) 
             .ping()
             .then(() => {
                 redisAvailable = true;
-                console.log("✅ Redis Connected (Upstash)");
+                // Redis Connected
             })
             .catch(() => {
                 redisAvailable = false;
                 console.warn("⚠️  Redis Unavailable — caching disabled (add UPSTASH_REDIS_REST_URL to .env)");
             });
     } catch (err) {
-        console.warn("⚠️  Redis init error:", err.message);
         redis = null;
         redisAvailable = false;
     }
 } else {
-    console.log("ℹ️  Redis not configured — caching disabled (set UPSTASH_REDIS_REST_URL + TOKEN to enable)");
+    // Redis not configured
 }
 
 /**

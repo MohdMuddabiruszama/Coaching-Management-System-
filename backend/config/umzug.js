@@ -32,7 +32,7 @@ const umzug = new Umzug({
     tableName: 'SequelizeMeta',
   }),
   logger: {
-    info:  ({ event, name }) => console.log(`  [Migration] ${event}: ${name}`),
+    info:  () => {}, // Suppress migration logs
     warn:  (msg) => console.warn('  [Migration] WARNING:', msg),
     error: (msg) => console.error('  [Migration] ERROR:', msg),
     debug: () => {},

@@ -11,7 +11,7 @@ if (
         key_secret: process.env.RAZORPAY_KEY_SECRET,
     });
 
-    console.log("✅ Razorpay configured");
+    // Razorpay configured successfully
 } else {
     console.warn("⚠️ Razorpay credentials missing");
 }

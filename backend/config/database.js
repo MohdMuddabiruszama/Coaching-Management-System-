@@ -12,10 +12,7 @@ if (!dbUrl) {
 const isLocal = dbUrl.includes("localhost") || dbUrl.includes("127.0.0.1");
 const hasReadReplica = Boolean(readDbUrl);
 
-console.log("Connecting to DB via PostgreSQL...");
-console.log(`SSL: ${isLocal ? "disabled (localhost)" : "enabled"}`);
-if (hasReadReplica) console.log("Read replica: enabled");
-
+// Suppressed logs for clean startup
 const commonOptions = {
     dialect: "postgres",
     logging: process.env.NODE_ENV === "development"
@@ -118,7 +115,7 @@ const createSequelize = () => {
 const sequelize = createSequelize();
 
 sequelize.authenticate()
-    .then(() => console.log("PostgreSQL DB Pool Ready"))
+    .then(() => {})
     .catch((err) => console.error("DB Pool Failed:", err.message));
 
 module.exports = sequelize;

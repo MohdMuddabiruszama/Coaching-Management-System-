@@ -454,22 +454,14 @@ const syncDatabase = async () => {
 
     // STEP 1: Test database connection
     await sequelize.authenticate();
-    console.log('✅ Database connection established successfully');
 
     // STEP 2: Create brand-new tables only (safe — never modifies existing tables)
     await sequelize.sync({ alter: false });
-    console.log('✅ New tables created (sync alter:false)');
 
-    // STEP 3: Run pending Umzug migrations (tracked in SequelizeMeta table)
-    // Each migration runs EXACTLY ONCE — never runs again after first apply.
-    // All schema changes (ALTER TABLE, new columns, indexes) live in backend/migrations/
+    // STEP 3: Run pending Umzug migrations
     const pending = await umzug.pending();
     if (pending.length > 0) {
-      console.log(`⏳ Running ${pending.length} pending migration(s)...`);
       await umzug.up();
-      console.log('✅ All migrations applied successfully');
-    } else {
-      console.log('✅ Database schema is up to date (no pending migrations)');
     }
 
     // STEP 4: Seed plans and super admin (data, not schema)

@@ -13,9 +13,9 @@ const createStudent = {
         phone: phone.optional().allow("", null),
         roll_number: Joi.string().max(50).optional().allow("", null),
         class_id: Joi.number().integer().positive().optional().allow(null),
-        admission_date: dateISO.required()
+        admission_date: dateISO.optional().allow(null, "")
             .messages({ "date.format": "Admission date must be a valid ISO date" }),
-        date_of_birth: dateISO.required()
+        date_of_birth: dateISO.optional().allow(null, "")
             .messages({ "date.format": "Date of birth must be a valid ISO date" }),
         gender: genderEnum,
         address: Joi.string().max(500).optional().allow("", null),
@@ -35,8 +35,8 @@ const updateStudent = {
         phone: phone.optional().allow("", null),
         roll_number: Joi.string().max(50).optional().allow("", null),
         class_id: Joi.number().integer().positive().optional().allow(null),
-        admission_date: dateISO.optional(),
-        date_of_birth: dateISO.optional(),
+        admission_date: dateISO.optional().allow(null, ""),
+        date_of_birth: dateISO.optional().allow(null, ""),
         gender: genderEnum,
         address: Joi.string().max(500).optional().allow("", null),
         subject_ids: Joi.array().items(

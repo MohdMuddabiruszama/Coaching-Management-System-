@@ -1,4 +1,5 @@
 import { createContext, useState, useEffect, useContext } from "react";
+import { useNavigate } from "react-router-dom";
 import { loginUser } from "../services/auth.service";
 import { BrandingContext } from "./BrandingContext";
 import { getStoredPushToken } from "../hooks/usePushNotifications";
@@ -23,6 +24,7 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [isInitializing, setIsInitializing] = useState(true);
   const [minMobileVersion, setMinMobileVersion] = useState(null);
+  const navigate = useNavigate();
 
   // Access branding setters — BrandingProvider is mounted above us in App.jsx
   const { setBranding, clearBranding } = useContext(BrandingContext);
@@ -196,66 +198,117 @@ export const AuthProvider = ({ children }) => {
   };
 
   const impersonate = (data) => {
+  const impersonate = (data, redirectUrl) => {
     const { token, refreshToken, user } = data;
     
-    // Save current superadmin session
-    const currentToken = sessionStorage.getItem("token");
-    const currentUser = sessionStorage.getItem("user");
-    const currentRefresh = sessionStorage.getItem("refreshToken");
-    
-    if (currentToken) sessionStorage.setItem("superadmin_token", currentToken);
-    if (currentUser) sessionStorage.setItem("superadmin_user", currentUser);
-    if (currentRefresh) sessionStorage.setItem("superadmin_refreshToken", currentRefresh);
+    // Check if we are ALREADY impersonating (superadmin -> parent). 
+    // If so, don't overwrite the original session.
+    if (!sessionStorage.getItem("original_session_token") && !sessionStorage.getItem("superadmin_token")) {
+      const origToken = sessionStorage.getItem("token");
+      const origUser = sessionStorage.getItem("user");
+      const origRef = sessionStorage.getItem("refreshToken");
+      
+      sessionStorage.setItem("original_session_token", origToken);
+      sessionStorage.setItem("original_session_user", origUser);
+      if (origRef) sessionStorage.setItem("original_session_refreshToken", origRef);
+    }
 
     // Set impersonated session
-    const isLifetime = user.is_lifetime_member || false;
     let isExpired = false;
-    if (!isLifetime && user.subscription_end) {
-        const end = new Date(user.subscription_end);
-        end.setHours(23, 59, 59, 999);
-        if (new Date() > end) isExpired = true;
+    let isLifetime = false;
+    if (user) {
+       isLifetime = user.is_lifetime_member || user.Institute?.is_lifetime_member || false;
+       if (!isLifetime) {
+           const subEnd = user.subscription_end || user.Institute?.subscription_end;
+           if (subEnd) {
+               const end = new Date(subEnd);
+               end.setHours(23, 59, 59, 999);
+               if (new Date() > end) isExpired = true;
+           }
+       }
+       user.isPlanExpired = isExpired;
+       user.is_lifetime_member = isLifetime;
     }
-    user.isPlanExpired = isExpired;
-    user.is_lifetime_member = isLifetime;
 
     persistSession(token, user);
     sessionStorage.setItem("isPlanExpired", isExpired ? "true" : "false");
     sessionStorage.setItem("isLifetimeMember", isLifetime ? "true" : "false");
     if (refreshToken) sessionStorage.setItem("refreshToken", refreshToken);
     
-    // Intentionally NOT calling setUser(user) to avoid React Router ProtectedRoute 
-    // race conditions. The caller must use window.location.href to redirect and reload.
+    if (redirectUrl) {
+      setIsInitializing(true);
+      setTimeout(() => {
+        setUser(user);
+        navigate(redirectUrl, { replace: true });
+        setIsInitializing(false);
+      }, 50);
+    } else {
+      setUser(user);
+    }
   };
 
-  const stopImpersonating = () => {
+  const stopImpersonating = (redirectUrl) => {
+    // Check for original session (parent -> student)
+    const originalToken = sessionStorage.getItem("original_session_token");
+    const originalUser = sessionStorage.getItem("original_session_user");
+    
+    if (originalToken && originalUser) {
+      sessionStorage.setItem("token", originalToken);
+      sessionStorage.setItem("user", originalUser);
+      
+      const origRef = sessionStorage.getItem("original_session_refreshToken");
+      if (origRef) sessionStorage.setItem("refreshToken", origRef);
+      else sessionStorage.removeItem("refreshToken");
+      
+      // Clean up backup keys
+      sessionStorage.removeItem("original_session_token");
+      sessionStorage.removeItem("original_session_user");
+      sessionStorage.removeItem("original_session_refreshToken");
+      
+      const parsedUser = JSON.parse(originalUser);
+      
+      if (redirectUrl) {
+        setIsInitializing(true);
+        setTimeout(() => {
+          setUser(parsedUser);
+          navigate(redirectUrl, { replace: true });
+          setIsInitializing(false);
+        }, 50);
+      } else {
+        setUser(parsedUser);
+      }
+      return true;
+    }
+    
+    // Check for old legacy superadmin keys just in case
     const saToken = sessionStorage.getItem("superadmin_token");
     const saUserStr = sessionStorage.getItem("superadmin_user");
-    const saRefresh = sessionStorage.getItem("superadmin_refreshToken");
     
     if (saToken && saUserStr) {
+      sessionStorage.setItem("token", saToken);
+      sessionStorage.setItem("user", saUserStr);
+      
+      const saRef = sessionStorage.getItem("superadmin_refreshToken");
+      if (saRef) sessionStorage.setItem("refreshToken", saRef);
+      else sessionStorage.removeItem("refreshToken");
+      
       const saUser = JSON.parse(saUserStr);
       
-      const isLifetime = saUser.is_lifetime_member || false;
-      let isExpired = false;
-      if (!isLifetime && saUser.subscription_end) {
-          const end = new Date(saUser.subscription_end);
-          end.setHours(23, 59, 59, 999);
-          if (new Date() > end) isExpired = true;
-      }
-      saUser.isPlanExpired = isExpired;
-      saUser.is_lifetime_member = isLifetime;
-
-      persistSession(saToken, saUser);
-      sessionStorage.setItem("isPlanExpired", isExpired ? "true" : "false");
-      sessionStorage.setItem("isLifetimeMember", isLifetime ? "true" : "false");
-      if (saRefresh) sessionStorage.setItem("refreshToken", saRefresh);
-      
+      // Clean up legacy keys too
       sessionStorage.removeItem("superadmin_token");
       sessionStorage.removeItem("superadmin_user");
       sessionStorage.removeItem("superadmin_refreshToken");
       
-      // Intentionally NOT calling setUser to avoid React Router race conditions.
-      // The caller must use window.location.href to redirect and reload.
+      if (redirectUrl) {
+        setIsInitializing(true);
+        setTimeout(() => {
+          setUser(saUser);
+          navigate(redirectUrl, { replace: true });
+          setIsInitializing(false);
+        }, 50);
+      } else {
+        setUser(saUser);
+      }
       return true;
     }
     return false;

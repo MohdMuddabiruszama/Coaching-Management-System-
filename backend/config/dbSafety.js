@@ -18,13 +18,6 @@ function assertDatabaseSafety() {
   // ── WARN: development mode connected to a cloud/Neon database ────────────
   const dbUrl = process.env.DATABASE_URL || '';
   const isCloudDb = dbUrl.includes('neon.tech') || dbUrl.includes('render.com') || dbUrl.includes('supabase.io');
-  if (env === 'development' && isCloudDb) {
-    console.warn('');
-    console.warn('  ⚠️  WARNING: NODE_ENV=development but connected to a CLOUD database!');
-    console.warn('  ⚠️  If this is intentional (e.g. testing against staging), ignore this.');
-    console.warn('  ⚠️  If not intentional, switch DATABASE_URL to your local PostgreSQL.');
-    console.warn('');
-  }
 
   // ── PRODUCTION GUARD: Monkey-patch sequelize.sync to block dangerous opts ─
   if (isProd) {
@@ -54,7 +47,7 @@ function assertDatabaseSafety() {
 
   // ── LOG: confirm safety mode ─────────────────────────────────────────────
   const safetyMode = isProd ? '🔐 PRODUCTION (force/alter sync BLOCKED)' : '🛠  DEVELOPMENT';
-  console.log(`[DB Safety] Mode: ${safetyMode}`);
+  // console.log(`[DB Safety] Mode: ${safetyMode}`);
 }
 
 module.exports = { assertDatabaseSafety };

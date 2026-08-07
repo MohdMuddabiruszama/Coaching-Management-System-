@@ -94,7 +94,7 @@ function Login() {
         case "faculty": navigate("/faculty/dashboard"); break;
         case "student": navigate("/student/dashboard"); break;
         case "manager": navigate("/manager/dashboard"); break;
-        case "parent": navigate("/parent/dashboard"); break;
+        case "parent": navigate("/role-selection"); break;
         default: navigate("/");
       }
     }
@@ -163,7 +163,7 @@ function Login() {
         case "faculty": navigate("/faculty/dashboard"); break;
         case "student": navigate("/student/dashboard"); break;
         case "manager": navigate("/manager/dashboard"); break;
-        case "parent": navigate("/parent/dashboard"); break;
+        case "parent": navigate("/role-selection"); break;
         default: navigate("/");
       }
     } catch (err) {

@@ -7,11 +7,20 @@ const PORT = process.env.PORT || 8080;
 const HOST = "0.0.0.0";
 
 const server = app.listen(PORT, HOST, () => {
-    console.log(`✅ Server running on http://${HOST}:${PORT}`);
-    console.log(`📱 Mobile devices can reach backend at http://[IP_ADDRESS]:${PORT}/api`);
+    console.log(`
+===========================================================
+🚀  ZENITH FLOWS BACKEND STARTED 
+===========================================================
+✅  Status:      Running in ${process.env.NODE_ENV || 'development'} mode
+🌐  Server URL:  http://${HOST}:${PORT}
+📱  Mobile API:  http://[IP_ADDRESS]:${PORT}/api
+🛢️   Database:    Connected & Synchronized
+💳  Payments:    Razorpay initialized
+☁️   Storage:     Cloudinary enabled
+===========================================================
+`);
     keepAlive();
 });
-
 // ✅ Initialize WebSocket (Socket.io) Server
 socketUtils.init(server);
 

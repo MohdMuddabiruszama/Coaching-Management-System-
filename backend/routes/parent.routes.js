@@ -23,6 +23,13 @@ router.get(
     parentController.getStudentProfile
 );
 
+router.post(
+    "/impersonate-child/:studentId",
+    verifyToken,
+    allowRoles("parent"),
+    parentController.impersonateStudent
+);
+
 router.get(
     "/attendance/:studentId",
     verifyToken,

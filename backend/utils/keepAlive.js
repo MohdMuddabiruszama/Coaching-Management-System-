@@ -15,7 +15,7 @@ let pingInterval = null;
 
 const keepAlive = () => {
     if (process.env.NODE_ENV !== "production") {
-        console.log("⏭️  Keep-alive disabled in non-production mode");
+        // Keep-alive disabled
         return;
     }
 
@@ -23,7 +23,7 @@ const keepAlive = () => {
         clearInterval(pingInterval);
     }
 
-    console.log(`🏓 Keep-alive started → pinging ${BACKEND_URL} every 14 min`);
+    // Keep-alive started
 
     pingInterval = setInterval(async () => {
         try {
@@ -42,7 +42,7 @@ const stopKeepAlive = () => {
     if (pingInterval) {
         clearInterval(pingInterval);
         pingInterval = null;
-        console.log("🛑 Keep-alive stopped");
+        // Keep-alive stopped
     }
 };
 

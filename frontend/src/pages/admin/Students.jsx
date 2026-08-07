@@ -451,15 +451,7 @@ function Students() {
     const handleSubmit = async (e) => {
         e.preventDefault();
 
-        // Frontend validation for mandatory date fields
-        if (!formData.date_of_birth) {
-            alert("Date of Birth is required. Please enter the student's date of birth.");
-            return;
-        }
-        if (!formData.admission_date) {
-            alert("Admission Date is required. Please enter the student's admission date.");
-            return;
-        }
+        // Frontend validation for mandatory date fields (now optional)
 
         try {
             if (editMode) {
@@ -1491,12 +1483,12 @@ function Students() {
                                             </select>
                                         </div>
                                         <div className="form-group">
-                                            <label className="form-label" style={{ fontSize: '0.85rem', fontWeight: 600, color: '#475569', marginBottom: '0.4rem' }}>Date of Birth <span style={{color:'#ef4444'}}>*</span></label>
-                                            <input type="date" name="date_of_birth" className="form-input" value={formData.date_of_birth} onChange={handleChange} required max={new Date().toISOString().split('T')[0]} />
+                                            <label className="form-label" style={{ fontSize: '0.85rem', fontWeight: 600, color: '#475569', marginBottom: '0.4rem' }}>Date of Birth <span style={{color:'#6b7280', fontWeight: 400, fontSize: '0.78rem'}}>(optional)</span></label>
+                                            <input type="date" name="date_of_birth" className="form-input" value={formData.date_of_birth} onChange={handleChange} max={new Date().toISOString().split('T')[0]} />
                                         </div>
                                         <div className="form-group">
-                                            <label className="form-label" style={{ fontSize: '0.85rem', fontWeight: 600, color: '#475569', marginBottom: '0.4rem' }}>Admission Date <span style={{color:'#ef4444'}}>*</span></label>
-                                            <input type="date" name="admission_date" className="form-input" value={formData.admission_date} onChange={handleChange} required max={new Date().toISOString().split('T')[0]} />
+                                            <label className="form-label" style={{ fontSize: '0.85rem', fontWeight: 600, color: '#475569', marginBottom: '0.4rem' }}>Admission Date <span style={{color:'#6b7280', fontWeight: 400, fontSize: '0.78rem'}}>(optional)</span></label>
+                                            <input type="date" name="admission_date" className="form-input" value={formData.admission_date} onChange={handleChange} max={new Date().toISOString().split('T')[0]} />
                                         </div>
                                     </div>
                                 </div>

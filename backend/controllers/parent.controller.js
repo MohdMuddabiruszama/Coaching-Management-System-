@@ -278,6 +278,73 @@ exports.getStudentProfile = async (req, res) => {
 };
 
 /**
+ * Impersonate a linked student
+ * @route POST /api/parents/impersonate-child/:studentId
+ * @access Parent
+ */
+exports.impersonateStudent = async (req, res) => {
+    try {
+        const parent_id = req.user.id;
+        const student_id = req.params.studentId;
+
+        // 1. Verify parent is linked to this student
+        if (!(await isStudentLinked(parent_id, student_id))) {
+            return res.status(403).json({ success: false, message: "Unauthorized access to this student" });
+        }
+
+        // 2. Fetch the student to get the user_id
+        const student = await Student.findOne({
+            where: { id: student_id, institute_id: req.user.institute_id }
+        });
+
+        if (!student || !student.user_id) {
+            return res.status(404).json({ success: false, message: "Student user account not found" });
+        }
+
+        // 3. Authenticate as the student user
+        const { getProfile } = require('../services/auth.service');
+        const { generateAccessToken, generateRefreshToken } = require('../utils/generateToken');
+        const { RefreshToken } = require('../models');
+
+        const studentProfile = await getProfile(student.user_id);
+        
+        // Ensure the profile is valid and active
+        if (!studentProfile || studentProfile.status !== 'active') {
+             return res.status(403).json({ success: false, message: "Student account is suspended or invalid" });
+        }
+
+        const source = req.body.source === 'mobile' ? 'mobile' : 'web';
+        const instituteData = studentProfile.institute_name ? { name: studentProfile.institute_name } : null;
+        
+        const accessToken = generateAccessToken(studentProfile, instituteData);
+        const refresh = generateRefreshToken(source);
+
+        // Store refresh token
+        await RefreshToken.create({
+            user_id: studentProfile.id,
+            token_hash: refresh.hash,
+            expires_at: refresh.expiresAt,
+            device_info: req.headers["user-agent"] || "Parent Impersonation",
+            source,
+            ip_address: req.ip
+        });
+
+        res.status(200).json({
+            success: true,
+            message: "Impersonation successful",
+            token: accessToken,
+            accessToken,
+            refreshToken: refresh.token,
+            user: studentProfile
+        });
+
+    } catch (error) {
+        console.error("impersonateStudent error:", error);
+        res.status(500).json({ success: false, message: error.message || "Failed to impersonate student" });
+    }
+};
+
+/**
  * Attendance for linked student
  * @route GET /api/parents/attendance/:studentId
  * @access Parent
