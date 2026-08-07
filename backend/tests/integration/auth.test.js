@@ -13,7 +13,7 @@ describe("Auth Flow Integration Tests", () => {
     name: "Test Institute",
     email: "test_institute@example.com",
     phone: "1234567890",
-    password: "SecurePassword123",
+    password: "SecurePassword123!",
     admin_name: "Admin User",
     plan_id: 1, // Basic plan
     address: "123 Test Street",

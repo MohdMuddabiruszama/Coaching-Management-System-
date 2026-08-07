@@ -43,7 +43,7 @@ const StudentLayout = IS_NATIVE
 
 import FeatureGuard from "../components/common/FeatureGuard";
 
-function StudentArea() {
+export function StudentArea() {
   return (
     <ProtectedRoute allowedRoles={["student"]}>
       <Routes>

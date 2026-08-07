@@ -289,6 +289,12 @@ exports.createAdmin = async (req, res) => {
 
     } catch (error) {
         console.error("Create admin error:", error);
+        if (error.name === 'SequelizeUniqueConstraintError') {
+            return res.status(400).json({ success: false, message: "Email already exists." });
+        }
+        if (error.name === 'SequelizeValidationError') {
+            return res.status(400).json({ success: false, message: error.errors[0].message });
+        }
         res.status(500).json({ success: false, message: error.message });
     }
 };
@@ -417,6 +423,12 @@ exports.updateAdmin = async (req, res) => {
 
     } catch (error) {
         console.error("Update admin error:", error);
+        if (error.name === 'SequelizeUniqueConstraintError') {
+            return res.status(400).json({ success: false, message: "Email already exists." });
+        }
+        if (error.name === 'SequelizeValidationError') {
+            return res.status(400).json({ success: false, message: error.errors[0].message });
+        }
         res.status(500).json({ success: false, message: error.message });
     }
 }

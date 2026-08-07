@@ -113,7 +113,7 @@
 /* 2. Quick Actions Grid 4 cols */
 .mfd-quick-grid-4 {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 12px;
 }
 
@@ -121,7 +121,7 @@
     background: #fff;
     border: 1px solid rgba(0,0,0,0.06);
     border-radius: 14px;
-    padding: 14px 8px;
+    padding: 12px 4px;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -173,6 +173,8 @@
     font-weight: 600;
     color: #475569;
     line-height: 1.2;
+    word-break: break-word;
+    hyphens: auto;
 }
 
 /* 3. Stats Grid 3 cols */

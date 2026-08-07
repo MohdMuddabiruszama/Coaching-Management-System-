@@ -239,7 +239,10 @@ export const AuthProvider = ({ children }) => {
       setTimeout(() => {
         setUser(user);
         navigate(redirectUrl, { replace: true });
-        setIsInitializing(false);
+        // Delay clearing initialization to allow React Router state to catch up
+        setTimeout(() => {
+          setIsInitializing(false);
+        }, 50);
       }, 50);
     } else {
       setUser(user);
@@ -271,7 +274,10 @@ export const AuthProvider = ({ children }) => {
         setTimeout(() => {
           setUser(parsedUser);
           navigate(redirectUrl, { replace: true });
-          setIsInitializing(false);
+          // Delay clearing initialization to allow React Router state to catch up
+          setTimeout(() => {
+            setIsInitializing(false);
+          }, 50);
         }, 50);
       } else {
         setUser(parsedUser);

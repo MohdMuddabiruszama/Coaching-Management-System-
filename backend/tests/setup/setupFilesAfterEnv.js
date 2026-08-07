@@ -1,7 +1,7 @@
 const sequelize = require("../../config/database");
 
 // Increase timeout for DB sync
-jest.setTimeout(30000);
+jest.setTimeout(120000);
 
 beforeAll(async () => {
   // 1. Force sync the database (creates all tables based on models)

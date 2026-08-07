@@ -204,7 +204,7 @@ export default function WebAppRoutes() {
           </ProtectedRoute>
         } />
         <Route path="/role-selection" element={
-          <ProtectedRoute allowedRoles={["parent"]} skipFirstLoginCheck={true}>
+          <ProtectedRoute allowedRoles={["parent", "student"]} skipFirstLoginCheck={true}>
             <RoleSelection />
           </ProtectedRoute>
         } />

@@ -67,7 +67,9 @@ const commonOptions = {
         timestamps: true,
         underscored: true,
         paranoid: false,
+        schema: process.env.NODE_ENV === "test" ? "student_saas_test" : "public",
     },
+    searchPath: process.env.NODE_ENV === "test" ? "student_saas_test" : "public",
 };
 
 const parseConnectionUrl = (url) => {

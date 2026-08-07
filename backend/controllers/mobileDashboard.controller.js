@@ -88,7 +88,7 @@ exports.getStudentDashboard = async (req, res) => {
         // Resolve student record
         const studentRecord = await Student.findOne({
             where: { user_id: user.id, institute_id: instituteId },
-            attributes: ["id", "class_id"],
+            include: [{ model: Subject }, { model: Class }]
         });
 
         if (!studentRecord) {
@@ -99,6 +99,10 @@ exports.getStudentDashboard = async (req, res) => {
         const classId   = studentRecord.class_id;
         const { start: monthStart, end: monthEnd } = thisMonth();
         const todayDay = dayName();
+
+        // ── Ensure student fees are perfectly synced (Real-world professional requirement) ──
+        const feesController = require("./fees.controller");
+        await feesController.syncSingleStudentFees(instituteId, studentRecord);
 
         // Run all queries in parallel
         const [
@@ -391,6 +395,7 @@ exports.getFacultyDashboard = async (req, res) => {
             announcements,
             attendanceToday,
             totalStudents,
+            unreadChatRecords,
         ] = await Promise.all([
             // 1. Today's timetable for faculty's classes
             Timetable.findAll({
@@ -462,6 +467,19 @@ exports.getFacultyDashboard = async (req, res) => {
                     type: sequelize.QueryTypes.SELECT,
                 })
                 : Promise.resolve([{ total: 0 }]),
+
+            // 6. Unread chat messages
+            sequelize.query(`
+                SELECT COUNT(m.id) AS unread
+                FROM chat_messages m
+                JOIN chat_participants p ON p.room_id = m.room_id
+                WHERE p.user_id = :userId
+                  AND (p.last_read_at IS NULL OR m.created_at > p.last_read_at)
+                  AND m.sender_id != :userId
+            `, {
+                replacements: { userId: user.id },
+                type: sequelize.QueryTypes.SELECT,
+            }),
         ]);
 
         return res.json({
@@ -501,6 +519,7 @@ exports.getFacultyDashboard = async (req, res) => {
                     pendingMarksCount:  pendingExams.length,
                     classesToday:       todaySchedule.filter(t => !t.is_break).length,
                 },
+                unreadChatRecords: unreadChatRecords && unreadChatRecords[0] ? parseInt(unreadChatRecords[0].unread || 0, 10) : 0,
             },
         });
 
@@ -565,7 +584,7 @@ exports.getParentDashboard = async (req, res) => {
                 const studentId = child.id;
                 const classId   = child.class_id;
 
-                const [attendance, recentMarks, pendingFees, todaySchedule] = await Promise.all([
+                const [attendance, recentMarks, pendingFees, todaySchedule, unreadChatRecords] = await Promise.all([
                     // Attendance this month
                     Attendance.findAll({
                         where: {
@@ -619,6 +638,19 @@ exports.getParentDashboard = async (req, res) => {
                             order: [[TimetableSlot, "start_time", "ASC"]],
                         })
                         : Promise.resolve([]),
+
+                    // Unread chat messages
+                    sequelize.query(`
+                        SELECT COUNT(m.id) AS unread
+                        FROM chat_messages m
+                        JOIN chat_participants p ON p.room_id = m.room_id
+                        WHERE p.user_id = :userId
+                          AND (p.last_read_at IS NULL OR m.created_at > p.last_read_at)
+                          AND m.sender_id != :userId
+                    `, {
+                        replacements: { userId: user.id },
+                        type: sequelize.QueryTypes.SELECT,
+                    }),
                 ]);
 
                 const totalAtt   = attendance.length;
@@ -662,6 +694,7 @@ exports.getParentDashboard = async (req, res) => {
                         endTime:   t.TimetableSlot?.end_time,
                         isBreak:   t.is_break,
                     })),
+                    unreadChatRecords: unreadChatRecords && unreadChatRecords[0] ? parseInt(unreadChatRecords[0].unread || 0, 10) : 0,
                 };
             })
         );

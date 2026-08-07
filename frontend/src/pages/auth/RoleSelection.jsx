@@ -17,7 +17,8 @@ function RoleSelection() {
   const [showStudentPicker, setShowStudentPicker] = useState(false);
 
   useEffect(() => {
-    if (!user || user.role !== "parent") {
+    // If not a parent and not impersonating a student, redirect to home
+    if (!user || (user.role !== "parent" && !sessionStorage.getItem("original_session_token"))) {
       navigate("/");
     }
   }, [user, navigate]);

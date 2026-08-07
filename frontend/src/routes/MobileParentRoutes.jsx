@@ -26,6 +26,7 @@ const ParentMobileMarks = lazy(() => import("../pages/parent/MobileMarks"));
 const ParentMobilePerformance = lazy(() => import("../pages/parent/MobilePerformance"));
 const ParentMobileFees = lazy(() => import("../pages/parent/MobileFees"));
 const ViewAnnouncements = lazy(() => import("../pages/student/ViewAnnouncements"));
+const StudentArea = lazy(() => import("./MobileStudentRoutes").then(module => ({ default: module.StudentArea })));
 
 const PageLoader = () => (
   <div className="page-loader">
@@ -116,6 +117,7 @@ export default function MobileParentRoutes() {
         <Route path="/terms" element={<Terms />} />
         <Route path="/privacy" element={<Privacy />} />
         <Route path="/parent/*" element={<ParentArea />} />
+        <Route path="/student/*" element={<StudentArea />} />
         <Route path="/unauthorized" element={<Unauthorized />} />
         <Route path="*" element={<Navigate to={home} replace />} />
       </Routes>

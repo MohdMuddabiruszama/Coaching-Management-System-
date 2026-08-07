@@ -233,15 +233,28 @@ exports.sendMessage = async (req, res) => {
         // Phase 4: Notify participants
         try {
             const participants = await ChatParticipant.findAll({ where: { room_id } });
+            
+            // Determine sender name
+            const senderName = sender_display_name || req.user.name || "Someone";
+            
+            // Generate message snippet
+            const snippet = message ? (message.length > 50 ? message.substring(0, 50) + "..." : message) : "Sent an attachment";
+
             for (const p of participants) {
                 if (p.user_id !== userId) {
+                    // Determine route based on participant role
+                    let route = "/student/chats"; // default
+                    if (p.role === "faculty") route = "/faculty/chat";
+                    else if (p.role === "parent") route = "/parent/chat";
+                    else if (p.role === "admin" || p.role === "manager" || p.role === "owner") route = "/admin/chat";
+
                     NotificationService.createAndSend(
                         institute_id,
                         p.user_id,
                         "chat_message",
-                        "New Message",
-                        `You have a new message in ${room.name}`,
-                        { route: `/student/chats`, room_id: room.id }
+                        `New Message from ${senderName}`,
+                        snippet,
+                        { route: route, room_id: room.id, sender_name: senderName }
                     );
                 }
             }

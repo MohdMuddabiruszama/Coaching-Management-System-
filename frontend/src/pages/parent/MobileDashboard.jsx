@@ -103,6 +103,7 @@ export default function MobileDashboard() {
   const [performance, setPerformance] = useState(null);
   const [assignments, setAssignments] = useState([]);
   const [recentAnnouncements, setRecentAnnouncements] = useState([]);
+  const [unreadChatRecords, setUnreadChatRecords] = useState(0);
 
   // ── Notification Feed ───────────────────────────────────────────────────
   const [notifications, setNotifications] = useState([]);
@@ -202,6 +203,7 @@ export default function MobileDashboard() {
       ]);
       const loadedStudents = data?.data?.students || [];
       setStudents(loadedStudents);
+      setUnreadChatRecords(data?.data?.unreadChatRecords || 0);
       setRecentAnnouncements(Array.isArray(announcementsData) ? announcementsData.slice(0, 3) : []);
 
       // ── Build once-per-session reminder popup from StudentFees ────────────
@@ -618,15 +620,15 @@ export default function MobileDashboard() {
                   onClick={() => { clearBadge('assignments'); navigate('/parent/assignments'); }}
               />
           )}
-          {user?.features?.chat && (
-              <QuickActionBtn
-                  icon={<GridIcons.Chat />}
-                  label="Chat"
-                  badge={badges.chat}
-                  badgeVariant="count-green"
-                  onClick={() => { clearBadge('chat'); navigate('/parent/chat'); }}
-              />
-          )}
+            {user?.features?.chat && (
+                <QuickActionBtn
+                    icon={<GridIcons.Chat />}
+                    label="Chat"
+                    badge={unreadChatRecords > 0 ? { type: 'number', count: unreadChatRecords } : badges.chat}
+                    badgeVariant="count-green"
+                    onClick={() => { clearBadge('chat'); navigate('/parent/chat'); }}
+                />
+            )}
           {user?.features?.announcements && (
               <QuickActionBtn
                   icon={<GridIcons.Announcements />}

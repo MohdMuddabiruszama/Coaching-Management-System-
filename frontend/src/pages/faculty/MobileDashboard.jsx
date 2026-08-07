@@ -128,7 +128,7 @@ export default function MobileDashboard() {
                     )}
                     
                     {user?.features?.chat && (
-                        <QuickActionBtn icon="💬" label="Academic Chat" badge={demoBadge} onClick={() => navigate('/faculty/chat')} />
+                        <QuickActionBtn icon="💬" label="Academic Chat" badge={data?.unreadChatRecords > 0 ? data.unreadChatRecords : 0} onClick={() => navigate('/faculty/chat')} />
                     )}
                 </div>
             </div>
