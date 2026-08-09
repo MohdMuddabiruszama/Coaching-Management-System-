@@ -134,6 +134,12 @@ function Parents() {
     const [editMode, setEditMode] = useState(false);
     const [search, setSearch] = useState("");
     const [saving, setSaving] = useState(false);
+    const [globalStats, setGlobalStats] = useState({
+        totalParents: 0,
+        activeParents: 0,
+        pendingParents: 0,
+        linkedStudents: 0
+    });
     
     // UI Interaction States
     const [showFilters, setShowFilters] = useState(false);
@@ -154,6 +160,17 @@ function Parents() {
     const [showCredentialsModal, setShowCredentialsModal] = useState(false);
     const [credentialsData, setCredentialsData] = useState([]);
     const [loadingCredentials, setLoadingCredentials] = useState(false);
+    const [actionMenuOpen, setActionMenuOpen] = useState(null);
+
+    useEffect(() => {
+        const handleClickOutside = (e) => {
+            if (!e.target.closest('.ap-menu-container')) {
+                setActionMenuOpen(null);
+            }
+        };
+        document.addEventListener('click', handleClickOutside);
+        return () => document.removeEventListener('click', handleClickOutside);
+    }, []);
 
     const [formData, setFormData] = useState({
         id: null,
@@ -186,6 +203,9 @@ function Parents() {
         try {
             const res = await api.get(`/parents${search ? `?search=${encodeURIComponent(search)}` : ""}`);
             setParents(res.data.data || []);
+            if (res.data.stats) {
+                setGlobalStats(res.data.stats);
+            }
         } catch (error) {
             console.error("Error fetching parents:", error);
         } finally {
@@ -290,6 +310,27 @@ function Parents() {
             alert(error.response?.data?.message || "Something went wrong");
         } finally {
             setSaving(false);
+        }
+    };
+
+    const handleToggleStatus = async (parent) => {
+        const currentStatus = parent.status || "active";
+        const newStatus = currentStatus === "active" ? "blocked" : "active";
+        const actionText = newStatus === "active" ? "activate" : "block";
+
+        if (!window.confirm(`Are you sure you want to ${actionText} this parent?`)) return;
+
+        try {
+            await api.put(`/parents/${parent.id}`, { 
+                name: parent.name,
+                email: parent.email,
+                phone: parent.phone,
+                status: newStatus 
+            });
+            alert(`Parent ${actionText}d successfully`);
+            fetchParents();
+        } catch (error) {
+            alert(`Error: ` + (error.response?.data?.message || "Something went wrong"));
         }
     };
 
@@ -459,10 +500,10 @@ function Parents() {
 
             <div className="ap-stats-grid">
                 {[
-                    { label: "Total Parents", sub: "All registered parents", value: parents.length, icon: <ParentGroupIcon />, colorClass: "purple" },
-                    { label: "Linked Students", sub: "Students linked to parents", value: parents.reduce((sum, p) => sum + (p.LinkedStudents?.length || 0), 0), icon: <LinkIcon />, colorClass: "green" },
-                    { label: "Active Parents", sub: "Active parent accounts", value: parents.filter(p => p.status === 'active').length || 30, icon: <MailIcon />, colorClass: "blue" },
-                    { label: "Pending Invitations", sub: "Awaiting parent signup", value: parents.filter(p => p.status !== 'active').length || 4, icon: <UserPendingIcon />, colorClass: "orange" },
+                    { label: "Total Parents", sub: "All registered parents", value: globalStats.totalParents, icon: <ParentGroupIcon />, colorClass: "purple" },
+                    { label: "Linked Students", sub: "Students linked to parents", value: globalStats.linkedStudents, icon: <LinkIcon />, colorClass: "green" },
+                    { label: "Active Parents", sub: "Active parent accounts", value: globalStats.activeParents, icon: <MailIcon />, colorClass: "blue" },
+                    { label: "Pending Invitations", sub: "Awaiting parent signup", value: globalStats.pendingParents, icon: <UserPendingIcon />, colorClass: "orange" },
                 ].map(stat => (
                     <div key={stat.label} className="ap-stat-card">
                         <div className={`ap-icon-wrapper ${stat.colorClass}`}>{stat.icon}</div>
@@ -637,12 +678,30 @@ function Parents() {
                                                 <button className="ap-action-btn" onClick={() => handleViewSingleCredentials(parent.id)} title="Credentials">
                                                     <KeyIcon /> Keys
                                                 </button>
-                                                <button className="ap-action-btn" onClick={() => handleEdit(parent)} title="Edit">
-                                                    <EditIcon />
-                                                </button>
-                                                <button className="ap-action-btn delete" onClick={() => handleDelete(parent.id)} title="Delete">
-                                                    <DeleteIcon />
-                                                </button>
+                                                <div className="ap-menu-container">
+                                                    <button 
+                                                        className="ap-menu-btn"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            setActionMenuOpen(actionMenuOpen === parent.id ? null : parent.id);
+                                                        }}
+                                                    >
+                                                        ⋮
+                                                    </button>
+                                                    {actionMenuOpen === parent.id && (
+                                                        <div className="ap-dropdown-menu">
+                                                            <button className="ap-dropdown-item" onClick={() => { setActionMenuOpen(null); handleEdit(parent); }}>
+                                                                ✏️ Edit Parent
+                                                            </button>
+                                                            <button className="ap-dropdown-item" onClick={() => { setActionMenuOpen(null); handleToggleStatus(parent); }}>
+                                                                {parent.status === 'active' ? '🚫 Block Parent' : '✅ Activate Parent'}
+                                                            </button>
+                                                            <button className="ap-dropdown-item danger" onClick={() => { setActionMenuOpen(null); handleDelete(parent.id); }}>
+                                                                🗑️ Delete
+                                                            </button>
+                                                        </div>
+                                                    )}
+                                                </div>
                                             </div>
                                         </td>
                                     </tr>

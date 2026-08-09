@@ -301,8 +301,7 @@ const AdminLayout = () => {
         if (hasPermission('notes')) routes.push({ name: "Notes", path: `/${rolePrefix}/notes`, icon: "📓" });
         if (hasPermission('chat')) routes.push({ name: "Chat Monitor", path: `/${rolePrefix}/chat-monitor`, icon: "💬" });
         if (hasPermission('biometric')) routes.push({ name: "Biometric Integration", path: `/${rolePrefix}/biometric`, icon: "🔐" });
-        
-        routes.push({ name: "Batches & Timetable", path: `/${rolePrefix}/timetable`, icon: "📅" });
+        if (hasPermission('timetable')) routes.push({ name: "Batches & Timetable", path: `/${rolePrefix}/timetable`, icon: "📅" });
         
         if (isAdmin) {
             routes.push({ name: "Manage Managers (Admins)", path: `/${rolePrefix}/admins`, icon: "👨‍💼" });
@@ -503,11 +502,13 @@ const AdminLayout = () => {
                             <span className="al-nav-text">Parents</span>
                         </Link>
                     )}
-                    <Link to={`/${rolePrefix}/timetable`} className={navLinkClass(`/${rolePrefix}/timetable`)} onClick={() => setSidebarOpen(false)}>
-                        <span className="al-nav-icon">📅</span>
-                        <span className="al-nav-text">Batches & Timetable</span>
-                        {renderLockIcon('timetable')}
-                    </Link>
+                    {hasPermission('timetable') && (
+                        <Link to={`/${rolePrefix}/timetable`} className={navLinkClass(`/${rolePrefix}/timetable`)} onClick={() => setSidebarOpen(false)}>
+                            <span className="al-nav-icon">📅</span>
+                            <span className="al-nav-text">Batches & Timetable</span>
+                            {renderLockIcon('timetable')}
+                        </Link>
+                    )}
 
                     <div className="al-nav-section">FINANCE</div>
                     {(hasPermission('fees') || hasPermission('collect_fees')) && (

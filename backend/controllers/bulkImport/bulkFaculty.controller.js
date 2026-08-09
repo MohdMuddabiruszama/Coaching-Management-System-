@@ -43,11 +43,12 @@ exports.bulkImportFaculty = async (req, res) => {
 
     // ── 2. Batch email existence check ───────────────────────────────────────
     const incomingEmails = rows
-      .map(r => r.email?.toLowerCase().trim())
+      .map(r => String(r.email || '').toLowerCase().trim())
       .filter(Boolean);
     const existingUsers = await User.findAll({
       where: { email: incomingEmails },
       attributes: ['email'],
+      paranoid: false,
     });
     const takenEmails = new Set(existingUsers.map(u => u.email));
     const seenInBatch = new Set();
@@ -58,7 +59,7 @@ exports.bulkImportFaculty = async (req, res) => {
       const rowNum = i + 2;
       const rowErrors = validateFacultyRow(row);
 
-      const email = row.email?.toLowerCase().trim();
+      const email = String(row.email || '').toLowerCase().trim();
       if (email) {
         if (takenEmails.has(email))   rowErrors.push('email already exists in system');
         if (seenInBatch.has(email))   rowErrors.push('duplicate email within file');
@@ -76,13 +77,13 @@ exports.bulkImportFaculty = async (req, res) => {
     const t = await sequelize.transaction();
     try {
       for (const r of validRows) {
-        const pw = r.password?.trim() || `faculty@${r.phone}`;
+        const pw = String(r.password || '').trim() || `faculty@${r.phone}`;
         const user = await User.create({
           institute_id,
           role: 'faculty',
-          name: r.name.trim(),
+          name: String(r.name || '').trim(),
           email: r.email,
-          phone: r.phone?.trim(),
+          phone: String(r.phone || '').trim(),
           password_hash: await bcrypt.hash(pw, 10),
           status: 'active',
         }, { transaction: t });
@@ -91,7 +92,7 @@ exports.bulkImportFaculty = async (req, res) => {
           institute_id,
           user_id: user.id,
           designation: r.designation?.trim() || null,
-          address: r.address?.trim() || null,
+          address: String(r.address || '').trim() || null,
           join_date: parseExcelDate(r.join_date) || new Date(),
         }, { transaction: t });
       }

@@ -9,59 +9,65 @@ const PHONE_RE = /^[6-9]\d{9}$/;
 // ── Student row validator ────────────────────────────────────────────────────
 function validateStudentRow(row, seenEmails, seenRolls) {
   const e = [];
-  if (!row.name?.trim())                                    e.push('name required');
-  if (!EMAIL_RE.test(row.email || ''))                      e.push('invalid email');
-  else if (seenEmails.has(row.email.toLowerCase()))         e.push('duplicate email in file');
-  else                                                      seenEmails.add(row.email.toLowerCase());
-  if (row.phone && !PHONE_RE.test(row.phone))               e.push('phone must be 10 digits (start 6-9)');
-  if (!row.roll_number?.trim())                             e.push('roll_number required');
-  else if (seenRolls.has(row.roll_number.trim()))           e.push('duplicate roll_number in file');
-  else                                                      seenRolls.add(row.roll_number.trim());
-  if (!row.class_name?.trim())                              e.push('class_name required');
-  if (!row.section?.trim())                                 e.push('section required (use N/A if none)');
+  if (!String(row.name || '').trim())                                    e.push('name required');
+  if (row.email) {
+    if (!EMAIL_RE.test(String(row.email || '')))                      e.push('invalid email');
+    else if (seenEmails.has(String(row.email).toLowerCase()))         e.push('duplicate email in file');
+    else                                                              seenEmails.add(String(row.email).toLowerCase());
+  }
+  if (row.phone && !PHONE_RE.test(String(row.phone)))               e.push('phone must be 10 digits (start 6-9)');
+  if (!String(row.roll_number || '').trim())                             e.push('roll_number required');
+  else if (seenRolls.has(String(row.roll_number).trim()))           e.push('duplicate roll_number in file');
+  else                                                              seenRolls.add(String(row.roll_number).trim());
+  if (!String(row.class_name || '').trim())                              e.push('class_name required');
+  if (!String(row.section || '').trim())                                 e.push('section required (use N/A if none)');
   
-  const isFull = row.is_full_course?.toString().toLowerCase().trim();
+  const isFull = String(row.is_full_course || '').toLowerCase().trim();
   if (isFull && !['yes', 'no', 'true', 'false', '1', '0'].includes(isFull)) e.push('is_full_course must be Yes or No');
-  if (isFull && ['no', 'false', '0'].includes(isFull) && !row.subjects?.trim()) e.push('subjects required if not full course');
+  if (isFull && ['no', 'false', '0'].includes(isFull) && !String(row.subjects || '').trim()) e.push('subjects required if not full course');
 
-  const g = row.gender?.toLowerCase();
+  const g = String(row.gender || '').toLowerCase();
   if (!['male', 'female', 'other'].includes(g))             e.push('gender: male, female, or other');
   
   const DATE_RE = /^(\d{2}[-/]\d{2}[-/]\d{4}|\d{4}-\d{2}-\d{2})$/;
   if (!row.date_of_birth)                                   e.push('date_of_birth required (DD/MM/YYYY)');
-  else if (!DATE_RE.test(row.date_of_birth))                e.push('invalid date_of_birth format');
+  else if (!DATE_RE.test(String(row.date_of_birth)))                e.push('invalid date_of_birth format');
   
-  if (row.admission_date && !DATE_RE.test(row.admission_date)) e.push('invalid admission_date format');
+  if (row.admission_date && !DATE_RE.test(String(row.admission_date))) e.push('invalid admission_date format');
 
-  if (row.password && row.password.length < 8)              e.push('password min 8 characters');
+  if (row.password && String(row.password).length < 8)              e.push('password min 8 characters');
   return e;
 }
 
 // ── Parent row validator ─────────────────────────────────────────────────────
 function validateParentRow(row, seenEmails) {
   const e = [];
-  if (!row.name?.trim())                                    e.push('name required');
-  if (!EMAIL_RE.test(row.email || ''))                      e.push('invalid email');
-  else if (seenEmails.has(row.email.toLowerCase()))         e.push('duplicate email in file');
-  else                                                      seenEmails.add(row.email.toLowerCase());
-  if (!row.phone?.trim())                                   e.push('phone required');
-  if (!row.student_roll_number?.trim())                     e.push('student_roll_number required');
-  const r = row.relationship?.toLowerCase();
+  if (!String(row.name || '').trim())                                    e.push('name required');
+  
+  if (row.email) {
+    if (!EMAIL_RE.test(String(row.email || '')))                      e.push('invalid email');
+    else if (seenEmails.has(String(row.email).toLowerCase()))         e.push('duplicate email in file');
+    else                                                              seenEmails.add(String(row.email).toLowerCase());
+  }
+
+  if (!String(row.phone || '').trim())                                   e.push('phone required');
+  if (!String(row.student_roll_number || '').trim())                     e.push('student_roll_number required');
+  const r = String(row.relationship || '').toLowerCase();
   if (!['father', 'mother', 'guardian'].includes(r))        e.push('relationship: father, mother, or guardian');
-  if (row.password && row.password.length < 8)              e.push('password min 8 characters');
+  if (row.password && String(row.password).length < 8)              e.push('password min 8 characters');
   return e;
 }
 
 // ── Faculty row validator ────────────────────────────────────────────────────
 function validateFacultyRow(row, seenEmails) {
   const e = [];
-  if (!row.name?.trim())                                    e.push('name required');
-  if (!EMAIL_RE.test(row.email || ''))                      e.push('invalid email');
-  else if (seenEmails.has(row.email.toLowerCase()))         e.push('duplicate email in file');
-  else                                                      seenEmails.add(row.email.toLowerCase());
-  if (!row.phone?.trim())                                   e.push('phone required');
-  if (row.address && row.address.length > 500)              e.push('address max 500 chars');
-  if (row.password && row.password.length < 8)              e.push('password min 8 characters');
+  if (!String(row.name || '').trim())                                    e.push('name required');
+  if (!EMAIL_RE.test(String(row.email || '')))                      e.push('invalid email');
+  else if (seenEmails.has(String(row.email).toLowerCase()))         e.push('duplicate email in file');
+  else                                                              seenEmails.add(String(row.email).toLowerCase());
+  if (!String(row.phone || '').trim())                                   e.push('phone required');
+  if (row.address && String(row.address).length > 500)              e.push('address max 500 chars');
+  if (row.password && String(row.password).length < 8)              e.push('password min 8 characters');
   return e;
 }
 

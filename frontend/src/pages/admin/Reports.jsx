@@ -867,7 +867,7 @@ function Reports() {
                                 {(recordFilter === 'all' || recordFilter === 'pending') && (
                                 <div style={{ background: '#fff', borderRadius: '12px', border: '1px solid #e5e7eb', boxShadow: '0 2px 4px rgba(0,0,0,0.02)', overflow: 'hidden' }}>
                                     <div style={{ padding: '1.25rem 1.5rem', borderBottom: '1px solid #e5e7eb', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                        <h3 style={{ margin: 0, color: '#111827', fontSize: '1.1rem', fontWeight: '700' }}>Pending Students ({feesReport.pending_students?.length || 47})</h3>
+                                        <h3 style={{ margin: 0, color: '#111827', fontSize: '1.1rem', fontWeight: '700' }}>Pending Students ({feesReport.pending_students?.length || 0})</h3>
                                         <button className="btn btn-secondary" style={{ padding: '0.4rem 0.8rem', fontSize: 12, background: '#fff', color: '#7e22ce', borderColor: '#e9d5ff' }}>View All</button>
                                     </div>
                                     <div style={{ overflowX: 'auto' }}>

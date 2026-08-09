@@ -64,22 +64,24 @@ exports.bulkImportStudents = async (req, res) => {
 
     // ── 4. Batch email existence check ───────────────────────────────────────
     const incomingEmails = rows
-      .map(r => r.email?.toLowerCase().trim())
+      .map(r => String(r.email || '').toLowerCase().trim())
       .filter(Boolean);
     const existingUsers = await User.findAll({
       where: { email: incomingEmails },
       attributes: ['email'],
+      paranoid: false,
     });
     const takenEmails = new Set(existingUsers.map(u => u.email));
     const seenInBatch = new Set();
 
     // ── 5. Batch roll_number uniqueness check ────────────────────────────────
     const incomingRolls = rows
-      .map(r => r.roll_number?.trim())
+      .map(r => String(r.roll_number || '').trim())
       .filter(Boolean);
     const existingRolls = await Student.findAll({
       where: { institute_id, roll_number: incomingRolls },
       attributes: ['roll_number'],
+      paranoid: false,
     });
     const takenRolls = new Set(existingRolls.map(s => s.roll_number));
     const seenRollsInBatch = new Set();
@@ -90,14 +92,14 @@ exports.bulkImportStudents = async (req, res) => {
       const rowNum = i + 2; // row 1 = header in Excel
       const rowErrors = validateStudentRow(row);
 
-      const email = row.email?.toLowerCase().trim();
+      const email = String(row.email || '').toLowerCase().trim();
       if (email) {
         if (takenEmails.has(email))   rowErrors.push('email already exists in system');
         if (seenInBatch.has(email))   rowErrors.push('duplicate email within file');
         else                          seenInBatch.add(email);
       }
 
-      const roll = row.roll_number?.trim();
+      const roll = String(row.roll_number || '').trim();
       if (roll) {
         if (takenRolls.has(roll))          rowErrors.push('roll number already exists in institute');
         if (seenRollsInBatch.has(roll))    rowErrors.push('duplicate roll number within file');
@@ -183,9 +185,9 @@ exports.bulkImportStudents = async (req, res) => {
             const userPayload = {
                 institute_id,
                 role: 'student',
-                name: r.name.trim(),
-                email: r.email,
-                phone: r.phone?.trim() || null,
+                name: String(r.name || '').trim(),
+                email: r.email || null,
+                phone: String(r.phone || '').trim() || null,
                 password_hash: await bcrypt.hash(pw, 10),
                 status: 'active',
                 is_first_login: true,
@@ -199,7 +201,7 @@ exports.bulkImportStudents = async (req, res) => {
             if (r.email) {
               emailsToDispatch.push({
                 to: r.email,
-                studentName: r.name.trim(),
+                studentName: String(r.name || '').trim(),
                 instituteName,
                 email: r.email,
                 tempPassword: pw
@@ -218,12 +220,12 @@ exports.bulkImportStudents = async (req, res) => {
             studentPayloads.push({
                 institute_id,
                 user_id: u.id,
-                roll_number: r.roll_number.trim(),
+                roll_number: String(r.roll_number || '').trim(),
                 class_id: r.class_id,
-                gender: r.gender?.toLowerCase(),
+                gender: String(r.gender || '').toLowerCase(),
                 date_of_birth: parseExcelDate(r.date_of_birth),
                 admission_date: parseExcelDate(r.admission_date) || new Date(),
-                address: r.address?.trim() || null,
+                address: String(r.address || '').trim() || null,
                 is_full_course: r.isFullCourse,
             });
         }

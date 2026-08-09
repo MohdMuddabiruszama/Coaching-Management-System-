@@ -118,7 +118,28 @@ exports.getAllParents = async (req, res) => {
 
         if (!cursor) queryOptions.offset = parseInt(offset, 10);
 
-        const rows = await User.findAll(queryOptions);
+        const rowsPromise = User.findAll(queryOptions);
+
+        const statsQuery = `
+            SELECT 
+                COUNT(u.id) as total_parents,
+                SUM(CASE WHEN u.status = 'active' THEN 1 ELSE 0 END) as active_parents,
+                SUM(CASE WHEN u.status != 'active' THEN 1 ELSE 0 END) as pending_parents,
+                (SELECT COUNT(DISTINCT sp.student_id) 
+                 FROM student_parents sp 
+                 JOIN users p ON sp.parent_id = p.id 
+                 WHERE p.institute_id = :institute_id AND p.role = 'parent' AND p.deleted_at IS NULL) as linked_students
+            FROM users u
+            WHERE u.institute_id = :institute_id AND u.role = 'parent' AND u.deleted_at IS NULL
+        `;
+
+        const statsPromise = User.sequelize.query(statsQuery, {
+            replacements: { institute_id },
+            type: User.sequelize.QueryTypes.SELECT
+        });
+
+        const [rows, [statsResult]] = await Promise.all([rowsPromise, statsPromise]);
+
         const hasMore = cursor ? rows.length > parsedLimit : rows.length === parsedLimit;
         const parents = cursor && hasMore ? rows.slice(0, parsedLimit) : rows;
 
@@ -127,6 +148,12 @@ exports.getAllParents = async (req, res) => {
             message: "Parents retrieved successfully",
             data: parents,
             count: parents.length,
+            stats: {
+                totalParents: parseInt(statsResult.total_parents || 0, 10),
+                activeParents: parseInt(statsResult.active_parents || 0, 10),
+                pendingParents: parseInt(statsResult.pending_parents || 0, 10),
+                linkedStudents: parseInt(statsResult.linked_students || 0, 10)
+            },
             nextCursor: hasMore && parents.length ? parents[parents.length - 1].id : null,
             hasMore,
         });

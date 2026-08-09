@@ -152,7 +152,7 @@ function Announcements() {
                     <div style={{ width: 48, height: 48, borderRadius: 12, background: '#f3e8ff', color: '#8b5cf6', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem' }}>📋</div>
                     <div>
                         <div style={{ color: '#6b7280', fontSize: 12, fontWeight: 600 }}>Total Announcements</div>
-                        <div style={{ color: '#111827', fontSize: 20, fontWeight: 800, marginTop: 2 }}>{announcements.length || 12}</div>
+                        <div style={{ color: '#111827', fontSize: 20, fontWeight: 800, marginTop: 2 }}>{announcements.length || 0}</div>
                         <div style={{ color: '#6b7280', fontSize: 11, marginTop: 2 }}>All time</div>
                     </div>
                 </div>

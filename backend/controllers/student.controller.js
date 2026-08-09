@@ -606,13 +606,16 @@ exports.updateStudent = catchAsync(async (req, res) => {
     }
 
     // Update user details
-    if (name || email || phone || status) {
-      await student.User.update({
-        name: name || student.User.name,
-        email: email || student.User.email,
-        phone: phone || student.User.phone,
-        status: status || student.User.status
-      }, { transaction });
+    if (name !== undefined || email !== undefined || phone !== undefined || status !== undefined) {
+      const updateData = {};
+      if (name !== undefined) updateData.name = name || student.User.name;
+      if (email !== undefined) updateData.email = email === "" ? null : email;
+      if (phone !== undefined) updateData.phone = phone === "" ? null : phone;
+      if (status !== undefined) updateData.status = status;
+      
+      if (Object.keys(updateData).length > 0) {
+        await student.User.update(updateData, { transaction });
+      }
     }
 
     // Update student details

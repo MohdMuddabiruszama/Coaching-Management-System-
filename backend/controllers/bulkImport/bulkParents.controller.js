@@ -38,11 +38,12 @@ exports.bulkImportParents = async (req, res) => {
 
     // ── 2. Batch email existence check ───────────────────────────────────────
     const incomingEmails = rows
-      .map(r => r.email?.toLowerCase().trim())
+      .map(r => String(r.email || '').toLowerCase().trim())
       .filter(Boolean);
     const existingUsers = await User.findAll({
       where: { email: incomingEmails },
       attributes: ['email'],
+      paranoid: false,
     });
     const takenEmails = new Set(existingUsers.map(u => u.email));
     const seenInBatch = new Set();
@@ -53,14 +54,14 @@ exports.bulkImportParents = async (req, res) => {
       const rowNum = i + 2;
       const rowErrors = validateParentRow(row);
 
-      const email = row.email?.toLowerCase().trim();
+      const email = String(row.email || '').toLowerCase().trim();
       if (email) {
         if (takenEmails.has(email))   rowErrors.push('email already exists in system');
         if (seenInBatch.has(email))   rowErrors.push('duplicate email within file');
         else                          seenInBatch.add(email);
       }
 
-      const studentId = rollToStudentId[row.student_roll_number?.trim()];
+      const studentId = rollToStudentId[String(row.student_roll_number || '').trim()];
       if (!studentId) {
         rowErrors.push(`no student found with roll number '${row.student_roll_number}'`);
       }
@@ -76,13 +77,13 @@ exports.bulkImportParents = async (req, res) => {
     const t = await sequelize.transaction();
     try {
       for (const r of validRows) {
-        const pw = r.password?.trim() || `parent@${r.phone}`;
+        const pw = String(r.password || '').trim() || `parent@${r.phone}`;
         const user = await User.create({
           institute_id,
           role: 'parent',
-          name: r.name.trim(),
-          email: r.email,
-          phone: r.phone?.trim(),
+          name: String(r.name || '').trim(),
+          email: r.email || null,
+          phone: String(r.phone || '').trim(),
           password_hash: await bcrypt.hash(pw, 10),
           status: 'active',
         }, { transaction: t });
@@ -95,7 +96,7 @@ exports.bulkImportParents = async (req, res) => {
             replacements: {
               sid: r.student_id,
               pid: user.id,
-              rel: r.relationship.toLowerCase(),
+              rel: String(r.relationship || '').toLowerCase(),
             },
             transaction: t,
           }
