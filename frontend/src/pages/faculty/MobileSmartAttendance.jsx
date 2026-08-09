@@ -525,31 +525,22 @@ function MobileSmartAttendance() {
                             <span>Make sure students have their QR codes ready before scanning.</span>
                         </div>
 
-                        {attendanceMode === "class_based" ? (
-                            <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
-                                <button
-                                    style={{ flex: 1, padding: '0.875rem', fontSize: '1rem', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', background: 'linear-gradient(135deg, #10b981, #059669)', border: 'none', borderRadius: '12px', color: 'white', fontWeight: 600, cursor: 'pointer' }}
-                                    onClick={() => startScanningProcess('in')}
-                                >
-                                    📥 In Scan
-                                </button>
-                                <button
-                                    style={{ flex: 1, padding: '0.875rem', fontSize: '1rem', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', background: 'linear-gradient(135deg, #ef4444, #dc2626)', border: 'none', borderRadius: '12px', color: 'white', fontWeight: 600, cursor: 'pointer' }}
-                                    onClick={() => startScanningProcess('out')}
-                                >
-                                    📤 Out Scan
-                                </button>
-                            </div>
-                        ) : (
-                            <button 
-                                className="msa-btn-primary"
+                        <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
+                            <button
+                                style={{ flex: 1, padding: '0.875rem', fontSize: '1rem', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', background: 'linear-gradient(135deg, #10b981, #059669)', border: 'none', borderRadius: '12px', color: 'white', fontWeight: 600, cursor: (attendanceMode === "subject_based" && (!selectedClass || !selectedSubject)) ? 'not-allowed' : 'pointer', opacity: (attendanceMode === "subject_based" && (!selectedClass || !selectedSubject)) ? 0.5 : 1 }}
                                 onClick={() => startScanningProcess('in')}
-                                disabled={!selectedClass || !selectedSubject}
+                                disabled={attendanceMode === "subject_based" && (!selectedClass || !selectedSubject)}
                             >
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>
-                                Open Camera & Start Scanning
+                                📥 In Scan
                             </button>
-                        )}
+                            <button
+                                style={{ flex: 1, padding: '0.875rem', fontSize: '1rem', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', background: 'linear-gradient(135deg, #ef4444, #dc2626)', border: 'none', borderRadius: '12px', color: 'white', fontWeight: 600, cursor: (attendanceMode === "subject_based" && (!selectedClass || !selectedSubject)) ? 'not-allowed' : 'pointer', opacity: (attendanceMode === "subject_based" && (!selectedClass || !selectedSubject)) ? 0.5 : 1 }}
+                                onClick={() => startScanningProcess('out')}
+                                disabled={attendanceMode === "subject_based" && (!selectedClass || !selectedSubject)}
+                            >
+                                📤 Out Scan
+                            </button>
+                        </div>
                     </div>
 
                     <div className="msa-card msa-tips-card">
