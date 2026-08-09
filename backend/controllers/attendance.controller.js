@@ -1265,7 +1265,7 @@ exports.markAttendanceByStudentQR = catchAsync(async (req, res) => {
               const body = `${student.User?.name || 'Your child'} has scanned OUT of ${subjName} at ${timeStr}.`;
               for (const parent of student.Parents) {
                 // Fire and forget: Do not await notifications
-                NotificationService.createAndSend(institute_id, parent.id, "attendance", title, body, { student_id, date: targetDate, scan_type })
+                NotificationService.createAndSend(institute_id, parent.id, "attendance", title, body, { student_id, date: targetDate, scan_type, subject_name: subjName })
                   .catch(e => console.error("Background notification error:", e));
               }
             }
@@ -1291,7 +1291,7 @@ exports.markAttendanceByStudentQR = catchAsync(async (req, res) => {
             
             for (const parent of student.Parents) {
               // Fire and forget: Do not await notifications
-              NotificationService.createAndSend(institute_id, parent.id, "attendance", title, body, { student_id, date: targetDate, scan_type })
+              NotificationService.createAndSend(institute_id, parent.id, "attendance", title, body, { student_id, date: targetDate, scan_type, subject_name: subjName })
                 .catch(e => console.error("Background notification error:", e));
             }
           }
@@ -1326,7 +1326,7 @@ exports.markAttendanceByStudentQR = catchAsync(async (req, res) => {
         
         for (const parent of student.Parents) {
           // Fire and forget: Do not await notifications
-          NotificationService.createAndSend(institute_id, parent.id, "attendance", title, body, { student_id, date: targetDate, scan_type })
+          NotificationService.createAndSend(institute_id, parent.id, "attendance", title, body, { student_id, date: targetDate, scan_type, subject_name: subjName })
             .catch(e => console.error("Background notification error:", e));
         }
       }

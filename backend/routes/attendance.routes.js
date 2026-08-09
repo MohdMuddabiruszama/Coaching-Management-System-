@@ -16,7 +16,7 @@ router.get("/dashboard", verifyToken, checkSubscription, allowRoles("admin", "fa
 router.get("/class/:class_id/summary", verifyToken, checkSubscription, allowRoles("admin", "faculty", "manager"), checkManagerPermission("attendance.read"), attendanceController.getClassAttendanceSummary);
 
 // Settings
-router.get("/settings", verifyToken, checkSubscription, allowRoles("admin", "manager"), attendanceController.getAttendanceSettings);
+router.get("/settings", verifyToken, checkSubscription, allowRoles("admin", "manager", "faculty"), attendanceController.getAttendanceSettings);
 router.put("/settings", verifyToken, checkSubscription, allowRoles("admin"), attendanceController.updateAttendanceSettings);
 
 // Student Report

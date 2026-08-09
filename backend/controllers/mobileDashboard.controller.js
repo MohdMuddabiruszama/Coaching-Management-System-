@@ -396,6 +396,7 @@ exports.getFacultyDashboard = async (req, res) => {
             attendanceToday,
             totalStudents,
             unreadChatRecords,
+            unreadAnnouncementsRecords,
         ] = await Promise.all([
             // 1. Today's timetable for faculty's classes
             Timetable.findAll({
@@ -480,6 +481,19 @@ exports.getFacultyDashboard = async (req, res) => {
                 replacements: { userId: user.id },
                 type: sequelize.QueryTypes.SELECT,
             }),
+
+            // 7. Unread Announcements
+            sequelize.query(`
+                SELECT COUNT(a.id) AS unread
+                FROM announcements a
+                LEFT JOIN announcement_reads ar ON ar.announcement_id = a.id AND ar.user_id = :userId
+                WHERE a.institute_id = :instituteId
+                  AND (a.target_audience = 'all' OR a.target_audience = 'faculty')
+                  AND ar.announcement_id IS NULL
+            `, {
+                replacements: { userId: user.id, instituteId: instituteId },
+                type: sequelize.QueryTypes.SELECT,
+            }),
         ]);
 
         return res.json({
@@ -520,6 +534,7 @@ exports.getFacultyDashboard = async (req, res) => {
                     classesToday:       todaySchedule.filter(t => !t.is_break).length,
                 },
                 unreadChatRecords: unreadChatRecords && unreadChatRecords[0] ? parseInt(unreadChatRecords[0].unread || 0, 10) : 0,
+                unreadAnnouncements: unreadAnnouncementsRecords && unreadAnnouncementsRecords[0] ? parseInt(unreadAnnouncementsRecords[0].unread || 0, 10) : 0,
             },
         });
 

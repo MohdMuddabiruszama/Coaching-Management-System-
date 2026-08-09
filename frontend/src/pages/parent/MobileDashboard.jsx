@@ -763,7 +763,16 @@ export default function MobileDashboard() {
                           marginBottom: '2px',
                           whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'
                         }}>{notif.title}</div>
-                        <div style={{ fontSize: '12px', color: '#64748b', lineHeight: 1.4 }}>{notif.body}</div>
+                        {notif.data_json?.subject_name ? (
+                          <div style={{ marginTop: '4px', padding: '6px 10px', background: '#ffffff', borderRadius: '8px', border: `1px solid ${accent}40`, display: 'inline-flex', alignItems: 'center', gap: '8px', boxShadow: `0 1px 2px ${accent}10` }}>
+                             <span style={{ fontSize: '12px', fontWeight: 600, color: '#334155' }}>📚 {notif.data_json.subject_name}</span>
+                             <span style={{ fontSize: '10px', padding: '2px 8px', borderRadius: '12px', background: isIn ? '#10b98120' : '#ef444420', color: isIn ? '#10b981' : '#ef4444', fontWeight: 700 }}>
+                                {isIn ? 'Present' : 'Left Early'}
+                             </span>
+                          </div>
+                        ) : (
+                          <div style={{ fontSize: '12px', color: '#64748b', lineHeight: 1.4 }}>{notif.body}</div>
+                        )}
                       </div>
                       <div style={{ flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px' }}>
                         <span style={{ fontSize: '11px', color: '#94a3b8', whiteSpace: 'nowrap' }}>{timeStr}</span>

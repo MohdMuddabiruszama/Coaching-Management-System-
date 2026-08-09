@@ -589,166 +589,90 @@ export default function FacultyAssignments() {
                         </button>
                     </div>
 
-                    {/* Stepper (Mobile Only) */}
-                    <div className="asg-stepper-container mobile-only">
-                        <div className={`asg-step ${mobileStep >= 1 ? 'active' : ''}`}>
-                            <div className="step-circle">{mobileStep > 1 ? '✓' : '1'}</div>
-                            <span className="step-label">Details</span>
-                        </div>
-                        <div className="step-line"></div>
-                        <div className={`asg-step ${mobileStep >= 2 ? 'active' : ''}`}>
-                            <div className="step-circle">{mobileStep > 2 ? '✓' : '2'}</div>
-                            <span className="step-label">Settings</span>
-                        </div>
-                        <div className="step-line"></div>
-                        <div className={`asg-step ${mobileStep >= 3 ? 'active' : ''}`}>
-                            <div className="step-circle">3</div>
-                            <span className="step-label">Review</span>
-                        </div>
-                    </div>
 
-                    <div className={`asg-create-form-card asg-mobile-step-${mobileStep}`} style={{ background: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', borderTop: '4px solid #8b5cf6', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)', padding: '2rem' }}>
-                        
-                        <div className="mobile-only asg-mobile-title">
-                            <div className="asg-mobile-title-icon">
-                                {mobileStep === 1 && <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>}
-                                {mobileStep === 2 && <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>}
-                                {mobileStep === 3 && <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>}
-                            </div>
-                            <div className="asg-mobile-title-text">
-                                <h3>{mobileStep === 1 ? 'Assignment Details' : mobileStep === 2 ? 'Assignment Settings' : 'Review Assignment'}</h3>
-                                <p>{mobileStep === 1 ? 'Provide the basic information about this assignment.' : mobileStep === 2 ? 'Configure additional settings for this assignment.' : 'Please review all details before creating the assignment.'}</p>
-                            </div>
-                        </div>
 
-                        <h3 className="desktop-only" style={{ margin: '0 0 1.5rem 0', color: '#6d28d9', fontSize: '1.1rem', fontWeight: '600', paddingBottom: '1rem', borderBottom: '1px solid #e2e8f0' }}>Assignment Details</h3>
+                    <div className="asg-premium-form-container">
+                        <div className="asg-form-section-title">
+                            <span className="icon">📝</span>
+                            Assignment Details
+                        </div>
                         
                         <form onSubmit={handleCreate}>
+                            <div className="asg-premium-grid">
+                                <div>
+                                    <label className="asg-premium-label">Title *</label>
+                                    <input className="asg-premium-input" name="title" value={form.title} onChange={handleFormChange} required placeholder="Enter assignment title" />
+                                </div>
+                                <div>
+                                    <label className="asg-premium-label">Due Date & Time *</label>
+                                    <input className="asg-premium-input" type="datetime-local" name="due_date" value={form.due_date} onChange={handleFormChange} required min={new Date(Date.now() + 3600000).toISOString().slice(0, 16)} />
+                                </div>
+                            </div>
                             
-                            <div data-step="1" className="asg-step-wrapper">
-                                <div className="asg-grid-row" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem', marginBottom: '1.5rem' }}>
-                                    {/* Title (Left) */}
-                                    <div className="form-group">
-                                        <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600', color: '#334155', fontSize: '0.9rem' }}>Title *</label>
-                                        <div style={{ position: 'relative' }}>
-                                            <input name="title" value={form.title} onChange={handleFormChange} required placeholder="Enter assignment title" style={{ width: '100%', padding: '0.8rem 1rem', borderRadius: '8px', border: '1px solid #cbd5e1', outline: 'none', fontSize: '0.95rem', boxSizing: 'border-box' }} />
-                                        </div>
-                                    </div>
-                                    {/* Description (Right) */}
-                                    <div className="form-group">
-                                        <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600', color: '#334155', fontSize: '0.9rem' }}>Description / Instructions *</label>
-                                        <div style={{ position: 'relative' }}>
-                                            <textarea name="description" value={form.description} onChange={handleFormChange} required rows={3} placeholder="Provide detailed instructions for students..." style={{ width: '100%', padding: '0.8rem 1rem', borderRadius: '8px', border: '1px solid #cbd5e1', outline: 'none', resize: 'vertical', fontSize: '0.95rem', boxSizing: 'border-box' }} />
-                                            <div style={{ position: 'absolute', bottom: '-20px', right: 0, fontSize: '0.75rem', color: '#94a3b8' }}>{form.description?.length || 0} / 1000</div>
-                                        </div>
-                                    </div>
+                            <div className="asg-premium-grid">
+                                <div>
+                                    <label className="asg-premium-label">Class *</label>
+                                    <select className="asg-premium-input" name="class_id" value={form.class_id} onChange={handleFormChange} required>
+                                        <option value="">Select Class</option>
+                                        {classes.map(c => <option key={c.id} value={c.id}>{c.name} {c.section ? c.section : ''}</option>)}
+                                    </select>
                                 </div>
-
-                                <div className="asg-grid-row" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem', marginBottom: '1.5rem' }}>
-                                    <div className="form-group">
-                                        <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600', color: '#334155', fontSize: '0.9rem' }}>Class *</label>
-                                        <select name="class_id" value={form.class_id} onChange={handleFormChange} required style={{ width: '100%', padding: '0.8rem 1rem', borderRadius: '8px', border: '1px solid #cbd5e1', outline: 'none', fontSize: '0.95rem', appearance: 'none', background: 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'16\' height=\'16\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'%2364748b\' stroke-width=\'2\' stroke-linecap=\'round\' stroke-linejoin=\'round\'%3E%3Cpolyline points=\'6 9 12 15 18 9\'%3E%3C/polyline%3E%3C/svg%3E") no-repeat right 1rem center/16px', boxSizing: 'border-box' }}>
-                                            <option value="">Select Class</option>
-                                            {classes.map(c => <option key={c.id} value={c.id}>{c.name} {c.section ? c.section : ''}</option>)}
-                                        </select>
-                                    </div>
-                                    <div className="form-group">
-                                        <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600', color: '#334155', fontSize: '0.9rem' }}>Subject *</label>
-                                        <select name="subject_id" value={form.subject_id} onChange={handleFormChange} required disabled={!form.class_id} style={{ width: '100%', padding: '0.8rem 1rem', borderRadius: '8px', border: '1px solid #cbd5e1', outline: 'none', fontSize: '0.95rem', appearance: 'none', background: 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'16\' height=\'16\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'%2364748b\' stroke-width=\'2\' stroke-linecap=\'round\' stroke-linejoin=\'round\'%3E%3Cpolyline points=\'6 9 12 15 18 9\'%3E%3C/polyline%3E%3C/svg%3E") no-repeat right 1rem center/16px', boxSizing: 'border-box' }}>
-                                            <option value="">Select Subject</option>
-                                            {subjects.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-                                        </select>
-                                    </div>
-                                </div>
-                                <div className="mobile-only asg-mobile-actions">
-                                    <button type="button" className="btn-cancel" onClick={() => { setView('list'); resetForm(); }}>Cancel</button>
-                                    <button type="button" className="btn-next" onClick={() => setMobileStep(2)}>Next →</button>
+                                <div>
+                                    <label className="asg-premium-label">Subject *</label>
+                                    <select className="asg-premium-input" name="subject_id" value={form.subject_id} onChange={handleFormChange} required disabled={!form.class_id}>
+                                        <option value="">Select Subject</option>
+                                        {subjects.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                                    </select>
                                 </div>
                             </div>
 
-                            <div data-step="2" className="asg-step-wrapper">
-                                <div className="asg-grid-row" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem', marginBottom: '1.5rem' }}>
-                                    <div className="form-group">
-                                        <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600', color: '#334155', fontSize: '0.9rem' }}>Due Date & Time *</label>
-                                        <div style={{ position: 'relative' }}>
-                                            <input type="datetime-local" name="due_date" value={form.due_date} onChange={handleFormChange} required min={new Date(Date.now() + 3600000).toISOString().slice(0, 16)} style={{ width: '100%', padding: '0.8rem 1rem', borderRadius: '8px', border: '1px solid #cbd5e1', outline: 'none', fontSize: '0.95rem', boxSizing: 'border-box' }} />
-                                        </div>
-                                    </div>
-                                    <div className="form-group">
-                                        <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600', color: '#334155', fontSize: '0.9rem' }}>Max Marks *</label>
-                                        <input type="number" name="max_marks" value={form.max_marks} onChange={handleFormChange} min={1} max={500} required placeholder="Enter maximum marks" style={{ width: '100%', padding: '0.8rem 1rem', borderRadius: '8px', border: '1px solid #cbd5e1', outline: 'none', fontSize: '0.95rem', boxSizing: 'border-box' }} />
-                                    </div>
-                                </div>
+                            <div style={{ marginBottom: '24px' }}>
+                                <label className="asg-premium-label">Description / Instructions *</label>
+                                <textarea className="asg-premium-input" name="description" value={form.description} onChange={handleFormChange} required rows={4} placeholder="Provide detailed instructions for students..."></textarea>
+                                <div style={{ fontSize: '0.75rem', color: '#94a3b8', textAlign: 'right', marginTop: '4px' }}>{form.description?.length || 0} / 1000</div>
+                            </div>
 
-                                <div className="asg-grid-row" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem', marginBottom: '1.5rem' }}>
-                                    <div className="form-group">
-                                        <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600', color: '#334155', fontSize: '0.9rem' }}>Max File Size (MB)</label>
-                                        <input type="number" name="max_file_size_mb" value={form.max_file_size_mb} onChange={handleFormChange} min={1} max={50} placeholder="Enter max file size (e.g., 10)" style={{ width: '100%', padding: '0.8rem 1rem', borderRadius: '8px', border: '1px solid #cbd5e1', outline: 'none', fontSize: '0.95rem', boxSizing: 'border-box' }} />
-                                        <span style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.25rem', display: 'block' }}>Maximum file size students can upload</span>
-                                    </div>
-                                    <div className="form-group">
-                                        <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600', color: '#334155', fontSize: '0.9rem' }}>Save As *</label>
-                                        <select name="status" value={form.status} onChange={handleFormChange} style={{ width: '100%', padding: '0.8rem 1rem', borderRadius: '8px', border: '1px solid #cbd5e1', outline: 'none', fontSize: '0.95rem', appearance: 'none', background: 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'16\' height=\'16\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'%2364748b\' stroke-width=\'2\' stroke-linecap=\'round\' stroke-linejoin=\'round\'%3E%3Cpolyline points=\'6 9 12 15 18 9\'%3E%3C/polyline%3E%3C/svg%3E") no-repeat right 1rem center/16px', boxSizing: 'border-box' }}>
-                                            <option value="draft">Draft (save privately)</option>
-                                            <option value="published">Publish (visible to students)</option>
-                                        </select>
-                                        <span style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.25rem', display: 'block' }}>Students won't see this until published</span>
-                                    </div>
-                                </div>
+                            <div className="asg-form-section-title" style={{ marginTop: '32px' }}>
+                                <span className="icon">⚙️</span>
+                                Settings & Uploads
+                            </div>
 
-                                <div className="form-group" style={{ marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                    <div style={{ display: 'flex', flexDirection: 'column' }}>
-                                        <span style={{ fontWeight: '600', color: '#334155', fontSize: '0.95rem' }}>Allow late submission</span>
-                                        <span style={{ fontSize: '0.8rem', color: '#64748b' }}>Students can submit after the due date</span>
+                            <div className="asg-premium-grid">
+                                <div>
+                                    <label className="asg-premium-label">Max Marks *</label>
+                                    <input className="asg-premium-input" type="number" name="max_marks" value={form.max_marks} onChange={handleFormChange} min={1} max={500} required placeholder="Enter max marks" />
+                                </div>
+                                <div>
+                                    <label className="asg-premium-label">Save As *</label>
+                                    <select className="asg-premium-input" name="status" value={form.status} onChange={handleFormChange}>
+                                        <option value="draft">Draft (save privately)</option>
+                                        <option value="published">Publish (visible to students)</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div className="asg-premium-grid">
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px', background: '#f8fafc', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+                                    <div>
+                                        <div className="asg-premium-label" style={{ marginBottom: '2px' }}>Allow Late Submission</div>
+                                        <div style={{ fontSize: '0.8rem', color: '#64748b' }}>Students can submit after due date</div>
                                     </div>
                                     <label className="asg-toggle-switch">
                                         <input type="checkbox" name="allow_late_submission" checked={form.allow_late_submission} onChange={handleFormChange} />
                                         <span className="asg-toggle-slider"></span>
                                     </label>
                                 </div>
-
-                                <div className="form-group" style={{ marginBottom: '2.5rem' }}>
-                                    <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600', color: '#334155', fontSize: '0.9rem' }}>Reference File (Optional)</label>
-                                    <div style={{ border: '1px solid #cbd5e1', borderRadius: '8px', padding: '0.5rem', display: 'flex', alignItems: 'center' }}>
-                                        <input type="file" accept=".pdf,.docx,.doc,.zip,.jpg,.png" onChange={e => setReferenceFile(e.target.files[0])} style={{ width: '100%', outline: 'none' }} />
-                                    </div>
-                                    <span style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.4rem', display: 'block' }}>PDF, DOCX, ZIP, Image accepted (max 50 MB)</span>
-                                </div>
-
-                                <div className="mobile-only asg-mobile-actions">
-                                    <button type="button" className="btn-cancel" onClick={() => setMobileStep(1)}>← Back</button>
-                                    <button type="button" className="btn-next" onClick={() => setMobileStep(3)}>Next →</button>
+                                <div className="asg-file-upload-box">
+                                    <label className="asg-premium-label" style={{ marginBottom: '12px' }}>Reference File (Optional)</label>
+                                    <input type="file" accept=".pdf,.docx,.doc,.zip,.jpg,.png" onChange={e => setReferenceFile(e.target.files[0])} style={{ width: '100%' }} />
+                                    <div style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: '8px' }}>Max 50 MB (PDF, Image, DOC, ZIP)</div>
                                 </div>
                             </div>
 
-                            <div data-step="3" className="asg-step-wrapper mobile-only">
-                                <div className="asg-review-card">
-                                    <div className="asg-review-row"><span className="label">Title</span><span className="value">{form.title || '-'}</span></div>
-                                    <div className="asg-review-row"><span className="label">Description</span><span className="value">{form.description || '-'}</span></div>
-                                    <div className="asg-review-row"><span className="label">Due Date</span><span className="value">{formatDate(form.due_date)}</span></div>
-                                    <div className="asg-review-row"><span className="label">Max Marks</span><span className="value">{form.max_marks}</span></div>
-                                    <div className="asg-review-row"><span className="label">Late Submission</span><span className="value">{form.allow_late_submission ? 'Allowed' : 'Not Allowed'}</span></div>
-                                    <div className="asg-review-row"><span className="label">Save As</span><span className="value">{form.status === 'draft' ? 'Draft' : 'Publish'}</span></div>
-                                </div>
-                                <div className="asg-review-alert">
-                                    <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
-                                    <div>
-                                        <strong>Everything looks good!</strong>
-                                        <p>You can create the assignment now or go back to edit.</p>
-                                    </div>
-                                </div>
-                                <div className="asg-mobile-actions">
-                                    <button type="button" className="btn-cancel" onClick={() => setMobileStep(2)}>← Back</button>
-                                    <button type="submit" disabled={submitting} className="btn-next btn-create">✓ Create Assignment</button>
-                                </div>
-                            </div>
-
-                            <div className="desktop-only" style={{ display: 'flex', gap: '1rem', paddingTop: '1.5rem', borderTop: '1px solid #e2e8f0' }}>
-                                <button type="submit" disabled={submitting} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.75rem 2rem', background: '#6366f1', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '600', fontSize: '0.95rem', cursor: 'pointer', boxShadow: '0 2px 4px rgba(99,102,241,0.3)' }}>
+                            <div className="asg-premium-actions">
+                                <button type="button" className="asg-btn-secondary" onClick={() => { setView('list'); resetForm(); }}>Cancel</button>
+                                <button type="submit" disabled={submitting} className="asg-btn-primary">
                                     {submitting ? 'Saving...' : selected ? 'Save Changes' : 'Create Assignment'}
-                                </button>
-                                <button type="button" onClick={() => { setView('list'); resetForm(); }} style={{ padding: '0.75rem 2rem', background: 'white', color: '#0f172a', border: '1px solid #cbd5e1', borderRadius: '8px', fontWeight: '600', fontSize: '0.95rem', cursor: 'pointer' }}>
-                                    Cancel
                                 </button>
                             </div>
                         </form>

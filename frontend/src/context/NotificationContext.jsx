@@ -42,62 +42,73 @@ export const NotificationProvider = ({ children }) => {
         });
 
         newSocket.on("notification", (notification) => {
-            if (notification.type === "chat_message") {
-                // Beautiful chat notification toast
-                toast.custom((t) => (
-                    <div
-                        onClick={() => {
-                            toast.dismiss(t.id);
-                            if (notification.data_json?.route) {
-                                navigate(notification.data_json.route);
-                            }
-                        }}
-                        className={`${
-                            t.visible ? 'animate-enter' : 'animate-leave'
-                        } max-w-md w-full bg-white shadow-lg rounded-xl pointer-events-auto flex ring-1 ring-black ring-opacity-5 cursor-pointer`}
-                        style={{ borderLeft: "4px solid #6366f1" }}
-                    >
-                        <div className="flex-1 w-0 p-4">
-                            <div className="flex items-start">
-                                <div className="flex-shrink-0 pt-0.5">
-                                    <div className="h-10 w-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 text-lg">
-                                        💬
-                                    </div>
-                                </div>
-                                <div className="ml-3 flex-1">
-                                    <p className="text-sm font-semibold text-gray-900">
-                                        {notification.title}
-                                    </p>
-                                    <p className="mt-1 text-sm text-gray-500 line-clamp-2">
-                                        {notification.body}
-                                    </p>
+            const { type, title, body, data_json } = notification;
+            
+            let emoji = '🔔';
+            let color = '#6366f1';
+            let route = data_json?.route;
+
+            if (type === "chat_message") {
+                emoji = '💬';
+                color = '#6366f1';
+            } else if (type === "study_material") {
+                emoji = '📄';
+                color = '#3b82f6';
+            } else if (type === "assignment_new") {
+                emoji = '📝';
+                color = '#f59e0b';
+            } else if (type === "attendance" || type === "biometric_gate_punch") {
+                const isIn = data_json?.punch_type === 'in' || data_json?.scan_type === 'in' || title?.includes('Entered') || title?.includes('Attended');
+                emoji = isIn ? '✅' : '🚪';
+                color = isIn ? '#10b981' : '#ef4444';
+            }
+
+            // Beautiful custom notification toast
+            toast.custom((t) => (
+                <div
+                    onClick={() => {
+                        toast.dismiss(t.id);
+                        if (route) {
+                            navigate(route);
+                        }
+                    }}
+                    className={`${
+                        t.visible ? 'animate-enter' : 'animate-leave'
+                    } max-w-md w-full bg-white shadow-lg rounded-xl pointer-events-auto flex ring-1 ring-black ring-opacity-5 cursor-pointer`}
+                    style={{ borderLeft: `4px solid ${color}` }}
+                >
+                    <div className="flex-1 w-0 p-4">
+                        <div className="flex items-start">
+                            <div className="flex-shrink-0 pt-0.5">
+                                <div className="h-10 w-10 rounded-full flex items-center justify-center text-lg" style={{ backgroundColor: `${color}15` }}>
+                                    {emoji}
                                 </div>
                             </div>
-                        </div>
-                        <div className="flex border-l border-gray-200">
-                            <button
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    toast.dismiss(t.id);
-                                }}
-                                className="w-full border border-transparent rounded-none rounded-r-lg p-4 flex items-center justify-center text-sm font-medium text-indigo-600 hover:text-indigo-500 focus:outline-none"
-                            >
-                                Close
-                            </button>
+                            <div className="ml-3 flex-1">
+                                <p className="text-sm font-semibold text-gray-900">
+                                    {title}
+                                </p>
+                                <p className="mt-1 text-sm text-gray-500 line-clamp-2">
+                                    {body}
+                                </p>
+                            </div>
                         </div>
                     </div>
-                ), { duration: 5000 });
-            } else {
-                // Display generic toast for other notifications
-                toast(notification.title + "\n" + (notification.body || ""), {
-                    icon: '🔔',
-                    style: {
-                        borderRadius: '10px',
-                        background: '#333',
-                        color: '#fff',
-                    },
-                });
-            }
+                    <div className="flex border-l border-gray-200">
+                        <button
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                toast.dismiss(t.id);
+                            }}
+                            className="w-full border border-transparent rounded-none rounded-r-lg p-4 flex items-center justify-center text-sm font-medium hover:bg-gray-50 focus:outline-none"
+                            style={{ color }}
+                        >
+                            Close
+                        </button>
+                    </div>
+                </div>
+            ), { duration: 5000 });
+
             // Increment unread count globally
             setUnreadCount((prev) => prev + 1);
         });

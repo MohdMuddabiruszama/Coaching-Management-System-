@@ -1,6 +1,7 @@
 import { useFacultyDashboard } from "../../hooks/useMobileDashboard";
-import { useContext } from "react";
+import { useContext, useState, useEffect } from "react";
 import { AuthContext } from "../../context/AuthContext";
+import { NotificationContext } from "../../context/NotificationContext";
 import { useNavigate } from "react-router-dom";
 import LoadingSpinner from "../../components/common/LoadingSpinner";
 import "./MobileDashboard.css"; 
@@ -52,10 +53,37 @@ export default function MobileDashboard() {
     const fullName = user?.name || "Faculty Name";
     const { todaySchedule, mySubjects, pendingMarks, announcements, stats } = data;
 
+    // Real-time state for counts
+    const [unreadAnnouncements, setUnreadAnnouncements] = useState(data?.unreadAnnouncements || 0);
+    const [unreadChatRecords, setUnreadChatRecords] = useState(data?.unreadChatRecords || 0);
+    const { socket } = useContext(NotificationContext) || {};
+
+    // Sync initial API data to state
+    useEffect(() => {
+        if (data) {
+            setUnreadAnnouncements(data.unreadAnnouncements || 0);
+            setUnreadChatRecords(data.unreadChatRecords || 0);
+        }
+    }, [data]);
+
+    // Real-time listener
+    useEffect(() => {
+        if (!socket) return;
+        const handleNotification = (notif) => {
+            if (notif.type === "chat_message") {
+                setUnreadChatRecords(prev => prev + 1);
+            } else if (notif.type === "announcement" || notif.type === "announcement_new") {
+                setUnreadAnnouncements(prev => prev + 1);
+            }
+        };
+        socket.on("notification", handleNotification);
+        return () => {
+            socket.off("notification", handleNotification);
+        };
+    }, [socket]);
+
     // Derived stats
     const uniqueClasses = [...new Set((mySubjects || []).map(s => s.className).filter(Boolean))].length || 1;
-    const unreadAnnouncements = 0; // The API doesn't return unread counts for faculty currently, but let's assume it's read from somewhere or 0. If badge exists in design, I'll put a default. Let's use announcements.length for demo if needed, or 0. Let's show a badge for visual accuracy.
-    const demoBadge = announcements?.length || 4;
 
     const firstSchedule = todaySchedule && todaySchedule.length > 0 ? todaySchedule[0] : null;
     const firstAnnouncement = announcements && announcements.length > 0 ? announcements[0] : null;
@@ -117,7 +145,7 @@ export default function MobileDashboard() {
                     <QuickActionBtn icon="🆔" label="My QR Code" onClick={() => navigate('/faculty/scan-attendance')} />
 
                     {user?.features?.announcements && (
-                        <QuickActionBtn icon="📢" label="Announcements" badge={demoBadge} onClick={() => navigate('/faculty/announcements')} />
+                        <QuickActionBtn icon="📢" label="Announcements" badge={unreadAnnouncements > 0 ? unreadAnnouncements : 0} onClick={() => navigate('/faculty/announcements')} />
                     )}
                     
                     {user?.features?.notes && (
@@ -128,7 +156,7 @@ export default function MobileDashboard() {
                     )}
                     
                     {user?.features?.chat && (
-                        <QuickActionBtn icon="💬" label="Academic Chat" badge={data?.unreadChatRecords > 0 ? data.unreadChatRecords : 0} onClick={() => navigate('/faculty/chat')} />
+                        <QuickActionBtn icon="💬" label="Academic Chat" badge={unreadChatRecords > 0 ? unreadChatRecords : 0} onClick={() => navigate('/faculty/chat')} />
                     )}
                 </div>
             </div>
