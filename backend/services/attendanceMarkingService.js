@@ -104,6 +104,13 @@ const markAttendance = async ({
             record = await Model.create(payload, { transaction: trx });
         }
 
+        let subjectName = null;
+        if (entityType === "student" && subjectId) {
+            const { Subject } = require("../models");
+            const subj = await Subject.findByPk(subjectId, { transaction: trx });
+            if (subj) subjectName = subj.name;
+        }
+
         // After successful commit, we will publish a domain event for WS and notifications
         // The transaction will commit successfully if we reach here without throwing.
         // We defer the event emission to after the transaction commits using a hook or just returning and doing it in the controller, 
@@ -115,6 +122,8 @@ const markAttendance = async ({
                 entityType,
                 entityId,
                 classId,
+                subjectId,
+                subjectName,
                 date,
                 status,
                 markedByType: sourceType,
@@ -148,12 +157,14 @@ const publishAttendanceEvent = (eventData) => {
         const currentTime = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
         const statusCapitalized = eventData.status.charAt(0).toUpperCase() + eventData.status.slice(1);
         
+        const subjText = eventData.subjectName ? ` in ${eventData.subjectName}` : "";
+        
         NotificationService.notifyStudentAndParents(
             eventData.instituteId, 
             eventData.entityId, 
             `attendance_${eventData.status}`, 
             `${statusCapitalized} Alert`, 
-            `You were marked ${eventData.status} on ${eventData.date} at ${currentTime}.`,
+            `You were marked ${eventData.status}${subjText} on ${eventData.date} at ${currentTime}.`,
             `/student/attendance`
         );
     }

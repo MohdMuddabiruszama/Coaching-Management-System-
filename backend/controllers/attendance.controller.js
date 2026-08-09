@@ -1071,8 +1071,10 @@ exports.markAttendanceByStudentQR = catchAsync(async (req, res) => {
       
       const currentTime = new Date().toTimeString().split(' ')[0]; // HH:mm:ss
 
-      // Bulk mark or update
-      for (const tt of timetables) {
+      // Bulk mark or update concurrently for maximum performance
+      const results = await Promise.all(timetables.map(async (tt) => {
+        let localNew = 0, localAlready = 0, localOutUpd = 0, localAlreadyOut = 0;
+        
         const existingAttendance = await Attendance.findOne({
           where: {
             student_id,
@@ -1086,10 +1088,10 @@ exports.markAttendanceByStudentQR = catchAsync(async (req, res) => {
         if (existingAttendance) {
           if (scan_type === 'out') {
             if (existingAttendance.time_out) {
-              alreadyOutScannedCount++;
+              localAlreadyOut++;
             } else {
               await existingAttendance.update({ time_out: currentTime });
-              outScansUpdated++;
+              localOutUpd++;
             }
           } else {
             if (existingAttendance.status !== 'present') {
@@ -1099,9 +1101,9 @@ exports.markAttendanceByStudentQR = catchAsync(async (req, res) => {
                 remarks: "Smart Attendance (QR) - Gate Scan",
                 time_in: existingAttendance.time_in || currentTime
               });
-              newCount++;
+              localNew++;
             } else {
-              alreadyCount++;
+              localAlready++;
             }
           }
         } else {
@@ -1117,8 +1119,8 @@ exports.markAttendanceByStudentQR = catchAsync(async (req, res) => {
               remarks: "Smart Attendance (QR) - Gate Scan",
               time_out: currentTime
             });
-            outScansUpdated++;
-            newCount++;
+            localOutUpd++;
+            localNew++;
           } else {
             await Attendance.create({
               institute_id,
@@ -1131,9 +1133,18 @@ exports.markAttendanceByStudentQR = catchAsync(async (req, res) => {
               remarks: "Smart Attendance (QR) - Gate Scan",
               time_in: currentTime
             });
-            newCount++;
+            localNew++;
           }
         }
+        
+        return { localNew, localAlready, localOutUpd, localAlreadyOut };
+      }));
+
+      for (const r of results) {
+        newCount += r.localNew;
+        alreadyCount += r.localAlready;
+        outScansUpdated += r.localOutUpd;
+        alreadyOutScannedCount += r.localAlreadyOut;
       }
 
       const isOutScan = scan_type === 'out';
@@ -1157,14 +1168,15 @@ exports.markAttendanceByStudentQR = catchAsync(async (req, res) => {
         const body = `${student.User?.name || 'Your child'} has ${action} at ${timeStr}.`;
         
         for (const parent of student.Parents) {
-          await NotificationService.createAndSend(
+          // Fire and forget: Do not await notifications to keep API response lightning fast
+          NotificationService.createAndSend(
             institute_id,
             parent.id,
             "attendance",
             title,
             body,
             { student_id, date: targetDate, scan_type }
-          );
+          ).catch(e => console.error("Background notification error:", e));
         }
       }
 
@@ -1226,7 +1238,15 @@ exports.markAttendanceByStudentQR = catchAsync(async (req, res) => {
       });
 
       const isOutScan = scan_type === 'out';
-      const subjName = subject_id ? "their class" : "class";
+      
+      let actualSubjectName = "their class";
+      if (subject_id) {
+        const { Subject } = require('../models');
+        const subjFetch = await Subject.findOne({ where: { id: subject_id } });
+        if (subjFetch) actualSubjectName = subjFetch.name;
+      }
+      const subjName = actualSubjectName;
+      
       const currentTime = new Date().toTimeString().split(' ')[0];
       
       if (existingAttendance) {
@@ -1244,7 +1264,9 @@ exports.markAttendanceByStudentQR = catchAsync(async (req, res) => {
               const title = "Student Left Class";
               const body = `${student.User?.name || 'Your child'} has scanned OUT of ${subjName} at ${timeStr}.`;
               for (const parent of student.Parents) {
-                await NotificationService.createAndSend(institute_id, parent.id, "attendance", title, body, { student_id, date: targetDate, scan_type });
+                // Fire and forget: Do not await notifications
+                NotificationService.createAndSend(institute_id, parent.id, "attendance", title, body, { student_id, date: targetDate, scan_type })
+                  .catch(e => console.error("Background notification error:", e));
               }
             }
             return res.status(200).json({ success: true, message: `Out Scan successful for ${student.User?.name || 'Student'} ✅` });
@@ -1268,7 +1290,9 @@ exports.markAttendanceByStudentQR = catchAsync(async (req, res) => {
             const body = `${student.User?.name || 'Your child'} has ${action} ${subjName} at ${timeStr}.`;
             
             for (const parent of student.Parents) {
-              await NotificationService.createAndSend(institute_id, parent.id, "attendance", title, body, { student_id, date: targetDate, scan_type });
+              // Fire and forget: Do not await notifications
+              NotificationService.createAndSend(institute_id, parent.id, "attendance", title, body, { student_id, date: targetDate, scan_type })
+                .catch(e => console.error("Background notification error:", e));
             }
           }
 
@@ -1301,7 +1325,9 @@ exports.markAttendanceByStudentQR = catchAsync(async (req, res) => {
         const body = `${student.User?.name || 'Your child'} has ${action} ${subjName} at ${timeStr}.`;
         
         for (const parent of student.Parents) {
-          await NotificationService.createAndSend(institute_id, parent.id, "attendance", title, body, { student_id, date: targetDate, scan_type });
+          // Fire and forget: Do not await notifications
+          NotificationService.createAndSend(institute_id, parent.id, "attendance", title, body, { student_id, date: targetDate, scan_type })
+            .catch(e => console.error("Background notification error:", e));
         }
       }
 
