@@ -217,7 +217,11 @@ function SmartAttendance() {
             isScannerRunning.current = true;
         } catch (err) {
             console.error("Camera Error:", err);
-            setCameraError("Could not access camera. Please allow camera permissions and try again.");
+            if (window.isSecureContext === false) {
+                setCameraError("Camera access requires a secure connection (HTTPS). Please access this site using HTTPS.");
+            } else {
+                setCameraError("Could not access camera. Please allow camera permissions and try again.");
+            }
         }
     };
 

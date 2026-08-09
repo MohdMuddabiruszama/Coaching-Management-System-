@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import toast from "react-hot-toast";
 import api from "../../services/api";
 import "./AdminTimetable.css";
 
@@ -138,7 +139,7 @@ function AdminTimetable() {
             if (editingSlotId) {
                 const res = await api.put(`/timetable/slots/${editingSlotId}`, { ...slotForm });
                 if (res.data.success) {
-                    alert("Time Slot updated successfully!");
+                    toast.success("Time Slot updated successfully!");
                     setSlots(slots.map(s => s.id === editingSlotId ? res.data.data : s));
                     setShowSlotModal(false);
                     setEditingSlotId(null);
@@ -150,7 +151,7 @@ function AdminTimetable() {
                     class_id: selectedClass
                 });
                 if (res.data.success) {
-                    alert("Time Slot added successfully!");
+                    toast.success("Time Slot added successfully!");
                     setSlots([...slots, res.data.data]);
                     setShowSlotModal(false);
                     setSlotForm({ start_time: "", end_time: "" });
@@ -158,7 +159,11 @@ function AdminTimetable() {
             }
         } catch (error) {
             console.error("Error saving slot:", error);
-            alert("Failed to save slot.");
+            if (error.response?.status === 403) {
+                toast.error("Permission Denied. Please ask your Institute Admin to grant you permission to modify time slots.");
+            } else {
+                toast.error(error.response?.data?.message || "Failed to save slot.");
+            }
         }
     };
 
@@ -177,7 +182,11 @@ function AdminTimetable() {
             }
         } catch (error) {
             console.error("Error deleting slot:", error);
-            alert(error.response?.data?.message || "Failed to delete slot.");
+            if (error.response?.status === 403) {
+                toast.error("Permission Denied. Please ask your Institute Admin to grant you permission to delete time slots.");
+            } else {
+                toast.error(error.response?.data?.message || "Failed to delete slot.");
+            }
         }
     };
 
@@ -186,7 +195,7 @@ function AdminTimetable() {
         e.preventDefault();
         // Validate required fields
         if (!entryForm.is_break && !entryForm.subject_id) {
-            alert("Please select a Subject or mark this as a Break period.");
+            toast.error("Please select a Subject or mark this as a Break period.");
             return;
         }
         try {
@@ -196,14 +205,18 @@ function AdminTimetable() {
             };
             const res = await api.post("/timetable", payload);
             if (res.data.success) {
-                alert(entryForm.is_break ? "Break period added!" : "Timetable entry added!");
+                toast.success(entryForm.is_break ? "Break period added!" : "Timetable entry added!");
                 fetchTimetableAndSlots(selectedClass);
                 setShowEntryModal(false);
                 setEntryForm({ day_of_week: "Monday", slot_id: "", subject_id: "", faculty_id: "", room_number: "", is_break: false, break_label: "Break" });
             }
         } catch (error) {
             console.error("Error adding entry:", error);
-            alert(error.response?.data?.message || "Failed to add timetable entry.");
+            if (error.response?.status === 403) {
+                toast.error("Permission Denied. Please ask your Institute Admin to grant you permission to add timetable entries.");
+            } else {
+                toast.error(error.response?.data?.message || "Failed to add timetable entry.");
+            }
         }
     };
 
@@ -216,7 +229,11 @@ function AdminTimetable() {
             }
         } catch (error) {
             console.error("Error deleting entry:", error);
-            alert("Failed to delete entry.");
+            if (error.response?.status === 403) {
+                toast.error("Permission Denied. Please ask your Institute Admin to grant you permission to delete timetable entries.");
+            } else {
+                toast.error(error.response?.data?.message || "Failed to delete entry.");
+            }
         }
     };
 
@@ -237,21 +254,25 @@ function AdminTimetable() {
     const handleEditSubmit = async (e) => {
         e.preventDefault();
         if (!editForm.is_break && !editForm.subject_id) {
-            alert("Please select a Subject or mark this as a Break period.");
+            toast.error("Please select a Subject or mark this as a Break period.");
             return;
         }
         try {
             const payload = { ...editForm, class_id: selectedClass };
             const res = await api.put(`/timetable/${editingEntry.id}`, payload);
             if (res.data.success) {
-                alert("Timetable entry updated!");
+                toast.success("Timetable entry updated!");
                 fetchTimetableAndSlots(selectedClass);
                 setShowEditModal(false);
                 setEditingEntry(null);
             }
         } catch (error) {
             console.error("Error updating entry:", error);
-            alert(error.response?.data?.message || "Failed to update timetable entry.");
+            if (error.response?.status === 403) {
+                toast.error("Permission Denied. Please ask your Institute Admin to grant you permission to update timetable entries.");
+            } else {
+                toast.error(error.response?.data?.message || "Failed to update timetable entry.");
+            }
         }
     };
 
@@ -274,7 +295,7 @@ function AdminTimetable() {
                 <div className="ap-tt-actions">
                     <button className="ap-btn-white" onClick={() => {
                         if (!selectedClass) {
-                            alert("Please select a class first to manage its time slots!");
+                            toast.error("Please select a class first to manage its time slots!");
                             return;
                         }
                         setShowSlotModal(true);
@@ -283,7 +304,7 @@ function AdminTimetable() {
                     </button>
                     <button className="ap-btn-purple" onClick={() => {
                         if (!selectedClass) {
-                            alert("Please select a class first!");
+                            toast.error("Please select a class first!");
                             return;
                         }
                         setShowEntryModal(true);

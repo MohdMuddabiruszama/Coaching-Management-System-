@@ -487,7 +487,9 @@ exports.updateInstituteLimits = async (req, res) => {
             current_feature_performance_hub,
             current_feature_transport,
             current_feature_mobile_app,
-            current_feature_chat
+            current_feature_chat,
+            // Override Expiration
+            overrides_expire_at
         } = req.body;
 
         const { Plan } = require("../models");

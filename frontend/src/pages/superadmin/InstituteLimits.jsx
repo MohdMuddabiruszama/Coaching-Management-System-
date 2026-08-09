@@ -211,6 +211,7 @@ function InstituteLimits() {
                 current_feature_transport: !!inst.current_feature_transport,
                 current_feature_chat: !!inst.current_feature_chat,
                 current_limit_chat_messages: inst.current_limit_chat_messages || 0,
+                overrides_expire_at: inst.overrides_expire_at ? inst.overrides_expire_at.split('T')[0] : "",
             });
         } catch (e) {
             console.error(e);
@@ -750,6 +751,29 @@ function InstituteLimits() {
                                                 </button>
                                             </>
                                         )}
+                                    </div>
+
+                                    {/* Override Expiry */}
+                                    <div style={{ marginBottom: "1.5rem", padding: "14px 18px", background: "var(--card-bg, #f9fafb)", borderRadius: "12px", border: "1px solid var(--border-color)", display: "flex", alignItems: "center", gap: "16px" }}>
+                                        <div>
+                                            <div style={{ fontWeight: 600, fontSize: "14px", display: "flex", alignItems: "center", gap: "6px" }}>⏳ Override Expiration Date</div>
+                                            <div style={{ fontSize: "12px", color: "var(--text-secondary)" }}>Set a date for when these custom limits/features should automatically expire and revert to the base plan.</div>
+                                        </div>
+                                        <div style={{ flex: 1, display: "flex", justifyContent: "flex-end" }}>
+                                            {editMode ? (
+                                                <input 
+                                                    type="date" 
+                                                    className="form-input" 
+                                                    style={{ width: "200px" }}
+                                                    value={formData.overrides_expire_at || ""} 
+                                                    onChange={e => setFormData(p => ({ ...p, overrides_expire_at: e.target.value }))}
+                                                />
+                                            ) : (
+                                                <div style={{ fontWeight: 700, fontSize: "15px", color: inst.overrides_expire_at ? "#ef4444" : "var(--text-secondary)" }}>
+                                                    {inst.overrides_expire_at ? new Date(inst.overrides_expire_at).toLocaleDateString() : "Never Expires"}
+                                                </div>
+                                            )}
+                                        </div>
                                     </div>
 
                                     {/* Resource Limits */}

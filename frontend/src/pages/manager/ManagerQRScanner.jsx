@@ -86,7 +86,11 @@ function ManagerQRScanner() {
                 );
                 isScannerRunning.current = true;
             } catch (e) {
-                setCameraError("Could not access camera: " + (e?.message || "Unknown error"));
+                if (window.isSecureContext === false) {
+                    setCameraError("Camera access requires a secure connection (HTTPS). Please access this site using HTTPS.");
+                } else {
+                    setCameraError("Could not access camera: " + (e?.message || "Unknown error"));
+                }
                 setStep("setup");
             }
         }, 300);

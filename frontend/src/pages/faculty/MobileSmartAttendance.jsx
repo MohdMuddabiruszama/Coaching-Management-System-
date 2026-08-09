@@ -19,6 +19,8 @@ function MobileSmartAttendance() {
     const [selectedClass, setSelectedClass] = useState("");
     const [subjects, setSubjects] = useState([]);
     const [selectedSubject, setSelectedSubject] = useState("");
+    const [attendanceMode, setAttendanceMode] = useState("subject_based");
+    const [scanType, setScanType] = useState('in');
 
     // Step state: 1 = Setup, 2 = Scanning, 3 = Results, 4 = History
     const [step, setStep] = useState(1);
@@ -52,14 +54,32 @@ function MobileSmartAttendance() {
     // Refs for callback access
     const selectedClassRef = useRef(selectedClass);
     const selectedSubjectRef = useRef(selectedSubject);
+    const scanTypeRef = useRef(scanType);
 
     useEffect(() => {
         selectedClassRef.current = selectedClass;
         selectedSubjectRef.current = selectedSubject;
-    }, [selectedClass, selectedSubject]);
+        scanTypeRef.current = scanType;
+    }, [selectedClass, selectedSubject, scanType]);
 
     useEffect(() => {
-        fetchClasses();
+        const init = async () => {
+            try {
+                const res = await api.get("/attendance/settings");
+                if (res.data.success) {
+                    const mode = res.data.data.student_attendance_mode || "subject_based";
+                    setAttendanceMode(mode);
+                    if (mode === "subject_based") {
+                        fetchClasses();
+                    }
+                }
+            } catch (error) {
+                console.error("Error fetching settings:", error);
+                setAttendanceMode("subject_based");
+                fetchClasses();
+            }
+        };
+        init();
         return () => {
             stopScanner();
         };
@@ -93,9 +113,13 @@ function MobileSmartAttendance() {
         }
     };
 
-    const startScanningProcess = async () => {
-        if (!selectedClass) return alert("Please select a class");
-        if (!selectedSubject) return alert("Please select a subject");
+    const startScanningProcess = async (type = 'in') => {
+        if (attendanceMode === "subject_based") {
+            if (!selectedClass) return alert("Please select a class");
+            if (!selectedSubject) return alert("Please select a subject");
+        }
+        
+        setScanType(type);
 
         const hasPermission = await requestCameraPermission();
         if (!hasPermission) {
@@ -131,7 +155,9 @@ function MobileSmartAttendance() {
         setMessage(null);
         await stopScanner();
         
-        await fetchFinalResults(); // Fetch from DB before showing Step 3
+        if (attendanceMode === "subject_based") {
+            await fetchFinalResults(); // Fetch from DB before showing Step 3
+        }
         setStep(3); // Move to Results Step
     };
 
@@ -231,12 +257,19 @@ function MobileSmartAttendance() {
         try {
             setMessage({ type: "loading", text: "Marking attendance..." });
 
-            const response = await api.post("/attendance/smart/mark-student", {
+            const payload = {
                 qr_code: decodedQR,
-                class_id: selectedClassRef.current,
-                subject_id: selectedSubjectRef.current,
-                date: getLocalDate()
-            });
+                date: getLocalDate(),
+                mode: attendanceMode,
+                scan_type: scanTypeRef.current
+            };
+
+            if (attendanceMode === "subject_based") {
+                payload.class_id = selectedClassRef.current;
+                payload.subject_id = selectedSubjectRef.current;
+            }
+
+            const response = await api.post("/attendance/smart/mark-student", payload);
 
             if (response.data.success) {
                 setMessage({ type: "success", text: response.data.message });
@@ -435,58 +468,88 @@ function MobileSmartAttendance() {
                             <h2>Start New Scan</h2>
                         </div>
 
-                        <div className="msa-form-group">
-                            <label>Class <span className="text-red">*</span></label>
-                            <div className="msa-select-wrapper">
-                                <span className="msa-select-icon">📚</span>
-                                <select 
-                                    className="msa-select"
-                                    value={selectedClass}
-                                    onChange={(e) => setSelectedClass(e.target.value)}
-                                >
-                                    <option value="">Select Class</option>
-                                    {classes.map((cls) => (
-                                        <option key={cls.id} value={cls.id}>
-                                            {cls.name} {cls.section ? `- ${cls.section}` : ""}
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
-                        </div>
+                        {attendanceMode === "subject_based" ? (
+                            <>
+                                <div className="msa-form-group">
+                                    <label>Class <span className="text-red">*</span></label>
+                                    <div className="msa-select-wrapper">
+                                        <span className="msa-select-icon">📚</span>
+                                        <select 
+                                            className="msa-select"
+                                            value={selectedClass}
+                                            onChange={(e) => setSelectedClass(e.target.value)}
+                                        >
+                                            <option value="">Select Class</option>
+                                            {classes.map((cls) => (
+                                                <option key={cls.id} value={cls.id}>
+                                                    {cls.name} {cls.section ? `- ${cls.section}` : ""}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                </div>
 
-                        <div className="msa-form-group">
-                            <label>Subject <span className="text-red">*</span></label>
-                            <div className="msa-select-wrapper">
-                                <span className="msa-select-icon">📖</span>
-                                <select 
-                                    className="msa-select"
-                                    value={selectedSubject}
-                                    onChange={(e) => setSelectedSubject(e.target.value)}
-                                    disabled={!selectedClass}
-                                >
-                                    <option value="">Select Subject</option>
-                                    {subjects.map((sub) => (
-                                        <option key={sub.id} value={sub.id}>
-                                            {sub.name}
-                                        </option>
-                                    ))}
-                                </select>
+                                <div className="msa-form-group">
+                                    <label>Subject <span className="text-red">*</span></label>
+                                    <div className="msa-select-wrapper">
+                                        <span className="msa-select-icon">📖</span>
+                                        <select 
+                                            className="msa-select"
+                                            value={selectedSubject}
+                                            onChange={(e) => setSelectedSubject(e.target.value)}
+                                            disabled={!selectedClass}
+                                        >
+                                            <option value="">Select Subject</option>
+                                            {subjects.map((sub) => (
+                                                <option key={sub.id} value={sub.id}>
+                                                    {sub.name}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                </div>
+                            </>
+                        ) : (
+                            <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '1.5rem', textAlign: 'center', marginBottom: '1.5rem' }}>
+                                <span style={{ fontSize: '2.5rem', display: 'block', marginBottom: '0.5rem' }}>🏫</span>
+                                <h3 style={{ color: '#0f172a', margin: '0 0 0.5rem 0', fontSize: '1.1rem' }}>Main Gate Scanning</h3>
+                                <p style={{ color: '#64748b', margin: 0, fontSize: '0.85rem', lineHeight: '1.5' }}>
+                                    Your institute is set to <strong>Class Based</strong> mode.<br/>
+                                    Simply scan the student's QR code, and all their subjects for today will be automatically marked.
+                                </p>
                             </div>
-                        </div>
+                        )}
 
                         <div className="msa-info-box">
                             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
                             <span>Make sure students have their QR codes ready before scanning.</span>
                         </div>
 
-                        <button 
-                            className="msa-btn-primary"
-                            onClick={startScanningProcess}
-                            disabled={!selectedClass || !selectedSubject}
-                        >
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>
-                            Open Camera & Start Scanning
-                        </button>
+                        {attendanceMode === "class_based" ? (
+                            <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
+                                <button
+                                    style={{ flex: 1, padding: '0.875rem', fontSize: '1rem', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', background: 'linear-gradient(135deg, #10b981, #059669)', border: 'none', borderRadius: '12px', color: 'white', fontWeight: 600, cursor: 'pointer' }}
+                                    onClick={() => startScanningProcess('in')}
+                                >
+                                    📥 In Scan
+                                </button>
+                                <button
+                                    style={{ flex: 1, padding: '0.875rem', fontSize: '1rem', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', background: 'linear-gradient(135deg, #ef4444, #dc2626)', border: 'none', borderRadius: '12px', color: 'white', fontWeight: 600, cursor: 'pointer' }}
+                                    onClick={() => startScanningProcess('out')}
+                                >
+                                    📤 Out Scan
+                                </button>
+                            </div>
+                        ) : (
+                            <button 
+                                className="msa-btn-primary"
+                                onClick={() => startScanningProcess('in')}
+                                disabled={!selectedClass || !selectedSubject}
+                            >
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>
+                                Open Camera & Start Scanning
+                            </button>
+                        )}
                     </div>
 
                     <div className="msa-card msa-tips-card">
@@ -559,89 +622,123 @@ function MobileSmartAttendance() {
                                 <span>Absent</span>
                                 <strong className="text-red">{sessionStats.absent}</strong>
                             </div>
-                            <div className="msa-progress-item">
-                                <span>Remaining</span>
-                                <strong className="text-grey">{dbStats?.unmarked || 0}</strong>
-                            </div>
+                            {attendanceMode === "subject_based" && (
+                                <div className="msa-progress-item">
+                                    <span>Remaining</span>
+                                    <strong className="text-grey">{dbStats?.unmarked || 0}</strong>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>
             )}
 
             {/* STEP 3: RESULTS */}
-            {step === 3 && dbStats && (
+            {step === 3 && (
                 <div className="msa-content">
-                    <div className="msa-stats-grid">
-                        <div className="msa-stat-card">
-                            <span>Total Students</span>
-                            <strong>{dbStats.total}</strong>
-                            <small>All students in class</small>
-                        </div>
-                        <div className="msa-stat-card text-green">
-                            <span>Present</span>
-                            <strong>{dbStats.present}</strong>
-                            <small>{dbStats.total > 0 ? Math.round((dbStats.present / dbStats.total) * 100) : 0}%</small>
-                        </div>
-                        <div className="msa-stat-card text-red">
-                            <span>Absent</span>
-                            <strong>{dbStats.absent}</strong>
-                            <small>{dbStats.total > 0 ? Math.round((dbStats.absent / dbStats.total) * 100) : 0}%</small>
-                        </div>
-                        <div className="msa-stat-card text-grey">
-                            <span>Unmarked</span>
-                            <strong>{dbStats.unmarked}</strong>
-                            <small>{dbStats.total > 0 ? Math.round((dbStats.unmarked / dbStats.total) * 100) : 0}%</small>
-                        </div>
-                    </div>
-
-                    <div className="msa-results-actions">
-                        <div className="msa-results-warning">
-                            <div className="msa-warning-content">
-                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#d97706" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
-                                <div>
-                                    <p>There are <strong>{dbStats.unmarked}</strong> students not marked yet.</p>
-                                    <p>Do you want to mark them as absent?</p>
-                                </div>
-                            </div>
-                            <button 
-                                className="msa-btn-warning"
-                                onClick={submitRemainingAsAbsent}
-                                disabled={isSubmittingBulk || dbStats.unmarked === 0}
-                            >
-                                {isSubmittingBulk ? "Submitting..." : "Mark All Unmarked as Absent"}
-                            </button>
-                        </div>
-
-                        <div className="msa-chart-container">
-                            <div className="msa-pie-chart" style={{
-                                background: `conic-gradient(
-                                    #22c55e 0% ${dbStats.total > 0 ? (dbStats.present / dbStats.total) * 100 : 100}%, 
-                                    #ef4444 ${dbStats.total > 0 ? (dbStats.present / dbStats.total) * 100 : 100}% ${dbStats.total > 0 ? ((dbStats.present + dbStats.absent) / dbStats.total) * 100 : 100}%, 
-                                    #f59e0b ${dbStats.total > 0 ? ((dbStats.present + dbStats.absent) / dbStats.total) * 100 : 100}% ${dbStats.total > 0 ? ((dbStats.present + dbStats.absent + dbStats.late) / dbStats.total) * 100 : 100}%,
-                                    #e2e8f0 ${dbStats.total > 0 ? ((dbStats.present + dbStats.absent + dbStats.late) / dbStats.total) * 100 : 100}% 100%
-                                )`
-                            }}>
-                                <div className="msa-pie-inner">
+                    {attendanceMode === "subject_based" && dbStats ? (
+                        <>
+                            <div className="msa-stats-grid">
+                                <div className="msa-stat-card">
+                                    <span>Total Students</span>
                                     <strong>{dbStats.total}</strong>
-                                    <span>Total</span>
+                                    <small>All students in class</small>
+                                </div>
+                                <div className="msa-stat-card text-green">
+                                    <span>Present</span>
+                                    <strong>{dbStats.present}</strong>
+                                    <small>{dbStats.total > 0 ? Math.round((dbStats.present / dbStats.total) * 100) : 0}%</small>
+                                </div>
+                                <div className="msa-stat-card text-red">
+                                    <span>Absent</span>
+                                    <strong>{dbStats.absent}</strong>
+                                    <small>{dbStats.total > 0 ? Math.round((dbStats.absent / dbStats.total) * 100) : 0}%</small>
+                                </div>
+                                <div className="msa-stat-card text-grey">
+                                    <span>Unmarked</span>
+                                    <strong>{dbStats.unmarked}</strong>
+                                    <small>{dbStats.total > 0 ? Math.round((dbStats.unmarked / dbStats.total) * 100) : 0}%</small>
                                 </div>
                             </div>
-                            <div className="msa-chart-legend">
-                                <div><span style={{background: '#22c55e'}}></span> Present ({dbStats.present})</div>
-                                <div><span style={{background: '#ef4444'}}></span> Absent ({dbStats.absent})</div>
-                                <div><span style={{background: '#f59e0b'}}></span> Late ({dbStats.late})</div>
-                                <div><span style={{background: '#e2e8f0'}}></span> Unmarked ({dbStats.unmarked})</div>
-                            </div>
-                        </div>
-                    </div>
 
-                    <button 
-                        className="msa-btn-outline-full"
-                        onClick={() => navigate(user?.role === "manager" ? '/manager/attendance' : '/faculty/attendance')}
-                    >
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
-                        Edit Attendance Manually
-                    </button>
+                            <div className="msa-results-actions">
+                                <div className="msa-results-warning">
+                                    <div className="msa-warning-content">
+                                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#d97706" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                                        <div>
+                                            <h4>{dbStats.unmarked} Students Unmarked</h4>
+                                            <p>Do you want to mark the remaining students as absent?</p>
+                                        </div>
+                                    </div>
+                                    <button 
+                                        className="msa-btn-outline"
+                                        onClick={submitRemainingAsAbsent}
+                                        disabled={isSubmittingBulk || dbStats.unmarked === 0}
+                                    >
+                                        Mark Remaining Absent
+                                    </button>
+                                </div>
+
+                                <div className="msa-chart-container">
+                                    <div className="msa-pie-chart" style={{
+                                        background: `conic-gradient(
+                                            #22c55e 0% ${dbStats.total > 0 ? (dbStats.present / dbStats.total) * 100 : 100}%, 
+                                            #ef4444 ${dbStats.total > 0 ? (dbStats.present / dbStats.total) * 100 : 100}% ${dbStats.total > 0 ? ((dbStats.present + dbStats.absent) / dbStats.total) * 100 : 100}%, 
+                                            #f59e0b ${dbStats.total > 0 ? ((dbStats.present + dbStats.absent) / dbStats.total) * 100 : 100}% ${dbStats.total > 0 ? ((dbStats.present + dbStats.absent + dbStats.late) / dbStats.total) * 100 : 100}%,
+                                            #e2e8f0 ${dbStats.total > 0 ? ((dbStats.present + dbStats.absent + dbStats.late) / dbStats.total) * 100 : 100}% 100%
+                                        )`
+                                    }}>
+                                        <div className="msa-pie-inner">
+                                            <strong>{dbStats.total}</strong>
+                                            <span>Total</span>
+                                        </div>
+                                    </div>
+                                    <div className="msa-chart-legend">
+                                        <div><span style={{background: '#22c55e'}}></span> Present ({dbStats.present})</div>
+                                        <div><span style={{background: '#ef4444'}}></span> Absent ({dbStats.absent})</div>
+                                        <div><span style={{background: '#f59e0b'}}></span> Late ({dbStats.late})</div>
+                                        <div><span style={{background: '#e2e8f0'}}></span> Unmarked ({dbStats.unmarked})</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <button 
+                                className="msa-btn-outline-full"
+                                onClick={() => navigate(user?.role === "manager" ? '/manager/attendance' : '/faculty/attendance')}
+                            >
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+                                Edit Attendance Manually
+                            </button>
+                        </>
+                    ) : attendanceMode === "class_based" ? (
+                        <>
+                            <div style={{ textAlign: 'center', padding: '2rem 0' }}>
+                                <div style={{ width: '80px', height: '80px', borderRadius: '50%', background: '#22c55e', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '40px', margin: '0 auto 1rem auto', boxShadow: '0 10px 25px rgba(34, 197, 94, 0.3)' }}>✓</div>
+                                <h2 style={{ color: '#0f172a', margin: '0 0 0.5rem 0', fontSize: '1.5rem' }}>Gate Session Completed!</h2>
+                                <p style={{ color: '#64748b', margin: 0, fontSize: '0.9rem' }}>All scanned students have been automatically marked for their timetable subjects.</p>
+                            </div>
+
+                            <div className="msa-stats-grid" style={{ gridTemplateColumns: '1fr 1fr' }}>
+                                <div className="msa-stat-card" style={{ textAlign: 'center' }}>
+                                    <span>Total QR Scans</span>
+                                    <strong>{sessionStats.totalScanned}</strong>
+                                </div>
+                                <div className="msa-stat-card text-green" style={{ textAlign: 'center' }}>
+                                    <span>Marked Present</span>
+                                    <strong>{sessionStats.present}</strong>
+                                </div>
+                            </div>
+                            
+                            <button 
+                                className="msa-btn-outline-full"
+                                style={{ marginTop: '2rem' }}
+                                onClick={() => navigate(user?.role === "manager" ? '/manager/attendance' : '/faculty/attendance')}
+                            >
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+                                Edit Attendance Manually
+                            </button>
+                        </>
+                    ) : null}
                 </div>
             )}
         </div>

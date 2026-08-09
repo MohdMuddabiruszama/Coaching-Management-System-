@@ -240,6 +240,10 @@ const Institute = sequelize.define("Institute", {
         type: DataTypes.BOOLEAN,
         defaultValue: false,
         comment: 'Super admin marks institute as test. All subscriptions excluded from revenue.'
+    },
+    overrides_expire_at: {
+        type: DataTypes.DATE,
+        allowNull: true
     }
 }, {
     tableName:  'institutes',
