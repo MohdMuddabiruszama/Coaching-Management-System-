@@ -74,17 +74,25 @@ exports.bulkImportParents = async (req, res) => {
     }
 
     // ── 4. Insert in a single DB transaction ─────────────────────────────────
+    // Pre-hash passwords in parallel to avoid Vercel 10s timeout
+    const hashes = await Promise.all(
+      validRows.map(r => {
+        const pw = String(r.password || '').trim() || `parent@${r.phone}`;
+        return bcrypt.hash(pw, 10);
+      })
+    );
+
     const t = await sequelize.transaction();
     try {
-      for (const r of validRows) {
-        const pw = String(r.password || '').trim() || `parent@${r.phone}`;
+      for (let i = 0; i < validRows.length; i++) {
+        const r = validRows[i];
         const user = await User.create({
           institute_id,
           role: 'parent',
           name: String(r.name || '').trim(),
           email: r.email || null,
           phone: String(r.phone || '').trim(),
-          password_hash: await bcrypt.hash(pw, 10),
+          password_hash: hashes[i],
           status: 'active',
         }, { transaction: t });
 

@@ -88,12 +88,10 @@ exports.markBulkAttendance = catchAsync(async (req, res) => {
       });
     }
 
-    const results = [];
-
-    for (const item of attendance_data) {
-      if (item.status === "pending") continue; // Skip unmarked students
-
-      const res = await attendanceMarkingService.markAttendance({
+    // Use Promise.all to process all students in parallel and prevent Vercel 10s timeout
+    const markPromises = attendance_data
+      .filter(item => item.status !== "pending") // Skip unmarked students
+      .map(item => attendanceMarkingService.markAttendance({
          entityType: "student",
          entityId: item.student_id,
          instituteId: institute_id,
@@ -105,12 +103,10 @@ exports.markBulkAttendance = catchAsync(async (req, res) => {
          actorId: marked_by,
          isAdminOverride: true, // Manual bulk edits by faculty/admin override others
          remarks: item.remarks
-      });
+      }));
 
-      if (res.record) {
-         results.push(res.record);
-      }
-    }
+    const rawResults = await Promise.all(markPromises);
+    const results = rawResults.filter(r => r && r.record).map(r => r.record);
 
     res.status(201).json({
       success: true,

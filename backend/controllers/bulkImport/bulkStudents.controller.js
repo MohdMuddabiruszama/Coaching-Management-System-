@@ -177,8 +177,21 @@ exports.bulkImportStudents = async (req, res) => {
     try {
         const userPayloads = [];
         const validRowsWithPw = [];
+        
+        // 1. Generate temp passwords
         for (const r of validRows) {
             const pw = generateTempPassword();
+            validRowsWithPw.push({ ...r, pw });
+        }
+        
+        // 2. Pre-hash passwords in parallel to prevent Vercel 10s timeout
+        const hashes = await Promise.all(
+            validRowsWithPw.map(r => bcrypt.hash(r.pw, 10))
+        );
+        
+        // 3. Build payloads
+        for (let i = 0; i < validRowsWithPw.length; i++) {
+            const r = validRowsWithPw[i];
             const temp_password_expires_at = new Date();
             temp_password_expires_at.setDate(temp_password_expires_at.getDate() + 7);
 
@@ -188,15 +201,14 @@ exports.bulkImportStudents = async (req, res) => {
                 name: String(r.name || '').trim(),
                 email: r.email || null,
                 phone: String(r.phone || '').trim() || null,
-                password_hash: await bcrypt.hash(pw, 10),
+                password_hash: hashes[i],
                 status: 'active',
                 is_first_login: true,
                 temp_password_expires_at,
                 credentials_sent_at: r.email ? new Date() : null,
-                initial_password: pw
+                initial_password: r.pw
             };
             userPayloads.push(userPayload);
-            validRowsWithPw.push({ ...r, pw });
             
             if (r.email) {
               emailsToDispatch.push({
@@ -204,7 +216,7 @@ exports.bulkImportStudents = async (req, res) => {
                 studentName: String(r.name || '').trim(),
                 instituteName,
                 email: r.email,
-                tempPassword: pw
+                tempPassword: r.pw
               });
             }
         }

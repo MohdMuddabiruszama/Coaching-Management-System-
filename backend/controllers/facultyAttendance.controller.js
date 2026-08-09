@@ -225,33 +225,35 @@ exports.markManual = async (req, res) => {
             });
         }
 
-        const results = [];
-        for (const item of attendance_data) {
-            if (item.status === 'pending') continue;
+        // Execute in parallel to prevent Vercel 10s timeout
+        const updatePromises = attendance_data
+            .filter(item => item.status !== 'pending')
+            .map(async (item) => {
+                const existing = await FacultyAttendance.findOne({
+                    where: { faculty_id: item.faculty_id, date, institute_id }
+                });
 
-            const existing = await FacultyAttendance.findOne({
-                where: { institute_id, faculty_id: item.faculty_id, date }
+                if (existing) {
+                    await existing.update({
+                        status: item.status,
+                        remarks: item.remarks || existing.remarks,
+                        marked_by: req.user.id
+                    });
+                    return existing;
+                } else {
+                    return await FacultyAttendance.create({
+                        institute_id,
+                        faculty_id: item.faculty_id,
+                        date,
+                        status: item.status,
+                        remarks: item.remarks,
+                        marked_by: req.user.id
+                    });
+                }
             });
 
-            if (existing) {
-                await existing.update({
-                    status: item.status,
-                    remarks: item.remarks,
-                    marked_by
-                });
-                results.push(existing);
-            } else {
-                const created = await FacultyAttendance.create({
-                    institute_id,
-                    faculty_id: item.faculty_id,
-                    date,
-                    status: item.status,
-                    remarks: item.remarks,
-                    marked_by
-                });
-                results.push(created);
-            }
-        }
+        const rawResults = await Promise.all(updatePromises);
+        const results = rawResults.filter(Boolean);
 
         res.status(201).json({
             success: true,
