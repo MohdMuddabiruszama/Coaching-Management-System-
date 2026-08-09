@@ -92,6 +92,40 @@ exports.createAssignment = async (req, res) => {
         });
 
         res.status(201).json({ success: true, message: 'Assignment created successfully', assignment });
+
+        // Background Notifications: Fire-and-forget if created as published
+        if (assignment.status === 'published') {
+            (async () => {
+                try {
+                    const { Student, Subject } = require("../models");
+                    const NotificationService = require("../services/notificationService");
+                    
+                    let subjectName = "a subject";
+                    if (assignment.subject_id) {
+                        const subj = await Subject.findByPk(assignment.subject_id);
+                        if (subj) subjectName = subj.name;
+                    }
+
+                    const students = await Student.findAll({ 
+                        where: { class_id: assignment.class_id, institute_id },
+                        attributes: ['id']
+                    });
+                    
+                    await Promise.all(students.map(stu => 
+                        NotificationService.notifyStudentAndParents(
+                            institute_id,
+                            stu.id,
+                            "assignment_new",
+                            "New Assignment",
+                            `A new assignment "${assignment.title}" has been published for ${subjectName}. Due: ${new Date(assignment.due_date).toLocaleDateString()}`,
+                            `/student/assignments`
+                        )
+                    ));
+                } catch (err) {
+                    console.error("Background assignment notification error:", err);
+                }
+            })();
+        }
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
     }
@@ -246,24 +280,39 @@ exports.publishAssignment = async (req, res) => {
         if (assignment.status !== 'draft') return res.status(400).json({ success: false, message: 'Assignment is already published/closed' });
         await assignment.update({ status: 'published' });
 
-        // Phase 4: Notification Integration - Notify class students
-        try {
-            const students = await Student.findAll({ where: { class_id: assignment.class_id, institute_id } });
-            for (const stu of students) {
-                NotificationService.notifyStudentAndParents(
-                    institute_id,
-                    stu.id,
-                    "assignment_new",
-                    "New Assignment",
-                    `A new assignment "${assignment.title}" has been published. Due: ${new Date(assignment.due_date).toLocaleDateString()}`,
-                    `/student/assignments`
-                );
-            }
-        } catch (notifErr) {
-            console.error("Assignment publish notification error:", notifErr);
-        }
-
         res.status(200).json({ success: true, message: 'Assignment published successfully', assignment });
+
+        // Background Notifications: Fire-and-forget logic for maximum speed
+        (async () => {
+            try {
+                const { Student, Subject } = require("../models");
+                const NotificationService = require("../services/notificationService");
+                
+                let subjectName = "a subject";
+                if (assignment.subject_id) {
+                    const subj = await Subject.findByPk(assignment.subject_id);
+                    if (subj) subjectName = subj.name;
+                }
+
+                const students = await Student.findAll({ 
+                    where: { class_id: assignment.class_id, institute_id },
+                    attributes: ['id']
+                });
+                
+                await Promise.all(students.map(stu => 
+                    NotificationService.notifyStudentAndParents(
+                        institute_id,
+                        stu.id,
+                        "assignment_new",
+                        "New Assignment Published",
+                        `A new assignment "${assignment.title}" has been published for ${subjectName}. Due: ${new Date(assignment.due_date).toLocaleDateString()}`,
+                        `/student/assignments`
+                    )
+                ));
+            } catch (notifErr) {
+                console.error("Background assignment publish notification error:", notifErr);
+            }
+        })();
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
     }

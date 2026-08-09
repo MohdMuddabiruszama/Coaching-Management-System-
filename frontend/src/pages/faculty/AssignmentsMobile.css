@@ -1,4 +1,81 @@
 /* AssignmentsMobile.css */
+/* --- GLOBAL / DESKTOP STYLES --- */
+.mobile-only {
+    display: none !important;
+}
+
+.desktop-only {
+    display: flex !important; /* Most desktop-only wrappers in JSX use flex or block */
+}
+h3.desktop-only {
+    display: block !important;
+}
+div.desktop-only[style*="paddingTop"] {
+    display: flex !important;
+}
+
+.asg-step-wrapper {
+    display: block; /* On desktop, all wrappers are visible (except step 3 which is mobile-only) */
+}
+
+/* Beautiful custom toggle switch (used in form) */
+.asg-toggle-switch {
+    position: relative;
+    display: inline-block;
+    width: 44px;
+    height: 24px;
+}
+.asg-toggle-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+.asg-toggle-slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background-color: #cbd5e1;
+    transition: .3s;
+    border-radius: 24px;
+}
+.asg-toggle-slider:before {
+    position: absolute;
+    content: "";
+    height: 18px;
+    width: 18px;
+    left: 3px;
+    bottom: 3px;
+    background-color: white;
+    transition: .3s;
+    border-radius: 50%;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+}
+input:checked + .asg-toggle-slider {
+    background-color: #6366f1;
+}
+input:checked + .asg-toggle-slider:before {
+    transform: translateX(20px);
+}
+
+/* Form Inputs Desktop Hover/Focus */
+.form-group input:focus, 
+.form-group textarea:focus, 
+.form-group select:focus {
+    border-color: #6366f1 !important;
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1) !important;
+}
+.form-group input, 
+.form-group textarea, 
+.form-group select {
+    transition: all 0.2s ease-in-out;
+}
+.form-group input:hover, 
+.form-group textarea:hover, 
+.form-group select:hover {
+    border-color: #94a3b8 !important;
+}
+
+/* ----------------------------------- */
 @media (max-width: 768px) {
     /* Mobile Hero Banner Styling (Assignments) */
     .asg-header-left {

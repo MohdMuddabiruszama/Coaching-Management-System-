@@ -62,6 +62,39 @@ exports.uploadNote = async (req, res) => {
             note: newNote
         });
 
+        // Background Notifications: Fire-and-forget logic for maximum speed
+        (async () => {
+            try {
+                const { Student } = require("../models");
+                const NotificationService = require("../services/notificationService");
+                
+                let subjectName = "a subject";
+                if (subject_id) {
+                    const subj = await Subject.findByPk(subject_id);
+                    if (subj) subjectName = subj.name;
+                }
+
+                const students = await Student.findAll({ 
+                    where: { class_id: class_id, institute_id: user.institute_id },
+                    attributes: ['id']
+                });
+                
+                // Process notifications concurrently
+                await Promise.all(students.map(stu => 
+                    NotificationService.notifyStudentAndParents(
+                        user.institute_id,
+                        stu.id,
+                        "study_material",
+                        "New Study Material",
+                        `A new note "${title}" has been uploaded for ${subjectName}.`,
+                        `/student/notes`
+                    )
+                ));
+            } catch (err) {
+                console.error("Background note notification error:", err);
+            }
+        })();
+
     } catch (error) {
         console.error("Upload note error:", error);
         res.status(500).json({ success: false, message: "Server error", error: error.message });
