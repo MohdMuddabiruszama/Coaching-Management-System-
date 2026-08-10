@@ -21,9 +21,11 @@ const Unauthorized   = lazy(() => import("../pages/common/Unauthorized"));
 // Manager-specific pages (lightweight mobile views only)
 const ManagerDashboard   = lazy(() => import("../pages/manager/ManagerMobileDashboard"));
 const ManagerQRScanner   = lazy(() => import("../pages/faculty/MobileSmartAttendance"));
+const ManagerScanFaculty = lazy(() => import("../pages/manager/MobileFacultySmartAttendance"));
 const ManagerPendingFees = lazy(() => import("../pages/manager/ManagerPendingFees"));
 const ManagerAttendance  = lazy(() => import("../pages/faculty/ViewAttendance"));
 const ManagerMarkAttendance = lazy(() => import("../pages/faculty/MobileMarkAttendance"));
+const ManagerMarkFaculty = lazy(() => import("../pages/manager/MobileMarkFacultyAttendance"));
 const ManagerAnnouncements = lazy(() => import("../pages/manager/ManagerAnnouncements"));
 
 const PageLoader = () => (
@@ -54,6 +56,13 @@ export function ManagerArea() {
                             <ManagerQRScanner />
                         </FeatureGuard>
                     } />
+                    
+                    {/* Faculty QR Scanner */}
+                    <Route path="scan-faculty" element={
+                        <FeatureGuard featureKey="attendance" title="Scan Faculty">
+                            <ManagerScanFaculty />
+                        </FeatureGuard>
+                    } />
 
                     {/* Fees — requires fees feature */}
                     <Route path="fees" element={
@@ -73,6 +82,13 @@ export function ManagerArea() {
                     <Route path="mark-attendance" element={
                         <FeatureGuard featureKey="attendance" title="Mark Attendance">
                             <ManagerMarkAttendance />
+                        </FeatureGuard>
+                    } />
+                    
+                    {/* Mark Faculty Attendance */}
+                    <Route path="mark-faculty-attendance" element={
+                        <FeatureGuard featureKey="attendance" title="Mark Faculty">
+                            <ManagerMarkFaculty />
                         </FeatureGuard>
                     } />
 

@@ -30,35 +30,15 @@ export default function MobileDashboard() {
     const navigate = useNavigate();
     const { data: response, isLoading, isError } = useFacultyDashboard();
 
-    if (isLoading) {
-        return (
-            <div className="mfd-loading-container">
-                <LoadingSpinner />
-                <p>Loading your dashboard...</p>
-            </div>
-        );
-    }
+    // ✅ ALL hooks must be declared BEFORE any conditional returns (React Rules of Hooks)
+    const data = response?.data || null;
 
-    if (isError || !response?.success) {
-        return (
-            <div className="mfd-error-container">
-                <p>Failed to load dashboard. Please try again.</p>
-                <button onClick={() => window.location.reload()}>Retry</button>
-            </div>
-        );
-    }
-
-    const data = response.data;
-    const firstName = user?.name ? user.name.split(" ")[0] : "Faculty";
-    const fullName = user?.name || "Faculty Name";
-    const { todaySchedule, mySubjects, pendingMarks, announcements, stats } = data;
-
-    // Real-time state for counts
-    const [unreadAnnouncements, setUnreadAnnouncements] = useState(data?.unreadAnnouncements || 0);
-    const [unreadChatRecords, setUnreadChatRecords] = useState(data?.unreadChatRecords || 0);
+    // Real-time state for counts — always called, never conditional
+    const [unreadAnnouncements, setUnreadAnnouncements] = useState(0);
+    const [unreadChatRecords, setUnreadChatRecords] = useState(0);
     const { socket } = useContext(NotificationContext) || {};
 
-    // Sync initial API data to state
+    // Sync initial API data to state whenever data loads
     useEffect(() => {
         if (data) {
             setUnreadAnnouncements(data.unreadAnnouncements || 0);
@@ -66,7 +46,7 @@ export default function MobileDashboard() {
         }
     }, [data]);
 
-    // Real-time listener
+    // Real-time listener for live notification counts
     useEffect(() => {
         if (!socket) return;
         const handleNotification = (notif) => {
@@ -81,6 +61,29 @@ export default function MobileDashboard() {
             socket.off("notification", handleNotification);
         };
     }, [socket]);
+
+    // ✅ Conditional returns AFTER all hooks
+    if (isLoading) {
+        return (
+            <div className="mfd-loading-container">
+                <LoadingSpinner />
+                <p>Loading your dashboard...</p>
+            </div>
+        );
+    }
+
+    if (isError || !response?.success || !data) {
+        return (
+            <div className="mfd-error-container">
+                <p>Failed to load dashboard. Please try again.</p>
+                <button onClick={() => window.location.reload()}>Retry</button>
+            </div>
+        );
+    }
+
+    const firstName = user?.name ? user.name.split(" ")[0] : "Faculty";
+    const fullName = user?.name || "Faculty Name";
+    const { todaySchedule, mySubjects, pendingMarks, announcements, stats } = data;
 
     // Derived stats
     const uniqueClasses = [...new Set((mySubjects || []).map(s => s.className).filter(Boolean))].length || 1;

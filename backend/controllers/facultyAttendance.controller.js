@@ -48,9 +48,10 @@ exports.generateQR = async (req, res) => {
  */
 exports.markByQR = async (req, res) => {
     try {
-        const { qr_code } = req.body;
+        const { qr_code, scan_type } = req.body;
         const institute_id = req.user.institute_id;
         const today = new Date().toISOString().split('T')[0];
+        const currentTime = new Date().toLocaleTimeString('en-US', { hour12: false });
 
         // Ensure QR code is like FACULTY_QR_123
         if (!qr_code || !qr_code.startsWith("FACULTY_QR_")) {
@@ -73,7 +74,26 @@ exports.markByQR = async (req, res) => {
         });
 
         if (existing) {
-            return res.status(400).json({ success: false, message: "Your attendance is already marked for today." });
+            if (scan_type === 'out') {
+                if (existing.time_out) {
+                    return res.status(400).json({ success: false, message: "OUT time is already recorded for today." });
+                }
+                existing.time_out = currentTime;
+                await existing.save();
+                return res.status(200).json({
+                    success: true,
+                    message: "OUT time recorded successfully.",
+                    data: existing
+                });
+            } else if (scan_type === 'in') {
+                return res.status(400).json({ success: false, message: "IN time is already recorded for today." });
+            } else {
+                return res.status(400).json({ success: false, message: "Attendance is already marked for today." });
+            }
+        }
+
+        if (scan_type === 'out') {
+            return res.status(400).json({ success: false, message: "Cannot record OUT time before IN time." });
         }
 
         const attendance = await FacultyAttendance.create({
@@ -81,13 +101,15 @@ exports.markByQR = async (req, res) => {
             faculty_id: faculty.id,
             date: today,
             status: "present",
+            time_in: currentTime,
             marked_by: req.user.id,
-            remarks: "Marked via Admin Scanner"
+            marked_by_type: "qr",
+            remarks: "Marked via Admin/Manager Scanner"
         });
 
         res.status(201).json({
             success: true,
-            message: "Attendance marked successfully.",
+            message: "IN time recorded successfully.",
             data: attendance
         });
 

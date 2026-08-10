@@ -85,10 +85,12 @@ function ManagerMobileDashboard() {
     ].filter(c => c.show);
 
     const quickActions = [
-        { icon: "📷", label: "Scan QR",      nav: "/manager/scanner",         show: hasPerm("attendance"), locked: user?.features?.auto_attendance === false },
+        { icon: "📷", label: "Scan Student", nav: "/manager/scanner",         show: hasPerm("attendance"), locked: user?.features?.auto_attendance === false },
+        { icon: "📸", label: "Scan Faculty", nav: "/manager/scan-faculty",     show: hasPerm("attendance") },
         { icon: "💰", label: "Pending Fees", nav: "/manager/fees",             show: hasPerm("fees")       },
         { icon: "📊", label: "Tracker",      nav: "/manager/attendance",       show: hasPerm("attendance") },
-        { icon: "📝", label: "Mark Attnd.",  nav: "/manager/mark-attendance",  show: hasPerm("attendance") },
+        { icon: "📝", label: "Mark Student", nav: "/manager/mark-attendance",  show: hasPerm("attendance") },
+        { icon: "👨‍🏫", label: "Mark Faculty", nav: "/manager/mark-faculty-attendance", show: hasPerm("attendance") },
         { icon: "📢", label: "Notices",      nav: "/manager/announcements",    show: hasPerm("announcements") },
         { icon: "👤", label: "Profile",      nav: "/manager/profile",          show: true                  },
     ].filter(a => a.show);
