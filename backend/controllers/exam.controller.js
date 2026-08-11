@@ -35,7 +35,7 @@ exports.createExam = async (req, res) => {
             exam_type: exam_type || 'unit_test',
         });
 
-        // Phase 4: Notification Integration - Notify class students
+        // Phase 4: Notification Integration - Notify class students and subject faculty
         try {
             const students = await Student.findAll({ where: { class_id, institute_id } });
             for (const stu of students) {
@@ -47,6 +47,24 @@ exports.createExam = async (req, res) => {
                     `An exam "${name}" has been scheduled for ${new Date(exam_date).toLocaleDateString()}.`,
                     `/student/exams`
                 );
+            }
+            
+            // Notify Subject Faculty
+            if (subject_id) {
+                const subject = await Subject.findOne({ where: { id: subject_id, institute_id } });
+                if (subject && subject.faculty_id) {
+                    const faculty = await Faculty.findOne({ where: { id: subject.faculty_id, institute_id } });
+                    if (faculty && faculty.user_id) {
+                        await NotificationService.createAndSend(
+                            institute_id,
+                            faculty.user_id,
+                            "exam_new",
+                            "New Exam Assigned",
+                            `You have been assigned a new exam "${name}" scheduled for ${new Date(exam_date).toLocaleDateString()}.`,
+                            { route: '/faculty/exams' }
+                        );
+                    }
+                }
             }
         } catch (notifErr) {
             console.error("Exam notification error:", notifErr);

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import toast from 'react-hot-toast';
 import './MobileEnterMarks.css';
 
 // Helpers
@@ -192,6 +193,30 @@ const MobileEnterMarks = ({
     const [searchQuery, setSearchQuery] = useState("");
 
     const examObj = selectedExam ? exams.find(e => e.id === parseInt(selectedExam)) : null;
+
+    const handleMobileImportClick = () => {
+        toast.custom((t) => (
+            <div className={`mem-toast-popup ${t.visible ? 'mem-toast-enter' : 'mem-toast-leave'}`}>
+                <div className="mem-toast-icon">
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="17 8 12 3 7 8"></polyline>
+                        <line x1="12" y1="3" x2="12" y2="15"></line>
+                    </svg>
+                </div>
+                <h3 className="mem-toast-title">Import via Desktop</h3>
+                <p className="mem-toast-desc">
+                    Importing marks from CSV/Excel is available on the ZenithFlows web portal. Please log in from a computer to use this feature.
+                </p>
+                <button
+                    onClick={() => toast.dismiss(t.id)}
+                    className="mem-toast-btn"
+                >
+                    Understood
+                </button>
+            </div>
+        ), { duration: 6000, position: 'bottom-center' });
+    };
     
     // Filtering logic
     const filteredStudents = students.filter(student => {
@@ -356,7 +381,7 @@ const MobileEnterMarks = ({
                                 Mark All Absent
                             </button>
                             <input type="file" ref={fileInputRef} style={{ display: 'none' }} onChange={handleFileChange} accept=".csv, .xlsx, .xls" />
-                            <button onClick={handleImportClick} className="mem-btn-sm import" disabled={examObj?.marks_locked}>
+                            <button onClick={handleMobileImportClick} className="mem-btn-sm import" disabled={examObj?.marks_locked}>
                                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
                                 Import Marks
                             </button>

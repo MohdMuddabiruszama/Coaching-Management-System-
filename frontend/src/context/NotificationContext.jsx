@@ -57,13 +57,16 @@ export const NotificationProvider = ({ children }) => {
             } else if (type === "assignment_new") {
                 emoji = '📝';
                 color = '#f59e0b';
+            } else if (type === "assignment_submission") {
+                emoji = '✅';
+                color = '#10b981';
             } else if (type === "attendance" || type === "biometric_gate_punch") {
                 const isIn = data_json?.punch_type === 'in' || data_json?.scan_type === 'in' || title?.includes('Entered') || title?.includes('Attended');
                 emoji = isIn ? '✅' : '🚪';
                 color = isIn ? '#10b981' : '#ef4444';
             }
 
-            // Beautiful custom notification toast
+            // Beautiful custom notification toast - Premium Glassmorphic Mobile UI using Standard CSS
             toast.custom((t) => (
                 <div
                     onClick={() => {
@@ -72,38 +75,36 @@ export const NotificationProvider = ({ children }) => {
                             navigate(route);
                         }
                     }}
-                    className={`${
-                        t.visible ? 'animate-enter' : 'animate-leave'
-                    } max-w-md w-full bg-white shadow-lg rounded-xl pointer-events-auto flex ring-1 ring-black ring-opacity-5 cursor-pointer`}
-                    style={{ borderLeft: `4px solid ${color}` }}
+                    className={`nc-toast-popup ${t.visible ? 'nc-toast-enter' : 'nc-toast-leave'}`}
                 >
-                    <div className="flex-1 w-0 p-4">
-                        <div className="flex items-start">
-                            <div className="flex-shrink-0 pt-0.5">
-                                <div className="h-10 w-10 rounded-full flex items-center justify-center text-lg" style={{ backgroundColor: `${color}15` }}>
-                                    {emoji}
-                                </div>
-                            </div>
-                            <div className="ml-3 flex-1">
-                                <p className="text-sm font-semibold text-gray-900">
-                                    {title}
-                                </p>
-                                <p className="mt-1 text-sm text-gray-500 line-clamp-2">
-                                    {body}
-                                </p>
+                    <div className="nc-toast-indicator" style={{ backgroundColor: color }}></div>
+                    <div className="nc-toast-content">
+                        <div className="nc-toast-icon-wrapper">
+                            <div 
+                                className="nc-toast-icon" 
+                                style={{ background: `linear-gradient(135deg, ${color}20, ${color}40)` }}
+                            >
+                                {emoji}
                             </div>
                         </div>
+                        <div className="nc-toast-text">
+                            <p className="nc-toast-title">
+                                {title}
+                            </p>
+                            <p className="nc-toast-desc">
+                                {body}
+                            </p>
+                        </div>
                     </div>
-                    <div className="flex border-l border-gray-200">
+                    <div className="nc-toast-close-wrapper">
                         <button
                             onClick={(e) => {
                                 e.stopPropagation();
                                 toast.dismiss(t.id);
                             }}
-                            className="w-full border border-transparent rounded-none rounded-r-lg p-4 flex items-center justify-center text-sm font-medium hover:bg-gray-50 focus:outline-none"
-                            style={{ color }}
+                            className="nc-toast-close-btn"
                         >
-                            Close
+                            ✕
                         </button>
                     </div>
                 </div>

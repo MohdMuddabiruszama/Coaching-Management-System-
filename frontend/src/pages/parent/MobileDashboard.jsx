@@ -96,6 +96,7 @@ export default function MobileDashboard() {
   const [loading, setLoading] = useState(true);
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [activeTab, setActiveTab] = useState("Overview");
+  const [showAllAlerts, setShowAllAlerts] = useState(false);
   
   const [attendance, setAttendance] = useState(null);
   const [results, setResults] = useState([]);
@@ -714,7 +715,7 @@ export default function MobileDashboard() {
                 )}
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                {notifications.slice(0, 3).map((notif, idx) => {
+                {(showAllAlerts ? notifications : notifications.slice(0, 3)).map((notif, idx) => {
                   const isGate = notif.type === 'biometric_gate_punch';
                   const isSmartQR = notif.type === 'attendance';
                   const isIn = notif.data_json?.punch_type === 'in' || notif.data_json?.scan_type === 'in' || notif.title?.includes('Entered') || notif.title?.includes('Attended');
@@ -787,6 +788,32 @@ export default function MobileDashboard() {
                   );
                 })}
               </div>
+              {notifications.length > 3 && (
+                <button 
+                  onClick={() => setShowAllAlerts(!showAllAlerts)} 
+                  style={{
+                    width: '100%',
+                    background: '#f8fafc',
+                    border: '1.5px solid #e2e8f0',
+                    padding: '12px',
+                    borderRadius: '12px',
+                    marginTop: '12px',
+                    color: '#64748b',
+                    fontWeight: 700,
+                    fontSize: '13px',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '6px',
+                    transition: 'all 0.2s',
+                    boxShadow: '0 1px 3px rgba(0,0,0,0.02)'
+                  }}
+                >
+                  {showAllAlerts ? 'Show Less' : `Show All ${notifications.length} Alerts`}
+                  <span style={{ fontSize: '14px' }}>{showAllAlerts ? '🔼' : '🔽'}</span>
+                </button>
+              )}
             </div>
           )}
           {/* ───────────────────────────────────────────────────────────────── */}

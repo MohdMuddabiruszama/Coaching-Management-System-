@@ -7,6 +7,7 @@ const {
     Subject,
     Student,
     User,
+    Faculty,
     sequelize
 } = require("../models");
 const { Op } = require("sequelize");
@@ -610,6 +611,29 @@ exports.submitAssignment = async (req, res) => {
         }
 
         await assignment.increment('total_submissions');
+
+        // Notify Faculty
+        if (assignment.faculty_id) {
+            try {
+                const faculty = await Faculty.findByPk(assignment.faculty_id);
+                if (faculty && faculty.user_id) {
+                    const studentUser = await User.findByPk(student.user_id);
+                    const studentName = studentUser ? studentUser.name : 'A student';
+                    
+                    await NotificationService.createAndSend(
+                        institute_id,
+                        faculty.user_id,
+                        'assignment_submission',
+                        'New Assignment Submission',
+                        `${studentName} has submitted "${assignment.title}".`,
+                        { assignment_id: assignment.id, student_id: student.id }
+                    );
+                }
+            } catch (notifyError) {
+                console.error("Error notifying faculty about assignment submission:", notifyError);
+            }
+        }
+
         res.status(200).json({ success: true, message: 'Assignment submitted successfully', submission });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
@@ -654,6 +678,28 @@ exports.resubmitAssignment = async (req, res) => {
             status: isLate ? 'late' : 'submitted',
             resubmit_reason: null
         });
+
+        // Notify Faculty
+        if (assignment.faculty_id) {
+            try {
+                const faculty = await Faculty.findByPk(assignment.faculty_id);
+                if (faculty && faculty.user_id) {
+                    const studentUser = await User.findByPk(student.user_id);
+                    const studentName = studentUser ? studentUser.name : 'A student';
+                    
+                    await NotificationService.createAndSend(
+                        institute_id,
+                        faculty.user_id,
+                        'assignment_submission',
+                        'Assignment Resubmission',
+                        `${studentName} has resubmitted "${assignment.title}".`,
+                        { assignment_id: assignment.id, student_id: student.id }
+                    );
+                }
+            } catch (notifyError) {
+                console.error("Error notifying faculty about assignment resubmission:", notifyError);
+            }
+        }
 
         res.status(200).json({ success: true, message: 'Resubmission successful', submission });
     } catch (error) {

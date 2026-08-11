@@ -206,7 +206,8 @@
   border: 1px solid #e2e8f0;
   box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
   padding: 32px;
-  max-width: 900px;
+  max-width: 100%;
+  width: 100%;
   margin: 0 auto;
   position: relative;
   overflow: hidden;
@@ -266,7 +267,7 @@
 }
 .asg-premium-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
   gap: 24px;
   margin-bottom: 24px;
 }
@@ -331,4 +332,16 @@
   .asg-premium-form-container { padding: 20px; }
   .asg-premium-actions { flex-direction: column-reverse; }
   .asg-btn-primary, .asg-btn-secondary { width: 100%; justify-content: center; }
+}
+
+@media (max-width: 480px) {
+  .asg-form-header {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 1rem !important;
+  }
+  .asg-form-header button {
+    width: 100% !important;
+    justify-content: center !important;
+  }
 }

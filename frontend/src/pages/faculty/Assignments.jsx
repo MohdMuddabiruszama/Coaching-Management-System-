@@ -7,6 +7,7 @@ import { toast } from 'react-hot-toast';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
 import { Capacitor } from '@capacitor/core';
 import '../admin/Dashboard.css';
+import './Assignments.css';
 import './AssignmentsMobile.css';
 
 const STATUS_CONFIG = {
@@ -573,9 +574,9 @@ export default function FacultyAssignments() {
             {view === 'create' && (
                 <div style={{ maxWidth: '1400px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
                     {/* Header bar */}
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                    <div className="asg-form-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                            <div style={{ width: '48px', height: '48px', background: '#f5f3ff', color: '#6d28d9', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <div style={{ width: '48px', height: '48px', background: '#f5f3ff', color: '#6d28d9', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
                             </div>
                             <div>
@@ -583,7 +584,7 @@ export default function FacultyAssignments() {
                                 <p style={{ margin: 0, color: '#64748b', fontSize: '0.9rem', marginTop: '0.2rem' }}>{selected ? 'Modify the details of your assignment' : 'Add a new assignment for your students'}</p>
                             </div>
                         </div>
-                        <button onClick={() => { setView('list'); resetForm(); setSelected(null); fetchAll(); }} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'white', color: '#0f172a', border: '1px solid #e2e8f0', padding: '0.5rem 1rem', borderRadius: '8px', fontSize: '0.85rem', fontWeight: '600', cursor: 'pointer' }}>
+                        <button onClick={() => { setView('list'); resetForm(); setSelected(null); fetchAll(); }} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'white', color: '#0f172a', border: '1px solid #e2e8f0', padding: '0.6rem 1.2rem', borderRadius: '8px', fontSize: '0.9rem', fontWeight: '600', cursor: 'pointer', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
                             Back to List
                         </button>
@@ -643,6 +644,17 @@ export default function FacultyAssignments() {
                                     <input className="asg-premium-input" type="number" name="max_marks" value={form.max_marks} onChange={handleFormChange} min={1} max={500} required placeholder="Enter max marks" />
                                 </div>
                                 <div>
+                                    <label className="asg-premium-label">Max File Size (MB) *</label>
+                                    <select className="asg-premium-input" name="max_file_size_mb" value={form.max_file_size_mb} onChange={handleFormChange} required>
+                                        <option value="1">1 MB</option>
+                                        <option value="5">5 MB</option>
+                                        <option value="10">10 MB</option>
+                                        <option value="15">15 MB</option>
+                                        <option value="25">25 MB</option>
+                                        <option value="50">50 MB (Max)</option>
+                                    </select>
+                                </div>
+                                <div>
                                     <label className="asg-premium-label">Save As *</label>
                                     <select className="asg-premium-input" name="status" value={form.status} onChange={handleFormChange}>
                                         <option value="draft">Draft (save privately)</option>
@@ -664,7 +676,7 @@ export default function FacultyAssignments() {
                                 </div>
                                 <div className="asg-file-upload-box">
                                     <label className="asg-premium-label" style={{ marginBottom: '12px' }}>Reference File (Optional)</label>
-                                    <input type="file" accept=".pdf,.docx,.doc,.zip,.jpg,.png" onChange={e => setReferenceFile(e.target.files[0])} style={{ width: '100%' }} />
+                                    <input type="file" accept=".pdf,.docx,.doc,.zip,.jpg,.png" onChange={e => setReferenceFile(e.target.files[0])} style={{ width: '100%', padding: '10px', background: 'white', borderRadius: '8px', border: '1px solid #cbd5e1', cursor: 'pointer' }} />
                                     <div style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: '8px' }}>Max 50 MB (PDF, Image, DOC, ZIP)</div>
                                 </div>
                             </div>

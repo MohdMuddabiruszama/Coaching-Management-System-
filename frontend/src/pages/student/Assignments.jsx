@@ -182,6 +182,7 @@ export default function StudentAssignments() {
     const [detailAsg, setDetailAsg] = useState(null);
     const [uploading, setUploading] = useState(false);
     const [file, setFile] = useState(null);
+    const [fileSizeError, setFileSizeError] = useState(null);
     const [msg, setMsg] = useState(null);
     const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
 
@@ -219,6 +220,24 @@ export default function StudentAssignments() {
             setFile(null);
             window.scrollTo({ top: 0, behavior: 'smooth' });
         } catch (e) { flash('Failed to load details', 'error'); }
+    };
+
+    const handleFileSelect = (e) => {
+        const selectedFile = e.target.files[0];
+        if (!selectedFile) return;
+
+        const maxMb = detailAsg?.max_file_size_mb || 50;
+        const maxBytes = maxMb * 1024 * 1024;
+
+        if (selectedFile.size > maxBytes) {
+            setFileSizeError({ maxMb, fileName: selectedFile.name, sizeMb: (selectedFile.size / (1024 * 1024)).toFixed(2) });
+            e.target.value = ''; // Reset input
+            setFile(null);
+            return;
+        }
+
+        setFileSizeError(null);
+        setFile(selectedFile);
     };
 
     const handleSubmit = async () => {
@@ -437,7 +456,7 @@ export default function StudentAssignments() {
                                     <input
                                         id="file-inp" type="file" style={{ display: 'none' }}
                                         accept=".pdf,.docx,.doc,.zip,.jpg,.png"
-                                        onChange={e => setFile(e.target.files[0])}
+                                        onChange={handleFileSelect}
                                     />
                                     <div className="asg-v2-upload-action" style={{ marginLeft: 'auto', paddingLeft: '24px' }}>
                                         {file ? (
@@ -775,6 +794,25 @@ export default function StudentAssignments() {
                     </div>
                 )}
             </div>
+
+            {/* Custom Modal for File Size Limit Error */}
+            {fileSizeError && (
+                <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(15, 23, 42, 0.6)', zIndex: 99999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem', backdropFilter: 'blur(4px)' }}>
+                    <div style={{ background: '#fff', borderRadius: '24px', padding: '32px', maxWidth: '420px', width: '100%', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)', textAlign: 'center', animation: 'scaleIn 0.2s ease-out' }}>
+                        <div style={{ width: '72px', height: '72px', background: '#fee2e2', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px', fontSize: '36px' }}>
+                            ⛔
+                        </div>
+                        <h3 style={{ margin: '0 0 12px', color: '#0f172a', fontSize: '1.4rem', fontWeight: '800' }}>File Too Large</h3>
+                        <p style={{ margin: '0 0 24px', color: '#64748b', fontSize: '0.95rem', lineHeight: '1.6' }}>
+                            You tried to upload <strong style={{ color: '#334155' }}>{fileSizeError.fileName}</strong> ({fileSizeError.sizeMb} MB).<br/><br/>
+                            The maximum allowed size for this assignment is <strong style={{ color: '#dc2626', fontSize: '1.05rem' }}>{fileSizeError.maxMb} MB</strong>.
+                        </p>
+                        <button onClick={() => setFileSizeError(null)} style={{ background: '#ef4444', color: '#fff', border: 'none', padding: '14px 24px', borderRadius: '12px', fontWeight: '700', fontSize: '1rem', width: '100%', cursor: 'pointer', transition: 'background 0.2s', boxShadow: '0 4px 6px -1px rgba(239,68,68,0.3)' }}>
+                            Got it, I'll pick a smaller file
+                        </button>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
