@@ -393,6 +393,9 @@ app.use("/api/public", require("./routes/publicSite.routes"));
 app.use("/api/leads", require("./routes/lead.routes"));
 app.use("/api/lifetime", require("./routes/lifetime.routes"));
 
+// ZKTeco ADMS Routes
+app.use("/iclock", require("express").text({ type: ["text/plain", "application/x-www-form-urlencoded"] }), require("./routes/iclock.routes"));
+
 // ============================================
 // SENTRY TEST ENDPOINT
 // ============================================
