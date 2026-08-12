@@ -67,5 +67,21 @@ module.exports = {
     },
     getIo: () => {
         return io || null;
-    }
+    },
+    // Alias used by biometric webhook controller
+    getIO: () => {
+        return io || null;
+    },
+    /**
+     * Emit an event to all connected clients of a specific institute.
+     * Used by biometric webhook to push real-time punch events to the admin UI.
+     * @param {number|string} institute_id
+     * @param {string} event
+     * @param {object} payload
+     */
+    emitToInstitute: (institute_id, event, payload) => {
+        if (io) {
+            io.to(`institute_${institute_id}`).emit(event, payload);
+        }
+    },
 };

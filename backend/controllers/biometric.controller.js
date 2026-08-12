@@ -29,6 +29,7 @@ const crypto = require("crypto");
 const emailService = require("../services/email.service");
 const socketUtils = require("../utils/socket");
 const NotificationService = require("../services/notificationService");
+const { getCatalog: getDeviceCatalog, findById: findCatalogById } = require("../config/deviceCatalog");
 
 // ─────────────────────────────────────────────────────────────────
 // HELPERS
@@ -615,6 +616,11 @@ exports.deleteDevice = async (req, res) => {
         const device = await BiometricDevice.findOne({ where: { id, institute_id } });
         if (!device)
             return res.status(404).json({ success: false, message: "Device not found" });
+
+        // Manually cascade delete enrollments and punches to prevent foreign key errors
+        await BiometricEnrollment.destroy({ where: { device_id: id } });
+        await BiometricPunch.destroy({ where: { device_id: id } });
+
         await device.destroy();
         res.json({ success: true, message: "Device removed" });
     } catch (err) {
@@ -1474,6 +1480,297 @@ exports.processSubjectBasedAutoCarryForward = async () => {
 
 // Export processPunch and markAbsentStudents for use in cron
 exports._processPunch = processPunch;
+
+// ─────────────────────────────────────────────────────────────────
+// MULTI-BRAND DEVICE CATALOG + WIZARD REGISTRATION
+// ─────────────────────────────────────────────────────────────────
+
+/**
+ * GET /api/biometric/catalog
+ * Returns static device catalog — zero DB queries, <1ms.
+ * The frontend uses this to populate the brand picker modal.
+ */
+exports.getCatalog = async (req, res) => {
+    try {
+        const catalog = getDeviceCatalog();
+        res.json({ success: true, data: catalog });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+};
+
+/**
+ * POST /api/biometric/devices/register
+ * Wizard-driven device registration.
+ * Accepts catalog_id + user-supplied details, generates device_token + webhook URL.
+ * Sets status = 'pending' (wizard waits for first punch before flipping to 'connected').
+ *
+ * Body: { catalog_id, device_name, device_serial, ip_address?, location?, placement_type? }
+ */
+exports.registerDevice = async (req, res) => {
+    try {
+        const institute_id = req.user.institute_id;
+        const {
+            catalog_id,
+            device_name,
+            device_serial,
+            ip_address = "",
+            location = "",
+            placement_type = "gate",
+            room_identifier = null,
+        } = req.body;
+
+        if (!catalog_id || !device_name || !device_serial) {
+            return res.status(400).json({
+                success: false,
+                message: "catalog_id, device_name and device_serial are required",
+            });
+        }
+
+        // Look up catalog entry (zero DB)
+        const catalogEntry = findCatalogById(catalog_id);
+        if (!catalogEntry) {
+            return res.status(400).json({
+                success: false,
+                message: `Unknown catalog_id: ${catalog_id}. Check GET /api/biometric/catalog for valid IDs.`,
+            });
+        }
+
+        // Generate secrets
+        const secret_key = crypto.randomBytes(32).toString("hex");   // For legacy ADMS auth
+        const device_token = crypto.randomBytes(32).toString("hex");  // For webhook URL
+
+        const device = await BiometricDevice.create({
+            institute_id,
+            device_name,
+            device_serial,
+            device_type: catalogEntry.device_types?.[0] || "fingerprint",
+            placement_type,
+            room_identifier,
+            location,
+            ip_address,
+            secret_key,
+            status: catalogEntry.is_simulator ? "active" : "pending",
+            brand: catalogEntry.brand,
+            connection_type: catalogEntry.connection_type,
+            device_token,
+            last_sync: null,
+            last_punch_at: null,
+        });
+
+        // Build webhook URL for this device
+        const baseUrl = process.env.BACKEND_URL || `${req.protocol}://${req.get("host")}`;
+        const webhookUrl = `${baseUrl}/api/biometric/webhook/${device_token}`;
+
+        // Inject server address into setup instructions steps
+        const rawInstructions = catalogEntry.setup_instructions;
+        const parsedUrl = new URL(baseUrl);
+        const serverHost = parsedUrl.hostname;
+        const serverPort = parsedUrl.port || (parsedUrl.protocol === "https:" ? 443 : 80);
+        const instructions = {
+            ...rawInstructions,
+            steps: rawInstructions.steps.map(step =>
+                step
+                    .replace("{SERVER_IP}", serverHost)
+                    .replace("{SERVER_PORT}", serverPort)
+            ),
+            webhook_url: webhookUrl,
+        };
+
+        res.status(201).json({
+            success: true,
+            message: "Device registered — waiting for first punch to confirm connection",
+            data: {
+                id: device.id,
+                device_name: device.device_name,
+                device_serial: device.device_serial,
+                brand: device.brand,
+                connection_type: device.connection_type,
+                device_token: device.device_token,
+                webhook_url: webhookUrl,
+                status: device.status,
+                instructions,
+                catalog: catalogEntry,
+            },
+        });
+    } catch (err) {
+        if (err.name === "SequelizeUniqueConstraintError") {
+            return res.status(409).json({
+                success: false,
+                message: "A device with this serial number is already registered",
+            });
+        }
+        res.status(500).json({ success: false, message: err.message });
+    }
+};
+
+/**
+ * POST /api/biometric/webhook/:deviceToken
+ * Per-device webhook receiver.
+ * Authenticated via device_token in the URL (no JWT — device uses this directly).
+ *
+ * ✅ Responds 200 immediately (<100ms) — processing is async via setImmediate.
+ * ✅ Updates last_punch_at + emits Socket.io event for real-time test-connection wizard.
+ * ✅ Flips device status from 'pending' → 'connected' on first successful punch.
+ *
+ * Supports both ADMS payload format (same as iclock.controller) and generic JSON format.
+ */
+exports.webhookReceiver = async (req, res) => {
+    // Always respond 200 immediately so device doesn't retry
+    res.status(200).json({ success: true, message: "Received" });
+
+    setImmediate(async () => {
+        try {
+            const { deviceToken } = req.params;
+            if (!deviceToken) return;
+
+            // O(1) lookup via indexed device_token column
+            const device = await BiometricDevice.findOne({
+                where: { device_token: deviceToken },
+            });
+            if (!device) {
+                console.warn(`[webhook] Unknown device_token: ${deviceToken}`);
+                return;
+            }
+
+            // Parse punch payload — support ADMS format and generic JSON
+            let device_user_id, punch_time, punch_type;
+
+            // ADMS format: { AttLog: { pin, time, status } }
+            if (req.body?.AttLog) {
+                device_user_id = String(req.body.AttLog.pin);
+                punch_time = new Date(req.body.AttLog.time);
+                punch_type = req.body.AttLog.status === "1" ? "out" : "in";
+            }
+            // iClock text line parsed to JSON by middleware: { pin, date, time, status }
+            else if (req.body?.pin && req.body?.date) {
+                device_user_id = String(req.body.pin);
+                punch_time = new Date(`${req.body.date}T${req.body.time}`);
+                punch_type = req.body.status === "1" ? "out" : "in";
+            }
+            // Generic JSON format: { device_user_id | user_id | pin, punch_time | time, punch_type }
+            else {
+                device_user_id = String(
+                    req.body?.device_user_id || req.body?.user_id || req.body?.pin || ""
+                );
+                punch_time = new Date(req.body?.punch_time || req.body?.time || Date.now());
+                punch_type = req.body?.punch_type || "in";
+            }
+
+            if (!device_user_id || isNaN(punch_time.getTime())) {
+                console.warn(`[webhook] Invalid punch payload from device ${device.id}`);
+                return;
+            }
+
+            // Allow up to 5 min clock drift — use server time if too far off
+            const ageMs = Date.now() - punch_time.getTime();
+            if (Math.abs(ageMs) > 5 * 60 * 1000) {
+                punch_time = new Date();
+            }
+
+            // Save raw punch record
+            const punch = await BiometricPunch.create({
+                institute_id: device.institute_id,
+                device_id: device.id,
+                device_user_id,
+                punch_time,
+                punch_type,
+                raw_payload: { ...req.body, _source: "webhook", _device_token: deviceToken },
+                processed: false,
+            });
+
+            // Update last_punch_at + last_sync + flip status from pending → connected
+            const statusUpdate = { last_punch_at: punch_time, last_sync: punch_time };
+            if (device.status === "pending") statusUpdate.status = "connected";
+            await device.update(statusUpdate);
+
+            // Emit Socket.io event to all admin clients of this institute
+            // The wizard Step 4 listens for this event to confirm connection
+            try {
+                const io = socketUtils.getIO?.();
+                if (io) {
+                    io.to(`institute_${device.institute_id}`).emit("biometric:punch", {
+                        device_id: device.id,
+                        device_token: deviceToken,
+                        device_name: device.device_name,
+                        device_user_id,
+                        punch_time: punch_time.toISOString(),
+                        punch_type,
+                        status_changed: device.status === "pending" ? "connected" : null,
+                    });
+                }
+            } catch (socketErr) {
+                // Socket.io emit failures are non-critical — don't break punch processing
+                console.warn("[webhook] Socket.io emit failed:", socketErr.message);
+            }
+
+            // Process punch through the existing attendance pipeline
+            await processPunch(punch);
+        } catch (err) {
+            console.error("[webhook] Error:", err.message);
+        }
+    });
+};
+
+/**
+ * GET /api/biometric/devices/:id/connection-status
+ * Returns device status pill data for the frontend monitoring view.
+ * Computes live status from last_punch_at age:
+ *   connected   — last_punch_at < 15 min ago
+ *   idle        — 15 min – 24h ago
+ *   stale       — 24h – 48h ago
+ *   offline     — > 48h ago or no punch ever
+ *   pending     — device.status === 'pending' (never received a punch)
+ */
+exports.getDeviceConnectionStatus = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const institute_id = req.user.institute_id;
+        const device = await BiometricDevice.findOne({ where: { id, institute_id } });
+        if (!device) {
+            return res.status(404).json({ success: false, message: "Device not found" });
+        }
+
+        const now = Date.now();
+        const lastPunchMs = device.last_punch_at ? new Date(device.last_punch_at).getTime() : null;
+        const diffMins = lastPunchMs ? Math.floor((now - lastPunchMs) / 60000) : null;
+
+        let liveStatus;
+        if (device.status === "pending") {
+            liveStatus = "pending";
+        } else if (device.status === "inactive") {
+            liveStatus = "inactive";
+        } else if (!lastPunchMs) {
+            liveStatus = "offline";
+        } else if (diffMins < 15) {
+            liveStatus = "connected";
+        } else if (diffMins < 60 * 24) {
+            liveStatus = "idle";
+        } else if (diffMins < 60 * 48) {
+            liveStatus = "stale";
+        } else {
+            liveStatus = "offline";
+        }
+
+        res.json({
+            success: true,
+            data: {
+                id: device.id,
+                device_name: device.device_name,
+                brand: device.brand,
+                connection_type: device.connection_type,
+                device_token: device.device_token,
+                status: device.status,
+                live_status: liveStatus,
+                last_punch_at: device.last_punch_at,
+                last_sync: device.last_sync,
+                mins_since_punch: diffMins,
+            },
+        });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+};
 
 // ─────────────────────────────────────────────────────────────────
 // TEST MODE — SIMULATOR ENDPOINTS (admin JWT auth, no device key)

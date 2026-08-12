@@ -396,6 +396,16 @@ app.use("/api/lifetime", require("./routes/lifetime.routes"));
 // ZKTeco ADMS Routes
 app.use("/iclock", require("express").text({ type: ["text/plain", "application/x-www-form-urlencoded"] }), require("./routes/iclock.routes"));
 
+// Per-device biometric webhook (public — authenticated via device_token in URL)
+// Must be mounted BEFORE the 404 handler and OUTSIDE the JWT-protected /api/biometric router
+// because physical devices don't carry a JWT token.
+app.post(
+    "/api/biometric/webhook/:deviceToken",
+    express.json(),
+    require("./controllers/biometric.controller").webhookReceiver
+);
+
+
 // ============================================
 // SENTRY TEST ENDPOINT
 // ============================================

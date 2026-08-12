@@ -1,5 +1,5 @@
-/**
- * Biometric Attendance Management — Admin Page
+﻿/**
+ * Biometric Attendance Management â€” Admin Page
  * Phases 2, 3, 5, 7, 8, 10: Devices, Enrollment, Live Attendance,
  * OTP/QR Attendance, Reports, Settings
  */
@@ -11,7 +11,7 @@ import api from "../../services/api";
 import toast from "react-hot-toast";
 import { format12Hour } from "../../utils/timeFormat";
 
-// ─── Tab IDs ─────────────────────────────────────────────────────
+// â”€â”€â”€ Tab IDs â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const TABS = [
     { id: "live", label: "Live Attendance", icon: <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M4 12a8 8 0 0 1 16 0M8 12a4 4 0 0 1 8 0M12 12v.01"></path></svg> },
     { id: "devices", label: "Devices", icon: <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><path d="M8 21h8M12 17v4"></path></svg> },
@@ -31,8 +31,8 @@ export default function BiometricPage() {
         const next = !isTestMode;
         setIsTestMode(next);
         try { localStorage.setItem("biometric_test_mode", String(next)); } catch {}
-        toast(next ? "🧪 Switched to Test Mode" : "✅ Switched to Real Mode", {
-            icon: next ? "⚗️" : "🔌",
+        toast(next ? "ðŸ§ª Switched to Test Mode" : "âœ… Switched to Real Mode", {
+            icon: next ? "âš—ï¸" : "ðŸ”Œ",
             style: { background: next ? "#fef3c7" : "#ecfdf5", color: next ? "#92400e" : "#065f46", fontWeight: 600 }
         });
     };
@@ -55,7 +55,7 @@ export default function BiometricPage() {
                             )}
                         </div>
                         <p style={{ color: "#64748b", margin: "0.25rem 0 0", fontSize: "0.95rem" }}>
-                            {isTestMode ? "Simulator active — no physical devices required" : "Manage devices, enrollments, and view live attendance data"}
+                            {isTestMode ? "Simulator active â€” no physical devices required" : "Manage devices, enrollments, and view live attendance data"}
                         </p>
                     </div>
                 </div>
@@ -66,7 +66,7 @@ export default function BiometricPage() {
             {/* Test Mode Banner */}
             {isTestMode && (
                 <div style={{ background: "linear-gradient(135deg, #fef3c7, #fde68a)", border: "1px solid #fbbf24", borderRadius: "10px", padding: "0.75rem 1.25rem", marginBottom: "1.5rem", display: "flex", alignItems: "center", gap: "0.75rem", animation: "fadeIn 0.3s ease" }}>
-                    <div style={{ background: "#f59e0b", color: "#fff", width: "28px", height: "28px", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, fontSize: "1rem" }}>⚗️</div>
+                    <div style={{ background: "#f59e0b", color: "#fff", width: "28px", height: "28px", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, fontSize: "1rem" }}>âš—ï¸</div>
                     <div style={{ flex: 1 }}>
                         <div style={{ fontWeight: 700, color: "#92400e", fontSize: "0.9rem" }}>TEST MODE ACTIVE</div>
                         <div style={{ color: "#a16207", fontSize: "0.8rem" }}>Punches are simulated from the browser. Attendance records are real and stored in the database. Use the Simulator panel in Live Attendance to send test punches.</div>
@@ -133,9 +133,9 @@ export default function BiometricPage() {
 }
 
 
-// ─────────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // TEST MODE SIMULATOR (renders only when isTestMode is true)
-// ─────────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function TestModeSimulator({ onPunchSent }) {
     const [devices, setDevices] = useState([]);
     const [enrollments, setEnrollments] = useState([]);
@@ -203,7 +203,7 @@ function TestModeSimulator({ onPunchSent }) {
         if (!selectedDevice) return toast.error("Select a device first");
         try {
             await api.post("/biometric/test/heartbeat", { device_id: parseInt(selectedDevice) });
-            toast.success("Heartbeat sent — device is online");
+            toast.success("Heartbeat sent â€” device is online");
             addLog("success", "Heartbeat sent", "Device marked online");
         } catch (e) {
             addLog("error", "Heartbeat failed", e?.response?.data?.message || e.message);
@@ -231,16 +231,16 @@ function TestModeSimulator({ onPunchSent }) {
                 const { result_ok, result_reason, attendance, punch_id } = res.data.data;
                 const logType = result_ok ? "success" : "info";
                 const logMsg = result_ok
-                    ? `Punch ${pType.toUpperCase()} → ${result_reason}`
+                    ? `Punch ${pType.toUpperCase()} â†’ ${result_reason}`
                     : `Punch ${pType.toUpperCase()} sent (no attendance created)`;
                 const logDetail = result_ok
                     ? `Punch ID: ${punch_id}${attendance ? ` | Status: ${attendance.status?.toUpperCase()}${attendance.is_late ? ` | ${attendance.late_by_minutes}m late` : ""}` : ""}`
                     : `Reason: ${result_reason} | Punch ID: ${punch_id}`;
 
                 if (result_ok) {
-                    toast.success(`${pType.toUpperCase()} punch recorded! → ${attendance?.status || "processed"}`);
+                    toast.success(`${pType.toUpperCase()} punch recorded! â†’ ${attendance?.status || "processed"}`);
                 } else {
-                    toast(`${pType.toUpperCase()} punch sent — ${result_reason}`, { icon: "ℹ️" });
+                    toast(`${pType.toUpperCase()} punch sent â€” ${result_reason}`, { icon: "â„¹ï¸" });
                 }
                 addLog(logType, logMsg, logDetail);
                 if (onPunchSent) onPunchSent();
@@ -298,7 +298,7 @@ function TestModeSimulator({ onPunchSent }) {
                             onChange={e => { setSelectedDevice(e.target.value); setSelectedEnrollment(""); }}
                             style={{ width: "100%", padding: "0.6rem 0.75rem", borderRadius: "8px", border: "1px solid #fde68a", fontSize: "0.9rem", background: "#fff", color: "#1e293b", outline: "none", marginBottom: "0.75rem" }}
                         >
-                            <option value="">— Select a device —</option>
+                            <option value="">â€” Select a device â€”</option>
                             {devices.map(d => (
                                 <option key={d.id} value={String(d.id)}>{d.device_name} ({d.device_serial})</option>
                             ))}
@@ -310,7 +310,7 @@ function TestModeSimulator({ onPunchSent }) {
                             onChange={e => setSelectedEnrollment(e.target.value)}
                             style={{ width: "100%", padding: "0.6rem 0.75rem", borderRadius: "8px", border: "1px solid #fde68a", fontSize: "0.9rem", background: "#fff", color: "#1e293b", outline: "none" }}
                         >
-                            <option value="">— Select an enrolled person —</option>
+                            <option value="">â€” Select an enrolled person â€”</option>
                             {filteredEnrollments.map(e => (
                                 <option key={e.id} value={e.device_user_id}>
                                     {e.User?.name || `User #${e.user_id}`} | ID: {e.device_user_id} | {e.user_role}
@@ -333,13 +333,13 @@ function TestModeSimulator({ onPunchSent }) {
                                 onClick={handleSendHeartbeat}
                                 style={{ padding: "0.5rem 0.9rem", background: "#fff", border: "1px solid #fbbf24", borderRadius: "8px", fontWeight: 600, fontSize: "0.8rem", color: "#92400e", cursor: "pointer" }}
                             >
-                                ❤️ Ping
+                                â¤ï¸ Ping
                             </button>
                             <button
                                 onClick={() => setAutoHeartbeat(a => !a)}
                                 style={{ padding: "0.5rem 0.9rem", background: autoHeartbeat ? "#f59e0b" : "#fff", border: "1px solid #fbbf24", borderRadius: "8px", fontWeight: 600, fontSize: "0.8rem", color: autoHeartbeat ? "#fff" : "#92400e", cursor: "pointer", transition: "all 0.2s" }}
                             >
-                                {autoHeartbeat ? "⏹ Stop Auto" : "▶ Auto (30s)"}
+                                {autoHeartbeat ? "â¹ Stop Auto" : "â–¶ Auto (30s)"}
                             </button>
                         </div>
                     </div>
@@ -384,7 +384,7 @@ function TestModeSimulator({ onPunchSent }) {
                                 }}
                             >
                                 <svg width="28" height="28" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4m6 2a9 9 0 1 1-18 0 9 9 0 0 1 18 0z"></path></svg>
-                                👆 PUNCH IN
+                                ðŸ‘† PUNCH IN
                             </button>
                             <button
                                 onClick={() => handlePunch("out")}
@@ -400,12 +400,12 @@ function TestModeSimulator({ onPunchSent }) {
                                 }}
                             >
                                 <svg width="28" height="28" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>
-                                🚪 PUNCH OUT
+                                ðŸšª PUNCH OUT
                             </button>
                         </div>
                         {(!selectedDevice || !selectedEnrollment) && (
                             <div style={{ marginTop: "0.75rem", fontSize: "0.78rem", color: "#a16207", textAlign: "center" }}>
-                                ↑ Select a device and enrolled person above to enable punching
+                                â†‘ Select a device and enrolled person above to enable punching
                             </div>
                         )}
                     </div>
@@ -413,7 +413,7 @@ function TestModeSimulator({ onPunchSent }) {
                     {/* Activity Log */}
                     <div style={{ background: "#fff", border: "1px solid #fde68a", borderRadius: "12px", padding: "1.25rem", flex: 1 }}>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.75rem" }}>
-                            <div style={{ fontWeight: 700, color: "#92400e", fontSize: "0.9rem" }}>📋 Activity Log</div>
+                            <div style={{ fontWeight: 700, color: "#92400e", fontSize: "0.9rem" }}>ðŸ“‹ Activity Log</div>
                             {log.length > 0 && (
                                 <button onClick={() => setLog([])} style={{ background: "none", border: "none", color: "#a16207", fontSize: "0.75rem", cursor: "pointer", fontWeight: 600 }}>Clear</button>
                             )}
@@ -429,7 +429,7 @@ function TestModeSimulator({ onPunchSent }) {
                                     borderLeft: "3px solid " + (entry.type === "success" ? "#10b981" : entry.type === "error" ? "#ef4444" : "#6366f1"),
                                 }}>
                                     <span style={{ color: entry.type === "success" ? "#10b981" : entry.type === "error" ? "#ef4444" : "#6366f1", flexShrink: 0, marginTop: "1px" }}>
-                                        {entry.type === "success" ? "✓" : entry.type === "error" ? "✗" : "ℹ"}
+                                        {entry.type === "success" ? "âœ“" : entry.type === "error" ? "âœ—" : "â„¹"}
                                     </span>
                                     <div>
                                         <div style={{ fontWeight: 600, color: "#1e293b" }}>{entry.message}</div>
@@ -446,9 +446,9 @@ function TestModeSimulator({ onPunchSent }) {
     );
 }
 
-// ─────────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // LIVE ATTENDANCE TAB  (Phase 7 + 8)
-// ─────────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function LiveAttendanceTab({ isTestMode = false, setActiveTab }) {
     const [data, setData] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -603,7 +603,7 @@ function LiveAttendanceTab({ isTestMode = false, setActiveTab }) {
                                 style={{ padding: "0.5rem 1rem", borderRadius: "8px", border: "1px solid #e2e8f0", fontSize: "0.9rem", color: "#475569", outline: "none", backgroundColor: "#fff", cursor: "pointer" }}
                             >
                                 <option value="all">All Classes</option>
-                                {[...new Set(records.filter(r => r.role === "student").map(r => r.class).filter(c => c && c !== "—"))].sort().map(c => (
+                                {[...new Set(records.filter(r => r.role === "student").map(r => r.class).filter(c => c && c !== "â€”"))].sort().map(c => (
                                     <option key={c} value={c}>{c}</option>
                                 ))}
                             </select>
@@ -615,7 +615,7 @@ function LiveAttendanceTab({ isTestMode = false, setActiveTab }) {
                                 style={{ padding: "0.5rem 1rem", borderRadius: "8px", border: "1px solid #e2e8f0", fontSize: "0.9rem", color: "#475569", outline: "none", backgroundColor: "#fff", cursor: "pointer" }}
                             >
                                 <option value="all">All Designations</option>
-                                {[...new Set(records.filter(r => r.role === "faculty").map(r => r.class).filter(c => c && c !== "—"))].sort().map(d => (
+                                {[...new Set(records.filter(r => r.role === "faculty").map(r => r.class).filter(c => c && c !== "â€”"))].sort().map(d => (
                                     <option key={d} value={d}>{d}</option>
                                 ))}
                             </select>
@@ -663,28 +663,28 @@ function LiveAttendanceTab({ isTestMode = false, setActiveTab }) {
                                                 <div style={{ width: "32px", height: "32px", borderRadius: "50%", background: "#6366f1", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: "0.8rem" }}>
                                                     {initial}
                                                 </div>
-                                                <span style={{ fontWeight: 600, color: "#1e293b" }}>{r.name || "—"}</span>
+                                                <span style={{ fontWeight: 600, color: "#1e293b" }}>{r.name || "â€”"}</span>
                                             </td>
                                             <td style={{ padding: "1rem 0.75rem", color: "#475569" }}>
-                                                {r.role === 'student' ? (r.roll_number || "—") : (r.id ? `EMP${r.id.toString().padStart(4, '0')}` : "—")}
+                                                {r.role === 'student' ? (r.roll_number || "â€”") : (r.id ? `EMP${r.id.toString().padStart(4, '0')}` : "â€”")}
                                             </td>
-                                            <td style={{ padding: "1rem 0.75rem", color: "#475569" }}>{r.class || "—"}</td>
+                                            <td style={{ padding: "1rem 0.75rem", color: "#475569" }}>{r.class || "â€”"}</td>
                                             <td style={{ padding: "1rem 0.75rem", color: "#475569" }}>
                                                 <div style={{ display: "flex", flexDirection: "column", gap: "0.3rem" }}>
                                                     <div style={{ display: "flex", alignItems: "center", gap: "0.4rem", fontSize: "0.85rem", whiteSpace: "nowrap" }}>
                                                         <span style={{ color: "#10b981", fontWeight: 700, fontSize: "0.7rem", background: "#d1fae5", padding: "0.15rem 0.4rem", borderRadius: "4px", minWidth: "28px", textAlign: "center" }}>IN</span> 
-                                                        <span style={{ fontWeight: 500, color: "#334155" }}>{r.time_in ? format12Hour(r.time_in) : "—"}</span>
+                                                        <span style={{ fontWeight: 500, color: "#334155" }}>{r.time_in ? format12Hour(r.time_in) : "â€”"}</span>
                                                     </div>
                                                     <div style={{ display: "flex", alignItems: "center", gap: "0.4rem", fontSize: "0.85rem", whiteSpace: "nowrap" }}>
                                                         <span style={{ color: "#ef4444", fontWeight: 700, fontSize: "0.7rem", background: "#fee2e2", padding: "0.15rem 0.4rem", borderRadius: "4px", minWidth: "28px", textAlign: "center" }}>OUT</span> 
-                                                        <span style={{ fontWeight: 500, color: "#334155" }}>{r.time_out ? format12Hour(r.time_out) : "—"}</span>
+                                                        <span style={{ fontWeight: 500, color: "#334155" }}>{r.time_out ? format12Hour(r.time_out) : "â€”"}</span>
                                                     </div>
                                                 </div>
                                             </td>
                                             <td style={{ padding: "1rem 0.75rem" }}>
                                                 <NewStatusBadge status={r.status} isLate={r.is_late} />
                                             </td>
-                                            <td style={{ padding: "1rem 0.75rem", color: "#475569" }}>{r.device_name || "—"}</td>
+                                            <td style={{ padding: "1rem 0.75rem", color: "#475569" }}>{r.device_name || "â€”"}</td>
                                             <td style={{ padding: "1rem 0.75rem" }}>
                                                 <button onClick={() => setActiveTab("reports")} style={{ display: "flex", alignItems: "center", gap: "0.25rem", padding: "0.4rem 0.75rem", borderRadius: "6px", border: "1px solid #e2e8f0", background: "#fff", color: "#6366f1", fontSize: "0.8rem", cursor: "pointer", fontWeight: 600 }}>
                                                     <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
@@ -773,9 +773,404 @@ function NewStatusBadge({ status, isLate }) {
     );
 }
 
-// ─────────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // DEVICES TAB  (Phase 2)
-// ─────────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// BRAND PICKER WIZARD â€” Sub-components
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+const BRAND_COLORS = {
+    zkteco:    "#6366f1",
+    essl:      "#059669",
+    biomax:    "#d97706",
+    suprema:   "#0891b2",
+    realtime:  "#475569",
+    simulator: "#f59e0b",
+};
+
+const BRAND_INITIALS = {
+    zkteco: "ZK", essl: "ES", biomax: "BX",
+    suprema: "SU", realtime: "RT", simulator: "âˆ¿",
+};
+
+const STATUS_PILL_STYLES = {
+    connected: { bg: "rgba(16,185,129,0.12)", color: "#059669", dot: "#10b981", label: "Connected" },
+    idle:      { bg: "rgba(59,130,246,0.1)",  color: "#3b82f6", dot: "#3b82f6", label: "Idle" },
+    stale:     { bg: "rgba(245,158,11,0.12)", color: "#d97706", dot: "#f59e0b", label: "Not seen 24h" },
+    offline:   { bg: "rgba(239,68,68,0.1)",   color: "#ef4444", dot: "#ef4444", label: "Offline" },
+    pending:   { bg: "rgba(148,163,184,0.12)","color": "#64748b", dot: "#94a3b8", label: "Pending Setup" },
+    inactive:  { bg: "rgba(148,163,184,0.12)","color": "#94a3b8", dot: "#cbd5e1", label: "Inactive" },
+    online:    { bg: "rgba(16,185,129,0.12)", color: "#059669", dot: "#10b981", label: "Online" },
+};
+
+function computeLiveStatus(device) {
+    if (device.status === "pending") return "pending";
+    if (device.status === "inactive") return "inactive";
+    const ts = device.last_punch_at || device.last_sync;
+    if (!ts) return "offline";
+    const diffMins = Math.floor((Date.now() - new Date(ts).getTime()) / 60000);
+    if (diffMins < 15) return "connected";
+    if (diffMins < 60 * 24) return "idle";
+    if (diffMins < 60 * 48) return "stale";
+    return "offline";
+}
+
+function StatusPill({ device }) {
+    const status = computeLiveStatus(device);
+    const s = STATUS_PILL_STYLES[status] || STATUS_PILL_STYLES.offline;
+    return (
+        <span style={{ display:"inline-flex", alignItems:"center", gap:"0.3rem", padding:"0.2rem 0.65rem",
+            borderRadius:"99px", background:s.bg, color:s.color, fontWeight:600, fontSize:"0.78rem",
+            letterSpacing:"0.01em", whiteSpace:"nowrap" }}>
+            <span style={{ width:"6px", height:"6px", borderRadius:"50%", background:s.dot,
+                boxShadow:`0 0 0 2px ${s.bg}` }}/>
+            {s.label}
+        </span>
+    );
+}
+
+function BrandBadge({ brand, size = 32 }) {
+    const color = BRAND_COLORS[brand] || "#64748b";
+    const initials = BRAND_INITIALS[brand] || "?";
+    return (
+        <div style={{ width:`${size}px`, height:`${size}px`, borderRadius:`${size*0.28}px`,
+            background:`linear-gradient(135deg, ${color}22, ${color}44)`,
+            border:`1.5px solid ${color}55`, color, display:"flex", alignItems:"center",
+            justifyContent:"center", fontWeight:800, fontSize:`${size*0.37}px`, letterSpacing:"-0.5px",
+            flexShrink:0 }}>
+            {initials}
+        </div>
+    );
+}
+
+// â”€â”€â”€ Step 1 â†’ Brand Picker Cards â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+function BrandPickerGrid({ catalog, onPick }) {
+    const [hovered, setHovered] = useState(null);
+    return (
+        <div>
+            <p style={{ margin:"0 0 1.25rem", color:"#64748b", fontSize:"0.9rem" }}>
+                Select your device brand and model. All brands go through the same quick setup â€” no complicated configuration.
+            </p>
+            <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill, minmax(210px,1fr))", gap:"0.85rem" }}>
+                {catalog.map(entry => {
+                    const color = BRAND_COLORS[entry.brand] || "#64748b";
+                    const isHov = hovered === entry.id;
+                    return (
+                        <button key={entry.id} onClick={() => onPick(entry)}
+                            onMouseEnter={() => setHovered(entry.id)}
+                            onMouseLeave={() => setHovered(null)}
+                            style={{ textAlign:"left", background: isHov ? "#f8fafc" : "#fff",
+                                border:`1.5px solid ${isHov ? color : "#e2e8f0"}`,
+                                borderRadius:"12px", padding:"1rem", cursor:"pointer",
+                                transition:"all 0.18s", boxShadow: isHov ? `0 4px 16px ${color}22` : "none",
+                                position:"relative", display:"flex", flexDirection:"column", gap:"0.65rem" }}>
+
+                            {/* Badge */}
+                            {entry.badge && (
+                                <span style={{ position:"absolute", top:"8px", right:"8px",
+                                    background:entry.badge_color || color, color:"#fff",
+                                    fontSize:"0.65rem", fontWeight:700, padding:"0.15rem 0.45rem",
+                                    borderRadius:"99px", letterSpacing:"0.02em" }}>
+                                    {entry.badge}
+                                </span>
+                            )}
+
+                            {/* Brand icon + name */}
+                            <div style={{ display:"flex", alignItems:"center", gap:"0.75rem" }}>
+                                <BrandBadge brand={entry.brand} size={38} />
+                                <div>
+                                    <div style={{ fontWeight:700, color:"#1e293b", fontSize:"0.95rem" }}>
+                                        {entry.brand_label}
+                                    </div>
+                                    <div style={{ fontSize:"0.78rem", color:"#64748b" }}>{entry.model}</div>
+                                </div>
+                            </div>
+
+                            {/* Description */}
+                            <div style={{ fontSize:"0.8rem", color:"#475569", lineHeight:1.45 }}>
+                                {entry.description}
+                            </div>
+
+                            {/* Type pills */}
+                            <div style={{ display:"flex", gap:"0.35rem", flexWrap:"wrap" }}>
+                                <span style={{ background:`${color}15`, color, fontSize:"0.7rem",
+                                    fontWeight:600, padding:"0.15rem 0.5rem", borderRadius:"99px" }}>
+                                    {entry.connection_type === "lan_push" ? "LAN Push" : "Cloud Gateway"}
+                                </span>
+                                {entry.device_types?.map(t => (
+                                    <span key={t} style={{ background:"#f1f5f9", color:"#475569",
+                                        fontSize:"0.7rem", fontWeight:600, padding:"0.15rem 0.5rem",
+                                        borderRadius:"99px" }}>
+                                        {t.charAt(0).toUpperCase()+t.slice(1)}
+                                    </span>
+                                ))}
+                            </div>
+
+                            {/* Warranty warning */}
+                            {entry.warranty_warning && (
+                                <div style={{ display:"flex", alignItems:"flex-start", gap:"0.4rem",
+                                    background:"#fffbeb", border:"1px solid #fde68a",
+                                    borderRadius:"6px", padding:"0.4rem 0.6rem", marginTop:"0.1rem" }}>
+                                    <span style={{ fontSize:"0.85rem", flexShrink:0 }}>âš </span>
+                                    <span style={{ fontSize:"0.72rem", color:"#92400e", lineHeight:1.4 }}>
+                                        Buy from an authorized dealer for warranty support
+                                    </span>
+                                </div>
+                            )}
+                        </button>
+                    );
+                })}
+            </div>
+        </div>
+    );
+}
+
+// â”€â”€â”€ Step 2 â†’ Details Form â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+function DeviceDetailsForm({ entry, form, setForm }) {
+    const color = BRAND_COLORS[entry.brand] || "#6366f1";
+    const hints = entry.setup_instructions?.field_hints || {};
+    return (
+        <div style={{ display:"flex", flexDirection:"column", gap:"1.1rem" }}>
+            {/* Selected device summary */}
+            <div style={{ display:"flex", alignItems:"center", gap:"0.85rem",
+                background:`${color}0d`, border:`1px solid ${color}33`,
+                borderRadius:"10px", padding:"0.85rem 1rem" }}>
+                <BrandBadge brand={entry.brand} size={36} />
+                <div>
+                    <div style={{ fontWeight:700, color:"#1e293b", fontSize:"0.95rem" }}>
+                        {entry.brand_label} {entry.model}
+                    </div>
+                    <div style={{ fontSize:"0.78rem", color:"#64748b" }}>
+                        {entry.connection_type === "lan_push" ? "LAN Push (ADMS)" : "Cloud Gateway"}
+                    </div>
+                </div>
+            </div>
+
+            {/* Device Name */}
+            <div>
+                <label style={{ fontSize:"0.83rem", fontWeight:700, color:"#1e293b", marginBottom:"0.4rem", display:"block" }}>
+                    Device Name <span style={{ color:"#ef4444" }}>*</span>
+                </label>
+                <input type="text" value={form.device_name}
+                    onChange={e => setForm(f => ({ ...f, device_name: e.target.value }))}
+                    placeholder="e.g. Main Gate â€” ZKTeco"
+                    style={{ width:"100%", padding:"0.65rem 1rem", borderRadius:"8px",
+                        border:"1px solid #e2e8f0", fontSize:"0.9rem", outline:"none", boxSizing:"border-box" }} />
+            </div>
+
+            {/* Serial Number */}
+            <div>
+                <label style={{ fontSize:"0.83rem", fontWeight:700, color:"#1e293b", marginBottom:"0.4rem", display:"block" }}>
+                    Serial Number <span style={{ color:"#ef4444" }}>*</span>
+                    {hints.device_serial && (
+                        <span style={{ fontWeight:400, color:"#94a3b8", marginLeft:"0.5rem", fontSize:"0.75rem" }}>
+                            ({hints.device_serial})
+                        </span>
+                    )}
+                </label>
+                <input type="text" value={form.device_serial}
+                    onChange={e => setForm(f => ({ ...f, device_serial: e.target.value }))}
+                    placeholder="e.g. CDK9191960001"
+                    style={{ width:"100%", padding:"0.65rem 1rem", borderRadius:"8px",
+                        border:"1px solid #e2e8f0", fontSize:"0.9rem", outline:"none", boxSizing:"border-box",
+                        fontFamily:"monospace" }} />
+            </div>
+
+            {/* IP Address (only for lan_push) */}
+            {entry.connection_type === "lan_push" && (
+                <div>
+                    <label style={{ fontSize:"0.83rem", fontWeight:700, color:"#1e293b", marginBottom:"0.4rem", display:"block" }}>
+                        Device IP Address
+                        {hints.ip_address && (
+                            <span style={{ fontWeight:400, color:"#94a3b8", marginLeft:"0.5rem", fontSize:"0.75rem" }}>
+                                ({hints.ip_address})
+                            </span>
+                        )}
+                    </label>
+                    <input type="text" value={form.ip_address}
+                        onChange={e => setForm(f => ({ ...f, ip_address: e.target.value }))}
+                        placeholder="e.g. 192.168.1.100"
+                        style={{ width:"100%", padding:"0.65rem 1rem", borderRadius:"8px",
+                            border:"1px solid #e2e8f0", fontSize:"0.9rem", outline:"none", boxSizing:"border-box",
+                            fontFamily:"monospace" }} />
+                </div>
+            )}
+
+            {/* Location */}
+            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"1rem" }}>
+                <div>
+                    <label style={{ fontSize:"0.83rem", fontWeight:700, color:"#1e293b", marginBottom:"0.4rem", display:"block" }}>
+                        Location
+                    </label>
+                    <input type="text" value={form.location}
+                        onChange={e => setForm(f => ({ ...f, location: e.target.value }))}
+                        placeholder="e.g. Main Gate"
+                        style={{ width:"100%", padding:"0.65rem 1rem", borderRadius:"8px",
+                            border:"1px solid #e2e8f0", fontSize:"0.9rem", outline:"none", boxSizing:"border-box" }} />
+                </div>
+                <div>
+                    <label style={{ fontSize:"0.83rem", fontWeight:700, color:"#1e293b", marginBottom:"0.4rem", display:"block" }}>
+                        Placement
+                    </label>
+                    <select value={form.placement_type}
+                        onChange={e => setForm(f => ({ ...f, placement_type: e.target.value }))}
+                        style={{ width:"100%", padding:"0.65rem 1rem", borderRadius:"8px",
+                            border:"1px solid #e2e8f0", fontSize:"0.9rem", outline:"none",
+                            boxSizing:"border-box", background:"#fff" }}>
+                        <option value="gate">Main Gate</option>
+                        <option value="classroom">Classroom</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+// â”€â”€â”€ Step 3 â†’ Instructions + Webhook URL â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+function SetupInstructions({ registeredDevice }) {
+    const [copied, setCopied] = useState(false);
+    const { instructions, catalog } = registeredDevice;
+    const color = BRAND_COLORS[registeredDevice.brand] || "#6366f1";
+    const copy = () => {
+        navigator.clipboard.writeText(instructions.webhook_url);
+        setCopied(true); setTimeout(() => setCopied(false), 2000);
+    };
+    return (
+        <div style={{ display:"flex", flexDirection:"column", gap:"1.25rem" }}>
+            {/* Summary callout */}
+            <div style={{ background:`${color}0d`, border:`1px solid ${color}33`,
+                borderRadius:"10px", padding:"1rem" }}>
+                <div style={{ fontWeight:700, color, marginBottom:"0.4rem" }}>
+                    {catalog?.setup_instructions?.summary || "Follow the steps below to connect your device."}
+                </div>
+            </div>
+
+            {/* Webhook URL */}
+            <div>
+                <label style={{ fontSize:"0.83rem", fontWeight:700, color:"#1e293b", marginBottom:"0.4rem", display:"block" }}>
+                    Your Device Webhook URL
+                </label>
+                <div style={{ display:"flex", gap:"0.5rem" }}>
+                    <div style={{ flex:1, background:"#f8fafc", border:"1px solid #e2e8f0",
+                        borderRadius:"8px", padding:"0.6rem 0.85rem", fontSize:"0.78rem",
+                        color:"#475569", fontFamily:"monospace", wordBreak:"break-all",
+                        lineHeight:1.5 }}>
+                        {instructions.webhook_url}
+                    </div>
+                    <button onClick={copy} style={{ padding:"0.6rem 1rem", borderRadius:"8px",
+                        background: copied ? "#10b981" : color, color:"#fff", border:"none",
+                        fontWeight:600, fontSize:"0.82rem", cursor:"pointer", whiteSpace:"nowrap",
+                        transition:"background 0.2s", flexShrink:0 }}>
+                        {copied ? "âœ“ Copied" : "Copy"}
+                    </button>
+                </div>
+                <div style={{ fontSize:"0.75rem", color:"#94a3b8", marginTop:"0.35rem" }}>
+                    Enter this URL in your device's server/cloud settings
+                </div>
+            </div>
+
+            {/* Steps */}
+            <div>
+                <div style={{ fontWeight:700, color:"#1e293b", fontSize:"0.88rem", marginBottom:"0.75rem" }}>
+                    Setup Steps
+                </div>
+                <div style={{ display:"flex", flexDirection:"column", gap:"0.6rem" }}>
+                    {instructions.steps?.map((step, i) => (
+                        <div key={i} style={{ display:"flex", gap:"0.85rem", alignItems:"flex-start" }}>
+                            <div style={{ width:"22px", height:"22px", borderRadius:"50%",
+                                background:`${color}22`, color, fontWeight:800, fontSize:"0.75rem",
+                                display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0,
+                                marginTop:"1px" }}>
+                                {i+1}
+                            </div>
+                            <div style={{ fontSize:"0.88rem", color:"#334155", lineHeight:1.5, paddingTop:"2px" }}>
+                                {step}
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </div>
+        </div>
+    );
+}
+
+// â”€â”€â”€ Step 4 â†’ Test Connection â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+function TestConnectionStep({ registeredDevice, onSuccess, socket }) {
+    const [received, setReceived] = useState(false);
+    const [punchData, setPunchData] = useState(null);
+
+    useEffect(() => {
+        if (!socket) return;
+        const handler = (data) => {
+            if (data.device_token === registeredDevice.device_token || data.device_id === registeredDevice.id) {
+                setReceived(true);
+                setPunchData(data);
+            }
+        };
+        socket.on("biometric:punch", handler);
+        return () => socket.off("biometric:punch", handler);
+    }, [socket, registeredDevice]);
+
+    if (received) return (
+        <div style={{ textAlign:"center", padding:"2rem 1rem" }}>
+            <div style={{ fontSize:"3rem", marginBottom:"0.75rem" }}>ðŸŽ‰</div>
+            <div style={{ fontWeight:800, fontSize:"1.2rem", color:"#059669", marginBottom:"0.5rem" }}>
+                Connection Confirmed!
+            </div>
+            <div style={{ color:"#64748b", fontSize:"0.9rem", marginBottom:"1.5rem" }}>
+                {punchData ? (
+                    <>Received punch from user ID <strong>{punchData.device_user_id}</strong> at {new Date(punchData.punch_time).toLocaleTimeString()}</>
+                ) : "First punch received successfully."}
+            </div>
+            <button onClick={onSuccess} style={{ padding:"0.75rem 2rem", borderRadius:"10px",
+                background:"#059669", color:"#fff", border:"none", fontWeight:700,
+                fontSize:"0.95rem", cursor:"pointer" }}>
+                Done â€” View My Devices
+            </button>
+        </div>
+    );
+
+    return (
+        <div style={{ textAlign:"center", padding:"1.5rem 1rem" }}>
+            {/* Animated pulse */}
+            <div style={{ position:"relative", width:"80px", height:"80px", margin:"0 auto 1.25rem" }}>
+                <div style={{ position:"absolute", inset:0, borderRadius:"50%",
+                    background:"rgba(99,102,241,0.12)",
+                    animation:"bioPulse 2s ease-in-out infinite" }}/>
+                <div style={{ position:"absolute", inset:"12px", borderRadius:"50%",
+                    background:"rgba(99,102,241,0.2)",
+                    animation:"bioPulse 2s ease-in-out infinite 0.3s" }}/>
+                <div style={{ position:"absolute", inset:"24px", borderRadius:"50%",
+                    background:"#6366f1", display:"flex", alignItems:"center", justifyContent:"center" }}>
+                    <svg width="18" height="18" fill="none" stroke="#fff" strokeWidth="2" viewBox="0 0 24 24">
+                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                    </svg>
+                </div>
+            </div>
+            <style>{`@keyframes bioPulse { 0%,100%{transform:scale(1);opacity:0.6} 50%{transform:scale(1.18);opacity:1} }`}</style>
+
+            <div style={{ fontWeight:700, color:"#1e293b", fontSize:"1rem", marginBottom:"0.5rem" }}>
+                Waiting for a test punchâ€¦
+            </div>
+            <div style={{ color:"#64748b", fontSize:"0.87rem", maxWidth:"340px", margin:"0 auto" }}>
+                On your device, scan any fingerprint or tap an RFID card. We'll detect it here automatically.
+            </div>
+
+            {/* No socket = manual skip */}
+            <button onClick={onSuccess} style={{ marginTop:"1.75rem", padding:"0.55rem 1.25rem",
+                borderRadius:"8px", background:"transparent", color:"#94a3b8",
+                border:"1px solid #e2e8f0", fontSize:"0.82rem", cursor:"pointer" }}>
+                Skip â€” I'll test later
+            </button>
+        </div>
+    );
+}
+
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// MAIN DEVICES TAB
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function DevicesTab() {
     const [devices, setDevices] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -793,6 +1188,82 @@ function DevicesTab() {
     const [filterStatus, setFilterStatus] = useState("all");
     const [page, setPage] = useState(1);
     const limit = 5;
+
+    // â”€â”€ Wizard State â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    const [showWizard, setShowWizard] = useState(false);
+    const [wizardStep, setWizardStep] = useState(1); // 1=pick, 2=details, 3=instructions, 4=test
+    const [catalog, setCatalog] = useState([]);
+    const [selectedEntry, setSelectedEntry] = useState(null);
+    const [wizardForm, setWizardForm] = useState({ device_name:"", device_serial:"", ip_address:"", location:"", placement_type:"gate" });
+    const [registeredDevice, setRegisteredDevice] = useState(null);
+    const [wizardLoading, setWizardLoading] = useState(false);
+    const [socket, setSocket] = useState(null);
+
+    // Fetch catalog once
+    useEffect(() => {
+        if (catalog.length === 0) {
+            api.get("/biometric/catalog").then(r => {
+                if (r.data.success) setCatalog(r.data.data);
+            }).catch(() => {});
+        }
+    }, [catalog.length]);
+
+    // Socket.io for real-time punch detection in wizard Step 4
+    useEffect(() => {
+        if (wizardStep === 4 && !socket) {
+            try {
+                const { io } = window;
+                if (io) {
+                    const token = localStorage.getItem("token") || sessionStorage.getItem("token");
+                    const s = io({ auth: { token }, transports: ["websocket"] });
+                    setSocket(s);
+                    return () => { s.disconnect(); setSocket(null); };
+                }
+            } catch {}
+        }
+    }, [wizardStep, socket]);
+
+    const openWizard = () => {
+        setWizardStep(1); setSelectedEntry(null); setRegisteredDevice(null);
+        setWizardForm({ device_name:"", device_serial:"", ip_address:"", location:"", placement_type:"gate" });
+        setShowWizard(true);
+    };
+
+    const closeWizard = () => {
+        setShowWizard(false); setWizardStep(1);
+        socket?.disconnect(); setSocket(null);
+        fetchDevices();
+    };
+
+    const handlePickBrand = (entry) => {
+        setSelectedEntry(entry);
+        setWizardStep(2);
+    };
+
+    const handleRegisterDevice = async () => {
+        if (!wizardForm.device_name || !wizardForm.device_serial) {
+            toast.error("Device name and serial are required");
+            return;
+        }
+        setWizardLoading(true);
+        try {
+            const res = await api.post("/biometric/devices/register", {
+                catalog_id: selectedEntry.id,
+                device_name: wizardForm.device_name,
+                device_serial: wizardForm.device_serial,
+                ip_address: wizardForm.ip_address,
+                location: wizardForm.location,
+                placement_type: wizardForm.placement_type,
+            });
+            if (res.data.success) {
+                setRegisteredDevice(res.data.data);
+                setWizardStep(3);
+                toast.success("Device registered! Follow the setup steps.");
+            }
+        } catch (err) {
+            toast.error(err.response?.data?.message || "Registration failed");
+        } finally { setWizardLoading(false); }
+    };
 
     const fetchDevices = useCallback(async () => {
         try {
@@ -848,50 +1319,41 @@ function DevicesTab() {
         try {
             await api.post(`/biometric/devices/${id}/sync`);
             toast.success("Sync triggered");
-            fetchDevices(); // Optimistic update on sync
+            fetchDevices();
         } catch { toast.error("Sync failed"); }
     };
 
     const clearFilters = () => {
-        setSearchTerm("");
-        setFilterType("all");
-        setFilterLocation("all");
-        setFilterStatus("all");
-        setPage(1);
+        setSearchTerm(""); setFilterType("all"); setFilterLocation("all"); setFilterStatus("all"); setPage(1);
     };
 
-    // Calculate Stats
+    // Stats
     const totalDevices = devices.length;
     let onlineDevices = 0;
     const locationsSet = new Set();
     const typesSet = new Set();
-    
     devices.forEach(d => {
-        const lastSync = d.last_sync ? new Date(d.last_sync) : null;
-        const diffMins = lastSync ? Math.floor((Date.now() - lastSync.getTime()) / 60000) : null;
-        if (lastSync && diffMins < 15) onlineDevices++;
+        const st = computeLiveStatus(d);
+        if (st === "connected" || st === "online") onlineDevices++;
         if (d.location) locationsSet.add(d.location);
         if (d.device_type) typesSet.add(d.device_type);
     });
-    
     const offlineDevices = totalDevices - onlineDevices;
     const totalLocations = locationsSet.size;
 
-    // Fast Filtering
+    // Filtering
     const filteredDevices = useMemo(() => {
         return devices.filter(d => {
-            const lastSync = d.last_sync ? new Date(d.last_sync) : null;
-            const diffMins = lastSync ? Math.floor((Date.now() - lastSync.getTime()) / 60000) : null;
-            const isOnline = lastSync && diffMins < 15;
-            
-            const matchSearch = (d.device_name || "").toLowerCase().includes(searchTerm.toLowerCase()) || 
-                                (d.device_serial || "").toLowerCase().includes(searchTerm.toLowerCase());
+            const st = computeLiveStatus(d);
+            const matchSearch = (d.device_name || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+                                (d.device_serial || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+                                (d.brand || "").toLowerCase().includes(searchTerm.toLowerCase());
             const matchType = filterType === "all" || d.device_type === filterType;
             const matchLocation = filterLocation === "all" || d.location === filterLocation;
-            const matchStatus = filterStatus === "all" || 
-                                (filterStatus === "online" && isOnline) || 
-                                (filterStatus === "offline" && !isOnline);
-                                
+            const matchStatus = filterStatus === "all" ||
+                                (filterStatus === "online" && (st === "connected" || st === "idle")) ||
+                                (filterStatus === "offline" && (st === "offline" || st === "stale")) ||
+                                filterStatus === st;
             return matchSearch && matchType && matchLocation && matchStatus;
         });
     }, [devices, searchTerm, filterType, filterLocation, filterStatus]);
@@ -903,7 +1365,6 @@ function DevicesTab() {
 
     const totalPages = Math.ceil(filteredDevices.length / limit) || 1;
 
-    // Document-level click handler to close menu popups when clicking outside
     useEffect(() => {
         const handleClickOutside = (e) => {
             if (!e.target.closest('.device-menu-container')) {
@@ -916,46 +1377,39 @@ function DevicesTab() {
 
     if (loading) return <div style={{ textAlign: "center", padding: "3rem" }}>Loading devices...</div>;
 
+    // â”€â”€ Wizard step labels â”€â”€
+    const WIZARD_STEPS = ["Pick Brand", "Details", "Instructions", "Test Connection"];
+
     return (
         <div style={{ animation: "fadeIn 0.3s ease-in-out" }}>
             {/* Top Action Row */}
-            <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "1.5rem" }}>
-                <button onClick={openAdd} style={{ display: "flex", alignItems: "center", gap: "0.5rem", padding: "0.6rem 1.25rem", borderRadius: "8px", background: "#6366f1", color: "#fff", border: "none", fontWeight: 600, cursor: "pointer", fontSize: "0.9rem", transition: "all 0.2s", boxShadow: "0 4px 6px rgba(99,102,241,0.2)" }}>
-                    <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-                    Add New Device
+            <div style={{ display: "flex", justifyContent: "flex-end", gap:"0.75rem", marginBottom: "1.5rem", flexWrap:"wrap" }}>
+                <button onClick={openAdd}
+                    style={{ display:"flex", alignItems:"center", gap:"0.4rem", padding:"0.55rem 1.1rem",
+                        borderRadius:"8px", background:"#f1f5f9", color:"#475569", border:"1px solid #e2e8f0",
+                        fontWeight:600, cursor:"pointer", fontSize:"0.88rem", transition:"all 0.2s" }}>
+                    <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                    Manual Add
+                </button>
+                <button onClick={openWizard}
+                    style={{ display:"flex", alignItems:"center", gap:"0.5rem", padding:"0.6rem 1.25rem",
+                        borderRadius:"8px", background:"linear-gradient(135deg,#6366f1,#8b5cf6)", color:"#fff",
+                        border:"none", fontWeight:700, cursor:"pointer", fontSize:"0.9rem",
+                        transition:"all 0.2s", boxShadow:"0 4px 12px rgba(99,102,241,0.3)" }}>
+                    <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                        <polyline points="9 12 11 14 15 10"/>
+                    </svg>
+                    Connect Device
                 </button>
             </div>
 
             {/* Stats Cards */}
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "1rem", marginBottom: "1.5rem" }}>
-                <NewStatBox 
-                    icon={<svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><rect x="4" y="2" width="16" height="20" rx="2" ry="2"></rect><line x1="12" y1="18" x2="12.01" y2="18"></line></svg>} 
-                    title="Total Devices" 
-                    value={totalDevices} 
-                    subtext="All registered devices"
-                    color="#8b5cf6" bg="rgba(139,92,246,0.1)"
-                />
-                <NewStatBox 
-                    icon={<svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path><polyline points="9 12 11 14 15 10"></polyline></svg>} 
-                    title="Online Devices" 
-                    value={onlineDevices} 
-                    subtext="Currently active"
-                    color="#10b981" bg="rgba(16,185,129,0.1)"
-                />
-                <NewStatBox 
-                    icon={<svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"></path><path d="M17.31 17.31A10.43 10.43 0 0 1 12 19c-7 0-10-7-10-7a13.16 13.16 0 0 1 1.67-2.68"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>} 
-                    title="Offline Devices" 
-                    value={offlineDevices} 
-                    subtext="Not responding"
-                    color="#f59e0b" bg="rgba(245,158,11,0.1)"
-                />
-                <NewStatBox 
-                    icon={<svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>} 
-                    title="Total Locations" 
-                    value={totalLocations} 
-                    subtext="Device locations"
-                    color="#3b82f6" bg="rgba(59,130,246,0.1)"
-                />
+                <NewStatBox icon={<svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><rect x="4" y="2" width="16" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>} title="Total Devices" value={totalDevices} subtext="All registered devices" color="#8b5cf6" bg="rgba(139,92,246,0.1)" />
+                <NewStatBox icon={<svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg>} title="Online Devices" value={onlineDevices} subtext="Currently active" color="#10b981" bg="rgba(16,185,129,0.1)" />
+                <NewStatBox icon={<svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M17.31 17.31A10.43 10.43 0 0 1 12 19c-7 0-10-7-10-7a13.16 13.16 0 0 1 1.67-2.68"/><line x1="1" y1="1" x2="23" y2="23"/></svg>} title="Offline Devices" value={offlineDevices} subtext="Not responding" color="#f59e0b" bg="rgba(245,158,11,0.1)" />
+                <NewStatBox icon={<svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>} title="Total Locations" value={totalLocations} subtext="Device locations" color="#3b82f6" bg="rgba(59,130,246,0.1)" />
             </div>
 
             {/* Filter Bar */}
@@ -963,14 +1417,8 @@ function DevicesTab() {
                 <div style={{ flex: "1 1 250px" }}>
                     <label style={{ fontSize: "0.8rem", color: "#64748b", fontWeight: 600, marginBottom: "0.4rem", display: "block" }}>Search Devices</label>
                     <div style={{ position: "relative" }}>
-                        <svg style={{ position: "absolute", left: "10px", top: "50%", transform: "translateY(-50%)", color: "#94a3b8" }} width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-                        <input 
-                            type="text" 
-                            placeholder="Search by device name, serial number..." 
-                            value={searchTerm}
-                            onChange={(e) => { setSearchTerm(e.target.value); setPage(1); }}
-                            style={{ width: "100%", padding: "0.6rem 1rem 0.6rem 2.2rem", borderRadius: "8px", border: "1px solid #e2e8f0", fontSize: "0.9rem", outline: "none", boxSizing: "border-box" }}
-                        />
+                        <svg style={{ position: "absolute", left: "10px", top: "50%", transform: "translateY(-50%)", color: "#94a3b8" }} width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                        <input type="text" placeholder="Name, serial, brand..." value={searchTerm} onChange={(e) => { setSearchTerm(e.target.value); setPage(1); }} style={{ width: "100%", padding: "0.6rem 1rem 0.6rem 2.2rem", borderRadius: "8px", border: "1px solid #e2e8f0", fontSize: "0.9rem", outline: "none", boxSizing: "border-box" }} />
                     </div>
                 </div>
                 <div style={{ flex: "1 1 150px" }}>
@@ -992,12 +1440,13 @@ function DevicesTab() {
                     <select value={filterStatus} onChange={(e) => { setFilterStatus(e.target.value); setPage(1); }} style={{ width: "100%", padding: "0.6rem 1rem", borderRadius: "8px", border: "1px solid #e2e8f0", fontSize: "0.9rem", color: "#475569", outline: "none", backgroundColor: "#fff", cursor: "pointer", boxSizing: "border-box" }}>
                         <option value="all">All Status</option>
                         <option value="online">Online</option>
+                        <option value="pending">Pending Setup</option>
                         <option value="offline">Offline</option>
                     </select>
                 </div>
                 <div style={{ display: "flex", alignItems: "flex-end", flex: "1 1 120px" }}>
                     <button onClick={clearFilters} style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: "0.4rem", padding: "0.6rem 1rem", borderRadius: "8px", background: "#fff", color: "#475569", border: "1px solid #e2e8f0", fontWeight: 600, fontSize: "0.9rem", cursor: "pointer", transition: "all 0.2s", boxSizing: "border-box" }}>
-                        <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M2 12A10 10 0 0 0 15 21"></path><path d="M21.9 12A10 10 0 0 0 9 3"></path><path d="M15 21v-4"></path><path d="M15 17h4"></path><path d="M9 3v4"></path><path d="M9 7H5"></path></svg>
+                        <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M2 12A10 10 0 0 0 15 21"/><path d="M21.9 12A10 10 0 0 0 9 3"/><path d="M15 21v-4"/><path d="M15 17h4"/><path d="M9 3v4"/><path d="M9 7H5"/></svg>
                         Clear Filters
                     </button>
                 </div>
@@ -1006,7 +1455,7 @@ function DevicesTab() {
             {/* Main Table Card */}
             <div style={{ background: "#fff", borderRadius: "12px", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.03)", padding: "1.5rem" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "1.5rem" }}>
-                    <svg width="20" height="20" fill="none" stroke="#6366f1" strokeWidth="2" viewBox="0 0 24 24"><rect x="4" y="2" width="16" height="20" rx="2" ry="2"></rect><line x1="12" y1="18" x2="12.01" y2="18"></line></svg>
+                    <svg width="20" height="20" fill="none" stroke="#6366f1" strokeWidth="2" viewBox="0 0 24 24"><rect x="4" y="2" width="16" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
                     <h3 style={{ margin: 0, fontSize: "1.1rem", fontWeight: 700, color: "#1e293b" }}>Registered Devices</h3>
                 </div>
 
@@ -1014,7 +1463,7 @@ function DevicesTab() {
                     <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left", fontSize: "0.9rem" }}>
                         <thead>
                             <tr style={{ borderBottom: "1px solid #e2e8f0" }}>
-                                {["#", "Device Name", "Serial Number", "Type", "Location", "IP Address", "Status", "Last Seen", "Actions"].map((h) => (
+                                {["#", "Device", "Serial / Brand", "Type", "Location", "IP", "Connection Status", "Last Seen", "Actions"].map((h) => (
                                     <th key={h} style={{ padding: "1rem 0.75rem", color: "#64748b", fontWeight: 600 }}>{h}</th>
                                 ))}
                             </tr>
@@ -1022,67 +1471,79 @@ function DevicesTab() {
                         <tbody>
                             {paginatedDevices.length === 0 ? (
                                 <tr>
-                                    <td colSpan="9" style={{ textAlign: "center", padding: "2rem", color: "#94a3b8" }}>No devices found matching criteria</td>
+                                    <td colSpan="9" style={{ textAlign: "center", padding: "2rem", color: "#94a3b8" }}>No devices found</td>
                                 </tr>
                             ) : (
                                 paginatedDevices.map((d, i) => {
-                                    const lastSync = d.last_sync ? new Date(d.last_sync) : null;
-                                    const diffMins = lastSync ? Math.floor((Date.now() - lastSync.getTime()) / 60000) : null;
-                                    const isOnline = lastSync && diffMins < 15;
-                                    
+                                    const lastSeen = d.last_punch_at || d.last_sync;
+                                    const lastSeenDate = lastSeen ? new Date(lastSeen) : null;
+                                    const diffMins = lastSeenDate ? Math.floor((Date.now() - lastSeenDate.getTime()) / 60000) : null;
                                     return (
-                                        <tr key={d.id} style={{ borderBottom: "1px solid #f1f5f9", transition: "background 0.2s" }} onMouseOver={e => e.currentTarget.style.background = "#f8fafc"} onMouseOut={e => e.currentTarget.style.background = "transparent"}>
+                                        <tr key={d.id} style={{ borderBottom: "1px solid #f1f5f9", transition: "background 0.2s" }}
+                                            onMouseOver={e => e.currentTarget.style.background = "#f8fafc"}
+                                            onMouseOut={e => e.currentTarget.style.background = "transparent"}>
                                             <td style={{ padding: "1rem 0.75rem", color: "#475569" }}>{(page - 1) * limit + i + 1}</td>
-                                            <td style={{ padding: "1rem 0.75rem", display: "flex", alignItems: "center", gap: "0.75rem" }}>
-                                                <div style={{ width: "32px", height: "32px", borderRadius: "8px", background: "#1e293b", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                                                    <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><rect x="4" y="2" width="16" height="20" rx="2" ry="2"></rect><line x1="12" y1="18" x2="12.01" y2="18"></line></svg>
-                                                </div>
-                                                <div>
-                                                    <div style={{ fontWeight: 600, color: "#1e293b" }}>{d.device_name}</div>
-                                                    <div style={{ fontSize: "0.75rem", color: "#8b5cf6" }}>{d.device_serial?.substring(0, 5)}-{String(i+1).padStart(2, '0')}</div>
+                                            <td style={{ padding: "1rem 0.75rem" }}>
+                                                <div style={{ display:"flex", alignItems:"center", gap:"0.75rem" }}>
+                                                    {d.brand ? (
+                                                        <BrandBadge brand={d.brand} size={32} />
+                                                    ) : (
+                                                        <div style={{ width:"32px", height:"32px", borderRadius:"8px", background:"#1e293b", color:"#fff", display:"flex", alignItems:"center", justifyContent:"center" }}>
+                                                            <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+                                                        </div>
+                                                    )}
+                                                    <div>
+                                                        <div style={{ fontWeight: 600, color: "#1e293b" }}>{d.device_name}</div>
+                                                        {d.brand && <div style={{ fontSize: "0.72rem", color: BRAND_COLORS[d.brand] || "#8b5cf6", fontWeight:600 }}>{d.brand.toUpperCase()}</div>}
+                                                    </div>
                                                 </div>
                                             </td>
-                                            <td style={{ padding: "1rem 0.75rem", color: "#475569" }}>{d.device_serial}</td>
-                                            <td style={{ padding: "1rem 0.75rem", color: "#6366f1" }}>{d.device_type ? d.device_type.charAt(0).toUpperCase() + d.device_type.slice(1) : "—"}</td>
+                                            <td style={{ padding: "1rem 0.75rem", color: "#475569", fontFamily:"monospace", fontSize:"0.83rem" }}>
+                                                <div>{d.device_serial}</div>
+                                                {d.connection_type && (
+                                                    <div style={{ fontSize:"0.72rem", color:"#64748b", fontFamily:"sans-serif", marginTop:"2px" }}>
+                                                        {d.connection_type === "lan_push" ? "ðŸ”— LAN Push" : "â˜ï¸ Cloud Gateway"}
+                                                    </div>
+                                                )}
+                                            </td>
+                                            <td style={{ padding: "1rem 0.75rem", color: "#6366f1" }}>{d.device_type ? d.device_type.charAt(0).toUpperCase() + d.device_type.slice(1) : "â€”"}</td>
                                             <td style={{ padding: "1rem 0.75rem", color: "#475569" }}>
                                                 <div style={{ display: "flex", alignItems: "center", gap: "0.3rem" }}>
-                                                    <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
-                                                    {d.location || "—"}
+                                                    <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                                                    {d.location || "â€”"}
                                                 </div>
                                             </td>
-                                            <td style={{ padding: "1rem 0.75rem", color: "#475569" }}>{d.ip_address || "—"}</td>
+                                            <td style={{ padding: "1rem 0.75rem", color: "#475569", fontFamily:"monospace", fontSize:"0.83rem" }}>{d.ip_address || "â€”"}</td>
                                             <td style={{ padding: "1rem 0.75rem" }}>
-                                                <span style={{ display: "inline-flex", alignItems: "center", gap: "0.3rem", padding: "0.2rem 0.6rem", borderRadius: "12px", background: isOnline ? "rgba(16,185,129,0.1)" : "rgba(245,158,11,0.1)", color: isOnline ? "#10b981" : "#f59e0b", fontWeight: 600, fontSize: "0.8rem" }}>
-                                                    <div style={{ width: "6px", height: "6px", borderRadius: "50%", background: isOnline ? "#10b981" : "#f59e0b" }}></div>
-                                                    {isOnline ? "Online" : "Offline"}
-                                                </span>
+                                                <StatusPill device={d} />
                                             </td>
                                             <td style={{ padding: "1rem 0.75rem", color: "#475569", fontSize: "0.85rem" }}>
-                                                {lastSync ? (
+                                                {lastSeenDate ? (
                                                     <>
-                                                        <div style={{ color: "#1e293b" }}>{lastSync.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }) === new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }) ? "Today" : lastSync.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}, {lastSync.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</div>
-                                                        <div style={{ color: "#94a3b8" }}>{diffMins < 60 ? `${diffMins}m ago` : `${Math.floor(diffMins/60)}h ago`}</div>
+                                                        <div style={{ color: "#1e293b" }}>
+                                                            {lastSeenDate.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }) === new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }) ? "Today" : lastSeenDate.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}, {lastSeenDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+                                                        </div>
+                                                        <div style={{ color: "#94a3b8" }}>
+                                                            {diffMins < 60 ? `${diffMins}m ago` : `${Math.floor(diffMins/60)}h ago`}
+                                                        </div>
                                                     </>
-                                                ) : "Never"}
+                                                ) : <span style={{ color:"#cbd5e1" }}>Never</span>}
                                             </td>
                                             <td style={{ padding: "1rem 0.75rem", textAlign: "center" }}>
-                                                {/* Actions Menu */}
                                                 <div className="device-menu-container" style={{ position: "relative", display: "inline-block" }}>
                                                     <button onClick={(e) => {
                                                         const el = document.getElementById(`menu-${d.id}`);
                                                         if (el.style.display === "none") {
                                                             document.querySelectorAll('.device-menu-popup').forEach(p => p.style.display = 'none');
                                                             el.style.display = "flex";
-                                                        } else {
-                                                            el.style.display = "none";
-                                                        }
+                                                        } else { el.style.display = "none"; }
                                                     }} style={{ background: "transparent", border: "1px solid #e2e8f0", borderRadius: "6px", padding: "0.3rem", cursor: "pointer", color: "#64748b" }}>
-                                                        <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="19" r="1"></circle></svg>
+                                                        <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/></svg>
                                                     </button>
-                                                    <div id={`menu-${d.id}`} className="device-menu-popup" style={{ display: "none", position: "absolute", right: "0", top: "100%", zIndex: 10, background: "#fff", borderRadius: "8px", boxShadow: "0 4px 12px rgba(0,0,0,0.1)", border: "1px solid #f1f5f9", flexDirection: "column", minWidth: "120px", overflow: "hidden" }}>
-                                                        <button onClick={() => { openEdit(d); document.getElementById(`menu-${d.id}`).style.display = "none"; }} style={{ padding: "0.6rem 1rem", textAlign: "left", background: "transparent", border: "none", borderBottom: "1px solid #f1f5f9", cursor: "pointer", color: "#475569", fontSize: "0.85rem", width: "100%" }}>Edit Device</button>
-                                                        <button onClick={() => { handleSync(d.id); document.getElementById(`menu-${d.id}`).style.display = "none"; }} style={{ padding: "0.6rem 1rem", textAlign: "left", background: "transparent", border: "none", borderBottom: "1px solid #f1f5f9", cursor: "pointer", color: "#10b981", fontSize: "0.85rem", width: "100%" }}>Sync Now</button>
-                                                        <button onClick={() => { handleDelete(d.id); document.getElementById(`menu-${d.id}`).style.display = "none"; }} style={{ padding: "0.6rem 1rem", textAlign: "left", background: "transparent", border: "none", cursor: "pointer", color: "#ef4444", fontSize: "0.85rem", width: "100%" }}>Remove</button>
+                                                    <div id={`menu-${d.id}`} className="device-menu-popup" style={{ display: "none", position: "absolute", right: "0", top: "100%", zIndex: 10, background: "#fff", borderRadius: "8px", boxShadow: "0 4px 12px rgba(0,0,0,0.1)", border: "1px solid #f1f5f9", flexDirection: "column", minWidth: "130px", overflow: "hidden" }}>
+                                                        <button onClick={() => { openEdit(d); document.getElementById(`menu-${d.id}`).style.display = "none"; }} style={{ padding: "0.6rem 1rem", textAlign: "left", background: "transparent", border: "none", borderBottom: "1px solid #f1f5f9", cursor: "pointer", color: "#475569", fontSize: "0.85rem", width: "100%" }}>âœï¸ Edit</button>
+                                                        <button onClick={() => { handleSync(d.id); document.getElementById(`menu-${d.id}`).style.display = "none"; }} style={{ padding: "0.6rem 1rem", textAlign: "left", background: "transparent", border: "none", borderBottom: "1px solid #f1f5f9", cursor: "pointer", color: "#10b981", fontSize: "0.85rem", width: "100%" }}>ðŸ”„ Sync</button>
+                                                        <button onClick={() => { handleDelete(d.id); document.getElementById(`menu-${d.id}`).style.display = "none"; }} style={{ padding: "0.6rem 1rem", textAlign: "left", background: "transparent", border: "none", cursor: "pointer", color: "#ef4444", fontSize: "0.85rem", width: "100%" }}>ðŸ—‘ Remove</button>
                                                     </div>
                                                 </div>
                                             </td>
@@ -1105,122 +1566,184 @@ function DevicesTab() {
                             <button key={i} onClick={() => setPage(i + 1)} style={{ padding: "0.4rem 0.8rem", borderRadius: "6px", border: "none", background: page === i + 1 ? "#6366f1" : "transparent", color: page === i + 1 ? "#fff" : "#475569", cursor: "pointer", fontWeight: page === i + 1 ? 600 : 400 }}>{i + 1}</button>
                         ))}
                         <button disabled={page === totalPages} onClick={() => setPage(p => p + 1)} style={{ padding: "0.4rem 0.8rem", borderRadius: "6px", border: "1px solid #e2e8f0", background: "#fff", color: page === totalPages ? "#cbd5e1" : "#475569", cursor: page === totalPages ? "not-allowed" : "pointer" }}>&gt;</button>
-                        <select value={limit} disabled style={{ padding: "0.4rem", borderRadius: "6px", border: "1px solid #e2e8f0", background: "#f8fafc", color: "#64748b", fontSize: "0.85rem", marginLeft: "0.5rem" }}>
-                            <option value={limit}>{limit} / page</option>
-                        </select>
                     </div>
                 </div>
             </div>
 
-            {/* Modal */}
-            {showForm && (
-                <div style={{ position: "fixed", inset: 0, background: "rgba(15, 23, 42, 0.4)", backdropFilter: "blur(4px)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: "1rem", animation: "fadeIn 0.2s ease-out" }}>
-                    <div style={{ background: "#fff", borderRadius: "16px", padding: "2rem", width: "100%", maxWidth: "550px", maxHeight: "90vh", overflowY: "auto", boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)" }}>
-                        {/* Header */}
-                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "1.5rem" }}>
-                            <div style={{ display: "flex", gap: "1rem" }}>
-                                <div style={{ width: "40px", height: "40px", borderRadius: "10px", background: "linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%)", display: "flex", alignItems: "center", justifyContent: "center", color: "#6366f1", flexShrink: 0 }}>
-                                    <svg width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><rect x="4" y="2" width="16" height="20" rx="2" ry="2"></rect><circle cx="12" cy="14" r="1"></circle><line x1="12" y1="6" x2="12.01" y2="6"></line></svg>
-                                </div>
-                                <div>
-                                    <h3 style={{ margin: "0 0 0.25rem", fontWeight: 700, fontSize: "1.25rem", color: "#1e293b" }}>{editDevice ? "Edit Device" : "Register New Device"}</h3>
-                                    <p style={{ margin: 0, fontSize: "0.85rem", color: "#64748b" }}>{editDevice ? "Update the details of this biometric device." : "Fill in the details below to register a new biometric device."}</p>
+            {/* â”€â”€ BRAND PICKER WIZARD MODAL â”€â”€ */}
+            {showWizard && (
+                <div style={{ position:"fixed", inset:0, background:"rgba(15,23,42,0.55)",
+                    backdropFilter:"blur(4px)", zIndex:1000, display:"flex",
+                    alignItems:"center", justifyContent:"center", padding:"1rem",
+                    animation:"fadeIn 0.2s ease-out" }}>
+                    <div style={{ background:"#fff", borderRadius:"20px", width:"100%",
+                        maxWidth: wizardStep === 1 ? "780px" : "580px",
+                        maxHeight:"92vh", display:"flex", flexDirection:"column",
+                        boxShadow:"0 25px 50px -12px rgba(0,0,0,0.25)",
+                        transition:"max-width 0.3s ease" }}>
+
+                        {/* Wizard Header */}
+                        <div style={{ padding:"1.5rem 1.75rem 1rem", borderBottom:"1px solid #f1f5f9",
+                            display:"flex", alignItems:"center", justifyContent:"space-between", flexShrink:0 }}>
+                            <div>
+                                <h2 style={{ margin:"0 0 0.25rem", fontSize:"1.2rem", fontWeight:800, color:"#1e293b" }}>
+                                    {wizardStep === 1 && "Connect a Device"}
+                                    {wizardStep === 2 && `${selectedEntry?.brand_label} ${selectedEntry?.model}`}
+                                    {wizardStep === 3 && "Setup Instructions"}
+                                    {wizardStep === 4 && "Test Connection"}
+                                </h2>
+                                {/* Step breadcrumb */}
+                                <div style={{ display:"flex", gap:"0.35rem", alignItems:"center" }}>
+                                    {WIZARD_STEPS.map((label, idx) => {
+                                        const stepNum = idx + 1;
+                                        const active = wizardStep === stepNum;
+                                        const done = wizardStep > stepNum;
+                                        return (
+                                            <div key={label} style={{ display:"flex", alignItems:"center", gap:"0.35rem" }}>
+                                                <span style={{ fontSize:"0.72rem", fontWeight: active ? 700 : 500,
+                                                    color: done ? "#10b981" : active ? "#6366f1" : "#cbd5e1",
+                                                    transition:"color 0.2s" }}>
+                                                    {done ? "âœ“" : stepNum}. {label}
+                                                </span>
+                                                {idx < WIZARD_STEPS.length - 1 && (
+                                                    <span style={{ color:"#e2e8f0", fontSize:"0.7rem" }}>â€º</span>
+                                                )}
+                                            </div>
+                                        );
+                                    })}
                                 </div>
                             </div>
-                            <button onClick={() => setShowForm(false)} style={{ background: "none", border: "none", cursor: "pointer", color: "#94a3b8", display: "flex", alignItems: "center", justifyContent: "center", padding: "0.25rem", borderRadius: "50%", transition: "background 0.2s" }} onMouseOver={e => e.currentTarget.style.background = "#f1f5f9"} onMouseOut={e => e.currentTarget.style.background = "transparent"}>
-                                <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                            <button onClick={closeWizard} style={{ background:"none", border:"none",
+                                cursor:"pointer", color:"#94a3b8", padding:"0.3rem", borderRadius:"50%",
+                                display:"flex", alignItems:"center" }}
+                                onMouseOver={e => e.currentTarget.style.background="#f1f5f9"}
+                                onMouseOut={e => e.currentTarget.style.background="transparent"}>
+                                <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                                    <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                                </svg>
                             </button>
                         </div>
 
-                        {/* Form Fields */}
+                        {/* Wizard Body */}
+                        <div style={{ padding:"1.5rem 1.75rem", overflowY:"auto", flex:1 }}>
+                            {wizardStep === 1 && (
+                                <BrandPickerGrid catalog={catalog} onPick={handlePickBrand} />
+                            )}
+                            {wizardStep === 2 && selectedEntry && (
+                                <DeviceDetailsForm entry={selectedEntry} form={wizardForm} setForm={setWizardForm} />
+                            )}
+                            {wizardStep === 3 && registeredDevice && (
+                                <SetupInstructions registeredDevice={registeredDevice} />
+                            )}
+                            {wizardStep === 4 && registeredDevice && (
+                                <TestConnectionStep
+                                    registeredDevice={registeredDevice}
+                                    socket={socket}
+                                    onSuccess={closeWizard} />
+                            )}
+                        </div>
+
+                        {/* Wizard Footer */}
+                        {wizardStep !== 4 && (
+                            <div style={{ padding:"1.25rem 1.75rem", borderTop:"1px solid #f1f5f9",
+                                display:"flex", justifyContent:"space-between", alignItems:"center", flexShrink:0 }}>
+                                <button
+                                    onClick={() => wizardStep === 1 ? closeWizard() : setWizardStep(s => s - 1)}
+                                    style={{ padding:"0.6rem 1.25rem", borderRadius:"8px", background:"#fff",
+                                        color:"#475569", border:"1px solid #e2e8f0", fontWeight:600,
+                                        fontSize:"0.88rem", cursor:"pointer" }}>
+                                    {wizardStep === 1 ? "Cancel" : "â† Back"}
+                                </button>
+                                <div>
+                                    {wizardStep === 2 && (
+                                        <button onClick={handleRegisterDevice} disabled={wizardLoading}
+                                            style={{ padding:"0.65rem 1.5rem", borderRadius:"8px",
+                                                background: wizardLoading ? "#e2e8f0" : "linear-gradient(135deg,#6366f1,#8b5cf6)",
+                                                color:"#fff", border:"none", fontWeight:700, fontSize:"0.9rem",
+                                                cursor: wizardLoading ? "not-allowed" : "pointer",
+                                                boxShadow:"0 4px 12px rgba(99,102,241,0.3)" }}>
+                                            {wizardLoading ? "Registering..." : "Register & Continue â†’"}
+                                        </button>
+                                    )}
+                                    {wizardStep === 3 && (
+                                        <button onClick={() => setWizardStep(4)}
+                                            style={{ padding:"0.65rem 1.5rem", borderRadius:"8px",
+                                                background:"linear-gradient(135deg,#6366f1,#8b5cf6)",
+                                                color:"#fff", border:"none", fontWeight:700, fontSize:"0.9rem",
+                                                cursor:"pointer", boxShadow:"0 4px 12px rgba(99,102,241,0.3)" }}>
+                                            Test Connection â†’
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
+
+            {/* Legacy Manual Add Modal */}
+            {showForm && (
+                <div style={{ position: "fixed", inset: 0, background: "rgba(15, 23, 42, 0.4)", backdropFilter: "blur(4px)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: "1rem", animation: "fadeIn 0.2s ease-out" }}>
+                    <div style={{ background: "#fff", borderRadius: "16px", padding: "2rem", width: "100%", maxWidth: "550px", maxHeight: "90vh", overflowY: "auto", boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)" }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "1.5rem" }}>
+                            <div style={{ display: "flex", gap: "1rem" }}>
+                                <div style={{ width: "40px", height: "40px", borderRadius: "10px", background: "linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%)", display: "flex", alignItems: "center", justifyContent: "center", color: "#6366f1", flexShrink: 0 }}>
+                                    <svg width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><rect x="4" y="2" width="16" height="20" rx="2" ry="2"/><circle cx="12" cy="14" r="1"/><line x1="12" y1="6" x2="12.01" y2="6"/></svg>
+                                </div>
+                                <div>
+                                    <h3 style={{ margin: "0 0 0.25rem", fontWeight: 700, fontSize: "1.25rem", color: "#1e293b" }}>{editDevice ? "Edit Device" : "Manual Device Registration"}</h3>
+                                    <p style={{ margin: 0, fontSize: "0.85rem", color: "#64748b" }}>{editDevice ? "Update device details." : "Register a device manually (advanced). Use 'Connect Device' for guided setup."}</p>
+                                </div>
+                            </div>
+                            <button onClick={() => setShowForm(false)} style={{ background: "none", border: "none", cursor: "pointer", color: "#94a3b8", display: "flex", alignItems: "center", justifyContent: "center", padding: "0.25rem", borderRadius: "50%", transition: "background 0.2s" }} onMouseOver={e => e.currentTarget.style.background = "#f1f5f9"} onMouseOut={e => e.currentTarget.style.background = "transparent"}>
+                                <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                            </button>
+                        </div>
+
                         <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
-                            {/* Device Name */}
                             <div>
                                 <label style={{ fontSize: "0.85rem", fontWeight: 700, color: "#1e293b", marginBottom: "0.5rem", display: "block" }}>Device Name <span style={{ color: "#ef4444" }}>*</span></label>
-                                <div style={{ position: "relative" }}>
-                                    <div style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", color: "#94a3b8", display: "flex" }}>
-                                        <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7.01" y2="7"></line></svg>
-                                    </div>
-                                    <input type="text" value={form.device_name} onChange={(e) => setForm({ ...form, device_name: e.target.value })} placeholder="e.g. Gate-1 Fingerprint" style={{ width: "100%", padding: "0.7rem 1rem 0.7rem 2.5rem", borderRadius: "8px", border: "1px solid #e2e8f0", fontSize: "0.95rem", color: "#1e293b", outline: "none", boxSizing: "border-box", transition: "border-color 0.2s" }} onFocus={e => e.target.style.borderColor = "#8b5cf6"} onBlur={e => e.target.style.borderColor = "#e2e8f0"} />
-                                </div>
+                                <input type="text" value={form.device_name} onChange={(e) => setForm({ ...form, device_name: e.target.value })} placeholder="e.g. Gate-1 Fingerprint" style={{ width: "100%", padding: "0.7rem 1rem", borderRadius: "8px", border: "1px solid #e2e8f0", fontSize: "0.95rem", color: "#1e293b", outline: "none", boxSizing: "border-box" }} />
                             </div>
-
-                            {/* Device Serial */}
                             <div>
                                 <label style={{ fontSize: "0.85rem", fontWeight: 700, color: "#1e293b", marginBottom: "0.5rem", display: "block" }}>Device Serial <span style={{ color: "#ef4444" }}>*</span></label>
-                                <div style={{ position: "relative" }}>
-                                    <div style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", color: "#94a3b8", display: "flex" }}>
-                                        <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="8" y1="12" x2="16" y2="12"></line><line x1="12" y1="8" x2="12" y2="16"></line></svg>
-                                    </div>
-                                    <input type="text" value={form.device_serial} onChange={(e) => setForm({ ...form, device_serial: e.target.value })} disabled={!!editDevice} placeholder="e.g. CDK9191960001" style={{ width: "100%", padding: "0.7rem 1rem 0.7rem 2.5rem", borderRadius: "8px", border: "1px solid #e2e8f0", fontSize: "0.95rem", color: "#1e293b", outline: "none", boxSizing: "border-box", background: editDevice ? "#f8fafc" : "#fff", opacity: editDevice ? 0.7 : 1, transition: "border-color 0.2s" }} onFocus={e => e.target.style.borderColor = "#8b5cf6"} onBlur={e => e.target.style.borderColor = "#e2e8f0"} />
-                                </div>
+                                <input type="text" value={form.device_serial} onChange={(e) => setForm({ ...form, device_serial: e.target.value })} disabled={!!editDevice} placeholder="e.g. CDK9191960001" style={{ width: "100%", padding: "0.7rem 1rem", borderRadius: "8px", border: "1px solid #e2e8f0", fontSize: "0.95rem", color: "#1e293b", outline: "none", boxSizing: "border-box", background: editDevice ? "#f8fafc" : "#fff", opacity: editDevice ? 0.7 : 1, fontFamily:"monospace" }} />
                             </div>
-
-                            {/* Device Type */}
                             <div>
                                 <label style={{ fontSize: "0.85rem", fontWeight: 700, color: "#1e293b", marginBottom: "0.5rem", display: "block" }}>Device Type <span style={{ color: "#ef4444" }}>*</span></label>
-                                <select value={form.device_type} onChange={(e) => setForm({ ...form, device_type: e.target.value })} style={{ width: "100%", padding: "0.7rem 1rem", borderRadius: "8px", border: "1px solid #e2e8f0", fontSize: "0.95rem", color: "#1e293b", outline: "none", boxSizing: "border-box", backgroundColor: "#fff", cursor: "pointer", appearance: "none", backgroundImage: `url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e")`, backgroundRepeat: "no-repeat", backgroundPosition: "right 1rem center", backgroundSize: "1em", transition: "border-color 0.2s" }} onFocus={e => e.target.style.borderColor = "#8b5cf6"} onBlur={e => e.target.style.borderColor = "#e2e8f0"}>
+                                <select value={form.device_type} onChange={(e) => setForm({ ...form, device_type: e.target.value })} style={{ width: "100%", padding: "0.7rem 1rem", borderRadius: "8px", border: "1px solid #e2e8f0", fontSize: "0.95rem", color: "#1e293b", outline: "none", boxSizing: "border-box", backgroundColor: "#fff", cursor: "pointer" }}>
                                     <option value="fingerprint">Fingerprint</option>
                                     <option value="face">Face Recognition</option>
                                     <option value="rfid">RFID Card</option>
                                     <option value="mobile">Mobile OTP</option>
                                 </select>
                             </div>
-
-                            {/* Placement Type & Room */}
                             <div style={{ display: "grid", gridTemplateColumns: form.placement_type === "classroom" ? "1fr 1fr" : "1fr", gap: "1rem" }}>
                                 <div>
-                                    <label style={{ fontSize: "0.85rem", fontWeight: 700, color: "#1e293b", marginBottom: "0.5rem", display: "block" }}>Placement Type <span style={{ color: "#ef4444" }}>*</span></label>
-                                    <select value={form.placement_type} onChange={(e) => setForm({ ...form, placement_type: e.target.value })} style={{ width: "100%", padding: "0.7rem 1rem", borderRadius: "8px", border: "1px solid #e2e8f0", fontSize: "0.95rem", color: "#1e293b", outline: "none", boxSizing: "border-box", backgroundColor: "#fff", cursor: "pointer", transition: "border-color 0.2s" }} onFocus={e => e.target.style.borderColor = "#8b5cf6"} onBlur={e => e.target.style.borderColor = "#e2e8f0"}>
+                                    <label style={{ fontSize: "0.85rem", fontWeight: 700, color: "#1e293b", marginBottom: "0.5rem", display: "block" }}>Placement Type</label>
+                                    <select value={form.placement_type} onChange={(e) => setForm({ ...form, placement_type: e.target.value })} style={{ width: "100%", padding: "0.7rem 1rem", borderRadius: "8px", border: "1px solid #e2e8f0", fontSize: "0.95rem", color: "#1e293b", outline: "none", boxSizing: "border-box", backgroundColor: "#fff", cursor: "pointer" }}>
                                         <option value="gate">Main Gate</option>
                                         <option value="classroom">Classroom</option>
                                     </select>
                                 </div>
                                 {form.placement_type === "classroom" && (
                                     <div>
-                                        <label style={{ fontSize: "0.85rem", fontWeight: 700, color: "#1e293b", marginBottom: "0.5rem", display: "block" }}>Room Name/Number <span style={{ color: "#ef4444" }}>*</span></label>
-                                        <input type="text" value={form.room_identifier} onChange={(e) => setForm({ ...form, room_identifier: e.target.value })} placeholder="e.g. Room 101" style={{ width: "100%", padding: "0.7rem 1rem", borderRadius: "8px", border: "1px solid #e2e8f0", fontSize: "0.95rem", color: "#1e293b", outline: "none", boxSizing: "border-box", transition: "border-color 0.2s" }} onFocus={e => e.target.style.borderColor = "#8b5cf6"} onBlur={e => e.target.style.borderColor = "#e2e8f0"} />
+                                        <label style={{ fontSize: "0.85rem", fontWeight: 700, color: "#1e293b", marginBottom: "0.5rem", display: "block" }}>Room Name/Number</label>
+                                        <input type="text" value={form.room_identifier} onChange={(e) => setForm({ ...form, room_identifier: e.target.value })} placeholder="e.g. Room 101" style={{ width: "100%", padding: "0.7rem 1rem", borderRadius: "8px", border: "1px solid #e2e8f0", fontSize: "0.95rem", color: "#1e293b", outline: "none", boxSizing: "border-box" }} />
                                     </div>
                                 )}
                             </div>
-
-                            {/* Location */}
                             <div>
-                                <label style={{ fontSize: "0.85rem", fontWeight: 700, color: "#1e293b", marginBottom: "0.5rem", display: "block" }}>Location <span style={{ color: "#ef4444" }}>*</span></label>
-                                <div style={{ position: "relative" }}>
-                                    <div style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", color: "#94a3b8", display: "flex" }}>
-                                        <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
-                                    </div>
-                                    <input type="text" value={form.location} onChange={(e) => setForm({ ...form, location: e.target.value })} placeholder="e.g. Main Gate" style={{ width: "100%", padding: "0.7rem 1rem 0.7rem 2.5rem", borderRadius: "8px", border: "1px solid #e2e8f0", fontSize: "0.95rem", color: "#1e293b", outline: "none", boxSizing: "border-box", transition: "border-color 0.2s" }} onFocus={e => e.target.style.borderColor = "#8b5cf6"} onBlur={e => e.target.style.borderColor = "#e2e8f0"} />
-                                </div>
+                                <label style={{ fontSize: "0.85rem", fontWeight: 700, color: "#1e293b", marginBottom: "0.5rem", display: "block" }}>Location</label>
+                                <input type="text" value={form.location} onChange={(e) => setForm({ ...form, location: e.target.value })} placeholder="e.g. Main Gate" style={{ width: "100%", padding: "0.7rem 1rem", borderRadius: "8px", border: "1px solid #e2e8f0", fontSize: "0.95rem", color: "#1e293b", outline: "none", boxSizing: "border-box" }} />
                             </div>
-
-                            {/* IP Address */}
                             <div>
                                 <label style={{ fontSize: "0.85rem", fontWeight: 700, color: "#1e293b", marginBottom: "0.5rem", display: "block" }}>IP Address</label>
-                                <div style={{ position: "relative" }}>
-                                    <div style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", color: "#94a3b8", display: "flex" }}>
-                                        <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
-                                    </div>
-                                    <input type="text" value={form.ip_address} onChange={(e) => setForm({ ...form, ip_address: e.target.value })} placeholder="e.g. 192.168.1.100" style={{ width: "100%", padding: "0.7rem 1rem 0.7rem 2.5rem", borderRadius: "8px", border: "1px solid #e2e8f0", fontSize: "0.95rem", color: "#1e293b", outline: "none", boxSizing: "border-box", transition: "border-color 0.2s" }} onFocus={e => e.target.style.borderColor = "#8b5cf6"} onBlur={e => e.target.style.borderColor = "#e2e8f0"} />
-                                </div>
+                                <input type="text" value={form.ip_address} onChange={(e) => setForm({ ...form, ip_address: e.target.value })} placeholder="e.g. 192.168.1.100" style={{ width: "100%", padding: "0.7rem 1rem", borderRadius: "8px", border: "1px solid #e2e8f0", fontSize: "0.95rem", color: "#1e293b", outline: "none", boxSizing: "border-box", fontFamily:"monospace" }} />
                             </div>
-                            
-                            {/* Info Box */}
-                            <div style={{ display: "flex", gap: "0.75rem", alignItems: "center", background: "#f5f3ff", padding: "0.8rem 1rem", borderRadius: "8px", border: "1px solid #ede9fe", marginTop: "0.5rem" }}>
-                                <div style={{ color: "#7c3aed", display: "flex" }}>
-                                    <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
-                                </div>
-                                <span style={{ fontSize: "0.85rem", color: "#5b21b6", fontWeight: 500 }}>Ensure the device is connected to the network and powered on.</span>
-                            </div>
-
-                            {/* Actions */}
                             <div style={{ display: "flex", gap: "1rem", justifyContent: "flex-end", marginTop: "0.5rem" }}>
-                                <button onClick={() => setShowForm(false)} style={{ padding: "0.7rem 1.5rem", borderRadius: "8px", background: "#fff", color: "#475569", border: "1px solid #e2e8f0", fontWeight: 600, fontSize: "0.9rem", cursor: "pointer", transition: "all 0.2s", display: "flex", alignItems: "center", justifyContent: "center" }} onMouseOver={e => e.currentTarget.style.background = "#f8fafc"} onMouseOut={e => e.currentTarget.style.background = "#fff"}>
-                                    Cancel
-                                </button>
-                                <button onClick={handleSave} style={{ padding: "0.7rem 1.5rem", borderRadius: "8px", background: "#6366f1", color: "#fff", border: "none", fontWeight: 600, fontSize: "0.9rem", cursor: "pointer", transition: "all 0.2s", display: "flex", alignItems: "center", gap: "0.5rem", boxShadow: "0 4px 6px rgba(99,102,241,0.2)" }} onMouseOver={e => e.currentTarget.style.background = "#4f46e5"} onMouseOut={e => e.currentTarget.style.background = "#6366f1"}>
-                                    <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+                                <button onClick={() => setShowForm(false)} style={{ padding: "0.7rem 1.5rem", borderRadius: "8px", background: "#fff", color: "#475569", border: "1px solid #e2e8f0", fontWeight: 600, fontSize: "0.9rem", cursor: "pointer" }}>Cancel</button>
+                                <button onClick={handleSave} style={{ padding: "0.7rem 1.5rem", borderRadius: "8px", background: "#6366f1", color: "#fff", border: "none", fontWeight: 600, fontSize: "0.9rem", cursor: "pointer", boxShadow: "0 4px 6px rgba(99,102,241,0.2)" }}>
                                     {editDevice ? "Update Device" : "Register Device"}
                                 </button>
                             </div>
@@ -1232,9 +1755,9 @@ function DevicesTab() {
     );
 }
 
-// ─────────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // ENROLLMENT TAB  (Phase 3)
-// ─────────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function EnrollmentTab() {
     const [enrollments, setEnrollments] = useState([]);
@@ -1476,7 +1999,7 @@ function EnrollmentTab() {
                     <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
                 </div>
                 <div style={{ fontSize: "0.85rem", color: "#4c1d95" }}>
-                    <strong>How enrollment works:</strong> Admin assigns fingerprint on device <span style={{ opacity: 0.5 }}>→</span> notes the Device User ID shown <span style={{ opacity: 0.5 }}>→</span> enters it here to link it to a student/faculty account.
+                    <strong>How enrollment works:</strong> Admin assigns fingerprint on device <span style={{ opacity: 0.5 }}>â†’</span> notes the Device User ID shown <span style={{ opacity: 0.5 }}>â†’</span> enters it here to link it to a student/faculty account.
                 </div>
             </div>
 
@@ -1580,7 +2103,7 @@ function EnrollmentTab() {
                                 <tr>
                                     <td colSpan="10" style={{ textAlign: "center", padding: "3rem", color: "#94a3b8" }}>
                                         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "0.5rem" }}>
-                                            <div style={{ fontSize: "2rem", color: "#cbd5e1" }}>🔍</div>
+                                            <div style={{ fontSize: "2rem", color: "#cbd5e1" }}>ðŸ”</div>
                                             <div>No enrollments found matching criteria</div>
                                         </div>
                                     </td>
@@ -1629,7 +2152,7 @@ function EnrollmentTab() {
                                                 </div>
                                                 <div>
                                                     <div style={{ fontWeight: 600, color: "#1e293b", fontSize: "0.85rem" }}>{e.BiometricDevice?.device_name || "Unknown"}</div>
-                                                    <div style={{ fontSize: "0.7rem", color: "#6366f1" }}>{e.BiometricDevice?.device_serial?.substring(0,6) || "—"}</div>
+                                                    <div style={{ fontSize: "0.7rem", color: "#6366f1" }}>{e.BiometricDevice?.device_serial?.substring(0,6) || "â€”"}</div>
                                                 </div>
                                             </td>
                                             <td style={{ padding: "1rem 0.75rem", color: "#475569", fontFamily: "monospace", fontSize: "0.95rem" }}>{e.device_user_id}</td>
@@ -1812,7 +2335,7 @@ function EnrollmentTab() {
                                                     <div style={{ flex: 1, overflow: "hidden" }}>
                                                         <div style={{ fontWeight: 600, color: "#1e293b", fontSize: "0.95rem", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{u.name}</div>
                                                         <div style={{ fontSize: "0.8rem", color: "#64748b", marginTop: "0.1rem" }}>
-                                                            {u.role === "student" ? `Roll: ${u.rollNo || "N/A"}` : "Faculty"} • Dept: {u.department || "N/A"}
+                                                            {u.role === "student" ? `Roll: ${u.rollNo || "N/A"}` : "Faculty"} â€¢ Dept: {u.department || "N/A"}
                                                         </div>
                                                     </div>
                                                 </div>
@@ -1856,9 +2379,9 @@ function EnrollmentTab() {
     );
 }
 
-// ─────────────────────────────────────────────────────────────────
-// OTP / QR TAB  (Smart QR Attendance — Faculty scans student QR)
-// ─────────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// OTP / QR TAB  (Smart QR Attendance â€” Faculty scans student QR)
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function OtpQrTab() {
     const navigate = useNavigate();
     return (
@@ -1885,7 +2408,7 @@ function OtpQrTab() {
                     <div>
                         <h2 style={{ margin: "0 0 0.5rem", fontSize: "1.5rem", fontWeight: 700, color: "#1e293b" }}>Smart QR Attendance System</h2>
                         <p style={{ color: "#475569", margin: 0, fontSize: "1rem", lineHeight: 1.6 }}>
-                            Each student receives a <strong>unique permanent QR code</strong> upon subject enrollment. Faculty scans the student's QR code to instantly mark attendance — <strong>no OTP, no student action required.</strong>
+                            Each student receives a <strong>unique permanent QR code</strong> upon subject enrollment. Faculty scans the student's QR code to instantly mark attendance â€” <strong>no OTP, no student action required.</strong>
                         </p>
                     </div>
                 </div>
@@ -2037,9 +2560,9 @@ function OtpQrTab() {
     );
 }
 
-// ─────────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // REPORTS TAB  (Phase 8 + 12)
-// ─────────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function ReportsTab() {
     const [reportType, setReportType] = useState("late");
     const [startDate, setStartDate] = useState("");
@@ -2074,10 +2597,10 @@ function ReportsTab() {
                         deviceId: r.device_id || "DEV",
                         date: r.date,
                         day: new Date(r.date).toLocaleDateString('en-US', {weekday: 'short'}),
-                        checkIn: r.time_in ? format12Hour(r.time_in) : "—",
-                        checkOut: r.time_out ? format12Hour(r.time_out) : "—",
+                        checkIn: r.time_in ? format12Hour(r.time_in) : "â€”",
+                        checkOut: r.time_out ? format12Hour(r.time_out) : "â€”",
                         expected: "09:00 AM",
-                        delay: r.late_by_minutes ? `${r.late_by_minutes}m` : "—",
+                        delay: r.late_by_minutes ? `${r.late_by_minutes}m` : "â€”",
                         status: reportType === "late" ? "Late" : reportType === "absent" ? "Absent" : "Present",
                         bg: ["#6366f1", "#3b82f6", "#10b981", "#f59e0b", "#ef4444"][i % 5]
                     };
@@ -2321,9 +2844,9 @@ function ReportsTab() {
     );
 }
 
-// ─────────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // SETTINGS TAB  (Phase 5)
-// ─────────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function SettingsTab() {
     const [settings, setSettings] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -2401,8 +2924,8 @@ function SettingsTab() {
                             <label style={{ ...labelBaseStyle, marginBottom: "1rem" }}>Primary Tracking Mode</label>
                             <div style={{ display: "inline-flex", background: "#f1f5f9", borderRadius: "12px", padding: "4px", gap: "2px", width: "100%" }}>
                                 {[
-                                    { value: "class_based", icon: "🏫", label: "Class Based", sub: "Main Gate" },
-                                    { value: "subject_based", icon: "📚", label: "Subject Based", sub: "Classrooms" }
+                                    { value: "class_based", icon: "ðŸ«", label: "Class Based", sub: "Main Gate" },
+                                    { value: "subject_based", icon: "ðŸ“š", label: "Subject Based", sub: "Classrooms" }
                                 ].map(opt => {
                                     const isActive = (settings.attendance_mode === opt.value) || (!settings.attendance_mode && opt.value === "class_based");
                                     return (
@@ -2421,7 +2944,7 @@ function SettingsTab() {
                                 })}
                             </div>
                             <div style={{ display: "flex", alignItems: "flex-start", gap: "0.5rem", marginTop: "0.75rem", padding: "0.6rem 0.75rem", background: (settings.attendance_mode === "subject_based") ? "#f5f3ff" : "#f0fdf4", borderRadius: "8px", border: "1px solid " + ((settings.attendance_mode === "subject_based") ? "#e9d5ff" : "#bbf7d0") }}>
-                                <span style={{ fontSize: "0.9rem" }}>{(settings.attendance_mode === "subject_based") ? "ℹ️" : "✅"}</span>
+                                <span style={{ fontSize: "0.9rem" }}>{(settings.attendance_mode === "subject_based") ? "â„¹ï¸" : "âœ…"}</span>
                                 <span style={{ fontSize: "0.8rem", color: "#475569", lineHeight: 1.4 }}>
                                     {settings.attendance_mode === "subject_based"
                                         ? "Students punch at specific classrooms. Each device must be assigned to a room with a timetable."
@@ -2433,14 +2956,14 @@ function SettingsTab() {
                         {settings.attendance_mode === "subject_based" && (
                             <div style={{ background: "#faf5ff", border: "1px solid #e9d5ff", borderRadius: "12px", padding: "1.25rem" }}>
                                 <div style={{ display: "flex", gap: "0.5rem", alignItems: "center", marginBottom: "1rem" }}>
-                                    <span style={{ fontSize: "1rem" }}>⚡</span>
+                                    <span style={{ fontSize: "1rem" }}>âš¡</span>
                                     <span style={{ fontSize: "0.9rem", fontWeight: 700, color: "#7c3aed" }}>Subject Punch Behavior</span>
                                 </div>
                                 {/* Subject Mode Pill Toggle */}
                                 <div style={{ display: "inline-flex", background: "#ede9fe", borderRadius: "10px", padding: "4px", gap: "2px", width: "100%", marginBottom: "0.75rem" }}>
                                     {[
-                                        { value: "automatic", icon: "🤖", label: "Automatic", sub: "Carry-forward" },
-                                        { value: "manual", icon: "👆", label: "Manual", sub: "Punch per subject" }
+                                        { value: "automatic", icon: "ðŸ¤–", label: "Automatic", sub: "Carry-forward" },
+                                        { value: "manual", icon: "ðŸ‘†", label: "Manual", sub: "Punch per subject" }
                                     ].map(opt => {
                                         const isActive = (settings.subject_mode === opt.value) || (!settings.subject_mode && opt.value === "automatic");
                                         return (
@@ -2459,8 +2982,8 @@ function SettingsTab() {
                                 </div>
                                 <div style={{ fontSize: "0.8rem", color: "#5b21b6", lineHeight: 1.4, padding: "0.5rem 0.25rem" }}>
                                     {(settings.subject_mode === "manual")
-                                        ? "👆 Students must physically scan their finger for every subject period."
-                                        : "🤖 Once present in a room, attendance automatically carries forward to next consecutive subject periods in the same room."}
+                                        ? "ðŸ‘† Students must physically scan their finger for every subject period."
+                                        : "ðŸ¤– Once present in a room, attendance automatically carries forward to next consecutive subject periods in the same room."}
                                 </div>
 
                                 {/* Strict Subject Enrollment Toggle */}
@@ -2573,13 +3096,13 @@ function SettingsTab() {
                         {/* Main Gate Notifications Group */}
                         <div style={{ marginBottom: "1.5rem" }}>
                             <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "1rem", paddingBottom: "0.5rem", borderBottom: "1px dashed #e2e8f0" }}>
-                                <span style={{ fontSize: "1rem" }}>🚪</span>
+                                <span style={{ fontSize: "1rem" }}>ðŸšª</span>
                                 <span style={{ fontWeight: 700, fontSize: "0.85rem", color: "#374151", textTransform: "uppercase", letterSpacing: "0.05em" }}>Main Gate</span>
                             </div>
                             <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
                                 {[
-                                    { key: "notify_main_gate_in", label: "Notify when student punches IN at Main Gate", emoji: "✅" },
-                                    { key: "notify_main_gate_out", label: "Notify when student punches OUT at Main Gate", emoji: "🚪" },
+                                    { key: "notify_main_gate_in", label: "Notify when student punches IN at Main Gate", emoji: "âœ…" },
+                                    { key: "notify_main_gate_out", label: "Notify when student punches OUT at Main Gate", emoji: "ðŸšª" },
                                 ].map(({ key, label, emoji }) => (
                                     <label key={key} style={{ display: "flex", alignItems: "center", gap: "0.75rem", cursor: "pointer", padding: "0.6rem 0.75rem", borderRadius: "8px", background: settings[key] ? "rgba(139,92,246,0.05)" : "transparent", border: "1px solid", borderColor: settings[key] ? "#e9d5ff" : "transparent", transition: "all 0.2s" }}>
                                         <input
@@ -2598,13 +3121,13 @@ function SettingsTab() {
                         {settings.attendance_mode === "subject_based" && (
                             <div style={{ marginBottom: "1.5rem" }}>
                                 <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "1rem", paddingBottom: "0.5rem", borderBottom: "1px dashed #e2e8f0" }}>
-                                    <span style={{ fontSize: "1rem" }}>📚</span>
+                                    <span style={{ fontSize: "1rem" }}>ðŸ“š</span>
                                     <span style={{ fontWeight: 700, fontSize: "0.85rem", color: "#374151", textTransform: "uppercase", letterSpacing: "0.05em" }}>Subject / Classroom</span>
                                 </div>
                                 <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
                                     {[
-                                        { key: "notify_subject_in", label: "Notify when student punches IN for a Subject", emoji: "📚" },
-                                        { key: "notify_subject_out", label: "Notify when student punches OUT for a Subject", emoji: "📤" },
+                                        { key: "notify_subject_in", label: "Notify when student punches IN for a Subject", emoji: "ðŸ“š" },
+                                        { key: "notify_subject_out", label: "Notify when student punches OUT for a Subject", emoji: "ðŸ“¤" },
                                     ].map(({ key, label, emoji }) => (
                                         <label key={key} style={{ display: "flex", alignItems: "center", gap: "0.75rem", cursor: "pointer", padding: "0.6rem 0.75rem", borderRadius: "8px", background: settings[key] ? "rgba(139,92,246,0.05)" : "transparent", border: "1px solid", borderColor: settings[key] ? "#e9d5ff" : "transparent", transition: "all 0.2s" }}>
                                             <input
@@ -2623,13 +3146,13 @@ function SettingsTab() {
                         {/* Status-based Notifications Group */}
                         <div>
                             <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "1rem", paddingBottom: "0.5rem", borderBottom: "1px dashed #e2e8f0" }}>
-                                <span style={{ fontSize: "1rem" }}>⚡</span>
+                                <span style={{ fontSize: "1rem" }}>âš¡</span>
                                 <span style={{ fontWeight: 700, fontSize: "0.85rem", color: "#374151", textTransform: "uppercase", letterSpacing: "0.05em" }}>Status Alerts</span>
                             </div>
                             <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
                                 {[
-                                    { key: "notify_parent_on_late", label: "Notify when student arrives late", emoji: "⚠️" },
-                                    { key: "notify_parent_on_absent", label: "Notify when student is absent", emoji: "❌" },
+                                    { key: "notify_parent_on_late", label: "Notify when student arrives late", emoji: "âš ï¸" },
+                                    { key: "notify_parent_on_absent", label: "Notify when student is absent", emoji: "âŒ" },
                                 ].map(({ key, label, emoji }) => (
                                     <label key={key} style={{ display: "flex", alignItems: "center", gap: "0.75rem", cursor: "pointer", padding: "0.6rem 0.75rem", borderRadius: "8px", background: settings[key] ? "rgba(139,92,246,0.05)" : "transparent", border: "1px solid", borderColor: settings[key] ? "#e9d5ff" : "transparent", transition: "all 0.2s" }}>
                                         <input
@@ -2662,9 +3185,9 @@ function SettingsTab() {
     );
 }
 
-// ─────────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // SHARED UI HELPERS
-// ─────────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function StatBox({ icon, label, value, color }) {
     return (
@@ -2711,7 +3234,7 @@ function Modal({ title, children, onClose }) {
             <div style={{ background: "var(--card-bg, #fff)", borderRadius: "16px", padding: "2rem", width: "100%", maxWidth: "480px", maxHeight: "90vh", overflowY: "auto" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.5rem" }}>
                     <h3 style={{ margin: 0, fontWeight: 700 }}>{title}</h3>
-                    <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", fontSize: "1.5rem", color: "var(--text-secondary)" }}>✕</button>
+                    <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", fontSize: "1.5rem", color: "var(--text-secondary)" }}>âœ•</button>
                 </div>
                 {children}
             </div>
@@ -2735,7 +3258,7 @@ function FormField({ label, value, onChange, placeholder, disabled, type = "text
 function LoadingCard() {
     return (
         <div className="card" style={{ padding: "3rem", textAlign: "center", color: "var(--text-secondary)" }}>
-            <div style={{ fontSize: "2rem", marginBottom: "0.5rem" }}>⏳</div>
+            <div style={{ fontSize: "2rem", marginBottom: "0.5rem" }}>â³</div>
             <div>Loading...</div>
         </div>
     );
@@ -2744,7 +3267,7 @@ function LoadingCard() {
 function Empty({ msg }) {
     return (
         <div className="card" style={{ padding: "3rem", textAlign: "center", color: "var(--text-secondary)" }}>
-            <div style={{ fontSize: "2.5rem", marginBottom: "0.5rem" }}>🔍</div>
+            <div style={{ fontSize: "2.5rem", marginBottom: "0.5rem" }}>ðŸ”</div>
             <div>{msg}</div>
         </div>
     );

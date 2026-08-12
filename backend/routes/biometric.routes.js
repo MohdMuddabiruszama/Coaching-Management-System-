@@ -9,13 +9,18 @@ const verifyToken = require("../middlewares/auth.middleware");
 const allowRoles = require("../middlewares/role.middleware");
 const ctrl = require("../controllers/biometric.controller");
 
+// ── Device Catalog (static JSON — zero DB queries) ───────────────
+router.get("/catalog", verifyToken, allowRoles("admin"), ctrl.getCatalog);
+
 // ── Phase 2: Device Management ──────────────────────────────────
 router.get("/devices", verifyToken, allowRoles("admin"), ctrl.getDevices);
 router.post("/devices", verifyToken, allowRoles("admin"), ctrl.createDevice);
+router.post("/devices/register", verifyToken, allowRoles("admin"), ctrl.registerDevice); // Wizard registration
 router.put("/devices/:id", verifyToken, allowRoles("admin"), ctrl.updateDevice);
 router.delete("/devices/:id", verifyToken, allowRoles("admin"), ctrl.deleteDevice);
 router.get("/devices/health", verifyToken, allowRoles("admin"), ctrl.getDevicesHealth);
 router.get("/devices/:id/status", verifyToken, allowRoles("admin"), ctrl.getDeviceStatus);
+router.get("/devices/:id/connection-status", verifyToken, allowRoles("admin"), ctrl.getDeviceConnectionStatus); // Live status pill
 router.post("/devices/:id/sync", verifyToken, allowRoles("admin"), ctrl.syncDevice);
 
 // ── Phase 3: Enrollment ──────────────────────────────────────────

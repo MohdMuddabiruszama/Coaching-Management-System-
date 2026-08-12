@@ -1,5 +1,6 @@
 const { BiometricDevice, BiometricPunch } = require("../models");
 const { processPunch } = require("./biometric.controller");
+const { Op } = require("sequelize");
 
 /**
  * GET /iclock/cdata
@@ -10,10 +11,14 @@ exports.handshake = async (req, res) => {
         const sn = req.query.SN;
         if (!sn) return res.send("ERROR: NO SN");
 
-        const device = await BiometricDevice.findOne({ where: { device_serial: sn, status: "active" } });
+        const device = await BiometricDevice.findOne({ 
+            where: { device_serial: sn, status: { [Op.in]: ["active", "pending"] } } 
+        });
         if (!device) return res.send("ERROR: UNREGISTERED DEVICE");
 
-        await device.update({ last_sync: new Date() });
+        const updateData = { last_sync: new Date() };
+        if (device.status === "pending") updateData.status = "active";
+        await device.update(updateData);
         
         res.setHeader("Content-Type", "text/plain");
         res.send("OK");
@@ -31,9 +36,14 @@ exports.receiveData = async (req, res) => {
     try {
         const sn = req.query.SN;
         if (!sn) return res.send("ERROR: NO SN");
-
-        const device = await BiometricDevice.findOne({ where: { device_serial: sn, status: "active" } });
+        const device = await BiometricDevice.findOne({ 
+            where: { device_serial: sn, status: { [Op.in]: ["active", "pending"] } } 
+        });
         if (!device) return res.send("ERROR: UNREGISTERED DEVICE");
+
+        if (device.status === "pending") {
+            await device.update({ status: "active", last_punch_at: new Date() });
+        }
 
         const rawData = req.body;
         if (typeof rawData !== 'string') {
