@@ -1,5 +1,5 @@
 ﻿/**
- * Biometric Attendance Management â€” Admin Page
+ * Biometric Attendance Management — Admin Page
  * Phases 2, 3, 5, 7, 8, 10: Devices, Enrollment, Live Attendance,
  * OTP/QR Attendance, Reports, Settings
  */
@@ -11,7 +11,7 @@ import api from "../../services/api";
 import toast from "react-hot-toast";
 import { format12Hour } from "../../utils/timeFormat";
 
-// â”€â”€â”€ Tab IDs â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Tab IDs ─────────────────────────────────────────────────────
 const TABS = [
     { id: "live", label: "Live Attendance", icon: <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M4 12a8 8 0 0 1 16 0M8 12a4 4 0 0 1 8 0M12 12v.01"></path></svg> },
     { id: "devices", label: "Devices", icon: <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><path d="M8 21h8M12 17v4"></path></svg> },
@@ -31,7 +31,7 @@ export default function BiometricPage() {
         const next = !isTestMode;
         setIsTestMode(next);
         try { localStorage.setItem("biometric_test_mode", String(next)); } catch {}
-        toast(next ? "ðŸ§ª Switched to Test Mode" : "âœ… Switched to Real Mode", {
+        toast(next ? "ðŸ§ª Switched to Test Mode" : "✅ Switched to Real Mode", {
             icon: next ? "âš—ï¸" : "ðŸ”Œ",
             style: { background: next ? "#fef3c7" : "#ecfdf5", color: next ? "#92400e" : "#065f46", fontWeight: 600 }
         });
@@ -55,7 +55,7 @@ export default function BiometricPage() {
                             )}
                         </div>
                         <p style={{ color: "#64748b", margin: "0.25rem 0 0", fontSize: "0.95rem" }}>
-                            {isTestMode ? "Simulator active â€” no physical devices required" : "Manage devices, enrollments, and view live attendance data"}
+                            {isTestMode ? "Simulator active — no physical devices required" : "Manage devices, enrollments, and view live attendance data"}
                         </p>
                     </div>
                 </div>
@@ -133,9 +133,9 @@ export default function BiometricPage() {
 }
 
 
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─────────────────────────────────────────────────────────────────
 // TEST MODE SIMULATOR (renders only when isTestMode is true)
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─────────────────────────────────────────────────────────────────
 function TestModeSimulator({ onPunchSent }) {
     const [devices, setDevices] = useState([]);
     const [enrollments, setEnrollments] = useState([]);
@@ -203,7 +203,7 @@ function TestModeSimulator({ onPunchSent }) {
         if (!selectedDevice) return toast.error("Select a device first");
         try {
             await api.post("/biometric/test/heartbeat", { device_id: parseInt(selectedDevice) });
-            toast.success("Heartbeat sent â€” device is online");
+            toast.success("Heartbeat sent — device is online");
             addLog("success", "Heartbeat sent", "Device marked online");
         } catch (e) {
             addLog("error", "Heartbeat failed", e?.response?.data?.message || e.message);
@@ -231,16 +231,16 @@ function TestModeSimulator({ onPunchSent }) {
                 const { result_ok, result_reason, attendance, punch_id } = res.data.data;
                 const logType = result_ok ? "success" : "info";
                 const logMsg = result_ok
-                    ? `Punch ${pType.toUpperCase()} â†’ ${result_reason}`
+                    ? `Punch ${pType.toUpperCase()} → ${result_reason}`
                     : `Punch ${pType.toUpperCase()} sent (no attendance created)`;
                 const logDetail = result_ok
                     ? `Punch ID: ${punch_id}${attendance ? ` | Status: ${attendance.status?.toUpperCase()}${attendance.is_late ? ` | ${attendance.late_by_minutes}m late` : ""}` : ""}`
                     : `Reason: ${result_reason} | Punch ID: ${punch_id}`;
 
                 if (result_ok) {
-                    toast.success(`${pType.toUpperCase()} punch recorded! â†’ ${attendance?.status || "processed"}`);
+                    toast.success(`${pType.toUpperCase()} punch recorded! → ${attendance?.status || "processed"}`);
                 } else {
-                    toast(`${pType.toUpperCase()} punch sent â€” ${result_reason}`, { icon: "â„¹ï¸" });
+                    toast(`${pType.toUpperCase()} punch sent — ${result_reason}`, { icon: "â„¹ï¸" });
                 }
                 addLog(logType, logMsg, logDetail);
                 if (onPunchSent) onPunchSent();
@@ -298,7 +298,7 @@ function TestModeSimulator({ onPunchSent }) {
                             onChange={e => { setSelectedDevice(e.target.value); setSelectedEnrollment(""); }}
                             style={{ width: "100%", padding: "0.6rem 0.75rem", borderRadius: "8px", border: "1px solid #fde68a", fontSize: "0.9rem", background: "#fff", color: "#1e293b", outline: "none", marginBottom: "0.75rem" }}
                         >
-                            <option value="">â€” Select a device â€”</option>
+                            <option value="">— Select a device —</option>
                             {devices.map(d => (
                                 <option key={d.id} value={String(d.id)}>{d.device_name} ({d.device_serial})</option>
                             ))}
@@ -310,7 +310,7 @@ function TestModeSimulator({ onPunchSent }) {
                             onChange={e => setSelectedEnrollment(e.target.value)}
                             style={{ width: "100%", padding: "0.6rem 0.75rem", borderRadius: "8px", border: "1px solid #fde68a", fontSize: "0.9rem", background: "#fff", color: "#1e293b", outline: "none" }}
                         >
-                            <option value="">â€” Select an enrolled person â€”</option>
+                            <option value="">— Select an enrolled person —</option>
                             {filteredEnrollments.map(e => (
                                 <option key={e.id} value={e.device_user_id}>
                                     {e.User?.name || `User #${e.user_id}`} | ID: {e.device_user_id} | {e.user_role}
@@ -384,7 +384,7 @@ function TestModeSimulator({ onPunchSent }) {
                                 }}
                             >
                                 <svg width="28" height="28" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4m6 2a9 9 0 1 1-18 0 9 9 0 0 1 18 0z"></path></svg>
-                                ðŸ‘† PUNCH IN
+                                👆 PUNCH IN
                             </button>
                             <button
                                 onClick={() => handlePunch("out")}
@@ -400,7 +400,7 @@ function TestModeSimulator({ onPunchSent }) {
                                 }}
                             >
                                 <svg width="28" height="28" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>
-                                ðŸšª PUNCH OUT
+                                🚪 PUNCH OUT
                             </button>
                         </div>
                         {(!selectedDevice || !selectedEnrollment) && (
@@ -429,7 +429,7 @@ function TestModeSimulator({ onPunchSent }) {
                                     borderLeft: "3px solid " + (entry.type === "success" ? "#10b981" : entry.type === "error" ? "#ef4444" : "#6366f1"),
                                 }}>
                                     <span style={{ color: entry.type === "success" ? "#10b981" : entry.type === "error" ? "#ef4444" : "#6366f1", flexShrink: 0, marginTop: "1px" }}>
-                                        {entry.type === "success" ? "âœ“" : entry.type === "error" ? "âœ—" : "â„¹"}
+                                        {entry.type === "success" ? "✓" : entry.type === "error" ? "âœ—" : "â„¹"}
                                     </span>
                                     <div>
                                         <div style={{ fontWeight: 600, color: "#1e293b" }}>{entry.message}</div>
@@ -446,9 +446,9 @@ function TestModeSimulator({ onPunchSent }) {
     );
 }
 
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─────────────────────────────────────────────────────────────────
 // LIVE ATTENDANCE TAB  (Phase 7 + 8)
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─────────────────────────────────────────────────────────────────
 function LiveAttendanceTab({ isTestMode = false, setActiveTab }) {
     const [data, setData] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -603,7 +603,7 @@ function LiveAttendanceTab({ isTestMode = false, setActiveTab }) {
                                 style={{ padding: "0.5rem 1rem", borderRadius: "8px", border: "1px solid #e2e8f0", fontSize: "0.9rem", color: "#475569", outline: "none", backgroundColor: "#fff", cursor: "pointer" }}
                             >
                                 <option value="all">All Classes</option>
-                                {[...new Set(records.filter(r => r.role === "student").map(r => r.class).filter(c => c && c !== "â€”"))].sort().map(c => (
+                                {[...new Set(records.filter(r => r.role === "student").map(r => r.class).filter(c => c && c !== "—"))].sort().map(c => (
                                     <option key={c} value={c}>{c}</option>
                                 ))}
                             </select>
@@ -615,7 +615,7 @@ function LiveAttendanceTab({ isTestMode = false, setActiveTab }) {
                                 style={{ padding: "0.5rem 1rem", borderRadius: "8px", border: "1px solid #e2e8f0", fontSize: "0.9rem", color: "#475569", outline: "none", backgroundColor: "#fff", cursor: "pointer" }}
                             >
                                 <option value="all">All Designations</option>
-                                {[...new Set(records.filter(r => r.role === "faculty").map(r => r.class).filter(c => c && c !== "â€”"))].sort().map(d => (
+                                {[...new Set(records.filter(r => r.role === "faculty").map(r => r.class).filter(c => c && c !== "—"))].sort().map(d => (
                                     <option key={d} value={d}>{d}</option>
                                 ))}
                             </select>
@@ -663,28 +663,28 @@ function LiveAttendanceTab({ isTestMode = false, setActiveTab }) {
                                                 <div style={{ width: "32px", height: "32px", borderRadius: "50%", background: "#6366f1", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: "0.8rem" }}>
                                                     {initial}
                                                 </div>
-                                                <span style={{ fontWeight: 600, color: "#1e293b" }}>{r.name || "â€”"}</span>
+                                                <span style={{ fontWeight: 600, color: "#1e293b" }}>{r.name || "—"}</span>
                                             </td>
                                             <td style={{ padding: "1rem 0.75rem", color: "#475569" }}>
-                                                {r.role === 'student' ? (r.roll_number || "â€”") : (r.id ? `EMP${r.id.toString().padStart(4, '0')}` : "â€”")}
+                                                {r.role === 'student' ? (r.roll_number || "—") : (r.id ? `EMP${r.id.toString().padStart(4, '0')}` : "—")}
                                             </td>
-                                            <td style={{ padding: "1rem 0.75rem", color: "#475569" }}>{r.class || "â€”"}</td>
+                                            <td style={{ padding: "1rem 0.75rem", color: "#475569" }}>{r.class || "—"}</td>
                                             <td style={{ padding: "1rem 0.75rem", color: "#475569" }}>
                                                 <div style={{ display: "flex", flexDirection: "column", gap: "0.3rem" }}>
                                                     <div style={{ display: "flex", alignItems: "center", gap: "0.4rem", fontSize: "0.85rem", whiteSpace: "nowrap" }}>
                                                         <span style={{ color: "#10b981", fontWeight: 700, fontSize: "0.7rem", background: "#d1fae5", padding: "0.15rem 0.4rem", borderRadius: "4px", minWidth: "28px", textAlign: "center" }}>IN</span> 
-                                                        <span style={{ fontWeight: 500, color: "#334155" }}>{r.time_in ? format12Hour(r.time_in) : "â€”"}</span>
+                                                        <span style={{ fontWeight: 500, color: "#334155" }}>{r.time_in ? format12Hour(r.time_in) : "—"}</span>
                                                     </div>
                                                     <div style={{ display: "flex", alignItems: "center", gap: "0.4rem", fontSize: "0.85rem", whiteSpace: "nowrap" }}>
                                                         <span style={{ color: "#ef4444", fontWeight: 700, fontSize: "0.7rem", background: "#fee2e2", padding: "0.15rem 0.4rem", borderRadius: "4px", minWidth: "28px", textAlign: "center" }}>OUT</span> 
-                                                        <span style={{ fontWeight: 500, color: "#334155" }}>{r.time_out ? format12Hour(r.time_out) : "â€”"}</span>
+                                                        <span style={{ fontWeight: 500, color: "#334155" }}>{r.time_out ? format12Hour(r.time_out) : "—"}</span>
                                                     </div>
                                                 </div>
                                             </td>
                                             <td style={{ padding: "1rem 0.75rem" }}>
                                                 <NewStatusBadge status={r.status} isLate={r.is_late} />
                                             </td>
-                                            <td style={{ padding: "1rem 0.75rem", color: "#475569" }}>{r.device_name || "â€”"}</td>
+                                            <td style={{ padding: "1rem 0.75rem", color: "#475569" }}>{r.device_name || "—"}</td>
                                             <td style={{ padding: "1rem 0.75rem" }}>
                                                 <button onClick={() => setActiveTab("reports")} style={{ display: "flex", alignItems: "center", gap: "0.25rem", padding: "0.4rem 0.75rem", borderRadius: "6px", border: "1px solid #e2e8f0", background: "#fff", color: "#6366f1", fontSize: "0.8rem", cursor: "pointer", fontWeight: 600 }}>
                                                     <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
@@ -773,13 +773,13 @@ function NewStatusBadge({ status, isLate }) {
     );
 }
 
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─────────────────────────────────────────────────────────────────
 // DEVICES TAB  (Phase 2)
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─────────────────────────────────────────────────────────────────
 
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-// BRAND PICKER WIZARD â€” Sub-components
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─────────────────────────────────────────────────────────────────
+// BRAND PICKER WIZARD — Sub-components
+// ─────────────────────────────────────────────────────────────────
 
 const BRAND_COLORS = {
     zkteco:    "#6366f1",
@@ -845,13 +845,13 @@ function BrandBadge({ brand, size = 32 }) {
     );
 }
 
-// â”€â”€â”€ Step 1 â†’ Brand Picker Cards â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Step 1 → Brand Picker Cards ─────────────────────────────────
 function BrandPickerGrid({ catalog, onPick }) {
     const [hovered, setHovered] = useState(null);
     return (
         <div>
             <p style={{ margin:"0 0 1.25rem", color:"#64748b", fontSize:"0.9rem" }}>
-                Select your device brand and model. All brands go through the same quick setup â€” no complicated configuration.
+                Select your device brand and model. All brands go through the same quick setup — no complicated configuration.
             </p>
             <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill, minmax(210px,1fr))", gap:"0.85rem" }}>
                 {catalog.map(entry => {
@@ -913,7 +913,7 @@ function BrandPickerGrid({ catalog, onPick }) {
                                 <div style={{ display:"flex", alignItems:"flex-start", gap:"0.4rem",
                                     background:"#fffbeb", border:"1px solid #fde68a",
                                     borderRadius:"6px", padding:"0.4rem 0.6rem", marginTop:"0.1rem" }}>
-                                    <span style={{ fontSize:"0.85rem", flexShrink:0 }}>âš </span>
+                                    <span style={{ fontSize:"0.85rem", flexShrink:0 }}>⚠️</span>
                                     <span style={{ fontSize:"0.72rem", color:"#92400e", lineHeight:1.4 }}>
                                         Buy from an authorized dealer for warranty support
                                     </span>
@@ -927,7 +927,7 @@ function BrandPickerGrid({ catalog, onPick }) {
     );
 }
 
-// â”€â”€â”€ Step 2 â†’ Details Form â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Step 2 → Details Form ────────────────────────────────────────
 function DeviceDetailsForm({ entry, form, setForm }) {
     const color = BRAND_COLORS[entry.brand] || "#6366f1";
     const hints = entry.setup_instructions?.field_hints || {};
@@ -955,7 +955,7 @@ function DeviceDetailsForm({ entry, form, setForm }) {
                 </label>
                 <input type="text" value={form.device_name}
                     onChange={e => setForm(f => ({ ...f, device_name: e.target.value }))}
-                    placeholder="e.g. Main Gate â€” ZKTeco"
+                    placeholder="e.g. Main Gate — ZKTeco"
                     style={{ width:"100%", padding:"0.65rem 1rem", borderRadius:"8px",
                         border:"1px solid #e2e8f0", fontSize:"0.9rem", outline:"none", boxSizing:"border-box" }} />
             </div>
@@ -1028,7 +1028,7 @@ function DeviceDetailsForm({ entry, form, setForm }) {
     );
 }
 
-// â”€â”€â”€ Step 3 â†’ Instructions + Webhook URL â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Step 3 → Instructions + Webhook URL ─────────────────────────
 function SetupInstructions({ registeredDevice }) {
     const [copied, setCopied] = useState(false);
     const { instructions, catalog } = registeredDevice;
@@ -1063,7 +1063,7 @@ function SetupInstructions({ registeredDevice }) {
                         background: copied ? "#10b981" : color, color:"#fff", border:"none",
                         fontWeight:600, fontSize:"0.82rem", cursor:"pointer", whiteSpace:"nowrap",
                         transition:"background 0.2s", flexShrink:0 }}>
-                        {copied ? "âœ“ Copied" : "Copy"}
+                        {copied ? "✓ Copied" : "Copy"}
                     </button>
                 </div>
                 <div style={{ fontSize:"0.75rem", color:"#94a3b8", marginTop:"0.35rem" }}>
@@ -1096,7 +1096,7 @@ function SetupInstructions({ registeredDevice }) {
     );
 }
 
-// â”€â”€â”€ Step 4 â†’ Test Connection â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Step 4 → Test Connection ─────────────────────────────────────
 function TestConnectionStep({ registeredDevice, onSuccess, socket }) {
     const [received, setReceived] = useState(false);
     const [punchData, setPunchData] = useState(null);
@@ -1115,7 +1115,7 @@ function TestConnectionStep({ registeredDevice, onSuccess, socket }) {
 
     if (received) return (
         <div style={{ textAlign:"center", padding:"2rem 1rem" }}>
-            <div style={{ fontSize:"3rem", marginBottom:"0.75rem" }}>ðŸŽ‰</div>
+            <div style={{ fontSize:"3rem", marginBottom:"0.75rem" }}>🎉</div>
             <div style={{ fontWeight:800, fontSize:"1.2rem", color:"#059669", marginBottom:"0.5rem" }}>
                 Connection Confirmed!
             </div>
@@ -1127,7 +1127,7 @@ function TestConnectionStep({ registeredDevice, onSuccess, socket }) {
             <button onClick={onSuccess} style={{ padding:"0.75rem 2rem", borderRadius:"10px",
                 background:"#059669", color:"#fff", border:"none", fontWeight:700,
                 fontSize:"0.95rem", cursor:"pointer" }}>
-                Done â€” View My Devices
+                Done — View My Devices
             </button>
         </div>
     );
@@ -1152,7 +1152,7 @@ function TestConnectionStep({ registeredDevice, onSuccess, socket }) {
             <style>{`@keyframes bioPulse { 0%,100%{transform:scale(1);opacity:0.6} 50%{transform:scale(1.18);opacity:1} }`}</style>
 
             <div style={{ fontWeight:700, color:"#1e293b", fontSize:"1rem", marginBottom:"0.5rem" }}>
-                Waiting for a test punchâ€¦
+                Waiting for a test punch…
             </div>
             <div style={{ color:"#64748b", fontSize:"0.87rem", maxWidth:"340px", margin:"0 auto" }}>
                 On your device, scan any fingerprint or tap an RFID card. We'll detect it here automatically.
@@ -1162,15 +1162,15 @@ function TestConnectionStep({ registeredDevice, onSuccess, socket }) {
             <button onClick={onSuccess} style={{ marginTop:"1.75rem", padding:"0.55rem 1.25rem",
                 borderRadius:"8px", background:"transparent", color:"#94a3b8",
                 border:"1px solid #e2e8f0", fontSize:"0.82rem", cursor:"pointer" }}>
-                Skip â€” I'll test later
+                Skip — I'll test later
             </button>
         </div>
     );
 }
 
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─────────────────────────────────────────────────────────────────
 // MAIN DEVICES TAB
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─────────────────────────────────────────────────────────────────
 function DevicesTab() {
     const [devices, setDevices] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -1189,7 +1189,7 @@ function DevicesTab() {
     const [page, setPage] = useState(1);
     const limit = 5;
 
-    // â”€â”€ Wizard State â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── Wizard State ──────────────────────────────────────────────
     const [showWizard, setShowWizard] = useState(false);
     const [wizardStep, setWizardStep] = useState(1); // 1=pick, 2=details, 3=instructions, 4=test
     const [catalog, setCatalog] = useState([]);
@@ -1377,7 +1377,7 @@ function DevicesTab() {
 
     if (loading) return <div style={{ textAlign: "center", padding: "3rem" }}>Loading devices...</div>;
 
-    // â”€â”€ Wizard step labels â”€â”€
+    // ── Wizard step labels ──
     const WIZARD_STEPS = ["Pick Brand", "Details", "Instructions", "Test Connection"];
 
     return (
@@ -1502,18 +1502,18 @@ function DevicesTab() {
                                                 <div>{d.device_serial}</div>
                                                 {d.connection_type && (
                                                     <div style={{ fontSize:"0.72rem", color:"#64748b", fontFamily:"sans-serif", marginTop:"2px" }}>
-                                                        {d.connection_type === "lan_push" ? "ðŸ”— LAN Push" : "â˜ï¸ Cloud Gateway"}
+                                                        {d.connection_type === "lan_push" ? "🔗 LAN Push" : "☁️ Cloud Gateway"}
                                                     </div>
                                                 )}
                                             </td>
-                                            <td style={{ padding: "1rem 0.75rem", color: "#6366f1" }}>{d.device_type ? d.device_type.charAt(0).toUpperCase() + d.device_type.slice(1) : "â€”"}</td>
+                                            <td style={{ padding: "1rem 0.75rem", color: "#6366f1" }}>{d.device_type ? d.device_type.charAt(0).toUpperCase() + d.device_type.slice(1) : "—"}</td>
                                             <td style={{ padding: "1rem 0.75rem", color: "#475569" }}>
                                                 <div style={{ display: "flex", alignItems: "center", gap: "0.3rem" }}>
                                                     <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-                                                    {d.location || "â€”"}
+                                                    {d.location || "—"}
                                                 </div>
                                             </td>
-                                            <td style={{ padding: "1rem 0.75rem", color: "#475569", fontFamily:"monospace", fontSize:"0.83rem" }}>{d.ip_address || "â€”"}</td>
+                                            <td style={{ padding: "1rem 0.75rem", color: "#475569", fontFamily:"monospace", fontSize:"0.83rem" }}>{d.ip_address || "—"}</td>
                                             <td style={{ padding: "1rem 0.75rem" }}>
                                                 <StatusPill device={d} />
                                             </td>
@@ -1541,9 +1541,9 @@ function DevicesTab() {
                                                         <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/></svg>
                                                     </button>
                                                     <div id={`menu-${d.id}`} className="device-menu-popup" style={{ display: "none", position: "absolute", right: "0", top: "100%", zIndex: 10, background: "#fff", borderRadius: "8px", boxShadow: "0 4px 12px rgba(0,0,0,0.1)", border: "1px solid #f1f5f9", flexDirection: "column", minWidth: "130px", overflow: "hidden" }}>
-                                                        <button onClick={() => { openEdit(d); document.getElementById(`menu-${d.id}`).style.display = "none"; }} style={{ padding: "0.6rem 1rem", textAlign: "left", background: "transparent", border: "none", borderBottom: "1px solid #f1f5f9", cursor: "pointer", color: "#475569", fontSize: "0.85rem", width: "100%" }}>âœï¸ Edit</button>
-                                                        <button onClick={() => { handleSync(d.id); document.getElementById(`menu-${d.id}`).style.display = "none"; }} style={{ padding: "0.6rem 1rem", textAlign: "left", background: "transparent", border: "none", borderBottom: "1px solid #f1f5f9", cursor: "pointer", color: "#10b981", fontSize: "0.85rem", width: "100%" }}>ðŸ”„ Sync</button>
-                                                        <button onClick={() => { handleDelete(d.id); document.getElementById(`menu-${d.id}`).style.display = "none"; }} style={{ padding: "0.6rem 1rem", textAlign: "left", background: "transparent", border: "none", cursor: "pointer", color: "#ef4444", fontSize: "0.85rem", width: "100%" }}>ðŸ—‘ Remove</button>
+                                                        <button onClick={() => { openEdit(d); document.getElementById(`menu-${d.id}`).style.display = "none"; }} style={{ padding: "0.6rem 1rem", textAlign: "left", background: "transparent", border: "none", borderBottom: "1px solid #f1f5f9", cursor: "pointer", color: "#475569", fontSize: "0.85rem", width: "100%" }}>✏️ Edit</button>
+                                                        <button onClick={() => { handleSync(d.id); document.getElementById(`menu-${d.id}`).style.display = "none"; }} style={{ padding: "0.6rem 1rem", textAlign: "left", background: "transparent", border: "none", borderBottom: "1px solid #f1f5f9", cursor: "pointer", color: "#10b981", fontSize: "0.85rem", width: "100%" }}>🔄 Sync</button>
+                                                        <button onClick={() => { handleDelete(d.id); document.getElementById(`menu-${d.id}`).style.display = "none"; }} style={{ padding: "0.6rem 1rem", textAlign: "left", background: "transparent", border: "none", cursor: "pointer", color: "#ef4444", fontSize: "0.85rem", width: "100%" }}>🗑️ Remove</button>
                                                     </div>
                                                 </div>
                                             </td>
@@ -1570,7 +1570,7 @@ function DevicesTab() {
                 </div>
             </div>
 
-            {/* â”€â”€ BRAND PICKER WIZARD MODAL â”€â”€ */}
+            {/* ── BRAND PICKER WIZARD MODAL ── */}
             {showWizard && (
                 <div style={{ position:"fixed", inset:0, background:"rgba(15,23,42,0.55)",
                     backdropFilter:"blur(4px)", zIndex:1000, display:"flex",
@@ -1603,10 +1603,10 @@ function DevicesTab() {
                                                 <span style={{ fontSize:"0.72rem", fontWeight: active ? 700 : 500,
                                                     color: done ? "#10b981" : active ? "#6366f1" : "#cbd5e1",
                                                     transition:"color 0.2s" }}>
-                                                    {done ? "âœ“" : stepNum}. {label}
+                                                    {done ? "✓" : stepNum}. {label}
                                                 </span>
                                                 {idx < WIZARD_STEPS.length - 1 && (
-                                                    <span style={{ color:"#e2e8f0", fontSize:"0.7rem" }}>â€º</span>
+                                                    <span style={{ color:"#e2e8f0", fontSize:"0.7rem" }}>→</span>
                                                 )}
                                             </div>
                                         );
@@ -1652,7 +1652,7 @@ function DevicesTab() {
                                     style={{ padding:"0.6rem 1.25rem", borderRadius:"8px", background:"#fff",
                                         color:"#475569", border:"1px solid #e2e8f0", fontWeight:600,
                                         fontSize:"0.88rem", cursor:"pointer" }}>
-                                    {wizardStep === 1 ? "Cancel" : "â† Back"}
+                                    {wizardStep === 1 ? "Cancel" : "← Back"}
                                 </button>
                                 <div>
                                     {wizardStep === 2 && (
@@ -1662,7 +1662,7 @@ function DevicesTab() {
                                                 color:"#fff", border:"none", fontWeight:700, fontSize:"0.9rem",
                                                 cursor: wizardLoading ? "not-allowed" : "pointer",
                                                 boxShadow:"0 4px 12px rgba(99,102,241,0.3)" }}>
-                                            {wizardLoading ? "Registering..." : "Register & Continue â†’"}
+                                            {wizardLoading ? "Registering..." : "Register & Continue →"}
                                         </button>
                                     )}
                                     {wizardStep === 3 && (
@@ -1671,7 +1671,7 @@ function DevicesTab() {
                                                 background:"linear-gradient(135deg,#6366f1,#8b5cf6)",
                                                 color:"#fff", border:"none", fontWeight:700, fontSize:"0.9rem",
                                                 cursor:"pointer", boxShadow:"0 4px 12px rgba(99,102,241,0.3)" }}>
-                                            Test Connection â†’
+                                            Test Connection →
                                         </button>
                                     )}
                                 </div>
@@ -1755,9 +1755,9 @@ function DevicesTab() {
     );
 }
 
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─────────────────────────────────────────────────────────────────
 // ENROLLMENT TAB  (Phase 3)
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─────────────────────────────────────────────────────────────────
 
 function EnrollmentTab() {
     const [enrollments, setEnrollments] = useState([]);
@@ -1999,7 +1999,7 @@ function EnrollmentTab() {
                     <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
                 </div>
                 <div style={{ fontSize: "0.85rem", color: "#4c1d95" }}>
-                    <strong>How enrollment works:</strong> Admin assigns fingerprint on device <span style={{ opacity: 0.5 }}>â†’</span> notes the Device User ID shown <span style={{ opacity: 0.5 }}>â†’</span> enters it here to link it to a student/faculty account.
+                    <strong>How enrollment works:</strong> Admin assigns fingerprint on device <span style={{ opacity: 0.5 }}>→</span> notes the Device User ID shown <span style={{ opacity: 0.5 }}>→</span> enters it here to link it to a student/faculty account.
                 </div>
             </div>
 
@@ -2103,7 +2103,7 @@ function EnrollmentTab() {
                                 <tr>
                                     <td colSpan="10" style={{ textAlign: "center", padding: "3rem", color: "#94a3b8" }}>
                                         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "0.5rem" }}>
-                                            <div style={{ fontSize: "2rem", color: "#cbd5e1" }}>ðŸ”</div>
+                                            <div style={{ fontSize: "2rem", color: "#cbd5e1" }}>🔍</div>
                                             <div>No enrollments found matching criteria</div>
                                         </div>
                                     </td>
@@ -2152,7 +2152,7 @@ function EnrollmentTab() {
                                                 </div>
                                                 <div>
                                                     <div style={{ fontWeight: 600, color: "#1e293b", fontSize: "0.85rem" }}>{e.BiometricDevice?.device_name || "Unknown"}</div>
-                                                    <div style={{ fontSize: "0.7rem", color: "#6366f1" }}>{e.BiometricDevice?.device_serial?.substring(0,6) || "â€”"}</div>
+                                                    <div style={{ fontSize: "0.7rem", color: "#6366f1" }}>{e.BiometricDevice?.device_serial?.substring(0,6) || "—"}</div>
                                                 </div>
                                             </td>
                                             <td style={{ padding: "1rem 0.75rem", color: "#475569", fontFamily: "monospace", fontSize: "0.95rem" }}>{e.device_user_id}</td>
@@ -2335,7 +2335,7 @@ function EnrollmentTab() {
                                                     <div style={{ flex: 1, overflow: "hidden" }}>
                                                         <div style={{ fontWeight: 600, color: "#1e293b", fontSize: "0.95rem", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{u.name}</div>
                                                         <div style={{ fontSize: "0.8rem", color: "#64748b", marginTop: "0.1rem" }}>
-                                                            {u.role === "student" ? `Roll: ${u.rollNo || "N/A"}` : "Faculty"} â€¢ Dept: {u.department || "N/A"}
+                                                            {u.role === "student" ? `Roll: ${u.rollNo || "N/A"}` : "Faculty"} • Dept: {u.department || "N/A"}
                                                         </div>
                                                     </div>
                                                 </div>
@@ -2379,9 +2379,9 @@ function EnrollmentTab() {
     );
 }
 
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-// OTP / QR TAB  (Smart QR Attendance â€” Faculty scans student QR)
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─────────────────────────────────────────────────────────────────
+// OTP / QR TAB  (Smart QR Attendance — Faculty scans student QR)
+// ─────────────────────────────────────────────────────────────────
 function OtpQrTab() {
     const navigate = useNavigate();
     return (
@@ -2408,7 +2408,7 @@ function OtpQrTab() {
                     <div>
                         <h2 style={{ margin: "0 0 0.5rem", fontSize: "1.5rem", fontWeight: 700, color: "#1e293b" }}>Smart QR Attendance System</h2>
                         <p style={{ color: "#475569", margin: 0, fontSize: "1rem", lineHeight: 1.6 }}>
-                            Each student receives a <strong>unique permanent QR code</strong> upon subject enrollment. Faculty scans the student's QR code to instantly mark attendance â€” <strong>no OTP, no student action required.</strong>
+                            Each student receives a <strong>unique permanent QR code</strong> upon subject enrollment. Faculty scans the student's QR code to instantly mark attendance — <strong>no OTP, no student action required.</strong>
                         </p>
                     </div>
                 </div>
@@ -2560,9 +2560,9 @@ function OtpQrTab() {
     );
 }
 
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─────────────────────────────────────────────────────────────────
 // REPORTS TAB  (Phase 8 + 12)
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─────────────────────────────────────────────────────────────────
 function ReportsTab() {
     const [reportType, setReportType] = useState("late");
     const [startDate, setStartDate] = useState("");
@@ -2597,10 +2597,10 @@ function ReportsTab() {
                         deviceId: r.device_id || "DEV",
                         date: r.date,
                         day: new Date(r.date).toLocaleDateString('en-US', {weekday: 'short'}),
-                        checkIn: r.time_in ? format12Hour(r.time_in) : "â€”",
-                        checkOut: r.time_out ? format12Hour(r.time_out) : "â€”",
+                        checkIn: r.time_in ? format12Hour(r.time_in) : "—",
+                        checkOut: r.time_out ? format12Hour(r.time_out) : "—",
                         expected: "09:00 AM",
-                        delay: r.late_by_minutes ? `${r.late_by_minutes}m` : "â€”",
+                        delay: r.late_by_minutes ? `${r.late_by_minutes}m` : "—",
                         status: reportType === "late" ? "Late" : reportType === "absent" ? "Absent" : "Present",
                         bg: ["#6366f1", "#3b82f6", "#10b981", "#f59e0b", "#ef4444"][i % 5]
                     };
@@ -2844,9 +2844,9 @@ function ReportsTab() {
     );
 }
 
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─────────────────────────────────────────────────────────────────
 // SETTINGS TAB  (Phase 5)
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─────────────────────────────────────────────────────────────────
 function SettingsTab() {
     const [settings, setSettings] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -2924,8 +2924,8 @@ function SettingsTab() {
                             <label style={{ ...labelBaseStyle, marginBottom: "1rem" }}>Primary Tracking Mode</label>
                             <div style={{ display: "inline-flex", background: "#f1f5f9", borderRadius: "12px", padding: "4px", gap: "2px", width: "100%" }}>
                                 {[
-                                    { value: "class_based", icon: "ðŸ«", label: "Class Based", sub: "Main Gate" },
-                                    { value: "subject_based", icon: "ðŸ“š", label: "Subject Based", sub: "Classrooms" }
+                                    { value: "class_based", icon: "🏫", label: "Class Based", sub: "Main Gate" },
+                                    { value: "subject_based", icon: "📚", label: "Subject Based", sub: "Classrooms" }
                                 ].map(opt => {
                                     const isActive = (settings.attendance_mode === opt.value) || (!settings.attendance_mode && opt.value === "class_based");
                                     return (
@@ -2944,7 +2944,7 @@ function SettingsTab() {
                                 })}
                             </div>
                             <div style={{ display: "flex", alignItems: "flex-start", gap: "0.5rem", marginTop: "0.75rem", padding: "0.6rem 0.75rem", background: (settings.attendance_mode === "subject_based") ? "#f5f3ff" : "#f0fdf4", borderRadius: "8px", border: "1px solid " + ((settings.attendance_mode === "subject_based") ? "#e9d5ff" : "#bbf7d0") }}>
-                                <span style={{ fontSize: "0.9rem" }}>{(settings.attendance_mode === "subject_based") ? "â„¹ï¸" : "âœ…"}</span>
+                                <span style={{ fontSize: "0.9rem" }}>{(settings.attendance_mode === "subject_based") ? "ℹ️" : "✅"}</span>
                                 <span style={{ fontSize: "0.8rem", color: "#475569", lineHeight: 1.4 }}>
                                     {settings.attendance_mode === "subject_based"
                                         ? "Students punch at specific classrooms. Each device must be assigned to a room with a timetable."
@@ -2956,14 +2956,14 @@ function SettingsTab() {
                         {settings.attendance_mode === "subject_based" && (
                             <div style={{ background: "#faf5ff", border: "1px solid #e9d5ff", borderRadius: "12px", padding: "1.25rem" }}>
                                 <div style={{ display: "flex", gap: "0.5rem", alignItems: "center", marginBottom: "1rem" }}>
-                                    <span style={{ fontSize: "1rem" }}>âš¡</span>
+                                    <span style={{ fontSize: "1rem" }}>⚡</span>
                                     <span style={{ fontSize: "0.9rem", fontWeight: 700, color: "#7c3aed" }}>Subject Punch Behavior</span>
                                 </div>
                                 {/* Subject Mode Pill Toggle */}
                                 <div style={{ display: "inline-flex", background: "#ede9fe", borderRadius: "10px", padding: "4px", gap: "2px", width: "100%", marginBottom: "0.75rem" }}>
                                     {[
-                                        { value: "automatic", icon: "ðŸ¤–", label: "Automatic", sub: "Carry-forward" },
-                                        { value: "manual", icon: "ðŸ‘†", label: "Manual", sub: "Punch per subject" }
+                                        { value: "automatic", icon: "🤖", label: "Automatic", sub: "Carry-forward" },
+                                        { value: "manual", icon: "👆", label: "Manual", sub: "Punch per subject" }
                                     ].map(opt => {
                                         const isActive = (settings.subject_mode === opt.value) || (!settings.subject_mode && opt.value === "automatic");
                                         return (
@@ -2982,8 +2982,8 @@ function SettingsTab() {
                                 </div>
                                 <div style={{ fontSize: "0.8rem", color: "#5b21b6", lineHeight: 1.4, padding: "0.5rem 0.25rem" }}>
                                     {(settings.subject_mode === "manual")
-                                        ? "ðŸ‘† Students must physically scan their finger for every subject period."
-                                        : "ðŸ¤– Once present in a room, attendance automatically carries forward to next consecutive subject periods in the same room."}
+                                        ? "👆 Students must physically scan their finger for every subject period."
+                                        : "🤖 Once present in a room, attendance automatically carries forward to next consecutive subject periods in the same room."}
                                 </div>
 
                                 {/* Strict Subject Enrollment Toggle */}
@@ -3096,13 +3096,13 @@ function SettingsTab() {
                         {/* Main Gate Notifications Group */}
                         <div style={{ marginBottom: "1.5rem" }}>
                             <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "1rem", paddingBottom: "0.5rem", borderBottom: "1px dashed #e2e8f0" }}>
-                                <span style={{ fontSize: "1rem" }}>ðŸšª</span>
+                                <span style={{ fontSize: "1rem" }}>🚪</span>
                                 <span style={{ fontWeight: 700, fontSize: "0.85rem", color: "#374151", textTransform: "uppercase", letterSpacing: "0.05em" }}>Main Gate</span>
                             </div>
                             <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
                                 {[
-                                    { key: "notify_main_gate_in", label: "Notify when student punches IN at Main Gate", emoji: "âœ…" },
-                                    { key: "notify_main_gate_out", label: "Notify when student punches OUT at Main Gate", emoji: "ðŸšª" },
+                                    { key: "notify_main_gate_in", label: "Notify when student punches IN at Main Gate", emoji: "✅" },
+                                    { key: "notify_main_gate_out", label: "Notify when student punches OUT at Main Gate", emoji: "🚪" },
                                 ].map(({ key, label, emoji }) => (
                                     <label key={key} style={{ display: "flex", alignItems: "center", gap: "0.75rem", cursor: "pointer", padding: "0.6rem 0.75rem", borderRadius: "8px", background: settings[key] ? "rgba(139,92,246,0.05)" : "transparent", border: "1px solid", borderColor: settings[key] ? "#e9d5ff" : "transparent", transition: "all 0.2s" }}>
                                         <input
@@ -3121,13 +3121,13 @@ function SettingsTab() {
                         {settings.attendance_mode === "subject_based" && (
                             <div style={{ marginBottom: "1.5rem" }}>
                                 <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "1rem", paddingBottom: "0.5rem", borderBottom: "1px dashed #e2e8f0" }}>
-                                    <span style={{ fontSize: "1rem" }}>ðŸ“š</span>
+                                    <span style={{ fontSize: "1rem" }}>📚</span>
                                     <span style={{ fontWeight: 700, fontSize: "0.85rem", color: "#374151", textTransform: "uppercase", letterSpacing: "0.05em" }}>Subject / Classroom</span>
                                 </div>
                                 <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
                                     {[
-                                        { key: "notify_subject_in", label: "Notify when student punches IN for a Subject", emoji: "ðŸ“š" },
-                                        { key: "notify_subject_out", label: "Notify when student punches OUT for a Subject", emoji: "ðŸ“¤" },
+                                        { key: "notify_subject_in", label: "Notify when student punches IN for a Subject", emoji: "📚" },
+                                        { key: "notify_subject_out", label: "Notify when student punches OUT for a Subject", emoji: "📤" },
                                     ].map(({ key, label, emoji }) => (
                                         <label key={key} style={{ display: "flex", alignItems: "center", gap: "0.75rem", cursor: "pointer", padding: "0.6rem 0.75rem", borderRadius: "8px", background: settings[key] ? "rgba(139,92,246,0.05)" : "transparent", border: "1px solid", borderColor: settings[key] ? "#e9d5ff" : "transparent", transition: "all 0.2s" }}>
                                             <input
@@ -3146,13 +3146,13 @@ function SettingsTab() {
                         {/* Status-based Notifications Group */}
                         <div>
                             <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "1rem", paddingBottom: "0.5rem", borderBottom: "1px dashed #e2e8f0" }}>
-                                <span style={{ fontSize: "1rem" }}>âš¡</span>
+                                <span style={{ fontSize: "1rem" }}>⚡</span>
                                 <span style={{ fontWeight: 700, fontSize: "0.85rem", color: "#374151", textTransform: "uppercase", letterSpacing: "0.05em" }}>Status Alerts</span>
                             </div>
                             <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
                                 {[
-                                    { key: "notify_parent_on_late", label: "Notify when student arrives late", emoji: "âš ï¸" },
-                                    { key: "notify_parent_on_absent", label: "Notify when student is absent", emoji: "âŒ" },
+                                    { key: "notify_parent_on_late", label: "Notify when student arrives late", emoji: "⚠️" },
+                                    { key: "notify_parent_on_absent", label: "Notify when student is absent", emoji: "❌" },
                                 ].map(({ key, label, emoji }) => (
                                     <label key={key} style={{ display: "flex", alignItems: "center", gap: "0.75rem", cursor: "pointer", padding: "0.6rem 0.75rem", borderRadius: "8px", background: settings[key] ? "rgba(139,92,246,0.05)" : "transparent", border: "1px solid", borderColor: settings[key] ? "#e9d5ff" : "transparent", transition: "all 0.2s" }}>
                                         <input
@@ -3185,9 +3185,9 @@ function SettingsTab() {
     );
 }
 
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─────────────────────────────────────────────────────────────────
 // SHARED UI HELPERS
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─────────────────────────────────────────────────────────────────
 
 function StatBox({ icon, label, value, color }) {
     return (
@@ -3221,7 +3221,7 @@ function StatusBadge({ status }) {
 function InfoCard({ icon, title, desc }) {
     return (
         <div className="card" style={{ padding: "1.25rem" }}>
-            <div style={{ fontSize: "2rem", marginBottom: "0.5rem" }}>{icon}</div>
+            <div style={{ fontSize: "2rem", marginBottom: "0.5rem" }}>⏳</div>
             <h4 style={{ margin: "0 0 0.5rem", fontWeight: 700 }}>{title}</h4>
             <p style={{ margin: 0, color: "var(--text-secondary)", fontSize: "0.88rem", lineHeight: 1.5 }}>{desc}</p>
         </div>
@@ -3234,7 +3234,7 @@ function Modal({ title, children, onClose }) {
             <div style={{ background: "var(--card-bg, #fff)", borderRadius: "16px", padding: "2rem", width: "100%", maxWidth: "480px", maxHeight: "90vh", overflowY: "auto" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.5rem" }}>
                     <h3 style={{ margin: 0, fontWeight: 700 }}>{title}</h3>
-                    <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", fontSize: "1.5rem", color: "var(--text-secondary)" }}>âœ•</button>
+                    <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", fontSize: "1.5rem", color: "var(--text-secondary)" }}>✕</button>
                 </div>
                 {children}
             </div>
@@ -3258,7 +3258,7 @@ function FormField({ label, value, onChange, placeholder, disabled, type = "text
 function LoadingCard() {
     return (
         <div className="card" style={{ padding: "3rem", textAlign: "center", color: "var(--text-secondary)" }}>
-            <div style={{ fontSize: "2rem", marginBottom: "0.5rem" }}>â³</div>
+            <div style={{ fontSize: "2rem", marginBottom: "0.5rem" }}>⏳</div>
             <div>Loading...</div>
         </div>
     );
@@ -3267,7 +3267,7 @@ function LoadingCard() {
 function Empty({ msg }) {
     return (
         <div className="card" style={{ padding: "3rem", textAlign: "center", color: "var(--text-secondary)" }}>
-            <div style={{ fontSize: "2.5rem", marginBottom: "0.5rem" }}>ðŸ”</div>
+            <div style={{ fontSize: "2.5rem", marginBottom: "0.5rem" }}>🔍</div>
             <div>{msg}</div>
         </div>
     );

@@ -11,7 +11,7 @@
  *   cloud_gateway     — device connects via a cloud API (Suprema BioStar 2, etc.)
  *   usb_enrollment_only — USB scanner only (Mantra MFS100) — excluded from this picker
  *
- * warranty_warning: true → shows ⚠ "Buy from authorized dealer" tooltip on picker card
+ * warranty_warning: true → shows ⚠️ "Buy from authorized dealer" tooltip on picker card
  */
 
 const DEVICE_CATALOG = [
