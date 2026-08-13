@@ -84,6 +84,7 @@ exports.getStudentDashboard = async (req, res) => {
     try {
         const user         = req.user;
         const instituteId  = user.institute_id;
+        const userRecord   = await User.findByPk(user.id, { attributes: ["created_at"] });
 
         // Resolve student record
         const studentRecord = await Student.findOne({
@@ -164,6 +165,7 @@ exports.getStudentDashboard = async (req, res) => {
             Announcement.findAll({
                 where: {
                     institute_id: instituteId,
+                    updated_at: { [Op.gte]: userRecord.created_at },
                     [Op.or]: [
                         { target_audience: "all" },
                         { target_audience: "student" },
@@ -366,6 +368,7 @@ exports.getFacultyDashboard = async (req, res) => {
         const instituteId = user.institute_id;
         const todayDay    = dayName();
         const { start: todayStart, end: todayEnd } = today();
+        const userRecord  = await User.findByPk(user.id, { attributes: ["created_at"] });
 
         // Resolve faculty record
         const facultyRecord = await Faculty.findOne({
@@ -435,6 +438,7 @@ exports.getFacultyDashboard = async (req, res) => {
             Announcement.findAll({
                 where: {
                     institute_id: instituteId,
+                    updated_at: { [Op.gte]: userRecord.created_at },
                     [Op.or]: [
                         { target_audience: "all" },
                         { target_audience: "faculty" },
@@ -490,8 +494,9 @@ exports.getFacultyDashboard = async (req, res) => {
                 WHERE a.institute_id = :instituteId
                   AND (a.target_audience = 'all' OR a.target_audience = 'faculty')
                   AND ar.announcement_id IS NULL
+                  AND a.updated_at >= :userCreatedAt
             `, {
-                replacements: { userId: user.id, instituteId: instituteId },
+                replacements: { userId: user.id, instituteId: instituteId, userCreatedAt: userRecord.created_at },
                 type: sequelize.QueryTypes.SELECT,
             }),
         ]);
@@ -562,6 +567,7 @@ exports.getParentDashboard = async (req, res) => {
     try {
         const user        = req.user;
         const instituteId = user.institute_id;
+        const userRecord  = await User.findByPk(user.id, { attributes: ["created_at"] });
 
         // Get all linked students for this parent
         const linkedStudents = await User.findOne({
@@ -718,6 +724,7 @@ exports.getParentDashboard = async (req, res) => {
         const announcements = await Announcement.findAll({
             where: {
                 institute_id: instituteId,
+                updated_at: { [Op.gte]: userRecord.created_at },
                 [Op.or]: [
                     { target_audience: "all" },
                     { target_audience: "parent" },

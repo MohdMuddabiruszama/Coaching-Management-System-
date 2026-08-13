@@ -16,6 +16,11 @@ async function getAnnouncementsForUser(userId, role, instituteId, classId = null
         [Op.or]: [{ expires_at: null }, { expires_at: { [Op.gt]: now } }],
     };
 
+    const user = await User.findByPk(userId, { attributes: ["created_at"] });
+    if (user && ["student", "faculty", "parent", "manager"].includes(role)) {
+        whereClause.updated_at = { [Op.gte]: user.created_at };
+    }
+
     // Role-based target_audience filter
     if (role === "student") {
         whereClause.target_audience = { [Op.in]: ["all", "students"] };
