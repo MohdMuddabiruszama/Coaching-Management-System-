@@ -100,7 +100,7 @@ async function _batchMarkSubjects(student, timeInStr, timeOutStr, dateStr, insti
     // Convert times to minutes
     const [ih, im] = timeInStr.split(":").map(Number);
     const inMins = ih * 60 + im;
-    const [oh, om] = timeOutStr.split(":").map(Number);
+    const [oh, om] = timeOutStr ? timeOutStr.split(":").map(Number) : [23, 59];
     const outMins = oh * 60 + om;
     
     const schedules = await Timetable.findAll({
@@ -277,10 +277,15 @@ async function processPunch(punch, options = {}) {
                         marked_by: null,
                     });
                     attendanceCreated = true;
+                    
+                    // Immediately map subjects on punch IN so teachers see the grid populated
+                    if (settings.attendance_mode === "class_based") {
+                        await _batchMarkSubjects(student, punchTime, null, punchDate, enrollment.institute_id);
+                    }
                 } else if (punch.punch_type === "out" && !existing.time_out) {
                     await existing.update({ time_out: punchTime });
                     attendanceUpdated = true;
-                    // Primary Trigger: Batch map subjects on punch out
+                    // Secondary trigger: update out-time for subjects if needed (optional, handled by initial IN)
                     if (settings.attendance_mode === "class_based") {
                         await _batchMarkSubjects(student, existing.time_in, punchTime, punchDate, enrollment.institute_id);
                     }
@@ -323,9 +328,21 @@ async function processPunch(punch, options = {}) {
                             status: "present", 
                             marked_by_type: "biometric",
                             biometric_punch_id: punch.id,
-                            time_in: punchTime,
+                            time_in: punch.punch_type === "in" ? punchTime : null,
+                            time_out: punch.punch_type === "out" ? punchTime : null,
                         });
                         attendanceCreated = true;
+                    } else {
+                        if (punch.punch_type === "out" && !existingSubjectAtt.time_out) {
+                            await existingSubjectAtt.update({ time_out: punchTime });
+                            attendanceUpdated = true;
+                        } else if (punch.punch_type === "in" && !existingSubjectAtt.time_in) {
+                            await existingSubjectAtt.update({ time_in: punchTime });
+                            attendanceUpdated = true;
+                        } else if (punch.punch_type === "out") {
+                            await existingSubjectAtt.update({ time_out: punchTime });
+                            attendanceUpdated = true;
+                        }
                     }
                 } else {
                     // Punched in a classroom, but no active subject found for this room. 
@@ -453,7 +470,16 @@ async function sendParentNotification(
             if (!parent?.id) continue;
 
             let title, body;
-            const time = punchTime;
+            
+            // Convert 24h format (e.g., 19:11:57) to 12h format (07:11 PM)
+            let time = punchTime;
+            if (time) {
+                const [h, m] = time.split(":");
+                const hours = parseInt(h, 10);
+                const ampm = hours >= 12 ? 'PM' : 'AM';
+                const formattedHour = hours % 12 || 12;
+                time = `${String(formattedHour).padStart(2, '0')}:${m} ${ampm}`;
+            }
 
             if (isClassroom) {
                 // ── Subject-Based Punch Notifications ──
@@ -862,7 +888,7 @@ exports.receivePunch = async (req, res) => {
             if (req.body?.AttLog) {
                 device_user_id = String(req.body.AttLog.pin);
                 punch_time = new Date(req.body.AttLog.time);
-                punch_type = req.body.AttLog.status === "1" ? "out" : "in";
+                punch_type = ["1", "2", "5"].includes(String(req.body.AttLog.status)) ? "out" : "in";
             } else {
                 device_user_id = String(req.body.pin || req.body.user_id || req.body.device_user_id);
                 punch_time = new Date(req.body.punch_time || req.body.time || Date.now());
@@ -1640,13 +1666,13 @@ exports.webhookReceiver = async (req, res) => {
             if (req.body?.AttLog) {
                 device_user_id = String(req.body.AttLog.pin);
                 punch_time = new Date(req.body.AttLog.time);
-                punch_type = req.body.AttLog.status === "1" ? "out" : "in";
+                punch_type = ["1", "2", "5"].includes(String(req.body.AttLog.status)) ? "out" : "in";
             }
             // iClock text line parsed to JSON by middleware: { pin, date, time, status }
             else if (req.body?.pin && req.body?.date) {
                 device_user_id = String(req.body.pin);
                 punch_time = new Date(`${req.body.date}T${req.body.time}`);
-                punch_type = req.body.status === "1" ? "out" : "in";
+                punch_type = ["1", "2", "5"].includes(String(req.body.status)) ? "out" : "in";
             }
             // Generic JSON format: { device_user_id | user_id | pin, punch_time | time, punch_type }
             else {
