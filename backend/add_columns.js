@@ -22,6 +22,12 @@ async function fix() {
       ADD COLUMN IF NOT EXISTS source VARCHAR(255) DEFAULT 'landing-page-contact';
     `);
 
+    console.log("Adding 'overrides_expire_at' column to institutes...");
+    await sequelize.query(`
+      ALTER TABLE institutes 
+      ADD COLUMN IF NOT EXISTS overrides_expire_at TIMESTAMP WITH TIME ZONE;
+    `);
+
     console.log("Schema manually altered successfully!");
     process.exit(0);
   } catch (e) {
