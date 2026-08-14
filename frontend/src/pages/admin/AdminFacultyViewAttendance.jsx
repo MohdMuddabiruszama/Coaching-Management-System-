@@ -23,7 +23,8 @@ const STATUS_CYCLE = {
     "clear": "present",
     "present": "absent",
     "absent": "late",
-    "late": "holiday",
+    "late": "half_day",
+    "half_day": "holiday",
     "holiday": "clear"
 };
 
@@ -124,15 +125,16 @@ function AdminFacultyViewAttendance() {
     // Calculate overall stats dynamically from effective data
     let totalPossibleDays = 0;
     let totalPresentDays = 0;
-    let totalLateDays = 0;
+    let totalHalfDays = 0;
     let totalAbsentDays = 0;
 
     filteredData.forEach(f => {
         // Base stats from backend
-        let present = f.present_days;
-        let absent = f.absent_days;
-        let late = f.late_days;
-        let holiday = f.holiday_days;
+        let present = f.present_days || 0;
+        let absent = f.absent_days || 0;
+        let late = f.late_days || 0;
+        let half_day = f.half_days || 0;
+        let holiday = f.holiday_days || 0;
         
         // Adjust for local unsaved changes
         Object.entries(gridUpdates).forEach(([key, newStatus]) => {
@@ -144,20 +146,23 @@ function AdminFacultyViewAttendance() {
                 if (oldStatus === "present") present--;
                 if (oldStatus === "absent") absent--;
                 if (oldStatus === "late") late--;
+                if (oldStatus === "half_day") half_day--;
                 if (oldStatus === "holiday") holiday--;
                 
                 // add new
                 if (newStatus === "present") present++;
                 if (newStatus === "absent") absent++;
                 if (newStatus === "late") late++;
+                if (newStatus === "half_day") half_day++;
                 if (newStatus === "holiday") holiday++;
             }
         });
         
         totalPresentDays += present;
         totalLateDays += late;
+        totalHalfDays += half_day;
         totalAbsentDays += absent;
-        totalPossibleDays += (present + absent + late); // Simplified working days (excluding clear/holidays)
+        totalPossibleDays += (present + absent + late + half_day); // Simplified working days (excluding clear/holidays)
     });
 
     const overallRate = totalPossibleDays > 0 ? ((totalPresentDays / totalPossibleDays) * 100).toFixed(2) : "0.00";
@@ -321,6 +326,9 @@ function AdminFacultyViewAttendance() {
                     <span style={{ width: "20px", height: "20px", backgroundColor: "#fef3c7", color: "#f59e0b", borderRadius: "4px", display: "inline-flex", alignItems: "center", justifyContent: "center", fontWeight: "bold" }}>L</span> Late
                 </div>
                 <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.85rem", color: "#334155" }}>
+                    <span style={{ width: "20px", height: "20px", backgroundColor: "#ede9fe", color: "#8b5cf6", borderRadius: "4px", display: "inline-flex", alignItems: "center", justifyContent: "center", fontWeight: "bold" }}>½</span> Half Day
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.85rem", color: "#334155" }}>
                     <span style={{ width: "20px", height: "20px", backgroundColor: "#dbeafe", color: "#3b82f6", borderRadius: "4px", display: "inline-flex", alignItems: "center", justifyContent: "center", fontWeight: "bold" }}>H</span> Holiday
                 </div>
                 <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.85rem", color: "#334155" }}>
@@ -386,6 +394,8 @@ function AdminFacultyViewAttendance() {
                                                 icon = "A"; color = "#ef4444"; bgColor = "#fee2e2";
                                             } else if (effectiveStatus === "late") {
                                                 icon = "L"; color = "#f59e0b"; bgColor = "#fef3c7";
+                                            } else if (effectiveStatus === "half_day") {
+                                                icon = "½"; color = "#8b5cf6"; bgColor = "#ede9fe";
                                             } else if (effectiveStatus === "holiday") {
                                                 icon = "H"; color = "#3b82f6"; bgColor = "#dbeafe";
                                             }

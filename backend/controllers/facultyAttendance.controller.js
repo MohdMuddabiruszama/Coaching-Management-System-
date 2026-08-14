@@ -212,6 +212,7 @@ exports.getGrid = async (req, res) => {
                 present_days: present,
                 absent_days: facRecords.filter(r => r.status === 'absent').length,
                 late_days: facRecords.filter(r => r.status === 'late').length,
+                half_days: facRecords.filter(r => r.status === 'half_day').length,
                 holiday_days: holidays,
                 percentage: parseFloat(percentage),
                 daily
