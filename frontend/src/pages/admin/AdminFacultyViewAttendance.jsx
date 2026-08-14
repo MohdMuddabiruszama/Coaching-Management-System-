@@ -125,6 +125,7 @@ function AdminFacultyViewAttendance() {
     // Calculate overall stats dynamically from effective data
     let totalPossibleDays = 0;
     let totalPresentDays = 0;
+    let totalLateDays = 0;
     let totalHalfDays = 0;
     let totalAbsentDays = 0;
 
