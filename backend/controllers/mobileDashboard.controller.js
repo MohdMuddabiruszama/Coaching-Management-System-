@@ -19,6 +19,7 @@ const { Op, fn, col, literal } = require("sequelize");
 const {
     sequelize,
     User,
+    Institute,
     Student,
     Faculty,
     Class,
@@ -753,6 +754,119 @@ exports.getParentDashboard = async (req, res) => {
     } catch (err) {
         console.error("[Mobile] Parent dashboard error:", err);
         return res.status(500).json({ success: false, message: "Failed to load dashboard." });
+    }
+};
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ADMIN DASHBOARD
+// ─────────────────────────────────────────────────────────────────────────────
+/**
+ * GET /api/mobile/admin/dashboard
+ *
+ * Returns in ONE response all key admin metrics.
+ * Bulletproof: each query is individually wrapped — a single DB failure
+ * will NOT crash the whole endpoint. Partial data is returned with defaults.
+ */
+exports.getAdminDashboard = async (req, res) => {
+    try {
+        const user = req.user;
+        const instituteId = user.institute_id;
+
+        // Ensure admin or manager role
+        if (user.role !== "admin" && user.role !== "manager" && user.role !== "super_admin") {
+            return res.status(403).json({ success: false, message: "Access denied" });
+        }
+
+        // ── Safe parallel fetch — each query has its own fallback ─────────────
+        const safeCount = async (model, where) => {
+            try { return await model.count({ where }); } catch { return 0; }
+        };
+
+        const safeQuery = async (sql, replacements) => {
+            try {
+                return await sequelize.query(sql, { replacements, type: sequelize.QueryTypes.SELECT });
+            } catch { return []; }
+        };
+
+        const safeFindByPk = async (model, pk) => {
+            try { return await model.findByPk(pk); } catch { return null; }
+        };
+
+        const [
+            totalStudents,
+            totalFaculty,
+            institute,
+            totalAdmins,
+            totalManagers,
+            totalClasses,
+            activeStudents,
+            pendingFeesResult,
+            discountResult,
+            unreadChatRecords
+        ] = await Promise.all([
+            safeCount(Student,  { institute_id: instituteId }),
+            safeCount(Faculty,  { institute_id: instituteId }),
+            safeFindByPk(Institute, instituteId),
+            safeCount(User, { role: "admin",   status: "active", institute_id: instituteId }),
+            safeCount(User, { role: "manager", status: "active", institute_id: instituteId }),
+            safeCount(Class,    { institute_id: instituteId }),
+            safeCount(Student,  { student_status: "active", institute_id: instituteId }),
+            safeQuery(`
+                SELECT COALESCE(SUM(final_amount - paid_amount), 0) AS total
+                FROM student_fees
+                WHERE institute_id = :instituteId
+                  AND status IN ('pending', 'partial')
+            `, { instituteId }),
+            safeQuery(`
+                SELECT COALESCE(SUM(discount_amount), 0) AS total
+                FROM student_fees
+                WHERE institute_id = :instituteId
+            `, { instituteId }),
+            safeQuery(`
+                SELECT COUNT(m.id) AS unread
+                FROM chat_messages m
+                JOIN chat_participants p ON p.room_id = m.room_id
+                WHERE p.user_id = :userId
+                  AND (p.last_read_at IS NULL OR m.created_at > p.last_read_at)
+                  AND m.sender_id != :userId
+            `, { userId: user.id }),
+        ]);
+
+        const pendingFees    = parseFloat(pendingFeesResult?.[0]?.total  || 0);
+        const totalDiscount  = parseFloat(discountResult?.[0]?.total     || 0);
+        const unreadChatCount = parseInt(unreadChatRecords?.[0]?.unread  || 0, 10);
+
+        // ── Limit helpers ──────────────────────────────────────────────────────
+        const pct = (active, limit) =>
+            limit > 0 ? Math.min(100, Math.round((active / limit) * 100)) : 0;
+
+        const adminLimit   = institute?.current_limit_admins   || 5;
+        const managerLimit = institute?.current_limit_managers || 5;
+        const studentLimit = institute?.current_limit_students || 9999;
+        const facultyLimit = institute?.current_limit_faculty  || 999;
+        const classLimit   = institute?.current_limit_classes  || 50;
+
+        return res.json({
+            success: true,
+            data: {
+                metrics: {
+                    admins:         { active: totalAdmins,   limit: adminLimit,   percentage: pct(totalAdmins,   adminLimit) },
+                    managers:       { active: totalManagers, limit: managerLimit, percentage: pct(totalManagers, managerLimit) },
+                    students:       { active: totalStudents, limit: studentLimit, percentage: pct(totalStudents, studentLimit) },
+                    faculty:        { active: totalFaculty,  limit: facultyLimit, percentage: pct(totalFaculty,  facultyLimit) },
+                    classes:        { active: totalClasses,  limit: classLimit,   percentage: pct(totalClasses,  classLimit) },
+                    activeStudents: { count: activeStudents, status: "Live" },
+                    dueFees:        pendingFees,
+                    discountGiven:  totalDiscount,
+                },
+                unreadChatCount,
+            },
+        });
+
+    } catch (err) {
+        console.error("[Mobile] Admin dashboard error:", err);
+        return res.status(500).json({ success: false, message: "Failed to load admin dashboard." });
     }
 };
 

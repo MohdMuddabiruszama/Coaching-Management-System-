@@ -22,6 +22,7 @@ export const MOBILE_QUERY_KEYS = {
     studentDashboard: ["mobile", "student", "dashboard"],
     facultyDashboard: ["mobile", "faculty", "dashboard"],
     parentDashboard:  ["mobile", "parent",  "dashboard"],
+    adminDashboard:   ["mobile", "admin",   "dashboard"],
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -74,6 +75,24 @@ export function useParentDashboard(options = {}) {
     return useQuery({
         queryKey: MOBILE_QUERY_KEYS.parentDashboard,
         queryFn:  fetchParentDashboard,
+        staleTime: 5 * 60 * 1000,
+        ...options,
+    });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ADMIN
+// ─────────────────────────────────────────────────────────────────────────────
+const fetchAdminDashboard = () =>
+    api.get("/mobile/admin/dashboard").then(r => r.data);
+
+/**
+ * React Query hook — Admin mobile dashboard.
+ */
+export function useAdminDashboard(options = {}) {
+    return useQuery({
+        queryKey: MOBILE_QUERY_KEYS.adminDashboard,
+        queryFn:  fetchAdminDashboard,
         staleTime: 5 * 60 * 1000,
         ...options,
     });

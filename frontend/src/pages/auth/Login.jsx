@@ -147,9 +147,9 @@ function Login() {
           setErrors({ general: `This app is for ${MOBILE_ALLOWED_ROLE === "faculty" ? "faculty" : MOBILE_ALLOWED_ROLE} accounts only.` });
           return;
         }
-        if (!MOBILE_ALLOWED_ROLE && !["student", "parent", "faculty", "manager"].includes(user.role)) {
+        if (!MOBILE_ALLOWED_ROLE && !["student", "parent", "faculty", "manager", "admin"].includes(user.role)) {
           logout();
-          setErrors({ general: "Admin dashboards are not available on the mobile application." });
+          setErrors({ general: "Super Admin dashboards are not available on the mobile application." });
           return;
         }
       }

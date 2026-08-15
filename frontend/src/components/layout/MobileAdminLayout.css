@@ -1,0 +1,207 @@
+/* MobileAdminLayout.css */
+.mal-layout {
+    display: flex;
+    flex-direction: column;
+    height: 100dvh;
+    width: 100%;
+    overflow: hidden;
+    background: #f4f7fe;
+}
+.mal-content {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: calc(68px + env(safe-area-inset-bottom));
+    padding-top: calc(75px + env(safe-area-inset-top, 0px));
+}
+
+/* ── Global Header (Fixed) ───────────────────────────────── */
+.mal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 1000;
+    /* Admin Premium Gradient */
+    background: linear-gradient(135deg, #111827 0%, #1f2937 100%);
+    padding: calc(16px + env(safe-area-inset-top, 0px)) 20px 16px;
+    box-shadow: 0 4px 20px rgba(17, 24, 39, 0.4);
+}
+
+.mal-inst-brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.mal-inst-text {
+    display: flex;
+    flex-direction: column;
+}
+
+.mal-inst-name {
+    font-size: 16px;
+    font-weight: 800;
+    color: #ffffff;
+    margin: 0;
+    line-height: 1.2;
+}
+
+.mal-inst-portal {
+    font-size: 11px;
+    color: rgba(255,255,255,0.6);
+    margin: 0;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.mal-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.mal-bell-action {
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.mal-bell-action svg {
+    width: 20px;
+    height: 20px;
+    filter: brightness(0) invert(1);
+}
+
+.mal-avatar-action {
+    position: relative;
+    display: flex;
+}
+
+.mal-avatar-circle {
+    width: 34px;
+    height: 34px;
+    background: linear-gradient(135deg, #3b82f6, #2563eb);
+    border: 2px solid rgba(255,255,255,0.2);
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    font-size: 15px;
+}
+
+.mal-online-dot {
+    position: absolute;
+    bottom: 0;
+    right: -2px;
+    width: 10px;
+    height: 10px;
+    background: #10b981;
+    border: 2px solid #1f2937;
+    border-radius: 50%;
+}
+
+.mal-logout-action {
+    background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 8px;
+    padding: 6px 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+
+.mal-logout-action svg {
+    width: 18px;
+    height: 18px;
+}
+.mal-layout--no-header .mal-content {
+    padding-top: 0;
+}
+.mal-bottom-nav {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    height: calc(65px + env(safe-area-inset-bottom));
+    padding-bottom: env(safe-area-inset-bottom);
+    background: #ffffff;
+    border-top: 1px solid rgba(0,0,0,0.05);
+    display: flex;
+    align-items: center;
+    justify-content: flex-start; /* For scrolling if many tabs */
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
+    z-index: 9999;
+    box-shadow: 0 -10px 30px rgba(0,0,0,0.03);
+    gap: 12px;
+    padding-left: 16px;
+    padding-right: 16px;
+}
+.mal-bottom-nav::-webkit-scrollbar {
+    display: none;
+}
+.mal-nav-item {
+    flex: 1; /* Stretch to fill space uniformly */
+    min-width: 60px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    min-height: 48px;
+    padding: 6px 4px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    color: #64748b;
+    position: relative;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+}
+.mal-nav-item:active { transform: scale(0.92); }
+.mal-nav-item.active { color: #111827; }
+.mal-tab-icon {
+    font-size: 22px;
+    line-height: 1;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.mal-unread-dot {
+    position: absolute;
+    top: -5px; right: -8px;
+    background: #ef4444;
+    color: #fff;
+    font-size: 9px; font-weight: 800;
+    min-width: 16px; height: 16px;
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    padding: 0 3px;
+    border: 1.5px solid #fff;
+}
+.mal-tab-label { font-size: 10px; font-weight: 700; letter-spacing: 0.3px; line-height: 1; }
+.mal-active-indicator {
+    position: absolute;
+    top: 0; left: 50%;
+    transform: translateX(-50%);
+    width: 24px; height: 3px;
+    background: linear-gradient(90deg, #111827, #374151);
+    border-radius: 0 0 4px 4px;
+    animation: mal-slide-in 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+@keyframes mal-slide-in {
+    from { width: 0; opacity: 0; }
+    to   { width: 24px; opacity: 1; }
+}
