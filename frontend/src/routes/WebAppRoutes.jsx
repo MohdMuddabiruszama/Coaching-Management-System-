@@ -47,7 +47,9 @@ const SuperAdminUsers = lazy(() => import("../pages/superadmin/Users"));
 const AdminDashboard = isNativeEnv
   ? lazy(() => import("../pages/admin/MobileDashboard"))
   : lazy(() => import("../pages/admin/Dashboard"));
-const Students = lazy(() => import("../pages/admin/Students"));
+const Students = isNativeEnv
+  ? lazy(() => import("../pages/admin/MobileStudents"))
+  : lazy(() => import("../pages/admin/Students"));
 const Faculty = lazy(() => import("../pages/admin/Faculty"));
 const Classes = lazy(() => import("../pages/admin/Classes"));
 const Subjects = lazy(() => import("../pages/admin/Subjects"));

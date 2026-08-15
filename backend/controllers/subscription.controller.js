@@ -111,15 +111,21 @@ exports.updateSubscriptionPeriod = catchAsync(async (req, res) => {
     await subscription.update({ start_date, end_date });
     bustAnalyticsCache();
 
-    // If this is the active subscription for the institute, update the institute's end date
     if (subscription.status === 'active' || subscription.payment_status === 'paid') {
         const institute = await Institute.findByPk(subscription.institute_id);
         if (institute) {
+            // Find the true latest paid subscription for this institute
             const latestSub = await Subscription.findOne({
                 where: { institute_id: subscription.institute_id, payment_status: 'paid' },
                 order: [['end_date', 'DESC']]
             });
-            if (latestSub && latestSub.id === subscription.id) {
+            if (latestSub) {
+                await institute.update({
+                    subscription_start: latestSub.start_date,
+                    subscription_end: latestSub.end_date
+                });
+            } else {
+                // Fallback to the edited subscription if no other paid ones exist
                 await institute.update({
                     subscription_start: start_date,
                     subscription_end: end_date

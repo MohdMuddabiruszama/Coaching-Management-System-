@@ -1,0 +1,643 @@
+/* MobileStudents.css — Admin Mobile Student Management */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+/* ── Page ──────────────────────────────────────────────────────────────────── */
+.mst-page {
+    padding: 20px 14px 110px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    background: #F0F4FA;
+    min-height: 100%;
+    font-family: 'Inter', system-ui, sans-serif;
+}
+
+/* ── Page Header ──────────────────────────────────────────────────────────── */
+.mst-page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+}
+
+.mst-page-title {
+    font-size: 20px;
+    font-weight: 800;
+    color: #0f172a;
+    margin: 0;
+    line-height: 1.2;
+}
+
+.mst-page-sub {
+    font-size: 12px;
+    color: #64748b;
+    margin: 3px 0 0;
+}
+
+.mst-btn-add {
+    background: linear-gradient(135deg, #7C3AED, #4f46e5);
+    color: #ffffff;
+    border: none;
+    border-radius: 12px;
+    padding: 10px 16px;
+    font-size: 13px;
+    font-weight: 700;
+    white-space: nowrap;
+    flex-shrink: 0;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(124, 58, 237, 0.28);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    -webkit-tap-highlight-color: transparent;
+}
+.mst-btn-add:active { transform: scale(0.95); }
+
+/* ── Stats Grid 2×2 ───────────────────────────────────────────────────────── */
+.mst-stats-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+
+.mst-stat-card {
+    background: #ffffff;
+    border-radius: 14px;
+    padding: 14px 12px 10px;
+    border: 1px solid #f1f5f9;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.mst-stat-top {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+}
+
+.mst-stat-icon {
+    width: 36px;
+    height: 36px;
+    min-width: 36px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 17px;
+}
+
+.mst-stat-info {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    flex: 1;
+    min-width: 0;
+}
+
+.mst-stat-label {
+    font-size: 10.5px;
+    font-weight: 600;
+    color: #64748b;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.mst-stat-value {
+    font-size: 22px;
+    font-weight: 800;
+    color: #0f172a;
+    line-height: 1.1;
+}
+
+.mst-stat-sub {
+    font-size: 10px;
+    color: #94a3b8;
+    margin-top: 2px;
+}
+
+.mst-stat-spark {
+    display: flex;
+    justify-content: flex-end;
+    padding-right: 2px;
+}
+
+/* ── Search Row ───────────────────────────────────────────────────────────── */
+.mst-search-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.mst-search-wrap {
+    flex: 1;
+    position: relative;
+    display: flex;
+    align-items: center;
+    background: #ffffff;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 0 12px;
+    height: 44px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+    transition: border-color 0.2s;
+}
+.mst-search-wrap:focus-within { border-color: #7C3AED; }
+
+.mst-search-icon {
+    font-size: 14px;
+    margin-right: 8px;
+    flex-shrink: 0;
+    opacity: 0.6;
+}
+
+.mst-search-input {
+    flex: 1;
+    border: none;
+    outline: none;
+    font-size: 13px;
+    font-family: 'Inter', system-ui, sans-serif;
+    color: #0f172a;
+    background: transparent;
+}
+.mst-search-input::placeholder { color: #94a3b8; }
+
+.mst-search-clear {
+    background: none;
+    border: none;
+    font-size: 13px;
+    color: #94a3b8;
+    cursor: pointer;
+    padding: 0;
+    flex-shrink: 0;
+}
+
+.mst-filter-toggle {
+    background: #ffffff;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 12px;
+    height: 44px;
+    padding: 0 14px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #475569;
+    white-space: nowrap;
+    cursor: pointer;
+    flex-shrink: 0;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+    transition: all 0.2s;
+    -webkit-tap-highlight-color: transparent;
+}
+.mst-filter-toggle.active {
+    background: #EDE9FE;
+    border-color: #7C3AED;
+    color: #7C3AED;
+}
+
+/* ── Filters Panel ────────────────────────────────────────────────────────── */
+.mst-filters-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    animation: slideDown 0.2s ease;
+}
+
+@keyframes slideDown {
+    from { opacity: 0; transform: translateY(-8px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+.mst-filter-select {
+    width: 100%;
+    background: #ffffff;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 12px 14px;
+    font-size: 13px;
+    font-family: 'Inter', system-ui, sans-serif;
+    color: #334155;
+    outline: none;
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%2394a3b8' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 14px center;
+    padding-right: 36px;
+}
+
+/* ── List Header ──────────────────────────────────────────────────────────── */
+.mst-list-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.mst-list-count {
+    font-size: 14px;
+    font-weight: 700;
+    color: #1e293b;
+}
+
+/* ── List ─────────────────────────────────────────────────────────────────── */
+.mst-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+/* ── Student Card ─────────────────────────────────────────────────────────── */
+.mst-student-card {
+    background: #ffffff;
+    border-radius: 14px;
+    padding: 14px;
+    border: 1px solid #f1f5f9;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    cursor: pointer;
+    transition: transform 0.13s ease, box-shadow 0.13s ease;
+    -webkit-tap-highlight-color: transparent;
+}
+.mst-student-card:active {
+    transform: scale(0.97);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+}
+
+.mst-sc-left {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    flex: 1;
+    min-width: 0;
+}
+
+.mst-sc-avatar {
+    width: 38px;
+    height: 38px;
+    min-width: 38px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    font-weight: 700;
+    color: #ffffff;
+    flex-shrink: 0;
+}
+
+.mst-sc-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+.mst-sc-name {
+    font-size: 13.5px;
+    font-weight: 700;
+    color: #0f172a;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 120px;
+}
+
+.mst-sc-class {
+    font-size: 11.5px;
+    color: #475569;
+    font-weight: 500;
+}
+
+.mst-sc-roll {
+    font-size: 11px;
+    color: #94a3b8;
+    font-weight: 500;
+}
+
+.mst-sc-status {
+    font-size: 11px;
+    font-weight: 600;
+    margin-top: 3px;
+    display: inline-block;
+}
+.mst-sc-status.active   { color: #059669; }
+.mst-sc-status.inactive { color: #dc2626; }
+
+/* ── Right side ───────────────────────────────────────────────────────────── */
+.mst-sc-right {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    align-items: flex-end;
+    flex-shrink: 0;
+}
+
+.mst-sc-contact {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    align-items: flex-end;
+}
+
+.mst-sc-phone,
+.mst-sc-email {
+    font-size: 10.5px;
+    color: #64748b;
+    white-space: nowrap;
+}
+
+.mst-sc-actions {
+    display: flex;
+    gap: 6px;
+}
+
+.mst-action-btn {
+    border: none;
+    border-radius: 8px;
+    padding: 5px 9px;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    -webkit-tap-highlight-color: transparent;
+    transition: transform 0.12s ease;
+}
+.mst-action-btn:active { transform: scale(0.9); }
+
+.mst-action-btn.card-btn {
+    background: #EDE9FE;
+    color: #7C3AED;
+}
+
+.mst-action-btn.cred-btn {
+    background: #FEF9C3;
+    color: #B45309;
+}
+
+/* ── Skeleton ─────────────────────────────────────────────────────────────── */
+.mst-skeleton { pointer-events: none; cursor: default; }
+
+.mst-skel-circle {
+    width: 38px;
+    height: 38px;
+    min-width: 38px;
+    border-radius: 12px;
+    background: #e2e8f0;
+    animation: shimmer 1.4s infinite;
+    flex-shrink: 0;
+}
+
+.mst-skel-lines {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    flex: 1;
+}
+
+.mst-skel-line {
+    height: 10px;
+    border-radius: 6px;
+    background: #e2e8f0;
+    animation: shimmer 1.4s infinite;
+}
+.mst-skel-line.w70 { width: 70%; }
+.mst-skel-line.w60 { width: 60%; }
+.mst-skel-line.w50 { width: 50%; }
+.mst-skel-line.w40 { width: 40%; }
+
+@keyframes shimmer {
+    0%, 100% { opacity: 0.6; }
+    50%       { opacity: 1; }
+}
+
+/* ── Empty State ──────────────────────────────────────────────────────────── */
+.mst-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 48px 24px;
+    background: #ffffff;
+    border-radius: 16px;
+    text-align: center;
+}
+.mst-empty span { font-size: 40px; }
+.mst-empty p { font-size: 14px; color: #64748b; margin: 0; }
+
+.mst-btn-add-sm {
+    background: linear-gradient(135deg, #7C3AED, #4f46e5);
+    color: #ffffff;
+    border: none;
+    border-radius: 10px;
+    padding: 10px 18px;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+/* ── Modal ────────────────────────────────────────────────────────────────── */
+.mst-modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    z-index: 1000;
+    padding: 0;
+}
+
+.mst-modal {
+    background: #ffffff;
+    border-radius: 20px 20px 0 0;
+    width: 100%;
+    max-width: 480px;
+    max-height: 85vh;
+    display: flex;
+    flex-direction: column;
+    animation: slideUp 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    overflow: hidden;
+}
+
+.mst-detail-modal {
+    max-height: 70vh;
+}
+
+@keyframes slideUp {
+    from { transform: translateY(60px); opacity: 0; }
+    to   { transform: translateY(0);    opacity: 1; }
+}
+
+.mst-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 18px 20px 12px;
+    border-bottom: 1px solid #f1f5f9;
+    flex-shrink: 0;
+}
+
+.mst-modal-header h3 {
+    font-size: 16px;
+    font-weight: 700;
+    color: #0f172a;
+    margin: 0;
+}
+
+.mst-modal-close {
+    background: #f1f5f9;
+    border: none;
+    border-radius: 50%;
+    width: 30px;
+    height: 30px;
+    font-size: 14px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #64748b;
+}
+
+.mst-modal-body {
+    padding: 16px 20px;
+    overflow-y: auto;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.mst-modal-body label {
+    font-size: 11.5px;
+    font-weight: 600;
+    color: #64748b;
+    margin-top: 8px;
+}
+
+.mst-modal-body input,
+.mst-modal-body select {
+    width: 100%;
+    background: #f8fafc;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 11px 12px;
+    font-size: 13px;
+    font-family: 'Inter', system-ui, sans-serif;
+    color: #334155;
+    outline: none;
+    box-sizing: border-box;
+    transition: border-color 0.2s;
+}
+.mst-modal-body input:focus,
+.mst-modal-body select:focus { border-color: #7C3AED; }
+
+.mst-form-error {
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    border-radius: 8px;
+    padding: 8px 12px;
+    font-size: 12px;
+    color: #dc2626;
+    font-weight: 500;
+}
+
+.mst-modal-footer {
+    display: flex;
+    gap: 10px;
+    padding: 12px 20px 20px;
+    border-top: 1px solid #f1f5f9;
+    flex-shrink: 0;
+}
+
+.mst-btn-cancel {
+    flex: 1;
+    background: #f1f5f9;
+    border: none;
+    border-radius: 12px;
+    padding: 12px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #64748b;
+    cursor: pointer;
+}
+
+.mst-btn-save {
+    flex: 2;
+    background: linear-gradient(135deg, #7C3AED, #4f46e5);
+    border: none;
+    border-radius: 12px;
+    padding: 12px;
+    font-size: 14px;
+    font-weight: 700;
+    color: #ffffff;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(124, 58, 237, 0.25);
+    transition: opacity 0.2s;
+}
+.mst-btn-save:disabled { opacity: 0.6; }
+
+/* ── Student Detail Modal ─────────────────────────────────────────────────── */
+.mst-detail-avatar-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 16px 20px;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.mst-detail-avatar {
+    width: 52px;
+    height: 52px;
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    font-weight: 700;
+    color: #ffffff;
+    flex-shrink: 0;
+}
+
+.mst-detail-name {
+    font-size: 16px;
+    font-weight: 700;
+    color: #0f172a;
+    margin-bottom: 4px;
+}
+
+.mst-detail-grid {
+    padding: 12px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    overflow-y: auto;
+    flex: 1;
+}
+
+.mst-detail-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px 0;
+    border-bottom: 1px solid #f8fafc;
+}
+.mst-detail-row:last-child { border-bottom: none; }
+
+.mst-detail-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: #64748b;
+}
+
+.mst-detail-val {
+    font-size: 12.5px;
+    font-weight: 600;
+    color: #1e293b;
+    text-align: right;
+    max-width: 55%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
