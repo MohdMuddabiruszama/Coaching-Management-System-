@@ -21,6 +21,9 @@ router.get("/faculty/dashboard",  ctrl.getFacultyDashboard);
 /** GET /api/mobile/parent/dashboard — Parent bundled dashboard */
 router.get("/parent/dashboard",   ctrl.getParentDashboard);
 
+/** GET /api/mobile/admin/dashboard — Admin bundled dashboard */
+router.get("/admin/dashboard",    ctrl.getAdminDashboard);
+
 // ── Phase 5A: FCM Push Token ──────────────────────────────────────────────────
 /** POST /api/mobile/fcm-token — Register device FCM token */
 router.post("/fcm-token",   ctrl.registerFcmToken);

@@ -6,6 +6,9 @@ import { Routes, Route, Navigate, useNavigate, Outlet } from "react-router-dom";
 import { lazy, Suspense, useEffect } from "react";
 import ProtectedRoute from "./ProtectedRoute";
 import LoadingSpinner from "../components/common/LoadingSpinner";
+import { Capacitor } from "@capacitor/core";
+
+const isNativeEnv = Capacitor.isNativePlatform();
 
 const Home = lazy(() => import("../pages/public/Home"));
 const Pricing = lazy(() => import("../pages/public/PricingPage"));
@@ -41,7 +44,9 @@ const SuperAdminReports = lazy(() => import("../pages/superadmin/Reports"));
 const SystemLogs = lazy(() => import("../pages/superadmin/SystemLogs"));
 const SuperAdminUsers = lazy(() => import("../pages/superadmin/Users"));
 
-const AdminDashboard = lazy(() => import("../pages/admin/Dashboard"));
+const AdminDashboard = isNativeEnv
+  ? lazy(() => import("../pages/admin/MobileDashboard"))
+  : lazy(() => import("../pages/admin/Dashboard"));
 const Students = lazy(() => import("../pages/admin/Students"));
 const Faculty = lazy(() => import("../pages/admin/Faculty"));
 const Classes = lazy(() => import("../pages/admin/Classes"));
@@ -73,11 +78,10 @@ const AttendanceSettings = lazy(() => import("../pages/admin/AttendanceSettings"
 const AcademicYearPromotion = lazy(() => import("../pages/admin/AcademicYearPromotion"));
 const AcademicYearSettings = lazy(() => import("../pages/admin/AcademicYearSettings"));
 const FacultyViewAttendance = lazy(() => import("../pages/faculty/ViewAttendance"));
-import { Capacitor } from "@capacitor/core";
 
-const isNativeEnv  = Capacitor.isNativePlatform();
-
-const AdminLayout = lazy(() => import("../components/layout/AdminLayout"));
+const AdminLayout = isNativeEnv 
+  ? lazy(() => import("../components/layout/MobileAdminLayout"))
+  : lazy(() => import("../components/layout/AdminLayout"));
 const SuperAdminLayout = lazy(() => import("../components/layout/SuperAdminLayout"));
 const StudentLayout = isNativeEnv 
   ? lazy(() => import("../components/layout/MobileStudentLayout"))
