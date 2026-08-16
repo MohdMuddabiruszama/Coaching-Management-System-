@@ -2,6 +2,7 @@ import { useAdminDashboard } from "../../hooks/useMobileDashboard";
 import { useContext } from "react";
 import { AuthContext } from "../../context/AuthContext";
 import { useNavigate } from "react-router-dom";
+import toast from "react-hot-toast";
 import "./MobileDashboard.css";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -201,10 +202,10 @@ export default function MobileDashboard() {
                 <div className="mad-quick-actions-grid">
                     <QuickAction icon="👥" label="Students"  onClick={() => navigate("/admin/students")} />
                     <QuickAction icon="👨‍🏫" label="Faculty"   onClick={() => navigate("/admin/faculty")} />
-                    <QuickAction icon="📚" label="Classes"   onClick={() => navigate("/admin/classes")} />
-                    <QuickAction icon="👨‍👩‍👦" label="Parents"   onClick={() => navigate("/admin/parents")} />
-                    <QuickAction icon="📅" label="Timetable" onClick={() => navigate("/admin/timetable")} />
-                    <QuickAction icon="💰" label="Fees"      onClick={() => navigate("/admin/fees")} />
+                    <QuickAction icon="📚" label="Classes"   onClick={() => toast.success("Upcoming Feature! Stay tuned.")} />
+                    <QuickAction icon="👨‍👩‍👦" label="Parents"   onClick={() => toast.success("Upcoming Feature! Stay tuned.")} />
+                    <QuickAction icon="📅" label="Timetable" onClick={() => toast.success("Upcoming Feature! Stay tuned.")} />
+                    <QuickAction icon="💰" label="Fees"      onClick={() => toast.success("Upcoming Feature! Stay tuned.")} />
                     <QuickAction icon="📢" label="Announce"  onClick={() => navigate("/admin/announcements")} />
                 </div>
             </div>
