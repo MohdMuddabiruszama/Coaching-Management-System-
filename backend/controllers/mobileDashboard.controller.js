@@ -85,7 +85,7 @@ exports.getStudentDashboard = async (req, res) => {
     try {
         const user         = req.user;
         const instituteId  = user.institute_id;
-        const userRecord   = await User.findByPk(user.id, { attributes: ["created_at"] });
+        const userRecord   = await User.findByPk(user.id, { attributes: ["createdAt"] });
 
         // Resolve student record
         const studentRecord = await Student.findOne({
@@ -166,7 +166,7 @@ exports.getStudentDashboard = async (req, res) => {
             Announcement.findAll({
                 where: {
                     institute_id: instituteId,
-                    updated_at: { [Op.gte]: userRecord.created_at },
+                    updated_at: { [Op.gte]: userRecord.createdAt },
                     [Op.or]: [
                         { target_audience: "all" },
                         { target_audience: "student" },
@@ -179,9 +179,9 @@ exports.getStudentDashboard = async (req, res) => {
                     required: false,
                     attributes: ["id"],
                 }],
-                order:  [["created_at", "DESC"]],
+                order:  [["createdAt", "DESC"]],
                 limit:  5,
-                attributes: ["id", "title", "content", "created_at", "priority"],
+                attributes: ["id", "title", "content", "createdAt", "priority"],
             }),
 
             // 5. Pending fees
@@ -307,7 +307,7 @@ exports.getStudentDashboard = async (req, res) => {
                     message:  a.content,
                     priority: a.priority,
                     isRead:   a.AnnouncementReads?.length > 0,
-                    date:     a.createdAt || a.created_at,
+                    date:     a.createdAt,
                 })),
                 unreadAnnouncementsCount: unreadAnnouncements,
                 fees: {
@@ -369,7 +369,7 @@ exports.getFacultyDashboard = async (req, res) => {
         const instituteId = user.institute_id;
         const todayDay    = dayName();
         const { start: todayStart, end: todayEnd } = today();
-        const userRecord  = await User.findByPk(user.id, { attributes: ["created_at"] });
+        const userRecord  = await User.findByPk(user.id, { attributes: ["createdAt"] });
 
         // Resolve faculty record
         const facultyRecord = await Faculty.findOne({
@@ -439,15 +439,15 @@ exports.getFacultyDashboard = async (req, res) => {
             Announcement.findAll({
                 where: {
                     institute_id: instituteId,
-                    updated_at: { [Op.gte]: userRecord.created_at },
+                    updated_at: { [Op.gte]: userRecord.createdAt },
                     [Op.or]: [
                         { target_audience: "all" },
                         { target_audience: "faculty" },
                     ],
                 },
-                order:  [["created_at", "DESC"]],
+                order:  [["createdAt", "DESC"]],
                 limit:  5,
-                attributes: ["id", "title", "content", "created_at", "priority"],
+                attributes: ["id", "title", "content", "createdAt", "priority"],
             }),
 
             // 4. Today's attendance records marked by this faculty
@@ -497,7 +497,7 @@ exports.getFacultyDashboard = async (req, res) => {
                   AND ar.announcement_id IS NULL
                   AND a.updated_at >= :userCreatedAt
             `, {
-                replacements: { userId: user.id, instituteId: instituteId, userCreatedAt: userRecord.created_at },
+                replacements: { userId: user.id, instituteId: instituteId, userCreatedAt: userRecord.createdAt },
                 type: sequelize.QueryTypes.SELECT,
             }),
         ]);
@@ -530,7 +530,7 @@ exports.getFacultyDashboard = async (req, res) => {
                     title:    a.title,
                     message:  a.content,
                     priority: a.priority,
-                    date:     a.createdAt || a.created_at,
+                    date:     a.createdAt,
                 })),
                 stats: {
                     totalStudents:      parseInt(totalStudents[0]?.total || 0),
@@ -568,7 +568,7 @@ exports.getParentDashboard = async (req, res) => {
     try {
         const user        = req.user;
         const instituteId = user.institute_id;
-        const userRecord  = await User.findByPk(user.id, { attributes: ["created_at"] });
+        const userRecord  = await User.findByPk(user.id, { attributes: ["createdAt"] });
 
         // Get all linked students for this parent
         const linkedStudents = await User.findOne({
@@ -725,16 +725,16 @@ exports.getParentDashboard = async (req, res) => {
         const announcements = await Announcement.findAll({
             where: {
                 institute_id: instituteId,
-                updated_at: { [Op.gte]: userRecord.created_at },
+                updated_at: { [Op.gte]: userRecord.createdAt },
                 [Op.or]: [
                     { target_audience: "all" },
                     { target_audience: "parent" },
                     { target_audience: "parents" },
                 ],
             },
-            order:  [["created_at", "DESC"]],
+            order:  [["createdAt", "DESC"]],
             limit:  5,
-            attributes: ["id", "title", "content", "created_at", "priority"],
+            attributes: ["id", "title", "content", "createdAt", "priority"],
         });
 
         return res.json({
@@ -746,7 +746,7 @@ exports.getParentDashboard = async (req, res) => {
                     title:    a.title,
                     message:  a.content,
                     priority: a.priority,
-                    date:     a.createdAt || a.created_at,
+                    date:     a.createdAt,
                 })),
             },
         });
