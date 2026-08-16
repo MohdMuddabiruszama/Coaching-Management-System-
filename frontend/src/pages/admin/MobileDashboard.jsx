@@ -1,5 +1,5 @@
 import { useAdminDashboard } from "../../hooks/useMobileDashboard";
-import { useContext, useState } from "react";
+import { useContext } from "react";
 import { AuthContext } from "../../context/AuthContext";
 import { useNavigate } from "react-router-dom";
 import "./MobileDashboard.css";
@@ -64,7 +64,6 @@ const SkeletonCard = () => (
 export default function MobileDashboard() {
     const { user } = useContext(AuthContext);
     const navigate = useNavigate();
-    const [activeTab, setActiveTab] = useState("overview");
 
     const { data: response, isLoading, isError, refetch, isFetching } = useAdminDashboard({
         retry: 2,
@@ -199,7 +198,7 @@ export default function MobileDashboard() {
                 <div className="mad-section-header">
                     <h3 className="mad-section-title">Quick Actions</h3>
                 </div>
-                <div className="mad-quick-actions-scroll">
+                <div className="mad-quick-actions-grid">
                     <QuickAction icon="👥" label="Students"  onClick={() => navigate("/admin/students")} />
                     <QuickAction icon="👨‍🏫" label="Faculty"   onClick={() => navigate("/admin/faculty")} />
                     <QuickAction icon="📚" label="Classes"   onClick={() => navigate("/admin/classes")} />
@@ -207,38 +206,6 @@ export default function MobileDashboard() {
                     <QuickAction icon="📅" label="Timetable" onClick={() => navigate("/admin/timetable")} />
                     <QuickAction icon="💰" label="Fees"      onClick={() => navigate("/admin/fees")} />
                     <QuickAction icon="📢" label="Announce"  onClick={() => navigate("/admin/announcements")} />
-                </div>
-            </div>
-
-            {/* ── Promo Banner ────────────────────────────────────────────────── */}
-            <div className="mad-banner" onClick={() => navigate("/admin/users")} role="button">
-                <div className="mad-banner-content">
-                    <h3 className="mad-banner-title">
-                        <span>👑</span> Add Another Admin
-                    </h3>
-                    <p className="mad-banner-sub">
-                        Delegate full institute management safely and efficiently.
-                    </p>
-                </div>
-                <button className="mad-banner-action-btn" type="button" onClick={(e) => { e.stopPropagation(); navigate("/admin/users"); }}>
-                    + Create
-                </button>
-            </div>
-
-            {/* ── Management Tabs ──────────────────────────────────────────────── */}
-            <div>
-                <h3 className="mad-section-title" style={{ marginBottom: "12px" }}>Management</h3>
-                <div className="mad-management-tabs">
-                    {["Overview", "Reports", "Analytics"].map((tab) => (
-                        <button
-                            key={tab}
-                            type="button"
-                            className={`mad-tab-btn ${activeTab === tab.toLowerCase() ? "active" : ""}`}
-                            onClick={() => setActiveTab(tab.toLowerCase())}
-                        >
-                            {tab}
-                        </button>
-                    ))}
                 </div>
             </div>
         </div>

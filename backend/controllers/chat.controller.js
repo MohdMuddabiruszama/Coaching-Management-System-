@@ -286,6 +286,21 @@ exports.getChatUsage = async (req, res) => {
         const now = new Date();
         const periodStart = new Date(now.getFullYear(), now.getMonth(), 1);
 
+        // Calculate ACTUAL exact message count
+        const used = await ChatMessage.count({
+            include: [{
+                model: ChatRoom,
+                attributes: [],
+                where: { institute_id }
+            }],
+            where: {
+                created_at: {
+                    [Op.gte]: periodStart
+                }
+            }
+        });
+
+        // Sync it with UsageTracker to ensure limit checks in sendMessage are accurate
         const tracker = await UsageTracker.findOne({
             where: {
                 institute_id,
@@ -294,7 +309,21 @@ exports.getChatUsage = async (req, res) => {
             }
         });
 
-        const used = tracker ? tracker.current_value : 0;
+        if (tracker && tracker.current_value !== used) {
+            await tracker.update({ current_value: used });
+        } else if (!tracker) {
+            const periodEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+            await UsageTracker.create({
+                institute_id,
+                metric: "chat_messages",
+                billing_period_start: periodStart.toISOString().slice(0, 10),
+                billing_period_end: periodEnd.toISOString().slice(0, 10),
+                current_value: used,
+                limit_value: limit,
+                last_reset_at: periodStart
+            });
+        }
+
         return res.status(200).json({
             success: true,
             used,

@@ -50,13 +50,17 @@ const AdminDashboard = isNativeEnv
 const Students = isNativeEnv
   ? lazy(() => import("../pages/admin/MobileStudents"))
   : lazy(() => import("../pages/admin/Students"));
-const Faculty = lazy(() => import("../pages/admin/Faculty"));
+const Faculty = isNativeEnv
+  ? lazy(() => import("../pages/admin/MobileFaculty"))
+  : lazy(() => import("../pages/admin/Faculty"));
 const Classes = lazy(() => import("../pages/admin/Classes"));
 const Subjects = lazy(() => import("../pages/admin/Subjects"));
 const Attendance = lazy(() => import("../pages/admin/Attendance"));
 const Reports = lazy(() => import("../pages/admin/Reports"));
 const Fees = lazy(() => import("../pages/admin/Fees"));
-const Announcements = lazy(() => import("../pages/admin/Announcements"));
+const Announcements = isNativeEnv
+  ? lazy(() => import("../pages/admin/MobileAnnouncements"))
+  : lazy(() => import("../pages/admin/Announcements"));
 const Exams = lazy(() => import("../pages/admin/Exams"));
 const Settings = lazy(() => import("../pages/admin/Settings"));
 const Profile = lazy(() => import("../pages/admin/Profile"));

@@ -317,11 +317,15 @@ function ChatApp() {
             }
 
             await api.post("/chat/send", { room_id: targetRoomId, message: text });
-            // Only reload messages. loadParticipants and fetchChatUsage are redundant here.
             await loadMessages(targetRoomId);
 
             // Fire and forget fetchRooms to update badges
             fetchRooms();
+            
+            // Update the chat usage instantly for admin/owner/manager
+            if (['admin', 'manager', 'owner'].includes(user?.role)) {
+                fetchChatUsage();
+            }
 
         } catch (err) {
             const errCode = err.response?.data?.code;

@@ -55,8 +55,9 @@ const StatCard = ({ icon, iconBg, label, value, sub, sparkColor, sparkPoints }) 
 // ── Student Row Card ──────────────────────────────────────────────────────────
 const StudentCard = ({ student, onView, onCard, onCredentials }) => {
     const name  = student.User?.name || student.name || "Student";
-    const cls   = student.Class?.name  || "—";
-    const sec   = student.Class?.section || "";
+    const classText = student.Classes?.length > 0 
+        ? student.Classes.map(c => `${c.name}${c.section ? ` - ${c.section}` : ""}`).join(", ") 
+        : "—";
     const roll  = student.roll_number || "—";
     const phone = student.User?.phone || student.phone || "N/A";
     const email = student.User?.email || student.email || "N/A";
@@ -73,7 +74,7 @@ const StudentCard = ({ student, onView, onCard, onCredentials }) => {
                 </div>
                 <div className="mst-sc-info">
                     <span className="mst-sc-name">{name}</span>
-                    <span className="mst-sc-class">{cls}{sec ? ` · ${sec}` : ""}</span>
+                    <span className="mst-sc-class">{classText}</span>
                     <span className="mst-sc-roll">{roll}</span>
                     <span className={`mst-sc-status ${isActive ? "active" : "inactive"}`}>
                         {isActive ? "● Active" : "● Inactive"}
@@ -87,9 +88,6 @@ const StudentCard = ({ student, onView, onCard, onCredentials }) => {
                     <span className="mst-sc-email">✉ {email !== "N/A" ? email.substring(0, 14) + (email.length > 14 ? "…" : "") : "N/A"}</span>
                 </div>
                 <div className="mst-sc-actions" onClick={e => e.stopPropagation()}>
-                    <button className="mst-action-btn card-btn" onClick={() => onCard(student)}>
-                        🪪 Card
-                    </button>
                     <button className="mst-action-btn cred-btn" onClick={() => onCredentials(student)}>
                         🔑 Login
                     </button>
@@ -119,92 +117,14 @@ const SkeletonRow = () => (
     </div>
 );
 
-// ── Add/Edit Student Modal ─────────────────────────────────────────────────────
-const AddStudentModal = ({ classes, onClose, onSaved }) => {
-    const [form, setForm] = useState({
-        name: "", email: "", phone: "",
-        class_id: "", roll_number: "",
-        gender: "male", date_of_birth: "",
-        admission_date: new Date().toISOString().slice(0, 10),
-    });
-    const [saving, setSaving] = useState(false);
-    const [err, setErr] = useState("");
-
-    const set = (field, val) => setForm(f => ({ ...f, [field]: val }));
-
-    const handleSave = async () => {
-        if (!form.name.trim() || !form.class_id) {
-            setErr("Name and Class are required.");
-            return;
-        }
-        setSaving(true);
-        setErr("");
-        try {
-            await api.post("/students", form);
-            onSaved();
-            onClose();
-        } catch (e) {
-            setErr(e.response?.data?.message || "Failed to add student.");
-        } finally {
-            setSaving(false);
-        }
-    };
-
-    return (
-        <div className="mst-modal-overlay" onClick={onClose}>
-            <div className="mst-modal" onClick={e => e.stopPropagation()}>
-                <div className="mst-modal-header">
-                    <h3>Add Student</h3>
-                    <button className="mst-modal-close" onClick={onClose}>✕</button>
-                </div>
-                <div className="mst-modal-body">
-                    {err && <div className="mst-form-error">{err}</div>}
-                    <label>Full Name *</label>
-                    <input placeholder="Student name" value={form.name} onChange={e => set("name", e.target.value)} />
-                    <label>Email</label>
-                    <input type="email" placeholder="Email address" value={form.email} onChange={e => set("email", e.target.value)} />
-                    <label>Phone</label>
-                    <input type="tel" placeholder="Phone number" value={form.phone} onChange={e => set("phone", e.target.value)} />
-                    <label>Class *</label>
-                    <select value={form.class_id} onChange={e => set("class_id", e.target.value)}>
-                        <option value="">Select class</option>
-                        {classes.map(c => (
-                            <option key={c.id} value={c.id}>
-                                {c.name}{c.section ? ` · ${c.section}` : ""}
-                            </option>
-                        ))}
-                    </select>
-                    <label>Roll Number</label>
-                    <input placeholder="Roll number" value={form.roll_number} onChange={e => set("roll_number", e.target.value)} />
-                    <label>Gender</label>
-                    <select value={form.gender} onChange={e => set("gender", e.target.value)}>
-                        <option value="male">Male</option>
-                        <option value="female">Female</option>
-                        <option value="other">Other</option>
-                    </select>
-                    <label>Date of Birth</label>
-                    <input type="date" value={form.date_of_birth} onChange={e => set("date_of_birth", e.target.value)} />
-                    <label>Admission Date</label>
-                    <input type="date" value={form.admission_date} onChange={e => set("admission_date", e.target.value)} />
-                </div>
-                <div className="mst-modal-footer">
-                    <button className="mst-btn-cancel" onClick={onClose}>Cancel</button>
-                    <button className="mst-btn-save" onClick={handleSave} disabled={saving}>
-                        {saving ? "Adding…" : "Add Student"}
-                    </button>
-                </div>
-            </div>
-        </div>
-    );
-};
-
 // ── Student Detail Modal ───────────────────────────────────────────────────────
 const StudentDetailModal = ({ student, onClose }) => {
     const name  = student.User?.name  || student.name  || "—";
     const email = student.User?.email || student.email || "—";
     const phone = student.User?.phone || student.phone || "—";
-    const cls   = student.Class?.name || "—";
-    const sec   = student.Class?.section || "";
+    const classText = student.Classes?.length > 0 
+        ? student.Classes.map(c => `${c.name}${c.section ? ` - ${c.section}` : ""}`).join(", ") 
+        : "—";
     const roll  = student.roll_number || "—";
     const dob   = student.date_of_birth || "—";
     const adm   = student.admission_date || "—";
@@ -230,7 +150,7 @@ const StudentDetailModal = ({ student, onClose }) => {
                 </div>
                 <div className="mst-detail-grid">
                     {[
-                        ["📚 Class",      `${cls}${sec ? ` · ${sec}` : ""}`],
+                        ["📚 Class",      classText],
                         ["🎫 Roll No",    roll],
                         ["📞 Phone",      phone],
                         ["✉️ Email",      email],
@@ -270,8 +190,10 @@ export default function MobileStudents() {
     const [showFilters, setShowFilters] = useState(false);
 
     // ── Modals ────────────────────────────────────────────────────────────────
-    const [showAdd,    setShowAdd]    = useState(false);
     const [viewStudent,setViewSt]     = useState(null);
+    const [credentialsData, setCredentialsData] = useState([]);
+    const [showCredentials, setShowCredentials] = useState(false);
+    const [loadingCreds, setLoadingCreds] = useState(false);
 
     // ── Fetch (2 calls max, parallel) ─────────────────────────────────────────
     const fetchAll = useCallback(async () => {
@@ -313,12 +235,20 @@ export default function MobileStudents() {
         : students.filter(s => (s.student_status || "active") === statusFilter);
 
     // ── Handlers ──────────────────────────────────────────────────────────────
-    const handleCard = (student) => {
-        // Navigate to student ID card (reuse web route)
-        navigate(`/admin/students`);
-    };
-    const handleCredentials = (student) => {
-        navigate(`/admin/students`);
+    const handleCredentials = async (student) => {
+        setLoadingCreds(true);
+        try {
+            const res = await api.post('/students/credentials', { student_ids: [student.id] });
+            if (res.data.success) {
+                setCredentialsData(res.data.data);
+                setShowCredentials(true);
+            }
+        } catch (err) {
+            console.error('Error fetching credentials:', err);
+            alert('Failed to fetch credentials');
+        } finally {
+            setLoadingCreds(false);
+        }
     };
 
     return (
@@ -329,9 +259,6 @@ export default function MobileStudents() {
                     <h1 className="mst-page-title">Student Management</h1>
                     <p className="mst-page-sub">Manage students and enrollments</p>
                 </div>
-                <button className="mst-btn-add" onClick={() => setShowAdd(true)}>
-                    + Add Student
-                </button>
             </div>
 
             {/* ── Stats Grid 2×2 ─────────────────────────────────────────── */}
@@ -431,9 +358,6 @@ export default function MobileStudents() {
                             <div className="mst-empty">
                                 <span>👤</span>
                                 <p>No students found</p>
-                                <button className="mst-btn-add-sm" onClick={() => setShowAdd(true)}>
-                                    + Add First Student
-                                </button>
                             </div>
                         )
                         : displayed.map(s => (
@@ -441,7 +365,6 @@ export default function MobileStudents() {
                                 key={s.id}
                                 student={s}
                                 onView={setViewSt}
-                                onCard={handleCard}
                                 onCredentials={handleCredentials}
                             />
                         ))
@@ -449,18 +372,38 @@ export default function MobileStudents() {
             </div>
 
             {/* ── Modals ──────────────────────────────────────────────────── */}
-            {showAdd && (
-                <AddStudentModal
-                    classes={classes}
-                    onClose={() => setShowAdd(false)}
-                    onSaved={fetchAll}
-                />
-            )}
             {viewStudent && (
                 <StudentDetailModal
                     student={viewStudent}
                     onClose={() => setViewSt(null)}
                 />
+            )}
+            {showCredentials && (
+                <div className="mst-modal-overlay" onClick={() => setShowCredentials(false)}>
+                    <div className="mst-modal" onClick={e => e.stopPropagation()}>
+                        <div className="mst-modal-header">
+                            <h3>Student Credentials</h3>
+                            <button className="mst-modal-close" onClick={() => setShowCredentials(false)}>✕</button>
+                        </div>
+                        <div className="mst-modal-body" style={{ padding: "16px" }}>
+                            {credentialsData.map((cred, i) => (
+                                <div key={i} style={{ background: "#f8fafc", padding: "12px", borderRadius: "8px", marginBottom: "8px" }}>
+                                    <p style={{ margin: "0 0 4px", fontSize: "14px", fontWeight: "600" }}>{cred.name}</p>
+                                    <p style={{ margin: "0 0 4px", fontSize: "13px", color: "#475569" }}><strong>Email:</strong> {cred.email}</p>
+                                    <p style={{ margin: "0", fontSize: "13px", color: "#475569" }}><strong>Password:</strong> {cred.password || "********"}</p>
+                                </div>
+                            ))}
+                        </div>
+                        <div className="mst-modal-footer">
+                            <button className="mst-btn-save" onClick={() => setShowCredentials(false)}>Close</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+            {loadingCreds && (
+                <div className="mst-modal-overlay">
+                    <div style={{ color: "white", fontWeight: "bold" }}>Fetching Credentials...</div>
+                </div>
             )}
         </div>
     );
