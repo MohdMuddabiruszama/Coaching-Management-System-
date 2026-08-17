@@ -202,7 +202,8 @@
 }
 .pub-stat-num {
   font-family: 'Playfair Display', serif; font-size: clamp(22px, 3vw, 32px);
-  font-weight: 700; color: var(--pub-accent); line-height: 1;
+  font-weight: 700; color: var(--pub-accent); line-height: 1.1;
+  word-break: break-word;
 }
 .pub-stat-label {
   font-size: 11px; color: rgba(255,255,255,.6); margin-top: 4px;
@@ -210,6 +211,17 @@
 }
 .pub-hero-actions {
   display: flex; gap: 14px; flex-wrap: wrap; animation: fadeUp .7s .5s both;
+}
+.pub-hero-btn {
+  padding: 15px 36px;
+  font-size: 16px;
+}
+.pub-whatsapp-btn {
+  color: white !important;
+  border-color: rgba(255,255,255,.4) !important;
+}
+.pub-whatsapp-btn:hover {
+  background: rgba(255,255,255,.1) !important;
 }
 
 .pub-hero-card {
@@ -221,15 +233,25 @@
 .pub-hero-img-wrap {
   border-radius: 16px; overflow: hidden; position: relative;
   width: 100%;
-  aspect-ratio: 16 / 5;
-  height: auto;
+  min-height: 120px;
   background: linear-gradient(135deg, rgba(244,166,29,.2), rgba(26,60,94,.4));
   margin-bottom: 20px;
   display: flex;
   align-items: center;
   justify-content: center;
 }
-.pub-hero-img-wrap img { width: 100%; height: 100%; object-fit: contain; }
+@media (min-width: 901px) {
+  .pub-hero-img-wrap.no-image { aspect-ratio: 16 / 5; }
+}
+@media (max-width: 900px) {
+  .pub-hero-img-wrap.no-image { aspect-ratio: 16 / 9; }
+}
+.pub-hero-img-wrap img { 
+  width: 100%; 
+  height: auto; 
+  object-fit: contain; 
+  display: block; 
+}
 
 .pub-quick-info-row {
   display: flex; align-items: center; gap: 14px; margin-bottom: 14px; color: #fff;
@@ -665,7 +687,8 @@ footer {
   }
   .pub-gallery-item:first-child { grid-column: span 2; }
 
-  .pub-hero-actions { gap: 10px; }
+  .pub-hero-actions { gap: 12px; width: 100%; }
+  .pub-hero-btn { flex: 1; min-width: 140px; padding: 12px 20px; font-size: 14px; text-align: center; }
   .pub-btn-primary, .pub-btn-outline { font-size: 14px; padding: 10px 18px; }
 
   .pub-whatsapp-fab { bottom: 16px; right: 16px; width: 48px; height: 48px; font-size: 20px; }
@@ -675,8 +698,13 @@ footer {
 @media (max-width: 480px) {
   .pub-hero-title { font-size: clamp(26px, 8vw, 36px); }
   .pub-hero-card { padding: 16px; }
-  .pub-hero-img-wrap { height: auto; }
-  .pub-hero-stats { gap: 16px; }
+  .pub-hero-stats { 
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px; 
+  }
+  .pub-hero-actions { flex-direction: column; }
+  .pub-hero-btn { width: 100%; }
   .pub-stat-num { font-size: 22px; }
 
   .pub-section-title { font-size: clamp(20px, 6vw, 28px); }

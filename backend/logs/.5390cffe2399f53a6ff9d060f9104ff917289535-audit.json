@@ -6,16 +6,6 @@
     "auditLog": "D:\\Pre Production\\Coaching-Management-System-\\backend\\logs\\.5390cffe2399f53a6ff9d060f9104ff917289535-audit.json",
     "files": [
         {
-            "date": 1785512053411,
-            "name": "D:\\Pre Production\\Coaching-Management-System-\\backend\\logs\\combined-2026-07-31.log",
-            "hash": "bd519f7c8e988bc0929c6e2ec4b25077bb66545a916dcb710c01c9e123cec8c3"
-        },
-        {
-            "date": 1785558706500,
-            "name": "D:\\Pre Production\\Coaching-Management-System-\\backend\\logs\\combined-2026-08-01.log",
-            "hash": "ed4af3f7fe89c847e9e91a436be7bacbf4a9748b4bf5497d600523d651b9400e"
-        },
-        {
             "date": 1785774001996,
             "name": "D:\\Pre Production\\Coaching-Management-System-\\backend\\logs\\combined-2026-08-03.log",
             "hash": "d319914bc7d774bf8bf24d822c5924b83362098de86834fa7eef6ef06b0f0d61"
@@ -74,6 +64,21 @@
             "date": 1786652437003,
             "name": "D:\\Pre Production\\Coaching-Management-System-\\backend\\logs\\combined-2026-08-14.log",
             "hash": "a98af272cbdd43b4c6caf1e5346d07f06d0f1ae04408ca66b5b82cdca9776683"
+        },
+        {
+            "date": 1786796090768,
+            "name": "D:\\Pre Production\\Coaching-Management-System-\\backend\\logs\\combined-2026-08-15.log",
+            "hash": "4cc0feaff3331e7cc986202a5328f1c2c2d791436f692d9c0428c01064715ed4"
+        },
+        {
+            "date": 1786819659291,
+            "name": "D:\\Pre Production\\Coaching-Management-System-\\backend\\logs\\combined-2026-08-16.log",
+            "hash": "e23575fa1494ba71d2798844305dc52e7a48ae81f13cf9a694968d93d181d61d"
+        },
+        {
+            "date": 1786905613194,
+            "name": "D:\\Pre Production\\Coaching-Management-System-\\backend\\logs\\combined-2026-08-17.log",
+            "hash": "f818b4a6cd98f951683693935d85ee5457b5a8c454781d874f94e29ffb8e1e1d"
         }
     ],
     "hashType": "sha256"

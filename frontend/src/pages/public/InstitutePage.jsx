@@ -376,9 +376,9 @@ export default function InstitutePage({ subdomain }) {
           )}
 
           <div className="pub-hero-actions">
-            <button className="pub-btn-primary" style={{ padding: '15px 36px', fontSize: '16px' }} onClick={scrollToEnq}>Enquire Now</button>
+            <button className="pub-btn-primary pub-hero-btn" onClick={scrollToEnq}>Enquire Now</button>
             {data.contact?.whatsapp && (
-              <a href={`https://wa.me/91${data.contact.whatsapp}`} target="_blank" rel="noopener noreferrer" className="pub-btn-outline" style={{ padding: '15px 36px', fontSize: '16px', color: 'white', borderColor: 'rgba(255,255,255,.4)' }}>
+              <a href={`https://wa.me/91${data.contact.whatsapp}`} target="_blank" rel="noopener noreferrer" className="pub-btn-outline pub-hero-btn pub-whatsapp-btn">
                 💬 WhatsApp
               </a>
             )}
@@ -391,7 +391,7 @@ export default function InstitutePage({ subdomain }) {
               <img src={resolveImg(data.cover_photo_url)} alt="cover" />
             </div>
           ) : (
-            <div className="pub-hero-img-wrap" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '48px', color: 'white' }}>
+            <div className="pub-hero-img-wrap no-image" style={{ fontSize: '48px', color: 'white' }}>
               🏫
             </div>
           )}
