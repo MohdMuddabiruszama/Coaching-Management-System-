@@ -159,7 +159,7 @@ function PayFees() {
     if (loading) return <div className="dashboard-container">Loading...</div>;
 
     const safeTotalPaid = feeStructures.reduce((sum, fee) => sum + parseFloat(fee.paid_amount || 0), 0);
-    const totalRequired = feeStructures.reduce((sum, fee) => sum + parseFloat(fee.final_amount || 0), 0);
+    const totalRequired = feeStructures.reduce((sum, fee) => sum + parseFloat(fee.original_amount || 0), 0);
     const balanceDue = feeStructures.reduce((sum, fee) => sum + parseFloat(fee.due_amount || 0), 0);
 
     return (
@@ -208,7 +208,7 @@ function PayFees() {
                         <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4Z"/></svg>
                     </div>
                     <div className="pf-stat-content">
-                        <p>Total Fees Assigned</p>
+                        <p>Original Fees</p>
                         <h3>${totalRequired.toFixed(2)}</h3>
                     </div>
                 </div>
@@ -260,7 +260,7 @@ function PayFees() {
                                 </tr>
                             ) : (
                                 feeStructures.map((fee) => {
-                                    const finalAmount = parseFloat(fee.final_amount) || 0;
+                                    const originalAmount = parseFloat(fee.original_amount) || 0;
                                     const paidAmount = parseFloat(fee.paid_amount) || 0;
                                     const balance = parseFloat(fee.due_amount) || 0;
                                     const isPaidOff = fee.status === 'paid' || balance <= 0;
@@ -288,7 +288,7 @@ function PayFees() {
                                                 )}
                                             </td>
                                             <td>
-                                                Total: <strong style={{ color: '#111827' }}>${finalAmount.toFixed(2)}</strong><br />
+                                                Original: <strong style={{ color: '#111827' }}>${originalAmount.toFixed(2)}</strong><br />
                                                 Paid: <span style={{ color: '#6b7280' }}>${paidAmount.toFixed(2)}</span><br />
                                                 Due: <strong style={{ color: balance > 0 ? '#ef4444' : '#10b981' }}>${balance.toFixed(2)}</strong>
                                             </td>
@@ -310,7 +310,7 @@ function PayFees() {
                         <div className="pf-mobile-empty">No fees assigned to your account yet.</div>
                     ) : (
                         feeStructures.map((fee) => {
-                            const finalAmount = parseFloat(fee.final_amount) || 0;
+                            const originalAmount = parseFloat(fee.original_amount) || 0;
                             const paidAmount = parseFloat(fee.paid_amount) || 0;
                             const balance = parseFloat(fee.due_amount) || 0;
                             const isPaidOff = fee.status === 'paid' || balance <= 0;
@@ -336,7 +336,7 @@ function PayFees() {
                                             )}
                                         </div>
                                         <div className="pf-mc-amounts">
-                                            <div>Total: <strong>${finalAmount.toFixed(2)}</strong></div>
+                                            <div>Original: <strong>${originalAmount.toFixed(2)}</strong></div>
                                             <div>Paid: <span>${paidAmount.toFixed(2)}</span></div>
                                             <div>Due: <strong style={{ color: balance > 0 ? '#ef4444' : '#10b981' }}>${balance.toFixed(2)}</strong></div>
                                         </div>

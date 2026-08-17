@@ -7,7 +7,7 @@ const { idParam, pagination, email, phone, genderEnum } = require("./common.sche
 const createFaculty = {
     body: Joi.object({
         name: Joi.string().trim().min(2).max(100).required(),
-        email: email.required(),
+        email: email.optional().allow("", null),
         phone: phone.optional().allow("", null),
         qualification: Joi.string().max(200).optional().allow("", null),
         experience: Joi.string().max(100).optional().allow("", null),
@@ -23,7 +23,7 @@ const updateFaculty = {
     params: idParam,
     body: Joi.object({
         name: Joi.string().trim().min(2).max(100).optional(),
-        email: email.optional(),
+        email: email.optional().allow("", null),
         phone: phone.optional().allow("", null),
         qualification: Joi.string().max(200).optional().allow("", null),
         experience: Joi.string().max(100).optional().allow("", null),

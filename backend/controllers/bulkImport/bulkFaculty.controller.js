@@ -59,7 +59,7 @@ exports.bulkImportFaculty = async (req, res) => {
       const rowNum = i + 2;
       const rowErrors = validateFacultyRow(row);
 
-      const email = String(row.email || '').toLowerCase().trim();
+      const email = String(row.email || '').toLowerCase().trim() || null;
       if (email) {
         if (takenEmails.has(email))   rowErrors.push('email already exists in system');
         if (seenInBatch.has(email))   rowErrors.push('duplicate email within file');

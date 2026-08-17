@@ -1095,8 +1095,8 @@ function Faculty() {
                                             <input type="text" name="name" className="form-input" placeholder="Enter full name" value={formData.name} onChange={handleChange} required />
                                         </div>
                                         <div className="form-group">
-                                            <label className="form-label" style={{ fontSize: '0.85rem', fontWeight: 600, color: '#475569', marginBottom: '0.4rem' }}>Email <span style={{color:'#ef4444'}}>*</span></label>
-                                            <input type="email" name="email" className="form-input" placeholder="Enter email address" value={formData.email} onChange={handleChange} required disabled={editMode} />
+                                            <label className="form-label" style={{ fontSize: '0.85rem', fontWeight: 600, color: '#475569', marginBottom: '0.4rem' }}>Email</label>
+                                            <input type="email" name="email" className="form-input" placeholder="Enter email address" value={formData.email} onChange={handleChange} disabled={editMode} />
                                         </div>
                                         <div className="form-group">
                                             <label className="form-label" style={{ fontSize: '0.85rem', fontWeight: 600, color: '#475569', marginBottom: '0.4rem' }}>Phone</label>

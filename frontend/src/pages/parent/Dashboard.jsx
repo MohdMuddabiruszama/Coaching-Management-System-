@@ -1309,8 +1309,8 @@ function ParentDashboard() {
                                                     <tr>
                                                         <th>Fee Type</th>
                                                         <th>Original</th>
-                                                        <th>Discount</th>
-                                                        <th>Final</th>
+                                                        {/* <th>Discount</th> */}
+                                                        {/* <th>Final</th> */}
                                                         <th>Paid</th>
                                                         <th>Due</th>
                                                         <th>Due Date</th>
@@ -1323,8 +1323,8 @@ function ParentDashboard() {
                                                         <tr key={fee.id}>
                                                             <td><strong>{fee.FeesStructure?.fee_type || 'Fee'}</strong></td>
                                                             <td>₹{parseFloat(fee.original_amount || 0).toLocaleString()}</td>
-                                                            <td style={{ color: '#a855f7' }}>-₹{parseFloat(fee.discount_amount || 0).toLocaleString()}</td>
-                                                            <td><strong>₹{parseFloat(fee.final_amount || 0).toLocaleString()}</strong></td>
+                                                            {/* <td style={{ color: '#a855f7' }}>-₹{parseFloat(fee.discount_amount || 0).toLocaleString()}</td> */}
+                                                            {/* <td><strong>₹{parseFloat(fee.final_amount || 0).toLocaleString()}</strong></td> */}
                                                             <td style={{ color: '#10b981' }}>₹{parseFloat(fee.paid_amount || 0).toLocaleString()}</td>
                                                             <td style={{ color: '#ef4444', fontWeight: 700 }}>₹{parseFloat(fee.due_amount || 0).toLocaleString()}</td>
                                                             <td>{fee.FeesStructure?.due_date ? new Date(fee.FeesStructure.due_date).toLocaleDateString() : '—'}</td>
@@ -1355,7 +1355,7 @@ function ParentDashboard() {
                                                             </span>
                                                         </div>
                                                         <div className="fee-amounts">
-                                                            <div className="fee-amount-item">Final: <strong>₹{parseFloat(fee.final_amount || 0).toLocaleString()}</strong></div>
+                                                            {/* <div className="fee-amount-item">Final: <strong>₹{parseFloat(fee.final_amount || 0).toLocaleString()}</strong></div> */}
                                                             <div className="fee-amount-item" style={{ color: '#10b981' }}>Paid: <strong>₹{parseFloat(fee.paid_amount || 0).toLocaleString()}</strong></div>
                                                             <div className="fee-amount-item" style={{ color: '#ef4444' }}>Due: <strong>₹{parseFloat(fee.due_amount || 0).toLocaleString()}</strong></div>
                                                         </div>

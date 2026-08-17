@@ -66,7 +66,7 @@ export default function MobileFees() {
     }
 
     const safeFees = Array.isArray(fees) ? fees : [];
-    const totalRequired = safeFees.reduce((sum, fee) => sum + parseFloat(fee.final_amount || 0), 0);
+    const totalRequired = safeFees.reduce((sum, fee) => sum + parseFloat(fee.original_amount || 0), 0);
     const safeTotalPaid = safeFees.reduce((sum, fee) => sum + parseFloat(fee.paid_amount || 0), 0);
     const balanceDue = safeFees.reduce((sum, fee) => sum + parseFloat(fee.due_amount || 0), 0);
 
@@ -125,7 +125,7 @@ export default function MobileFees() {
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4Z"/></svg>
                             </div>
                             <div className="mp-fees-stat-content">
-                                <p>Total Fees Assigned</p>
+                                <p>Original Fees</p>
                                 <h3>${totalRequired.toFixed(2)}</h3>
                             </div>
                         </div>
@@ -166,7 +166,7 @@ export default function MobileFees() {
                                 <div className="mp-fees-empty">No fees assigned for this student yet.</div>
                             ) : (
                                 safeFees.map((fee) => {
-                                    const finalAmount = parseFloat(fee.final_amount) || 0;
+                                    const originalAmount = parseFloat(fee.original_amount) || 0;
                                     const paidAmount = parseFloat(fee.paid_amount) || 0;
                                     const balance = parseFloat(fee.due_amount) || 0;
                                     const isPaidOff = fee.status === 'paid' || balance <= 0;
@@ -193,7 +193,7 @@ export default function MobileFees() {
                                                     )}
                                                 </div>
                                                 <div className="mp-fees-mc-amounts">
-                                                    <div>Total: <strong>${finalAmount.toFixed(2)}</strong></div>
+                                                    <div>Original: <strong>${originalAmount.toFixed(2)}</strong></div>
                                                     <div>Paid: <span>${paidAmount.toFixed(2)}</span></div>
                                                     <div>Due: <strong style={{ color: balance > 0 ? '#ef4444' : '#10b981' }}>${balance.toFixed(2)}</strong></div>
                                                 </div>

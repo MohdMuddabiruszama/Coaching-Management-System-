@@ -86,16 +86,20 @@ exports.createFaculty = async (req, res) => {
             }
         }
 
-        // Check if faculty email already exists anywhere (global uniqueness)
-        const existingUser = await User.findOne({
-            where: { email },
-        });
+        const finalEmail = email ? String(email).toLowerCase().trim() : null;
 
-        if (existingUser) {
-            return res.status(409).json({
-                success: false,
-                message: "Faculty with this email already exists",
+        // Check if faculty email already exists anywhere (global uniqueness)
+        if (finalEmail) {
+            const existingUser = await User.findOne({
+                where: { email: finalEmail },
             });
+
+            if (existingUser) {
+                return res.status(409).json({
+                    success: false,
+                    message: "Faculty with this email already exists",
+                });
+            }
         }
 
         // Hash password
@@ -111,13 +115,13 @@ exports.createFaculty = async (req, res) => {
             institute_id,
             role: "faculty",
             name,
-            email,
+            email: finalEmail,
             phone,
             password_hash,
             status: "active",
             is_first_login: true,
             temp_password_expires_at,
-            credentials_sent_at: email ? new Date() : null,
+            credentials_sent_at: finalEmail ? new Date() : null,
             initial_password: tempPassword
         });
 
@@ -334,9 +338,18 @@ exports.updateFaculty = async (req, res) => {
 
         // Update user details
         if (name !== undefined || email !== undefined || phone !== undefined || status !== undefined) {
+            const finalEmail = email !== undefined ? (email ? String(email).toLowerCase().trim() : null) : faculty.User.email;
+            
+            if (email !== undefined && finalEmail && finalEmail !== faculty.User.email) {
+                const existingUser = await User.findOne({ where: { email: finalEmail } });
+                if (existingUser) {
+                    return res.status(409).json({ success: false, message: "Faculty with this email already exists" });
+                }
+            }
+
             await faculty.User.update({
                 name: name !== undefined ? name : faculty.User.name,
-                email: email !== undefined ? email : faculty.User.email,
+                email: finalEmail,
                 phone: phone !== undefined ? phone : faculty.User.phone,
                 status: status !== undefined ? status : faculty.User.status,
             });
