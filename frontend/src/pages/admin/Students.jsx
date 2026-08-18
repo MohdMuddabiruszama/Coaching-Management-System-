@@ -624,9 +624,9 @@ function Students() {
     // Filter students
     const filteredStudents = students.filter((s) => {
         const matchesSearch =
-            s.User?.name.toLowerCase().includes(search.toLowerCase()) ||
-            s.User?.email.toLowerCase().includes(search.toLowerCase()) ||
-            s.roll_number.toLowerCase().includes(search.toLowerCase());
+            (s.User?.name || "").toLowerCase().includes(search.toLowerCase()) ||
+            (s.User?.email || "").toLowerCase().includes(search.toLowerCase()) ||
+            (s.roll_number || "").toLowerCase().includes(search.toLowerCase());
 
         const matchesClass =
             classFilter === "all" || (s.Classes && s.Classes.some(c => c.id === parseInt(classFilter)));

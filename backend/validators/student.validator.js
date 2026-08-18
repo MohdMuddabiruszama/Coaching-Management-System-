@@ -31,7 +31,7 @@ const updateStudent = {
     params: idParam,
     body: Joi.object({
         name: Joi.string().trim().min(2).max(100).optional(),
-        email: email.optional(),
+        email: email.optional().allow('', null),
         phone: phone.optional().allow("", null),
         roll_number: Joi.string().max(50).optional().allow("", null),
         class_id: Joi.number().integer().positive().optional().allow(null),

@@ -623,22 +623,43 @@ exports.updateStudent = catchAsync(async (req, res) => {
       roll_number: roll_number || student.roll_number,
       admission_date: admission_date || student.admission_date,
       date_of_birth: date_of_birth || student.date_of_birth,
-      gender: gender || student.gender,
+      gender: gender ? gender.toLowerCase() : student.gender,
       address: address || student.address,
       is_full_course: subject_ids && Array.isArray(subject_ids) ? subject_ids.includes("full_course") : student.is_full_course
     }, { transaction });
 
     // Update classes if provided
     if (class_ids && Array.isArray(class_ids)) {
-      await StudentClass.destroy({ where: { student_id: id }, transaction });
+      // Step 1: Mark ALL existing active enrollments for this student as 'completed'
+      // This clears the uq_one_active_enrollment partial unique index constraint
+      await sequelize.query(
+        `UPDATE student_classes SET enrollment_status = 'completed', exited_at = NOW(), updated_at = NOW()
+         WHERE student_id = :student_id AND enrollment_status = 'active'`,
+        { replacements: { student_id: id }, transaction }
+      );
 
       if (class_ids.length > 0) {
-        const studentClasses = class_ids.map((c_id) => ({
-          student_id: student.id,
-          class_id: parseInt(c_id),
-          institute_id: institute_id
-        }));
-        await StudentClass.bulkCreate(studentClasses, { transaction });
+        // Step 2: Upsert each class row using raw SQL ON CONFLICT DO UPDATE
+        // This correctly targets the composite PK (student_id, class_id)
+        for (let idx = 0; idx < class_ids.length; idx++) {
+          const c_id = parseInt(class_ids[idx]);
+          const status = idx === 0 ? 'active' : 'completed';
+          await sequelize.query(
+            `INSERT INTO student_classes (student_id, class_id, institute_id, enrollment_status, created_at, updated_at)
+             VALUES (:student_id, :class_id, :institute_id, :status, NOW(), NOW())
+             ON CONFLICT (student_id, class_id)
+             DO UPDATE SET enrollment_status = :status, exited_at = NULL, updated_at = NOW()`,
+            {
+              replacements: {
+                student_id: student.id,
+                class_id: c_id,
+                institute_id: institute_id,
+                status
+              },
+              transaction
+            }
+          );
+        }
       }
     }
 
@@ -687,10 +708,7 @@ exports.updateStudent = catchAsync(async (req, res) => {
     });
   } catch (error) {
     if (transaction) await transaction.rollback();
-    res.status(500).json({
-      success: false,
-      message: error.message
-    });
+    throw error;
   }
 });
 
