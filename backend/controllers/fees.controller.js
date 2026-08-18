@@ -57,7 +57,43 @@ exports.createFeeStructure = catchAsync(async (req, res) => {
       // Only create a fee record for this specific student
       const student = await Student.findOne({ where: { id: individual_student_id, institute_id } });
       if (student) {
-        // Check for duplicate
+        // ── OVERRIDE STEP 1: Remove unpaid class-wide StudentFee records of the same fee_type ──
+        // Individual fee supersedes any existing all-student fee of the same type
+        const classWideStructures = await FeesStructure.findAll({
+          where: { institute_id, class_id, fee_type, individual_student_id: null },
+          attributes: ['id']
+        });
+        if (classWideStructures.length > 0) {
+          const cwIds = classWideStructures.map(s => s.id);
+          await StudentFee.destroy({
+            where: {
+              student_id: individual_student_id,
+              fee_structure_id: cwIds,
+              paid_amount: 0  // NEVER touch fees that have been paid
+            }
+          });
+        }
+
+        // ── OVERRIDE STEP 2: Remove older unpaid individual StudentFees of same fee_type ──
+        // Prevents multiple individual Tuition Fee rows for the same student+class
+        const olderIndividualStructures = await FeesStructure.findAll({
+          where: {
+            institute_id,
+            class_id,
+            fee_type,
+            individual_student_id,
+            id: { [Op.ne]: feeStructure.id }  // exclude the one just created
+          },
+          attributes: ['id']
+        });
+        if (olderIndividualStructures.length > 0) {
+          const oldIds = olderIndividualStructures.map(s => s.id);
+          await StudentFee.destroy({
+            where: { student_id: individual_student_id, fee_structure_id: oldIds, paid_amount: 0 }
+          });
+        }
+
+        // Create the individual StudentFee record (if not already exists)
         const existing = await StudentFee.findOne({
           where: { student_id: individual_student_id, fee_structure_id: feeStructure.id, institute_id }
         });
@@ -494,11 +530,31 @@ exports.syncSingleStudentFees = catchAsync(async (institute_id, studentObj) => {
     const subjectIds = studentObj.Subjects ? studentObj.Subjects.map((sub) => sub.id) : [];
     const classIds = studentObj.Classes ? studentObj.Classes.map((c) => c.id) : [];
 
+    // Build a lookup set of individual overrides: (fee_type, class_id) pairs where
+    // an individual-targeted fee structure exists for this student specifically.
+    const studentIndividualOverrides = new Set(
+      structures
+        .filter(indFs => indFs.individual_student_id === studentObj.id)
+        .map(indFs => `${indFs.fee_type}|${indFs.class_id}`)
+    );
+
     for (const fs of structures) {
       let applies = false;
       if (fs.individual_student_id) {
+        // Individual fee — applies only to the targeted student
         if (studentObj.id === fs.individual_student_id) applies = true;
       } else if (classIds.includes(fs.class_id)) {
+        // ── INDIVIDUAL OVERRIDE CHECK ──────────────────────────────────
+        // Skip class-wide fee if an individual fee of same type+class exists
+        if (studentIndividualOverrides.has(`${fs.fee_type}|${fs.class_id}`)) {
+          const existingClassFee = existingStudentFees.find(f => f.fee_structure_id === fs.id);
+          if (existingClassFee && parseFloat(existingClassFee.paid_amount) === 0) {
+            toDeleteIds.push(existingClassFee.id);
+          }
+          continue; // Individual fee takes precedence
+        }
+        // ────────────────────────────────────────────────────────────────
+
         if (fs.subject_id !== null) {
           if (subjectIds.includes(fs.subject_id)) {
             if (fs.fee_type === 'Tuition Fee' && studentObj.is_full_course) {
@@ -545,7 +601,7 @@ exports.syncSingleStudentFees = catchAsync(async (institute_id, studentObj) => {
     }
 
     if (toCreate.length > 0) {
-      await StudentFee.bulkCreate(toCreate);
+      await StudentFee.bulkCreate(toCreate, { ignoreDuplicates: true });
     }
 
     return true;
@@ -614,11 +670,34 @@ exports.getAssignedStudentFees = catchAsync(async (req, res) => {
       // Existing fees for this student
       const studentExistingFees = existingStudentFees.filter((f) => f.student_id === s.id);
 
+      // Build a quick lookup: set of (student_id, fee_type, class_id) that have individual overrides
+      // Used below to skip class-wide fees that are superseded by an individual fee
+      const individualOverrideKey = (studentId, feeType, classId) => `${studentId}|${feeType}|${classId}`;
+      const individualOverrides = new Set(
+        structures
+          .filter(indFs => indFs.individual_student_id !== null)
+          .map(indFs => individualOverrideKey(indFs.individual_student_id, indFs.fee_type, indFs.class_id))
+      );
+
       for (const fs of structures) {
         let applies = false;
         if (fs.individual_student_id) {
+          // Individual fee — applies only to the targeted student
           if (s.id === fs.individual_student_id) applies = true;
         } else if (classIds.includes(fs.class_id)) {
+          // ── INDIVIDUAL OVERRIDE CHECK ──────────────────────────────────
+          // If an individual fee structure exists for this student with the same
+          // fee_type in this class, the individual one takes precedence.
+          // Skip this class-wide fee and queue any unpaid record for deletion.
+          if (individualOverrides.has(individualOverrideKey(s.id, fs.fee_type, fs.class_id))) {
+            const existingClassFee = studentExistingFees.find(f => f.fee_structure_id === fs.id);
+            if (existingClassFee && parseFloat(existingClassFee.paid_amount) === 0) {
+              toDeleteIds.push(existingClassFee.id);
+            }
+            continue; // Individual fee takes precedence — skip class-wide
+          }
+          // ────────────────────────────────────────────────────────────────
+
           if (fs.subject_id !== null) {
             if (subjectIds.includes(fs.subject_id)) {
               // Subject-level Tuition Fees should NOT apply to full course students
@@ -670,7 +749,15 @@ exports.getAssignedStudentFees = catchAsync(async (req, res) => {
     }
 
     if (toCreate.length > 0) {
-      await StudentFee.bulkCreate(toCreate);
+      // De-duplicate toCreate by (student_id, fee_structure_id) before insert
+      const seen = new Set();
+      const uniqueToCreate = toCreate.filter((r) => {
+        const key = `${r.student_id}_${r.fee_structure_id}`;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
+      await StudentFee.bulkCreate(uniqueToCreate, { ignoreDuplicates: true });
     }
 
     // Fetch them all with associations

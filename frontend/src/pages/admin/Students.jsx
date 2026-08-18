@@ -929,10 +929,14 @@ function Students() {
                                         <td>
                                             <div className="st-contact-col">
                                                 <div className="st-contact-item">
-                                                    📞 {student.User?.phone || 'N/A'}
+                                                    {student.User?.phone
+                                                        ? <a href={`tel:${student.User.phone}`} style={{ color: 'inherit', textDecoration: 'none' }} title="Call student">📞 {student.User.phone}</a>
+                                                        : '📞 N/A'}
                                                 </div>
                                                 <div className="st-contact-item">
-                                                    ✉ {student.User?.email || 'N/A'}
+                                                    {student.User?.email
+                                                        ? <a href={`mailto:${student.User.email}`} style={{ color: '#6366f1', textDecoration: 'none', fontWeight: 500 }} title="Email student">✉ {student.User.email}</a>
+                                                        : '✉ N/A'}
                                                 </div>
                                             </div>
                                         </td>
@@ -1495,7 +1499,7 @@ function Students() {
                                         </div>
                                         <div className="form-group">
                                             <label className="form-label" style={{ fontSize: '0.85rem', fontWeight: 600, color: '#475569', marginBottom: '0.4rem' }}>Email <span style={{color:'#6b7280', fontWeight: 400, fontSize: '0.78rem'}}>(optional)</span></label>
-                                            <input type="email" name="email" className="form-input" placeholder="Enter email address" value={formData.email} onChange={handleChange} disabled={editMode} />
+                                            <input type="email" name="email" className="form-input" placeholder="Enter email address" value={formData.email} onChange={handleChange} />
                                         </div>
                                         <div className="form-group">
                                             <label className="form-label" style={{ fontSize: '0.85rem', fontWeight: 600, color: '#475569', marginBottom: '0.4rem' }}>Phone</label>

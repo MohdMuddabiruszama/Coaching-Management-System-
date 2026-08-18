@@ -74,23 +74,7 @@ exports.createStudent = catchAsync(async (req, res) => {
       }
     }
 
-    // Validate mandatory date fields BEFORE creating any DB records
-    if (!date_of_birth || isNaN(new Date(date_of_birth))) {
-      await transaction.rollback();
-      transaction = null;
-      return res.status(400).json({
-        success: false,
-        message: "Date of Birth is required and must be a valid date (YYYY-MM-DD)."
-      });
-    }
-    if (!admission_date || isNaN(new Date(admission_date))) {
-      await transaction.rollback();
-      transaction = null;
-      return res.status(400).json({
-        success: false,
-        message: "Admission Date is required and must be a valid date (YYYY-MM-DD)."
-      });
-    }
+    // Date of Birth and Admission Date are optional — no mandatory validation
 
     // Hash password
     const { generateTempPassword } = require('../utils/passwordGenerator');
@@ -124,10 +108,10 @@ exports.createStudent = catchAsync(async (req, res) => {
         institute_id,
         user_id: user.id || user.user_id,
         roll_number,
-        admission_date: admission_date,
-        date_of_birth: date_of_birth,
+        admission_date: admission_date || null,
+        date_of_birth: date_of_birth || null,
         gender: gender ? gender.toLowerCase() : null,
-        address,
+        address: address || null,
         is_full_course: subject_ids && Array.isArray(subject_ids) ? subject_ids.includes("full_course") : false
       }, { transaction });
     } catch (studentError) {
@@ -694,7 +678,7 @@ exports.updateStudent = catchAsync(async (req, res) => {
           subject_id: parseInt(sub_id),
           institute_id: institute_id
         }));
-        await StudentSubject.bulkCreate(studentSubjects, { transaction });
+        await StudentSubject.bulkCreate(studentSubjects, { transaction, ignoreDuplicates: true });
       }
     }
 

@@ -398,8 +398,10 @@ exports.deleteFaculty = async (req, res) => {
             });
         }
 
-        // Delete user account
-        await faculty.User.destroy();
+        // Delete user account if it exists
+        if (faculty.User) {
+            await faculty.User.destroy();
+        }
 
         // Delete faculty record
         await faculty.destroy();
