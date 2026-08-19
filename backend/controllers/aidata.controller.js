@@ -47,7 +47,6 @@ function resolvePunchType(statusCode) {
 
 /**
  * Find a registered, active/pending device by serial number.
- * Returns null if not found — caller must handle.
  */
 async function findDevice(sn) {
     if (!sn) return null;
@@ -58,6 +57,64 @@ async function findDevice(sn) {
         }
     });
 }
+
+/**
+ * Extract SN + table + attendance lines from a raw POST body.
+ *
+ * Biomax N300 sends ONE of two formats:
+ *
+ * Format A — SN in query string, body = attendance records only:
+ *   POST /AIData.aspx?SN=AMDB...&table=ATTLOG
+ *   Body: "1\t2026-08-20 10:30:45\t0\t1\t0\n"
+ *
+ * Format B — ALL params in body (URL-encoded first line + data lines):
+ *   POST /AIData.aspx
+ *   Body: "SN=AMDB...&table=ATTLOG&Stamp=9999\n1\t2026-08-20 10:30:45\t0\t1\t0\n"
+ *
+ * Format C — Entire body is URL-encoded including attendance data:
+ *   POST /AIData.aspx
+ *   Body: "SN=AMDB...&table=ATTLOG&Stamp=9999&Data=1%092026-08-20..."
+ */
+function parseBody(rawBody, querySN, queryTable) {
+    let sn    = querySN    || undefined;
+    let table = queryTable || "ATTLOG";
+    let attendanceLines = [];
+
+    if (!rawBody || rawBody.trim() === "") {
+        return { sn, table, attendanceLines };
+    }
+
+    const lines = rawBody.split(/\r?\n/);
+
+    // Check if the first line looks like URL-encoded params
+    // e.g. "SN=AMDB25060700203&table=ATTLOG&Stamp=9999"
+    const firstLine = lines[0].trim();
+    if (!sn && firstLine.includes("=") && !firstLine.includes("\t")) {
+        try {
+            const params = new URLSearchParams(firstLine);
+            if (params.get("SN"))    sn    = params.get("SN");
+            if (params.get("table")) table = params.get("table");
+
+            // If "Data" key exists (Format C), decode it as attendance
+            const dataField = params.get("Data") || params.get("data");
+            if (dataField) {
+                attendanceLines = dataField.split(/\r?\n/).filter(l => l.trim());
+            } else {
+                // Remaining lines after the first are attendance records
+                attendanceLines = lines.slice(1).filter(l => l.trim());
+            }
+        } catch {
+            // Not parseable — treat all lines as attendance records
+            attendanceLines = lines.filter(l => l.trim());
+        }
+    } else {
+        // All lines are attendance records (SN was in query string)
+        attendanceLines = lines.filter(l => l.trim());
+    }
+
+    return { sn, table, attendanceLines };
+}
+
 
 // ─── Handshake — GET /AIData.aspx ────────────────────────────────────────────
 
@@ -121,18 +178,27 @@ exports.handshake = async (req, res) => {
  */
 exports.receiveData = async (req, res) => {
     try {
-        const sn = req.query.SN || req.query.sn;
-        const table = req.query.table || "ATTLOG";
-        console.log(`[AIData] Data push from SN=${sn}, table=${table}`);
+        const rawBody = req.body || "";
+
+        // Extract SN, table, and attendance lines — handles all 3 Biomax body formats
+        const { sn, table, attendanceLines } = parseBody(
+            typeof rawBody === "string" ? rawBody : rawBody.toString(),
+            req.query.SN || req.query.sn,
+            req.query.table
+        );
+
+        console.log(`[AIData] Data push from SN=${sn}, table=${table}, lines=${attendanceLines.length}`);
 
         if (!sn) {
-            return res.status(200).type("text/plain").send("ERROR: NO SN");
+            // Log full body so we can debug the exact format the device sends
+            console.warn(`[AIData] ⚠️  SN still undefined — raw body:\n${rawBody}`);
+            return res.status(200).type("text/plain").set("Connection", "close").send("OK");
         }
 
         const device = await findDevice(sn);
         if (!device) {
             console.warn(`[AIData] Unregistered device push: SN=${sn}`);
-            return res.status(200).type("text/plain").send("ERROR: UNREGISTERED DEVICE");
+            return res.status(200).type("text/plain").set("Connection", "close").send("ERROR: UNREGISTERED DEVICE");
         }
 
         // Activate if still pending
@@ -146,20 +212,15 @@ exports.receiveData = async (req, res) => {
             return res.status(200).type("text/plain").set("Connection", "close").send("OK");
         }
 
-        const rawBody = req.body;
-        if (!rawBody || typeof rawBody !== "string" || rawBody.trim() === "") {
+        if (attendanceLines.length === 0) {
             await device.update({ last_sync: new Date() });
             return res.status(200).type("text/plain").set("Connection", "close").send("OK");
         }
 
-        console.log(`[AIData] Raw body from ${sn}:\n${rawBody}`);
-
-        // Parse each attendance record line
-        const lines = rawBody.split(/\r?\n/);
         let processed = 0;
         let failed = 0;
 
-        for (let line of lines) {
+        for (let line of attendanceLines) {
             line = line.trim();
             if (!line) continue;
 
@@ -172,18 +233,16 @@ exports.receiveData = async (req, res) => {
                 continue;
             }
 
-            const pin        = (parts[0] || "").trim();
-            // DateTime can be "2026-08-20 10:30:45" (parts[1]) — already combined
-            // OR split as "2026-08-20" (parts[1]) + "10:30:45" (parts[2])
+            const pin = (parts[0] || "").trim();
+
+            // DateTime can be combined "2026-08-20 10:30:45" or split date + time
             let dateTimeStr;
             let statusIdx;
 
-            if (parts[1] && parts[1].includes(" ")) {
-                // Combined: "2026-08-20 10:30:45"
-                dateTimeStr = parts[1].trim();
+            if (parts[1] && parts[1].includes(" ") && parts[1].includes("-")) {
+                dateTimeStr = parts[1].trim();   // "2026-08-20 10:30:45"
                 statusIdx   = 2;
             } else if (parts.length >= 3 && parts[2] && parts[2].includes(":")) {
-                // Split: date in parts[1], time in parts[2]
                 dateTimeStr = `${parts[1].trim()} ${parts[2].trim()}`;
                 statusIdx   = 3;
             } else {
@@ -191,8 +250,8 @@ exports.receiveData = async (req, res) => {
                 statusIdx   = 2;
             }
 
-            const statusCode = (parts[statusIdx]   || "0").trim();
-            const verifyCode = (parts[statusIdx+1] || "1").trim();
+            const statusCode = (parts[statusIdx]     || "0").trim();
+            const verifyCode = (parts[statusIdx + 1] || "1").trim();
 
             const punchDate = new Date(dateTimeStr);
             if (!pin || isNaN(punchDate.getTime())) {
@@ -221,7 +280,6 @@ exports.receiveData = async (req, res) => {
                     processed: false,
                 });
 
-                // Process in background — never block the device response
                 setImmediate(async () => {
                     try {
                         await processPunch(punch);
@@ -231,7 +289,7 @@ exports.receiveData = async (req, res) => {
                 });
 
                 processed++;
-                console.log(`[AIData] ✅ Punch saved: PIN=${pin} | ${punchDate.toISOString()} | type=${punchType} | method=${verifyMethod}`);
+                console.log(`[AIData] ✅ PIN=${pin} | ${punchDate.toISOString()} | ${punchType} | ${verifyMethod}`);
             } catch (dbErr) {
                 console.error(`[AIData] DB error saving punch for PIN=${pin}:`, dbErr.message);
                 failed++;
@@ -239,16 +297,15 @@ exports.receiveData = async (req, res) => {
         }
 
         await device.update({ last_sync: new Date(), last_punch_at: new Date() });
-        console.log(`[AIData] Push complete: ${processed} saved, ${failed} failed — SN=${sn}`);
+        console.log(`[AIData] Done: ${processed} saved, ${failed} failed — SN=${sn}`);
 
-        // CRITICAL: device expects exactly "OK" with Connection: close
-        // If it doesn't get this, it will retry in an infinite loop
         res.status(200).type("text/plain").set("Connection", "close").send("OK");
     } catch (err) {
         console.error("[AIData] receiveData error:", err.message);
         res.status(200).type("text/plain").send("ERROR");
     }
 };
+
 
 // ─── Command Poll — GET /getrequest.aspx ─────────────────────────────────────
 
