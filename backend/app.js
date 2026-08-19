@@ -246,27 +246,40 @@ app.use("/api/webhook", express.raw({ type: 'application/json' }), require("./ro
 /**
  * Biomax N-series AI Push Protocol — MUST be before global body parsers.
  *
- * WHY: express.urlencoded() (below) is a global middleware that consumes the
- * raw body stream for ANY request with Content-Type: application/x-www-form-urlencoded.
- * Biomax devices use exactly that content type, so urlencoded would pre-parse
- * req.body into a JS object, destroying the raw text we need to extract the SN.
+ * WHY app.get/app.post instead of app.use+router:
+ *   app.use("/AIData.aspx", router) strips the prefix before the router sees the path.
+ *   The router then receives "/" and router.post("/AIData.aspx") never matches.
+ *   Using app.get/app.post directly avoids this entirely.
  *
- * We use express.raw({ type: '*\/*' }) — same pattern as the webhook above —
- * to capture the raw Buffer before any other parser runs, then convert to UTF-8.
+ * WHY before body parsers:
+ *   express.urlencoded() (below) consumes the raw body stream for form-encoded
+ *   requests. Biomax devices use that content-type, so we must capture the raw
+ *   Buffer before urlencoded destroys the stream.
  */
-const aidataRawParser = [
-    express.raw({ type: "*/*", limit: "2mb" }),
-    (req, _res, next) => {
-        if (Buffer.isBuffer(req.body)) req.body = req.body.toString("utf8");
-        next();
-    },
-];
-app.use("/AIData.aspx",       ...aidataRawParser, require("./routes/aidata.routes"));
-app.use("/AIData",            ...aidataRawParser, require("./routes/aidata.routes"));
-app.use("/getrequest.aspx",   ...aidataRawParser, require("./routes/aidata.routes"));
-app.use("/getrequest",        ...aidataRawParser, require("./routes/aidata.routes"));
-app.use("/devicecmd.aspx",    ...aidataRawParser, require("./routes/aidata.routes"));
-app.use("/devicecmd",         ...aidataRawParser, require("./routes/aidata.routes"));
+const aidataCtrl = require("./controllers/aidata.controller");
+const _aidataRaw = express.raw({ type: "*/*", limit: "2mb" });
+const _aidataBufToStr = (req, _res, next) => {
+    if (Buffer.isBuffer(req.body)) req.body = req.body.toString("utf8");
+    // Debug: log every incoming Biomax request so we can see the exact payload
+    console.log(`[BIOMAX] ${req.method} ${req.originalUrl} | CT: ${req.headers["content-type"]} | body(${(req.body||"").length}): ${String(req.body||"").substring(0,200)}`);
+    next();
+};
+
+// GET = device handshake on boot
+app.get("/AIData.aspx",     _aidataRaw, _aidataBufToStr, aidataCtrl.handshake);
+app.get("/AIData",          _aidataRaw, _aidataBufToStr, aidataCtrl.handshake);
+
+// POST = attendance data push
+app.post("/AIData.aspx",    _aidataRaw, _aidataBufToStr, aidataCtrl.receiveData);
+app.post("/AIData",         _aidataRaw, _aidataBufToStr, aidataCtrl.receiveData);
+
+// GET = device polls for pending commands
+app.get("/getrequest.aspx", _aidataRaw, _aidataBufToStr, aidataCtrl.getRequest);
+app.get("/getrequest",      _aidataRaw, _aidataBufToStr, aidataCtrl.getRequest);
+
+// POST = device returns command result
+app.post("/devicecmd.aspx", _aidataRaw, _aidataBufToStr, aidataCtrl.deviceCmd);
+app.post("/devicecmd",      _aidataRaw, _aidataBufToStr, aidataCtrl.deviceCmd);
 
 /**
  * Body Parsers
@@ -274,6 +287,8 @@ app.use("/devicecmd",         ...aidataRawParser, require("./routes/aidata.route
  */
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
+
+
 
 /**
  * Static Files
