@@ -164,8 +164,45 @@ const DEVICE_CATALOG = [
     },
 
     // ─────────────────────────────────────────────
-    // Biomax — LAN Push (REST API / ADMS-compatible)
+    // Biomax — LAN Push / Wi-Fi Push (ADMS-compatible)
     // ─────────────────────────────────────────────
+
+    // ── Biomax N300 (N-MULTIBIO300) ─ The user's actual device ──────
+    {
+        id: "biomax_n300",
+        brand: "biomax",
+        brand_label: "Biomax",
+        model: "N300 (N-MULTIBIO300)",
+        connection_type: "lan_push",
+        protocol: "ADMS",
+        device_types: ["face", "fingerprint", "rfid"],
+        badge: "Wi-Fi + Multi-Bio",
+        badge_color: "#0891b2",
+        color_accent: "#d97706",
+        description: "Multi-modal terminal supporting face, fingerprint and RFID card. Connects via Wi-Fi or LAN. Uses ADMS push protocol — attendance logs are automatically sent to your server in real time.",
+        warranty_warning: false,
+        supports_wifi: true,
+        setup_instructions: {
+            summary: "Connect the device to Wi-Fi, then configure Push Settings with your server domain and port 443 (HTTPS). The device will immediately start pushing attendance data.",
+            steps: [
+                "Power on the device and press MENU",
+                "Go to Comm. → Wi-Fi → Enable Wi-Fi and connect to your network",
+                "Go back to Comm. → Network → Push Settings",
+                "Set 'Push Server IP' to: api.zenithflows.in",
+                "Set 'Push Server Port' to: 443",
+                "Enable 'Real Time Req.' toggle",
+                "Go back to Network screen → scroll down → turn 'Https' ON",
+                "Press ESC to save, then power off and power on the device",
+                "Wait 30–60 seconds — the device will handshake with your server"
+            ],
+            field_hints: {
+                ip_address: "Found in Comm. → Network → Wi-Fi → IP Address (e.g. 192.168.29.168)",
+                device_serial: "Found in Comm. → Network → Cloud ID (e.g. AMDB25060700203)"
+            }
+        }
+    },
+
+    // ── Biomax K30 ── Standard LAN Fingerprint ──────────────────────
     {
         id: "biomax_k30",
         brand: "biomax",
@@ -177,22 +214,62 @@ const DEVICE_CATALOG = [
         badge: "Easy Setup",
         badge_color: "#059669",
         color_accent: "#d97706",
-        description: "Standard fingerprint terminal with ADMS push support.",
+        description: "Standard fingerprint terminal with ADMS push support. Connects via Ethernet LAN. Ideal for single-door attendance tracking.",
         warranty_warning: true,
+        supports_wifi: false,
         setup_instructions: {
-            summary: "Configure the push server address in the device network menu.",
+            summary: "Connect the device to Ethernet, then configure the push server address in the Network menu.",
             steps: [
-                "Power on and connect to LAN",
-                "Navigate to Menu → Network / COMM → Server Settings",
-                "Enter your server IP and port",
-                "Enable push and confirm"
+                "Connect the device to your LAN via Ethernet cable and power on",
+                "Press MENU on the device",
+                "Go to Comm. → Network → Push Settings",
+                "Set 'Push Server IP' to your server IP or domain",
+                "Set 'Push Server Port' to 80 (HTTP) or 443 (HTTPS)",
+                "Enable 'Real Time Req.' toggle",
+                "Save and exit — device will connect within 60 seconds"
             ],
             field_hints: {
-                ip_address: "Device IP in Menu → Network Settings",
-                device_serial: "Printed on device back"
+                ip_address: "Found in Menu → Comm. → Network → LAN → IP Address",
+                device_serial: "Printed on the back label of the device"
             }
         }
     },
+
+    // ── Biomax K30 Pro ── LAN + RFID ────────────────────────────────
+    {
+        id: "biomax_k30pro",
+        brand: "biomax",
+        brand_label: "Biomax",
+        model: "K30 Pro",
+        connection_type: "lan_push",
+        protocol: "ADMS",
+        device_types: ["fingerprint", "rfid"],
+        badge: "Fingerprint + RFID",
+        badge_color: "#0891b2",
+        color_accent: "#d97706",
+        description: "Advanced fingerprint terminal with RFID card support (Mifare/EM). Uses ADMS push over Ethernet. Suitable for institutes using both fingerprint and ID cards.",
+        warranty_warning: true,
+        supports_wifi: false,
+        setup_instructions: {
+            summary: "Connect via Ethernet and configure push settings. Both fingerprint and RFID card punches are sent to the server automatically.",
+            steps: [
+                "Connect the device to your LAN via Ethernet cable and power on",
+                "Press MENU on the device",
+                "Go to Comm. → Network → Push Settings",
+                "Set 'Push Server IP' to your server IP or domain",
+                "Set 'Push Server Port' to 80 (HTTP) or 443 (HTTPS)",
+                "Enable 'Real Time Req.' toggle",
+                "Save settings and exit",
+                "Test by scanning both a fingerprint and an RFID card"
+            ],
+            field_hints: {
+                ip_address: "Menu → Comm. → Network → LAN → IP Address",
+                device_serial: "Back label or Menu → System Info → Device Serial"
+            }
+        }
+    },
+
+    // ── Biomax N-E90 Pro ── Face + Fingerprint ──────────────────────
     {
         id: "biomax_ne90pro",
         brand: "biomax",
@@ -204,19 +281,93 @@ const DEVICE_CATALOG = [
         badge: "Face + Fingerprint",
         badge_color: "#8b5cf6",
         color_accent: "#d97706",
-        description: "Multi-modal biometric terminal (face + fingerprint). ADMS-compatible push protocol.",
+        description: "Multi-modal biometric terminal with AI face recognition and fingerprint. Uses ADMS push over LAN. Touchscreen interface for easy enrollment.",
         warranty_warning: true,
+        supports_wifi: false,
         setup_instructions: {
-            summary: "Standard ADMS server setup — same as other LAN push devices.",
+            summary: "Connect to LAN and configure ADMS push server. Both face and fingerprint punches are sent to your server in real time.",
             steps: [
-                "Connect to network and power on",
-                "Menu → COMM → Server Configuration",
-                "Enter server address + port",
-                "Enable cloud push and save"
+                "Connect the device to your LAN via Ethernet cable and power on",
+                "Tap the Menu icon on the touchscreen",
+                "Go to Comm. / Network → Push Settings or Cloud Server",
+                "Enter your server domain/IP in 'Push Server IP'",
+                "Set 'Push Server Port' to 443",
+                "Enable the push / real time option",
+                "Save and allow the device to sync (up to 60 seconds)"
             ],
             field_hints: {
-                ip_address: "Under Menu → COMM → LAN Settings",
-                device_serial: "Back label of device"
+                ip_address: "Touchscreen → Menu → Network → LAN → IP Address",
+                device_serial: "Back label or Touchscreen → Menu → System Info"
+            }
+        }
+    },
+
+    // ── Biomax N-WL20 ── Wi-Fi Fingerprint ──────────────────────────
+    {
+        id: "biomax_nwl20",
+        brand: "biomax",
+        brand_label: "Biomax",
+        model: "N-WL20",
+        connection_type: "lan_push",
+        protocol: "ADMS",
+        device_types: ["fingerprint", "rfid"],
+        badge: "Wi-Fi Ready",
+        badge_color: "#10b981",
+        color_accent: "#d97706",
+        description: "Compact Wi-Fi fingerprint and RFID terminal. Perfect for locations without Ethernet access. Uses ADMS push over Wi-Fi — no LAN cable needed.",
+        warranty_warning: false,
+        supports_wifi: true,
+        setup_instructions: {
+            summary: "Connect the device to Wi-Fi and configure the push server. Attendance logs are pushed wirelessly to your server.",
+            steps: [
+                "Power on the device and press MENU",
+                "Go to Comm. → Wi-Fi → Enable Wi-Fi",
+                "Select your Wi-Fi network and enter the password",
+                "Once connected, go to Comm. → Network → Push Settings",
+                "Set 'Push Server IP' to your server domain (e.g. api.zenithflows.in)",
+                "Set 'Push Server Port' to 443",
+                "Enable 'Real Time Req.' toggle",
+                "Navigate back to Network → scroll to 'Https' → turn ON",
+                "Save all settings and reboot the device"
+            ],
+            field_hints: {
+                ip_address: "Menu → Comm. → Network → Wi-Fi → IP Address (assigned by router)",
+                device_serial: "Back label or Menu → Comm. → Network → Cloud ID"
+            }
+        }
+    },
+
+    // ── Biomax BM300W ── Face + Fingerprint + Wi-Fi ─────────────────
+    {
+        id: "biomax_bm300w",
+        brand: "biomax",
+        brand_label: "Biomax",
+        model: "BM300W",
+        connection_type: "lan_push",
+        protocol: "ADMS",
+        device_types: ["face", "fingerprint", "rfid"],
+        badge: "Premium All-in-One",
+        badge_color: "#7c3aed",
+        color_accent: "#d97706",
+        description: "Premium multi-modal terminal with AI face recognition, fingerprint, RFID card, and built-in Wi-Fi. Large color touchscreen. Best choice for main entrance attendance.",
+        warranty_warning: false,
+        supports_wifi: true,
+        setup_instructions: {
+            summary: "Connect via Wi-Fi or Ethernet. Configure push settings on the touchscreen. All biometric modalities (face, fingerprint, card) push attendance automatically.",
+            steps: [
+                "Power on the BM300W and tap the Menu icon on the touchscreen",
+                "Go to Comm. → Wi-Fi (or Ethernet) and connect to your network",
+                "Go to Comm. → Network → Cloud/Push Settings",
+                "Set 'Push Server IP' to your server domain",
+                "Set 'Push Server Port' to 443",
+                "Enable 'Cloud Push' or 'Real Time Req.' option",
+                "Go back to Network settings → turn 'Https' ON",
+                "Save all settings and perform a full device reboot",
+                "Wait 30–60 seconds and verify the server icon turns green on screen"
+            ],
+            field_hints: {
+                ip_address: "Touchscreen → Comm. → Network → Wi-Fi → IP Address",
+                device_serial: "Touchscreen → Comm. → Network → Cloud ID or Device SN"
             }
         }
     },

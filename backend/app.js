@@ -374,6 +374,16 @@ app.use("/api/parents", [verifyToken, tenantScope], require("./routes/parent.rou
 app.use("/api/notes", [verifyToken, tenantScope], require("./routes/note.routes"));
 app.use("/api/assignments", [verifyToken, tenantScope], require("./routes/assignment.routes"));
 app.use("/api/performance", [verifyToken, tenantScope], require("./routes/performance.routes"));
+
+// Per-device biometric webhook (public — authenticated via device_token in URL)
+// Must be mounted BEFORE the 404 handler and OUTSIDE the JWT-protected /api/biometric router
+// because physical devices don't carry a JWT token.
+app.post(
+    "/api/biometric/webhook/:deviceToken",
+    express.json(),
+    require("./controllers/biometric.controller").webhookReceiver
+);
+
 app.use("/api/biometric", [verifyToken, tenantScope], require("./routes/biometric.routes"));
 app.use("/api/mobile", [verifyToken, tenantScope], require("./routes/mobileDashboard.routes"));
 app.use("/api/notifications", [verifyToken, tenantScope], require("./routes/notification.routes"));
@@ -395,16 +405,6 @@ app.use("/api/lifetime", require("./routes/lifetime.routes"));
 
 // ZKTeco ADMS Routes
 app.use("/iclock", require("express").text({ type: ["text/plain", "application/x-www-form-urlencoded"] }), require("./routes/iclock.routes"));
-
-// Per-device biometric webhook (public — authenticated via device_token in URL)
-// Must be mounted BEFORE the 404 handler and OUTSIDE the JWT-protected /api/biometric router
-// because physical devices don't carry a JWT token.
-app.post(
-    "/api/biometric/webhook/:deviceToken",
-    express.json(),
-    require("./controllers/biometric.controller").webhookReceiver
-);
-
 
 // ============================================
 // SENTRY TEST ENDPOINT
