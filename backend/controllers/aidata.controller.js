@@ -25,15 +25,26 @@ const { Op } = require("sequelize");
 /** Extract Serial Number from all possible locations */
 function extractSN(req) {
     return (
-        req.query.SN                          ||
-        req.query.sn                          ||
-        req.headers["sn"]                     ||
-        req.headers["serial-number"]          ||
-        req.headers["x-device-sn"]            ||
-        req.headers["x-device-serial"]        ||
-        req.headers["device-serial"]          ||
-        req.headers["authorization"]          ||  // some firmware variants
-        req.headers["x-serial-number"]        ||
+        req.query.SN              ||
+        req.query.sn              ||
+        req.headers["sn"]         ||
+        req.headers["serial-number"] ||
+        req.headers["x-device-sn"] ||
+        null
+    );
+}
+
+/**
+ * Biomax N300 sends its device identity as:
+ *   token: "6bbc2a31041675fdee2cc6ce5de6c91c"
+ * This matches the device_token column in BiometricDevice.
+ */
+function extractToken(req) {
+    return (
+        req.headers["token"]           ||   // Biomax N300/N-WL20/BM300W
+        req.headers["x-device-token"]  ||
+        req.headers["authorization"]   ||
+        req.query.token                ||
         null
     );
 }
@@ -60,19 +71,34 @@ function resolveVerifyMode(mode) {
     return "fingerprint";
 }
 
-/** Find device by SN; falls back to any active Biomax device */
-async function findDevice(sn) {
+/**
+ * Find device — priority order:
+ *  1. device_token  (Biomax N300 sends token header)
+ *  2. device_serial (ZKTeco ADMS protocol sends SN)
+ *  3. Fallback: most recently synced active device
+ */
+async function findDevice(token, sn) {
+    // 1. Match by device_token (Biomax JSON REST)
+    if (token) {
+        const d = await BiometricDevice.findOne({
+            where: { device_token: token, status: { [Op.in]: ["active", "pending"] } }
+        });
+        if (d) { console.log(`[AIData] Device found by token → ${d.device_serial}`); return d; }
+    }
+    // 2. Match by serial number (ADMS text protocol)
     if (sn) {
         const d = await BiometricDevice.findOne({
             where: { device_serial: sn, status: { [Op.in]: ["active", "pending"] } }
         });
-        if (d) return d;
+        if (d) { console.log(`[AIData] Device found by SN → ${d.device_serial}`); return d; }
     }
-    // Fallback: find most recently active Biomax device
-    return BiometricDevice.findOne({
+    // 3. Last resort — most recently synced active device
+    const d = await BiometricDevice.findOne({
         where: { status: "active" },
         order: [["last_sync", "DESC"]]
     });
+    if (d) { console.log(`[AIData] Device found by fallback → ${d.device_serial}`); }
+    return d;
 }
 
 // ─── Handshake — GET /AIData.aspx ────────────────────────────────────────────
@@ -119,13 +145,12 @@ exports.handshake = async (req, res) => {
 
 exports.receiveData = async (req, res) => {
     try {
-        const sn = extractSN(req);
-        const ct = (req.headers["content-type"] || "").toLowerCase();
+        const sn    = extractSN(req);
+        const token = extractToken(req);
+        const ct    = (req.headers["content-type"] || "").toLowerCase();
         const rawBody = req.body || "";
 
-        // ── Log FULL headers once so we can find where SN hides ──────────────
-        console.log(`[AIData] POST | SN=${sn} | CT=${ct}`);
-        console.log(`[AIData] Headers: ${JSON.stringify(req.headers)}`);
+        console.log(`[AIData] POST | token=${token} | SN=${sn} | CT=${ct}`);
 
         // ── JSON body (Biomax N-series REST protocol) ─────────────────────────
         if (ct.includes("application/json") || ct.includes("json")) {
@@ -139,15 +164,15 @@ exports.receiveData = async (req, res) => {
 
             // Type 1 — Face template sync (large base64 blob) → just ACK
             if (json.face || json.faceData || json.faceTemplate) {
-                console.log(`[AIData] Face template upload received — SN=${sn || "unknown"}, ACK only`);
+                console.log(`[AIData] Face template ACK — token=${token}`);
                 return res.status(200).json({ result: "ok" });
             }
 
             // Type 2 — Attendance punch
             if (json.userId && json.time) {
-                const device = await findDevice(sn);
+                const device = await findDevice(token, sn);
                 if (!device) {
-                    console.warn(`[AIData] No device found (SN=${sn}) — punch dropped`);
+                    console.warn(`[AIData] No device found — token=${token}, SN=${sn}. Is the device registered in admin dashboard?`);
                     return res.status(200).json({ result: "ok" });
                 }
 
@@ -192,7 +217,7 @@ exports.receiveData = async (req, res) => {
             }
 
             // Unknown JSON format — log and ACK
-            console.log(`[AIData] Unknown JSON format: ${JSON.stringify(json).slice(0, 200)}`);
+            console.log(`[AIData] Unknown JSON keys: ${Object.keys(json).join(", ")}`);
             return res.status(200).json({ result: "ok" });
         }
 
@@ -223,7 +248,7 @@ exports.receiveData = async (req, res) => {
             return res.status(200).type("text/plain").set("Connection", "close").send("OK");
         }
 
-        const device = await findDevice(adms_sn);
+        const device = await findDevice(null, adms_sn);
         if (!device) {
             console.warn(`[AIData] ADMS: no device for SN=${adms_sn}`);
             return res.status(200).type("text/plain").set("Connection", "close").send("OK");
