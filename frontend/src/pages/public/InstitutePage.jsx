@@ -10,7 +10,9 @@ import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import "./InstitutePage.css";
 
-const API_BASE = (import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:5000/api' : 'https://institutes-saas.onrender.com/api')).replace(/\/$/, '');
+let API_BASE = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:5000/api' : 'https://api.zenithflows.in/api');
+API_BASE = API_BASE.replace(/\/$/, '');
+if (!API_BASE.endsWith('/api')) API_BASE += '/api';
 const resolveImg = (url) => {
   if (!url) return '';
   if (url.startsWith('http') || url.startsWith('blob:') || url.startsWith('data:')) return url;

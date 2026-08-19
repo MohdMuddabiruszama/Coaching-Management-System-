@@ -158,7 +158,7 @@ Impact: Prevents abuse, reduces server load
 File: Create utils/keepAlive.js
 javascriptconst axios = require("axios");
 
-const BACKEND_URL = process.env.BACKEND_URL || "https://zf-solution-backend.onrender.com";
+const BACKEND_URL = process.env.BACKEND_URL || "https://api.zenithflows.in";
 
 // Ping self every 14 minutes to prevent sleep
 const keepAlive = () => {
@@ -717,7 +717,7 @@ json{
   "rewrites": [
     {
       "source": "/api/(.*)",
-      "destination": "https://zf-solution-backend.onrender.com/api/$1"
+      "destination": "https://api.zenithflows.in/api/$1"
     },
     {
       "source": "/(.*)",

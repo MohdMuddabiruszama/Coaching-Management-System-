@@ -87,7 +87,7 @@ const NetworkStatus = () => {
                             onClick={async () => {
                                 setRetrying(true);
                                 try {
-                                    const baseURL = import.meta.env.VITE_API_URL || 'https://institutes-saas.onrender.com/api';
+                                    const baseURL = import.meta.env.VITE_API_URL || 'https://api.zenithflows.in/api';
                                     const healthURL = baseURL.replace(/\/api$/, '/api/health');
                                     await fetch(healthURL, { method: 'GET', cache: 'no-store' });
                                     setServerDown(false);

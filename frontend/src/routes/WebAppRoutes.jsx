@@ -184,6 +184,7 @@ export default function WebAppRoutes() {
         <Routes>
           <Route path="/" element={<InstitutePage subdomain={subdomain} />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/404" element={<NotFound />} />
           <Route path="*" element={<InstitutePage subdomain={subdomain} />} />
         </Routes>
       </Suspense>

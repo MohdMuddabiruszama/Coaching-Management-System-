@@ -4,7 +4,7 @@ Your screenshots clearly show the exact problem.
 
 ```text
 Access to XMLHttpRequest at
-https://coaching-management-system-24xn.onrender.com/api/plans
+https://api.zenithflows.in/api/plans
 
 from origin
 
@@ -221,7 +221,7 @@ After updating CORS and redeploying backend:
 Open browser console and run:
 
 ```javascript
-fetch("https://coaching-management-system-24xn.onrender.com/api/plans")
+fetch("https://api.zenithflows.in/api/plans")
 ```
 
 If you get JSON back, it is fixed.

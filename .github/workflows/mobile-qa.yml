@@ -181,7 +181,7 @@ jobs:
         run: npm run build:mobile:student
         working-directory: frontend
         env:
-          VITE_API_URL:     https://institutes-saas.onrender.com/api
+          VITE_API_URL:     https://api.zenithflows.in/api
           VITE_APP_VARIANT: student
 
       - name: "🔑 Give Gradle execute permission"

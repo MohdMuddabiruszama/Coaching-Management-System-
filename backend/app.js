@@ -46,8 +46,8 @@ app.use(helmet({
         "https://www.zenithflows.in",
         // All allowed origins from env
         ...(process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(",").map(o => o.trim()) : []),
-        // Backend itself (Render)
-        "https://coaching-management-system-24xn.onrender.com",
+        // Backend itself (Hostinger)
+        "https://api.zenithflows.in",
       ].filter(Boolean),
       frameSrc: ["https://api.razorpay.com", "https://checkout.razorpay.com"],
       objectSrc: ["'none'"],

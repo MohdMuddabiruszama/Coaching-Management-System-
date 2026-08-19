@@ -23,7 +23,7 @@ const API_BASE = (import.meta.env.VITE_API_URL
     ? import.meta.env.VITE_API_URL.replace('/api', '')
     : import.meta.env.DEV
         ? 'http://localhost:5000'
-        : 'https://institutes-saas.onrender.com').replace(/\/$/, '');
+        : 'https://api.zenithflows.in').replace(/\/$/, '');
 
 /**
  * Resolves any file URL to a usable href/src.

@@ -56,7 +56,7 @@ const getBaseURL = () => {
     }
 
     // Default Production API (Native Builds and Web)
-    return "https://institutes-saas.onrender.com/api";
+    return "https://api.zenithflows.in/api";
 };
 
 /**

@@ -943,7 +943,7 @@ Go to Vercel dashboard → Your project
 Settings → Environment Variables
 Update or add:
 
-   VITE_API_URL=https://zf-solution-backend.onrender.com
+   VITE_API_URL=https://api.zenithflows.in
 
 Redeploy frontend
 

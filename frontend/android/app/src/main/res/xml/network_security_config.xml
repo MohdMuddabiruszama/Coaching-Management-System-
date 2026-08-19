@@ -5,7 +5,7 @@
   Controls which domains may use cleartext (HTTP) vs HTTPS-only traffic.
 
   PRODUCTION rules:
-    - All production domains (onrender.com, zenithflows.in, cloudinary) → HTTPS enforced
+    - All production domains (zenithflows.in, cloudinary) → HTTPS enforced
   DEVELOPMENT rules (remove before release if desired — harmless to keep):
     - Local LAN IPs + emulator IPs → HTTP allowed for dev builds
 -->
@@ -13,7 +13,7 @@
 
     <!-- ── Production APIs: HTTPS only, no cleartext ever ── -->
     <domain-config cleartextTrafficPermitted="false">
-        <domain includeSubdomains="true">onrender.com</domain>
+
         <domain includeSubdomains="true">zenithflows.in</domain>
         <domain includeSubdomains="true">cloudinary.com</domain>
         <domain includeSubdomains="true">res.cloudinary.com</domain>
