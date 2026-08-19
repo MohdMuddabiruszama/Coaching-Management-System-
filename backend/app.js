@@ -403,8 +403,14 @@ app.use("/api/public", require("./routes/publicSite.routes"));
 app.use("/api/leads", require("./routes/lead.routes"));
 app.use("/api/lifetime", require("./routes/lifetime.routes"));
 
-// ZKTeco ADMS Routes
+// ZKTeco ADMS Routes (standard /iclock/cdata protocol)
 app.use("/iclock", require("express").text({ type: ["text/plain", "application/x-www-form-urlencoded"] }), require("./routes/iclock.routes"));
+
+// Biomax N-series AI Push Protocol (/AIData.aspx)
+// Handles Biomax N300, N-WL20, BM300W, N-E90 Pro and other N-series devices
+// that push to /AIData.aspx instead of /iclock/cdata
+app.use("/", require("express").text({ type: ["text/plain", "application/x-www-form-urlencoded", "*/*"] }), require("./routes/aidata.routes"));
+
 
 // ============================================
 // SENTRY TEST ENDPOINT
