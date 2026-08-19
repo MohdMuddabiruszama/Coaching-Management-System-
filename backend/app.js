@@ -244,6 +244,31 @@ app.use((req, res, next) => {
 app.use("/api/webhook", express.raw({ type: 'application/json' }), require("./routes/webhook.routes"));
 
 /**
+ * Biomax N-series AI Push Protocol — MUST be before global body parsers.
+ *
+ * WHY: express.urlencoded() (below) is a global middleware that consumes the
+ * raw body stream for ANY request with Content-Type: application/x-www-form-urlencoded.
+ * Biomax devices use exactly that content type, so urlencoded would pre-parse
+ * req.body into a JS object, destroying the raw text we need to extract the SN.
+ *
+ * We use express.raw({ type: '*\/*' }) — same pattern as the webhook above —
+ * to capture the raw Buffer before any other parser runs, then convert to UTF-8.
+ */
+const aidataRawParser = [
+    express.raw({ type: "*/*", limit: "2mb" }),
+    (req, _res, next) => {
+        if (Buffer.isBuffer(req.body)) req.body = req.body.toString("utf8");
+        next();
+    },
+];
+app.use("/AIData.aspx",       ...aidataRawParser, require("./routes/aidata.routes"));
+app.use("/AIData",            ...aidataRawParser, require("./routes/aidata.routes"));
+app.use("/getrequest.aspx",   ...aidataRawParser, require("./routes/aidata.routes"));
+app.use("/getrequest",        ...aidataRawParser, require("./routes/aidata.routes"));
+app.use("/devicecmd.aspx",    ...aidataRawParser, require("./routes/aidata.routes"));
+app.use("/devicecmd",         ...aidataRawParser, require("./routes/aidata.routes"));
+
+/**
  * Body Parsers
  * Parse JSON and URL-encoded data
  */
@@ -406,10 +431,7 @@ app.use("/api/lifetime", require("./routes/lifetime.routes"));
 // ZKTeco ADMS Routes (standard /iclock/cdata protocol)
 app.use("/iclock", require("express").text({ type: ["text/plain", "application/x-www-form-urlencoded"] }), require("./routes/iclock.routes"));
 
-// Biomax N-series AI Push Protocol (/AIData.aspx)
-// Handles Biomax N300, N-WL20, BM300W, N-E90 Pro and other N-series devices
-// that push to /AIData.aspx instead of /iclock/cdata
-app.use("/", require("express").text({ type: ["text/plain", "application/x-www-form-urlencoded", "*/*"] }), require("./routes/aidata.routes"));
+// Biomax AIData routes are mounted early (before body parsers) — see above.
 
 
 // ============================================
