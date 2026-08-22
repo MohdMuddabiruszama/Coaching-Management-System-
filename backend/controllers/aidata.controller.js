@@ -211,7 +211,11 @@ exports.receiveData = async (req, res) => {
                     catch (e) { console.error(`[AIData] Background error:`, e.message); }
                 });
 
-                await device.update({ last_sync: new Date(), last_punch_at: new Date() });
+                const statusUpdate = { last_sync: new Date(), last_punch_at: new Date() };
+                if (device.status === "pending") {
+                    statusUpdate.status = "connected";
+                }
+                await device.update(statusUpdate);
 
                 try {
                     const io = socketUtils.getIO?.();
@@ -324,7 +328,9 @@ exports.receiveData = async (req, res) => {
             console.log(`[AIData] ✅ ADMS punch: PIN=${pin} | ${punchDate.toISOString()}`);
         }
 
-        await device.update({ last_sync: new Date() });
+        const admsStatusUpdate = { last_sync: new Date() };
+        if (device.status === "pending") admsStatusUpdate.status = "connected";
+        await device.update(admsStatusUpdate);
         res.status(200).type("text/plain").set("Connection", "close").send("OK");
 
     } catch (err) {
@@ -340,7 +346,11 @@ exports.getRequest = async (req, res) => {
         const sn = extractSN(req);
         if (sn) {
             const device = await BiometricDevice.findOne({ where: { device_serial: sn } });
-            if (device) await device.update({ last_sync: new Date() });
+            if (device) {
+                const statusUpdate = { last_sync: new Date() };
+                if (device.status === "pending") statusUpdate.status = "connected";
+                await device.update(statusUpdate);
+            }
         }
         res.status(200).type("text/plain").set("Connection", "close").send("OK");
     } catch (err) {
