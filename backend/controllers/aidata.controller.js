@@ -19,6 +19,7 @@
 const { BiometricDevice, BiometricPunch } = require("../models");
 const { processPunch } = require("./biometric.controller");
 const { Op } = require("sequelize");
+const socketUtils = require("../utils/socket");
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -212,6 +213,23 @@ exports.receiveData = async (req, res) => {
 
                 await device.update({ last_sync: new Date(), last_punch_at: new Date() });
 
+                try {
+                    const io = socketUtils.getIO?.();
+                    if (io) {
+                        io.to(`institute_${device.institute_id}`).emit("biometric:punch", {
+                            device_id: device.id,
+                            device_token: device.device_token,
+                            device_name: device.device_name,
+                            device_user_id: json.userId,
+                            punch_time: punchDate.toISOString(),
+                            punch_type: punchType,
+                            status_changed: null,
+                        });
+                    }
+                } catch (socketErr) {
+                    console.warn("[AIData] Socket.io emit failed:", socketErr.message);
+                }
+
                 console.log(`[AIData] ✅ Punch saved: userId=${json.userId} | ${punchDate.toISOString()} | ${punchType} | ${verifyMethod} | device=${device.device_serial}`);
                 return res.status(200).json({ result: "ok" });
             }
@@ -285,6 +303,24 @@ exports.receiveData = async (req, res) => {
             setImmediate(async () => {
                 try { await processPunch(punch); } catch(e) { console.error("[AIData] ADMS process error:", e.message); }
             });
+
+            try {
+                const io = socketUtils.getIO?.();
+                if (io) {
+                    io.to(`institute_${device.institute_id}`).emit("biometric:punch", {
+                        device_id: device.id,
+                        device_token: device.device_token,
+                        device_name: device.device_name,
+                        device_user_id: pin,
+                        punch_time: punchDate.toISOString(),
+                        punch_type: parseInt(parts[statusIdx] || "0") === 1 ? "out" : "in",
+                        status_changed: null,
+                    });
+                }
+            } catch (socketErr) {
+                console.warn("[AIData] Socket.io emit failed:", socketErr.message);
+            }
+
             console.log(`[AIData] ✅ ADMS punch: PIN=${pin} | ${punchDate.toISOString()}`);
         }
 
