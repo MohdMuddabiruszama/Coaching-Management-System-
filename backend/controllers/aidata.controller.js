@@ -163,14 +163,19 @@ exports.receiveData = async (req, res) => {
                 return res.status(200).json({ result: "ok" });
             }
 
-            // Type 1 — Face template sync (large base64 blob) → just ACK
-            if (json.face || json.faceData || json.faceTemplate) {
-                console.log(`[AIData] Face template ACK — token=${token}`);
+            // Type 1 — Face/Palm template sync (large base64 blob) → just ACK
+            if (json.face || json.faceData || json.faceTemplate || json.palm) {
+                console.log(`[AIData] Face/Palm template ACK — token=${token}`);
+                return res.status(200).json({ result: "ok" });
+            }
+
+            // Door status heartbeat
+            if (json.door_status) {
                 return res.status(200).json({ result: "ok" });
             }
 
             // Type 2 — Attendance punch
-            if (json.userId && json.time) {
+            if (typeof json.userId !== "undefined" && json.time) {
                 const device = await findDevice(token, sn);
                 if (!device) {
                     console.warn(`[AIData] No device found — token=${token}, SN=${sn}. Is the device registered in admin dashboard?`);
@@ -179,7 +184,7 @@ exports.receiveData = async (req, res) => {
 
                 // Activate pending device on first punch
                 if (device.status === "pending") {
-                    await device.update({ status: "active" });
+                    await device.update({ status: "connected" });
                 }
 
                 const punchDate   = parseBiomaxTime(json.time);
