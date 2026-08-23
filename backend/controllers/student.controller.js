@@ -685,6 +685,23 @@ exports.updateStudent = catchAsync(async (req, res) => {
     await transaction.commit();
     transaction = null;
 
+    // Recalculate fees since class or subjects might have changed
+    const { syncSingleStudentFees } = require('./fees.controller');
+    // Fetch the fully updated student object with associations
+    const updatedStudentObj = await Student.findOne({
+      where: { id, institute_id },
+      include: [
+        { model: Class },
+        { model: Subject }
+      ]
+    });
+    
+    if (updatedStudentObj) {
+        await syncSingleStudentFees(institute_id, updatedStudentObj).catch(err => {
+            console.error('Failed to sync fees on student update:', err);
+        });
+    }
+
     res.status(200).json({
       success: true,
       message: "Student updated successfully",

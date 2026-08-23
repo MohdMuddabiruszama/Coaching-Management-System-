@@ -8,6 +8,10 @@ const FeesStructure = sequelize.define("FeesStructure", {
         type: DataTypes.INTEGER,
         allowNull: true
     },
+    subject_ids: {
+        type: DataTypes.ARRAY(DataTypes.INTEGER),
+        allowNull: true
+    },
     individual_student_id: {
         type: DataTypes.INTEGER,
         allowNull: true

@@ -116,7 +116,7 @@ function Fees() {
     const [editingStructureId, setEditingStructureId] = useState(null);
     const [availableSubjects, setAvailableSubjects] = useState([]);
     const [structureForm, setStructureForm] = useState({
-        class_id: '', subject_id: '', fee_type: 'Tuition Fee', custom_fee_type: '', amount: '', due_date: '', description: '',
+        class_id: '', subject_id: '', subject_ids: [], fee_type: 'Tuition Fee', custom_fee_type: '', amount: '', due_date: '', description: '',
         student_target: 'all', individual_student_ids: []
     });
     const [allStudentsForClass, setAllStudentsForClass] = useState([]);
@@ -400,7 +400,7 @@ function Fees() {
             setShowStructureModal(false);
             const r = await api.get('/fees/structure');
             setFeeStructures(r.data.data || []);
-            setStructureForm({ class_id: '', subject_id: '', fee_type: 'Tuition Fee', custom_fee_type: '', amount: '', due_date: '', description: '', student_target: 'all', individual_student_ids: [] });
+            setStructureForm({ class_id: '', subject_id: '', subject_ids: [], fee_type: 'Tuition Fee', custom_fee_type: '', amount: '', due_date: '', description: '', student_target: 'all', individual_student_ids: [] });
             setEditingStructureId(null);
         } catch (err) {
             alert(err.response?.data?.message || 'Error saving fee structure');
@@ -413,6 +413,7 @@ function Fees() {
         setStructureForm({
             class_id: fs.class_id,
             subject_id: fs.subject_id || '',
+            subject_ids: fs.subject_ids || [],
             fee_type: isPredefined ? fs.fee_type : 'Other',
             custom_fee_type: isPredefined ? '' : fs.fee_type,
             amount: fs.amount,
@@ -1207,7 +1208,20 @@ function Fees() {
                                                     {fs.Class?.name} {fs.Class?.section}
                                                 </div>
                                                 <div style={{ fontSize: '0.75rem', color: '#6b7280', marginTop: '2px' }}>
-                                                    {fs.Subject ? fs.Subject.name : 'All Subjects (Full Class)'}
+                                                    {(() => {
+                                                        if (fs.subject_names) {
+                                                            const namesLower = fs.subject_names.toLowerCase();
+                                                            const hasPhys = namesLower.includes('physics');
+                                                            const hasChem = namesLower.includes('chemistry');
+                                                            const hasMath = namesLower.includes('math');
+                                                            const hasBio = namesLower.includes('biology');
+                                                            const count = fs.subject_ids?.length || 0;
+                                                            if (count === 3 && hasPhys && hasChem && hasMath) return "PCM (Physics, Chemistry, Maths)";
+                                                            if (count === 3 && hasPhys && hasChem && hasBio) return "PCB (Physics, Chemistry, Biology)";
+                                                            return fs.subject_names;
+                                                        }
+                                                        return fs.Subject ? fs.Subject.name : 'All Subjects (Full Class)';
+                                                    })()}
                                                 </div>
                                             </td>
                                             <td style={{ padding: '1.25rem' }}>
@@ -1533,7 +1547,7 @@ function Fees() {
                                     </div>
                                 </div>
                             </div>
-                            <button onClick={() => { setShowStructureModal(false); setStructureForm({ class_id: '', subject_id: '', fee_type: 'Tuition Fee', custom_fee_type: '', amount: '', due_date: '', description: '', student_target: 'all', individual_student_ids: [] }); setEditingStructureId(null); }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9ca3af', fontSize: '1.25rem' }}>
+                            <button onClick={() => { setShowStructureModal(false); setStructureForm({ class_id: '', subject_id: '', subject_ids: [], fee_type: 'Tuition Fee', custom_fee_type: '', amount: '', due_date: '', description: '', student_target: 'all', individual_student_ids: [] }); setEditingStructureId(null); }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9ca3af', fontSize: '1.25rem' }}>
                                 ✕
                             </button>
                         </div>
@@ -1544,7 +1558,7 @@ function Fees() {
                                 <label className="form-label" style={{ fontWeight: '600', color: '#374151', fontSize: '0.9rem' }}>Class <span style={{ color: '#ef4444' }}>*</span></label>
                                 <select className="form-select" value={structureForm.class_id} required
                                     onChange={e => {
-                                        setStructureForm({ ...structureForm, class_id: e.target.value, subject_id: '', individual_student_ids: [] });
+                                        setStructureForm({ ...structureForm, class_id: e.target.value, subject_id: '', subject_ids: [], individual_student_ids: [] });
                                         fetchSubjectsForClass(e.target.value);
                                     }} style={{ height: '46px', borderRadius: '8px', border: '1px solid #d1d5db' }}>
                                     <option value="">Select Class</option>
@@ -1559,15 +1573,91 @@ function Fees() {
                                     <input type="text" className="form-input" value="None (Not applicable for individual student)" disabled style={{ backgroundColor: '#f9fafb', color: '#9ca3af', height: '46px', borderRadius: '8px', border: '1px solid #e5e7eb' }} title="Subject is automatically removed when applying fees to an individual." />
                                 ) : (
                                     <>
-                                        <select
-                                            className="form-select"
-                                            value={structureForm.subject_id}
-                                            disabled={!structureForm.class_id}
-                                            onChange={e => setStructureForm({ ...structureForm, subject_id: e.target.value })}
-                                            style={{ height: '46px', borderRadius: '8px', border: '1px solid #d1d5db', backgroundColor: !structureForm.class_id ? '#f9fafb' : '#fff' }}>
-                                            <option value="">All Subjects (Full Class)</option>
-                                            {availableSubjects.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-                                        </select>
+                                        <div style={{ border: '1px solid #d1d5db', borderRadius: '8px', background: !structureForm.class_id ? '#f9fafb' : '#fff', maxHeight: '180px', overflowY: 'auto' }}>
+                                            {!structureForm.class_id ? (
+                                                <div style={{ padding: '0.75rem 1rem', color: '#9ca3af', fontSize: '0.9rem' }}>Select a class first</div>
+                                            ) : (
+                                                <>
+                                                    {availableSubjects.length === 0 ? (
+                                                        <div style={{ padding: '0.75rem 1rem', color: '#9ca3af', fontSize: '0.9rem' }}>No subjects found</div>
+                                                    ) : (
+                                                        <>
+                                                            <div
+                                                                onClick={() => setStructureForm({ ...structureForm, subject_ids: [] })}
+                                                                style={{ padding: '0.75rem 1rem', borderBottom: '1px solid #f3f4f6', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.75rem', transition: 'background 0.2s', background: structureForm.subject_ids.length === 0 ? '#faf5ff' : 'transparent' }}
+                                                            >
+                                                                <div style={{ width: '18px', height: '18px', borderRadius: '4px', border: `2px solid ${structureForm.subject_ids.length === 0 ? '#7e22ce' : '#d1d5db'}`, background: structureForm.subject_ids.length === 0 ? '#7e22ce' : '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                                                    {structureForm.subject_ids.length === 0 && <span style={{ color: '#fff', fontSize: '10px' }}>✓</span>}
+                                                                </div>
+                                                                <span style={{ fontSize: '0.9rem', color: '#374151', fontWeight: structureForm.subject_ids.length === 0 ? '600' : '400' }}>All Subjects (Full Class)</span>
+                                                            </div>
+                                                            
+                                                                {/* Custom Combinations */}
+                                                                {(() => {
+                                                                    const pcmSubjects = availableSubjects.filter(s => ['physics', 'chemistry', 'mathematics', 'maths', 'math'].includes(s.name.toLowerCase()));
+                                                                    const pcmIds = pcmSubjects.map(s => s.id);
+                                                                    const hasPCM = pcmIds.length >= 3;
+                                                                    
+                                                                    const pcbSubjects = availableSubjects.filter(s => ['physics', 'chemistry', 'biology'].includes(s.name.toLowerCase()));
+                                                                    const pcbIds = pcbSubjects.map(s => s.id);
+                                                                    const hasPCB = pcbIds.length >= 3;
+                                                                    
+                                                                    const isExactMatch = (selectedIds, comboIds) => {
+                                                                        if (comboIds.length === 0) return false;
+                                                                        if (selectedIds.length !== comboIds.length) return false;
+                                                                        return comboIds.every(id => selectedIds.includes(id));
+                                                                    };
+
+                                                                    const isPcmSelected = isExactMatch(structureForm.subject_ids, pcmIds);
+                                                                    const isPcbSelected = isExactMatch(structureForm.subject_ids, pcbIds);
+
+                                                                    return (
+                                                                        <>
+                                                                            {hasPCM && (
+                                                                                <div
+                                                                                    onClick={() => setStructureForm({ ...structureForm, subject_ids: pcmIds })}
+                                                                                    style={{ padding: '0.75rem 1rem', borderBottom: '1px solid #f3f4f6', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.75rem', transition: 'background 0.2s', background: isPcmSelected ? '#faf5ff' : 'transparent' }}
+                                                                                >
+                                                                                    <div style={{ width: '18px', height: '18px', borderRadius: '4px', border: `2px solid ${isPcmSelected ? '#7e22ce' : '#d1d5db'}`, background: isPcmSelected ? '#7e22ce' : '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                                                                        {isPcmSelected && <span style={{ color: '#fff', fontSize: '10px' }}>✓</span>}
+                                                                                    </div>
+                                                                                    <span style={{ fontSize: '0.9rem', color: '#374151', fontWeight: isPcmSelected ? '600' : '400' }}>PCM (Physics, Chemistry, Maths)</span>
+                                                                                </div>
+                                                                            )}
+                                                                            {hasPCB && (
+                                                                                <div
+                                                                                    onClick={() => setStructureForm({ ...structureForm, subject_ids: pcbIds })}
+                                                                                    style={{ padding: '0.75rem 1rem', borderBottom: '1px solid #f3f4f6', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.75rem', transition: 'background 0.2s', background: isPcbSelected ? '#faf5ff' : 'transparent' }}
+                                                                                >
+                                                                                    <div style={{ width: '18px', height: '18px', borderRadius: '4px', border: `2px solid ${isPcbSelected ? '#7e22ce' : '#d1d5db'}`, background: isPcbSelected ? '#7e22ce' : '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                                                                        {isPcbSelected && <span style={{ color: '#fff', fontSize: '10px' }}>✓</span>}
+                                                                                    </div>
+                                                                                    <span style={{ fontSize: '0.9rem', color: '#374151', fontWeight: isPcbSelected ? '600' : '400' }}>PCB (Physics, Chemistry, Biology)</span>
+                                                                                </div>
+                                                                            )}
+                                                                        </>
+                                                                    );
+                                                                })()}
+                                                            {availableSubjects.map(s => {
+                                                                const isSelected = structureForm.subject_ids.includes(s.id);
+                                                                return (
+                                                                    <div key={s.id} onClick={() => {
+                                                                        const ids = [...structureForm.subject_ids];
+                                                                        if (isSelected) setStructureForm({...structureForm, subject_ids: ids.filter(id => id !== s.id)});
+                                                                        else setStructureForm({...structureForm, subject_ids: [...ids, s.id]});
+                                                                    }} style={{ padding: '0.75rem 1rem', borderBottom: '1px solid #f3f4f6', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.75rem', transition: 'background 0.2s', background: isSelected ? '#faf5ff' : 'transparent' }}>
+                                                                        <div style={{ width: '18px', height: '18px', borderRadius: '4px', border: `2px solid ${isSelected ? '#7e22ce' : '#d1d5db'}`, background: isSelected ? '#7e22ce' : '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                                                            {isSelected && <span style={{ color: '#fff', fontSize: '10px' }}>✓</span>}
+                                                                        </div>
+                                                                        <span style={{ fontSize: '0.9rem', color: '#374151', fontWeight: isSelected ? '600' : '400' }}>{s.name}</span>
+                                                                    </div>
+                                                                );
+                                                            })}
+                                                        </>
+                                                    )}
+                                                </>
+                                            )}
+                                        </div>
                                     </>
                                 )}
                             </div>
@@ -1765,7 +1855,7 @@ function Fees() {
                             </div>
 
                             <div style={{ display: 'flex', gap: '1rem' }}>
-                                <button type="button" onClick={() => { setShowStructureModal(false); setStructureForm({ class_id: '', subject_id: '', fee_type: 'Tuition Fee', custom_fee_type: '', amount: '', due_date: '', description: '', student_target: 'all', individual_student_ids: [] }); setEditingStructureId(null); }} style={{ flex: 1, padding: '0.75rem', borderRadius: '8px', border: '1px solid #e5e7eb', background: '#fff', color: '#374151', fontWeight: '600', cursor: 'pointer' }}>Cancel</button>
+                                <button type="button" onClick={() => { setShowStructureModal(false); setStructureForm({ class_id: '', subject_id: '', subject_ids: [], fee_type: 'Tuition Fee', custom_fee_type: '', amount: '', due_date: '', description: '', student_target: 'all', individual_student_ids: [] }); setEditingStructureId(null); }} style={{ flex: 1, padding: '0.75rem', borderRadius: '8px', border: '1px solid #e5e7eb', background: '#fff', color: '#374151', fontWeight: '600', cursor: 'pointer' }}>Cancel</button>
                                 <button type="submit" style={{ flex: 2, padding: '0.75rem', borderRadius: '8px', border: 'none', background: '#6366f1', color: '#fff', fontWeight: '600', cursor: 'pointer' }}>
                                     {editingStructureId ? 'Save Changes' : 'Create Fee Structure'}
                                 </button>

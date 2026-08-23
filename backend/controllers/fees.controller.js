@@ -10,12 +10,16 @@ const NotificationService = require("../services/notificationService");
 
 exports.createFeeStructure = catchAsync(async (req, res) => {
   try {
-    let { class_id, subject_id, fee_type, amount, due_date, description, individual_student_id } = req.body;
+    console.log("createFeeStructure req.body:", req.body);
+    let { class_id, subject_id, subject_ids, fee_type, amount, due_date, description, individual_student_id } = req.body;
     const institute_id = req.user.institute_id;
 
     // Coerce string values from HTML form to proper types
     class_id = class_id ? parseInt(class_id, 10) : null;
     subject_id = subject_id && subject_id !== '' ? parseInt(subject_id, 10) : null;
+    console.log("Raw subject_ids:", subject_ids);
+    subject_ids = Array.isArray(subject_ids) ? subject_ids.map(id => parseInt(id, 10)).filter(id => !isNaN(id)) : [];
+    console.log("Parsed subject_ids:", subject_ids);
     individual_student_id = individual_student_id && individual_student_id !== '' ? parseInt(individual_student_id, 10) : null;
     amount = parseFloat(amount);
 
@@ -30,6 +34,7 @@ exports.createFeeStructure = catchAsync(async (req, res) => {
       institute_id,
       class_id,
       subject_id: subject_id || null, // null means it's a generic class fee
+      subject_ids: subject_ids.length > 0 ? subject_ids : null,
       individual_student_id: individual_student_id || null,
       fee_type,
       amount,
@@ -105,21 +110,50 @@ exports.createFeeStructure = catchAsync(async (req, res) => {
       // ── ALL STUDENTS target ──
       const students = await Student.findAll({
         where: { institute_id },
-        include: [{ model: Class, where: { id: class_id } }]
+        include: [
+          { model: Class, where: { id: class_id } },
+          { model: require('../models').Subject }
+        ]
       });
 
-      let targetStudents;
+      let targetStudents = [];
 
-      if (subject_id) {
-        // Subject-specific fee — only assign to students enrolled in that subject
-        // AND who are NOT full-course (full-course students pay one tuition fee, not per-subject)
-        const SubjectModel = require('../models').Subject;
-        const subjectWithStudents = await SubjectModel.findOne({
-          where: { id: subject_id, institute_id },
-          include: [{ model: Student }]
+      if (subject_ids && subject_ids.length > 0) {
+        // Combo fee: assign to students enrolled in EXACTLY the specified subjects
+        targetStudents = students.filter(s => {
+          if (s.is_full_course) return false;
+          const stuSubIds = s.Subjects ? s.Subjects.map(sub => sub.id) : [];
+          if (stuSubIds.length !== subject_ids.length) return false;
+          return subject_ids.every(id => stuSubIds.includes(id));
         });
-        const enrolledStudentIds = subjectWithStudents?.Students?.map((s) => s.id) || [];
-        targetStudents = students.filter((s) => !s.is_full_course && enrolledStudentIds.includes(s.id));
+      } else if (subject_id) {
+        // Subject-specific fee — assign to students enrolled in that subject,
+        // UNLESS they already exactly match a combo fee of the same fee_type for this class.
+        // Wait, for createFeeStructure, checking all existing combo fees is complex here.
+        // But we only want to ensure we don't accidentally double-charge.
+        // We'll rely on syncSingleStudentFees which handles this holistically, 
+        // but for initial assignment we can just do a basic assignment.
+        // Wait! We can actually run syncSingleStudentFees logic, or just assign it here simply.
+        // Let's do a basic assignment here:
+        targetStudents = students.filter((s) => {
+          if (s.is_full_course) return false;
+          const stuSubIds = s.Subjects ? s.Subjects.map(sub => sub.id) : [];
+          return stuSubIds.includes(subject_id);
+        });
+        
+        // Let's also check if they have an exact match combo fee so we skip them
+        const allFees = await FeesStructure.findAll({ where: { class_id, institute_id, fee_type } });
+        const comboFees = allFees.filter(f => f.subject_ids && f.subject_ids.length > 0);
+        
+        targetStudents = targetStudents.filter(s => {
+          const stuSubIds = s.Subjects ? s.Subjects.map(sub => sub.id) : [];
+          const hasExactCombo = comboFees.some(f => 
+             f.subject_ids.length === stuSubIds.length && 
+             f.subject_ids.every(id => stuSubIds.includes(id))
+          );
+          return !hasExactCombo;
+        });
+
       } else {
         // General class fee (no subject) — apply based on fee type
         if (fee_type === 'Tuition Fee') {
@@ -214,19 +248,42 @@ exports.getAllFeeStructures = catchAsync(async (req, res) => {
     // Let's attach the amount already paid by this student for each fee structure structure
     let feesWithPayments = feeStructures.map((f) => f.toJSON());
 
+    const allSubjects = await require("../models").Subject.findAll({ where: { institute_id }, raw: true });
+    
+    for (let fee of feesWithPayments) {
+        if (fee.subject_ids && fee.subject_ids.length > 0) {
+            fee.subject_names = fee.subject_ids
+                .map(id => allSubjects.find(s => s.id === id)?.name)
+                .filter(Boolean)
+                .join(", ");
+        }
+    }
+
     if (req.user.role === "student") {
       const studentObj = await Student.findOne({
         where: { user_id: req.user.id, institute_id },
         include: [{ model: require("../models").Subject }]
       });
       if (studentObj) {
+        const studentSubIds = studentObj.Subjects ? studentObj.Subjects.map(s => s.id) : [];
+
+        // Pre-calculate matched combo fee types
+        const comboFeeTypesMatched = new Set();
+        for (let fee of feesWithPayments) {
+           if (fee.subject_ids && fee.subject_ids.length > 0 &&
+               fee.subject_ids.length === studentSubIds.length &&
+               fee.subject_ids.every(id => studentSubIds.includes(id))) {
+               comboFeeTypesMatched.add(fee.fee_type);
+           }
+        }
+
         const filteredFees = [];
         for (let fee of feesWithPayments) {
           const payments = await Payment.findAll({
             where: { student_id: studentObj.id, fee_structure_id: fee.id, status: 'success' }
           });
           fee.paid_amount = payments.reduce((sum, p) => sum + parseFloat(p.amount_paid), 0);
-          const isEnrolled = !!(fee.subject_id && studentObj.Subjects?.find((s) => s.id === fee.subject_id));
+          const isEnrolled = !!(fee.subject_id && studentSubIds.includes(fee.subject_id));
           fee.is_enrolled = isEnrolled;
 
           // Handle individually assigned fees
@@ -237,13 +294,21 @@ exports.getAllFeeStructures = catchAsync(async (req, res) => {
             continue;
           }
 
-          if (fee.subject_id) {
+          if (fee.subject_ids && fee.subject_ids.length > 0) {
+            // Combo fee
+            const isExactMatch = fee.subject_ids.length === studentSubIds.length && fee.subject_ids.every(id => studentSubIds.includes(id));
+            if (isExactMatch && !studentObj.is_full_course) {
+               filteredFees.push(fee);
+            }
+          } else if (fee.subject_id) {
             // Subject-specific fee
             if (isEnrolled) {
               if (studentObj.is_full_course && fee.fee_type === 'Tuition Fee') {
-
                 // Full course students shouldn't see individual subject tuition fees
-              } else {filteredFees.push(fee);
+              } else if (comboFeeTypesMatched.has(fee.fee_type)) {
+                // Prevent showing individual fee if they have an exact match combo fee
+              } else {
+                filteredFees.push(fee);
               }
             }
           } else {
@@ -452,11 +517,12 @@ exports.updateFeeStructure = catchAsync(async (req, res) => {
   try {
     const { id } = req.params;
     const institute_id = req.user.institute_id;
-    let { class_id, subject_id, fee_type, amount, due_date, description, individual_student_id } = req.body;
+    let { class_id, subject_id, subject_ids, fee_type, amount, due_date, description, individual_student_id } = req.body;
 
     // Coerce string values from HTML selects to proper types
     if (class_id !== undefined) class_id = class_id ? parseInt(class_id, 10) : null;
     if (subject_id !== undefined) subject_id = subject_id && subject_id !== '' ? parseInt(subject_id, 10) : null;
+    if (subject_ids !== undefined) subject_ids = Array.isArray(subject_ids) ? subject_ids.map(id => parseInt(id, 10)).filter(id => !isNaN(id)) : [];
     if (individual_student_id !== undefined) individual_student_id = individual_student_id && individual_student_id !== '' ? parseInt(individual_student_id, 10) : null;
     if (amount !== undefined) amount = parseFloat(amount);
 
@@ -469,6 +535,7 @@ exports.updateFeeStructure = catchAsync(async (req, res) => {
     await feeStructure.update({
       class_id,
       subject_id: subject_id !== undefined ? subject_id || null : feeStructure.subject_id,
+      subject_ids: subject_ids !== undefined ? (subject_ids.length > 0 ? subject_ids : null) : feeStructure.subject_ids,
       individual_student_id: individual_student_id !== undefined ? individual_student_id || null : feeStructure.individual_student_id,
       fee_type,
       amount,
@@ -514,7 +581,7 @@ exports.deleteFeeStructure = catchAsync(async (req, res) => {
   }
 });
 
-exports.syncSingleStudentFees = catchAsync(async (institute_id, studentObj) => {
+exports.syncSingleStudentFees = async (institute_id, studentObj) => {
   try {
     const { FeesStructure, StudentFee } = require("../models");
 
@@ -529,6 +596,9 @@ exports.syncSingleStudentFees = catchAsync(async (institute_id, studentObj) => {
 
     const subjectIds = studentObj.Subjects ? studentObj.Subjects.map((sub) => sub.id) : [];
     const classIds = studentObj.Classes ? studentObj.Classes.map((c) => c.id) : [];
+    if (studentObj.class_id && !classIds.includes(studentObj.class_id)) {
+      classIds.push(studentObj.class_id);
+    }
 
     // Build a lookup set of individual overrides: (fee_type, class_id) pairs where
     // an individual-targeted fee structure exists for this student specifically.
@@ -537,6 +607,16 @@ exports.syncSingleStudentFees = catchAsync(async (institute_id, studentObj) => {
         .filter(indFs => indFs.individual_student_id === studentObj.id)
         .map(indFs => `${indFs.fee_type}|${indFs.class_id}`)
     );
+
+    // Identify exactly matched combo fee types to prevent double billing individual subjects
+    const comboFeeTypesMatched = new Set();
+    for (const fs of structures) {
+       if (fs.subject_ids && fs.subject_ids.length > 0 && 
+           fs.subject_ids.length === subjectIds.length && 
+           fs.subject_ids.every(id => subjectIds.includes(id))) {
+           comboFeeTypesMatched.add(fs.fee_type);
+       }
+    }
 
     for (const fs of structures) {
       let applies = false;
@@ -555,10 +635,21 @@ exports.syncSingleStudentFees = catchAsync(async (institute_id, studentObj) => {
         }
         // ────────────────────────────────────────────────────────────────
 
-        if (fs.subject_id !== null) {
+        if (fs.subject_ids && fs.subject_ids.length > 0) {
+          const isExactMatch = fs.subject_ids.length === subjectIds.length && fs.subject_ids.every(id => subjectIds.includes(id));
+          if (isExactMatch) {
+            if (fs.fee_type === 'Tuition Fee' && studentObj.is_full_course) {
+              applies = false;
+            } else {
+              applies = true;
+            }
+          }
+        } else if (fs.subject_id !== null) {
           if (subjectIds.includes(fs.subject_id)) {
             if (fs.fee_type === 'Tuition Fee' && studentObj.is_full_course) {
               applies = false;
+            } else if (comboFeeTypesMatched.has(fs.fee_type)) {
+              applies = false; // Prevent charging individual subject fee if a combo fee covers it
             } else {
               applies = true;
             }
@@ -609,7 +700,7 @@ exports.syncSingleStudentFees = catchAsync(async (institute_id, studentObj) => {
     console.error("Error syncing student fees:", error);
     return false;
   }
-});
+};
 
 exports.getMyFees = catchAsync(async (req, res) => {
   try {
@@ -666,6 +757,9 @@ exports.getAssignedStudentFees = catchAsync(async (req, res) => {
     for (const s of students) {
       const subjectIds = s.Subjects ? s.Subjects.map((sub) => sub.id) : [];
       const classIds = s.Classes ? s.Classes.map((c) => c.id) : [];
+      if (s.class_id && !classIds.includes(s.class_id)) {
+        classIds.push(s.class_id);
+      }
 
       // Existing fees for this student
       const studentExistingFees = existingStudentFees.filter((f) => f.student_id === s.id);
@@ -679,6 +773,16 @@ exports.getAssignedStudentFees = catchAsync(async (req, res) => {
           .map(indFs => individualOverrideKey(indFs.individual_student_id, indFs.fee_type, indFs.class_id))
       );
 
+      // Identify exactly matched combo fee types to prevent double billing individual subjects
+      const comboFeeTypesMatched = new Set();
+      for (const fs of structures) {
+         if (fs.subject_ids && fs.subject_ids.length > 0 && 
+             fs.subject_ids.length === subjectIds.length && 
+             fs.subject_ids.every(id => subjectIds.includes(id))) {
+             comboFeeTypesMatched.add(fs.fee_type);
+         }
+      }
+
       for (const fs of structures) {
         let applies = false;
         if (fs.individual_student_id) {
@@ -686,9 +790,6 @@ exports.getAssignedStudentFees = catchAsync(async (req, res) => {
           if (s.id === fs.individual_student_id) applies = true;
         } else if (classIds.includes(fs.class_id)) {
           // ── INDIVIDUAL OVERRIDE CHECK ──────────────────────────────────
-          // If an individual fee structure exists for this student with the same
-          // fee_type in this class, the individual one takes precedence.
-          // Skip this class-wide fee and queue any unpaid record for deletion.
           if (individualOverrides.has(individualOverrideKey(s.id, fs.fee_type, fs.class_id))) {
             const existingClassFee = studentExistingFees.find(f => f.fee_structure_id === fs.id);
             if (existingClassFee && parseFloat(existingClassFee.paid_amount) === 0) {
@@ -698,11 +799,21 @@ exports.getAssignedStudentFees = catchAsync(async (req, res) => {
           }
           // ────────────────────────────────────────────────────────────────
 
-          if (fs.subject_id !== null) {
-            if (subjectIds.includes(fs.subject_id)) {
-              // Subject-level Tuition Fees should NOT apply to full course students
+          if (fs.subject_ids && fs.subject_ids.length > 0) {
+            const isExactMatch = fs.subject_ids.length === subjectIds.length && fs.subject_ids.every(id => subjectIds.includes(id));
+            if (isExactMatch) {
               if (fs.fee_type === 'Tuition Fee' && s.is_full_course) {
                 applies = false;
+              } else {
+                applies = true;
+              }
+            }
+          } else if (fs.subject_id !== null) {
+            if (subjectIds.includes(fs.subject_id)) {
+              if (fs.fee_type === 'Tuition Fee' && s.is_full_course) {
+                applies = false;
+              } else if (comboFeeTypesMatched.has(fs.fee_type)) {
+                applies = false; // Prevent charging individual subject fee if a combo fee covers it
               } else {
                 applies = true;
               }

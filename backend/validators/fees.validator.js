@@ -19,6 +19,9 @@ const createStructure = {
             )
             .optional()
             .allow(null, ""),
+        subject_ids: Joi.array().items(
+            Joi.alternatives().try(Joi.number().integer().positive(), Joi.string().pattern(/^\d+$/))
+        ).optional().allow(null),
         individual_student_id: Joi.alternatives()
             .try(
                 Joi.number().integer().positive(),
@@ -54,6 +57,9 @@ const updateStructure = {
         subject_id: Joi.alternatives()
             .try(Joi.number().integer().positive(), Joi.string().pattern(/^\d+$/), Joi.string().allow("", null))
             .optional().allow(null),
+        subject_ids: Joi.array().items(
+            Joi.alternatives().try(Joi.number().integer().positive(), Joi.string().pattern(/^\d+$/))
+        ).optional().allow(null),
         individual_student_id: Joi.alternatives()
             .try(Joi.number().integer().positive(), Joi.string().pattern(/^\d+$/), Joi.string().allow("", null))
             .optional().allow(null),

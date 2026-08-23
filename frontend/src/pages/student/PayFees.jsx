@@ -195,7 +195,7 @@ function PayFees() {
                 </div>
                 <div className="pf-hero-right">
                     <div className="pf-hero-graphic">
-                        💳<span>$</span>
+                        💳<span>₹</span>
                     </div>
                 </div>
             </div>
@@ -209,7 +209,7 @@ function PayFees() {
                     </div>
                     <div className="pf-stat-content">
                         <p>Original Fees</p>
-                        <h3>${totalRequired.toFixed(2)}</h3>
+                        <h3>₹{totalRequired.toFixed(2)}</h3>
                     </div>
                 </div>
                 <div className="payfees-stat-card">
@@ -218,7 +218,7 @@ function PayFees() {
                     </div>
                     <div className="pf-stat-content">
                         <p>Total Paid</p>
-                        <h3 style={{ color: '#10b981' }}>${safeTotalPaid.toFixed(2)}</h3>
+                        <h3 style={{ color: '#10b981' }}>₹{safeTotalPaid.toFixed(2)}</h3>
                     </div>
                 </div>
                 <div className="payfees-stat-card">
@@ -228,7 +228,7 @@ function PayFees() {
                     <div className="pf-stat-content">
                         <p>Balance Due</p>
                         <h3 style={{ color: balanceDue > 0 ? '#f59e0b' : '#10b981' }}>
-                            ${Math.max(0, balanceDue).toFixed(2)}
+                            ₹{Math.max(0, balanceDue).toFixed(2)}
                         </h3>
                     </div>
                 </div>
@@ -288,9 +288,9 @@ function PayFees() {
                                                 )}
                                             </td>
                                             <td>
-                                                Original: <strong style={{ color: '#111827' }}>${originalAmount.toFixed(2)}</strong><br />
-                                                Paid: <span style={{ color: '#6b7280' }}>${paidAmount.toFixed(2)}</span><br />
-                                                Due: <strong style={{ color: balance > 0 ? '#ef4444' : '#10b981' }}>${balance.toFixed(2)}</strong>
+                                                Original: <strong style={{ color: '#111827' }}>₹{originalAmount.toFixed(2)}</strong><br />
+                                                Paid: <span style={{ color: '#6b7280' }}>₹{paidAmount.toFixed(2)}</span><br />
+                                                Due: <strong style={{ color: balance > 0 ? '#ef4444' : '#10b981' }}>₹{balance.toFixed(2)}</strong>
                                             </td>
                                             <td>
                                                 <span className={`pf-badge ${isPaidOff ? 'paid' : paidAmount > 0 ? 'partial' : 'pending'}`}>
@@ -336,9 +336,9 @@ function PayFees() {
                                             )}
                                         </div>
                                         <div className="pf-mc-amounts">
-                                            <div>Original: <strong>${originalAmount.toFixed(2)}</strong></div>
-                                            <div>Paid: <span>${paidAmount.toFixed(2)}</span></div>
-                                            <div>Due: <strong style={{ color: balance > 0 ? '#ef4444' : '#10b981' }}>${balance.toFixed(2)}</strong></div>
+                                            <div>Original: <strong>₹{originalAmount.toFixed(2)}</strong></div>
+                                            <div>Paid: <span>₹{paidAmount.toFixed(2)}</span></div>
+                                            <div>Due: <strong style={{ color: balance > 0 ? '#ef4444' : '#10b981' }}>₹{balance.toFixed(2)}</strong></div>
                                         </div>
                                         <div className="pf-mc-badge-box">
                                             <span className={`pf-badge ${isPaidOff ? 'paid' : paidAmount > 0 ? 'partial' : 'pending'}`}>
@@ -394,7 +394,7 @@ function PayFees() {
                                                 <span style={{ color: '#10b981' }}>💵</span> {payment.payment_method}
                                             </span>
                                         </td>
-                                        <td><strong style={{ color: '#111827', fontSize: '1.1rem' }}>${parseFloat(payment.amount_paid).toFixed(2)}</strong></td>
+                                        <td><strong style={{ color: '#111827', fontSize: '1.1rem' }}>₹{parseFloat(payment.amount_paid).toFixed(2)}</strong></td>
                                         <td>
                                             <span className={`pf-badge ${payment.status === 'success' ? 'success' : 'danger'}`}>
                                                 {payment.status}
@@ -425,7 +425,7 @@ function PayFees() {
                                     </div>
                                     <div className="pf-mc-col" style={{alignItems: 'flex-end'}}>
                                         <span className="label">Amount</span>
-                                        <span className="val" style={{fontSize: '1.1rem'}}>${parseFloat(payment.amount_paid).toFixed(2)}</span>
+                                        <span className="val" style={{fontSize: '1.1rem'}}>₹{parseFloat(payment.amount_paid).toFixed(2)}</span>
                                         <span className={`pf-badge ${payment.status === 'success' ? 'success' : 'danger'}`} style={{marginTop: '4px'}}>
                                             {payment.status}
                                         </span>
