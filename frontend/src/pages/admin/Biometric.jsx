@@ -2595,7 +2595,7 @@ function OtpQrTab() {
 // REPORTS TAB  (Phase 8 + 12)
 // ─────────────────────────────────────────────────────────────────
 function ReportsTab() {
-    const [reportType, setReportType] = useState("late");
+
     const [startDate, setStartDate] = useState("");
     const [endDate, setEndDate] = useState("");
     const [roleFilter, setRoleFilter] = useState("all");
@@ -2607,11 +2607,7 @@ function ReportsTab() {
     const fetchReport = async () => {
         setLoading(true);
         try {
-            const endpoint = reportType === "late" 
-                ? `/biometric/late-report?start_date=${startDate}&end_date=${endDate}&role=${roleFilter}`
-                : reportType === "absent"
-                    ? `/biometric/absent-report?start_date=${startDate}&end_date=${endDate}&role=${roleFilter}`
-                    : `/biometric/present-report?start_date=${startDate}&end_date=${endDate}&role=${roleFilter}`;
+            const endpoint = `/biometric/present-report?start_date=${startDate}&end_date=${endDate}&role=${roleFilter}`;
             const res = await api.get(endpoint);
             if (res.data.success && res.data.data.length > 0) {
                 const mapped = res.data.data.map((r, i) => {
@@ -2632,7 +2628,7 @@ function ReportsTab() {
                         checkOut: r.time_out ? format12Hour(r.time_out) : "—",
                         expected: "09:00 AM",
                         delay: r.late_by_minutes ? `${r.late_by_minutes}m` : "—",
-                        status: reportType === "late" ? "Late" : reportType === "absent" ? "Absent" : "Present",
+                        status: r.status === "late" || r.late_by_minutes > 0 ? "Late" : r.status === "half_day" ? "Half Day" : "Present",
                         bg: ["#6366f1", "#3b82f6", "#10b981", "#f59e0b", "#ef4444"][i % 5]
                     };
                 });
@@ -2674,7 +2670,7 @@ function ReportsTab() {
         XLSX.utils.book_append_sheet(workbook, worksheet, "Attendance");
         
         // Download
-        const reportName = reportType.charAt(0).toUpperCase() + reportType.slice(1);
+        const reportName = "Comprehensive";
         XLSX.writeFile(workbook, `Attendance_Report_${reportName}_${new Date().toISOString().split('T')[0]}.xlsx`);
         
         toast.success("Excel exported successfully!");
@@ -2694,14 +2690,7 @@ function ReportsTab() {
                 </div>
 
                 <div style={{ display: "flex", gap: "1.5rem", alignItems: "flex-end", flexWrap: "wrap" }}>
-                    <div style={{ flex: 1, minWidth: "200px" }}>
-                        <label style={{ fontSize: "0.85rem", fontWeight: 600, color: "#475569", display: "block", marginBottom: "0.5rem" }}>Report Type</label>
-                        <select value={reportType} onChange={(e) => setReportType(e.target.value)} style={inputStyle}>
-                            <option value="late">Late Arrivals</option>
-                            <option value="absent">Absent Students</option>
-                            <option value="present">Present Students</option>
-                        </select>
-                    </div>
+
                     <div style={{ flex: 1, minWidth: "150px" }}>
                         <label style={{ fontSize: "0.85rem", fontWeight: 600, color: "#475569", display: "block", marginBottom: "0.5rem" }}>Role</label>
                         <select value={roleFilter} onChange={(e) => setRoleFilter(e.target.value)} style={inputStyle}>

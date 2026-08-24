@@ -1393,10 +1393,10 @@ exports.getPresentReport = async (req, res) => {
         const { start_date, end_date, role } = req.query;
         const { enrolledStudentIds, enrolledFacultyIds } = await getEnrolledUsers(institute_id);
 
-        const sWhere = { institute_id, status: { [Op.in]: ["present", "half_day"] }, marked_by_type: "biometric", student_id: { [Op.in]: enrolledStudentIds } };
+        const sWhere = { institute_id, status: { [Op.in]: ["present", "half_day", "late"] }, marked_by_type: "biometric", student_id: { [Op.in]: enrolledStudentIds } };
         if (start_date && end_date) sWhere.date = { [Op.between]: [start_date, end_date] };
 
-        const fWhere = { institute_id, status: { [Op.in]: ["present", "half_day"] }, marked_by_type: "biometric", faculty_id: { [Op.in]: enrolledFacultyIds } };
+        const fWhere = { institute_id, status: { [Op.in]: ["present", "half_day", "late"] }, marked_by_type: "biometric", faculty_id: { [Op.in]: enrolledFacultyIds } };
         if (start_date && end_date) fWhere.date = { [Op.between]: [start_date, end_date] };
 
         const [studentRecords, facultyRecords] = await Promise.all([
@@ -1405,8 +1405,8 @@ exports.getPresentReport = async (req, res) => {
         ]);
 
         const merged = [
-            ...studentRecords.map(r => ({ date: r.date, student_id: r.student_id, name: r.Student?.User?.name, role: "student", time_in: r.time_in, time_out: r.time_out, late_by_minutes: r.late_by_minutes })),
-            ...facultyRecords.map(r => ({ date: r.date, faculty_id: r.faculty_id, name: r.Faculty?.User?.name, role: "faculty", time_in: r.time_in, time_out: r.time_out, late_by_minutes: 0 }))
+            ...studentRecords.map(r => ({ date: r.date, student_id: r.student_id, name: r.Student?.User?.name, role: "student", time_in: r.time_in, time_out: r.time_out, late_by_minutes: r.late_by_minutes, status: r.status })),
+            ...facultyRecords.map(r => ({ date: r.date, faculty_id: r.faculty_id, name: r.Faculty?.User?.name, role: "faculty", time_in: r.time_in, time_out: r.time_out, late_by_minutes: 0, status: r.status }))
         ].sort((a, b) => new Date(b.date) - new Date(a.date));
 
         res.json({ success: true, data: merged });
