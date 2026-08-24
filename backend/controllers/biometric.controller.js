@@ -580,8 +580,9 @@ exports.createDevice = async (req, res) => {
                 .json({ success: false, message: "device_name and device_serial are required" });
         }
 
-        // Generate secret key for device authentication
+        // Generate secret key for device authentication and device token for Push API
         const secret_key = crypto.randomBytes(32).toString("hex");
+        const device_token = crypto.randomBytes(16).toString("hex");
 
         const device = await BiometricDevice.create({
             institute_id,
@@ -593,13 +594,64 @@ exports.createDevice = async (req, res) => {
             location: location || "",
             ip_address: ip_address || "",
             secret_key,
+            device_token,
             status: "active",
         });
 
         res.status(201).json({
             success: true,
             message: "Device registered successfully",
-            data: { ...device.toJSON(), secret_key },
+            data: { ...device.toJSON(), secret_key, device_token },
+        });
+    } catch (err) {
+        if (err.name === "SequelizeUniqueConstraintError") {
+            return res
+                .status(409)
+                .json({ success: false, message: "Device with this serial number already exists" });
+        }
+        res.status(500).json({ success: false, message: err.message });
+    }
+};
+
+/**
+ * POST /api/biometric/devices/register
+ * Wizard Registration
+ */
+exports.registerDevice = async (req, res) => {
+    try {
+        const institute_id = req.user.institute_id;
+        const { device_name, device_serial, device_type, placement_type, room_identifier, location, ip_address, brand, connection_type } =
+            req.body;
+
+        if (!device_name || !device_serial) {
+            return res
+                .status(400)
+                .json({ success: false, message: "device_name and device_serial are required" });
+        }
+
+        const secret_key = crypto.randomBytes(32).toString("hex");
+        const device_token = crypto.randomBytes(16).toString("hex");
+
+        const device = await BiometricDevice.create({
+            institute_id,
+            device_name,
+            device_serial,
+            device_type: device_type || "fingerprint",
+            placement_type: placement_type || "gate",
+            room_identifier: room_identifier || null,
+            location: location || "",
+            ip_address: ip_address || "",
+            brand: brand || null,
+            connection_type: connection_type || null,
+            secret_key,
+            device_token,
+            status: "pending", // Wizard state
+        });
+
+        res.status(201).json({
+            success: true,
+            message: "Device registered via wizard successfully",
+            data: { ...device.toJSON(), secret_key, device_token },
         });
     } catch (err) {
         if (err.name === "SequelizeUniqueConstraintError") {

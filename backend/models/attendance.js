@@ -38,6 +38,11 @@ const Attendance = sequelize.define("Attendance", {
             name: "attendance_unique_daily",
             unique: true,
             fields: ["institute_id", "student_id", "class_id", "date", "subject_id"]
+        },
+        {
+            // Optimized index for Biometric processPunch fast lookups
+            name: "idx_attendance_student_date",
+            fields: ["institute_id", "student_id", "date", "subject_id"]
         }
     ]
 });

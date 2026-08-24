@@ -1,14 +1,15 @@
-﻿/**
+/**
  * Biometric Attendance Management — Admin Page
  * Phases 2, 3, 5, 7, 8, 10: Devices, Enrollment, Live Attendance,
  * OTP/QR Attendance, Reports, Settings
  */
 
-import { useState, useEffect, useRef, useMemo, useCallback } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback, useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import * as XLSX from "xlsx";
 import api from "../../services/api";
 import toast from "react-hot-toast";
+import { NotificationContext } from "../../context/NotificationContext";
 import { format12Hour } from "../../utils/timeFormat";
 
 // ─── Tab IDs ─────────────────────────────────────────────────────
@@ -450,6 +451,7 @@ function TestModeSimulator({ onPunchSent }) {
 // LIVE ATTENDANCE TAB  (Phase 7 + 8)
 // ─────────────────────────────────────────────────────────────────
 function LiveAttendanceTab({ isTestMode = false, setActiveTab }) {
+    const { socket } = useContext(NotificationContext);
     const [data, setData] = useState(null);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState("");
@@ -481,11 +483,19 @@ function LiveAttendanceTab({ isTestMode = false, setActiveTab }) {
         const btn = document.getElementById("global-refresh-btn");
         if(btn) btn.addEventListener("click", fetchLive);
 
+        // Real-time Socket Listener
+        if (socket) {
+            socket.on("biometric:punch", fetchLive);
+        }
+
         return () => {
             clearInterval(intervalRef.current);
             if(btn) btn.removeEventListener("click", fetchLive);
+            if (socket) {
+                socket.off("biometric:punch", fetchLive);
+            }
         };
-    }, [fetchLive]);
+    }, [fetchLive, socket]);
 
     const records = data?.records || [];
 

@@ -20,8 +20,8 @@ const BiometricPunch = sequelize.define("BiometricPunch", {
     underscored: true,
     indexes: [
         {
-            name: "idx_bp_device_time",
-            fields: ["device_id", "punch_time"]
+            name: "idx_bp_device_user_time",
+            fields: ["device_id", "device_user_id", "punch_time"]
         }
     ]
 });
