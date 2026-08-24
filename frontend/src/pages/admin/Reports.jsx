@@ -509,7 +509,7 @@ function Reports() {
                                 <ResponsiveContainer width="100%" height="100%">
                                     <PieChart>
                                         <RechartsPie data={[
-                                            { name: "Collected", value: financeSummary?.revenue?.total || 0 },
+                                            { name: "Collected", value: financeSummary?.total_collected || 0 },
                                             { name: "Pending",   value: financeSummary?.pending?.total  || 0 }
                                         ]} cx="50%" cy="50%" innerRadius={55} outerRadius={80} dataKey="value" stroke="none">
                                             <Cell fill="#10b981" />
@@ -520,15 +520,15 @@ function Reports() {
                                 </ResponsiveContainer>
                                 <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", textAlign: "center", pointerEvents: "none" }}>
                                     <div style={{ fontSize: 22, fontWeight: 800, color: "#10b981" }}>
-                                        {financeSummary ? ((financeSummary.revenue.total / (financeSummary.revenue.total + financeSummary.pending.total || 1)) * 100).toFixed(1) : 0}%
+                                        {financeSummary ? ((financeSummary.total_collected / ((financeSummary.total_collected + financeSummary.pending.total) || 1)) * 100).toFixed(1) : 0}%
                                     </div>
                                     <div style={{ fontSize: 11, color: "#6b7280" }}>Collected</div>
                                 </div>
                             </div>
                             <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem", marginTop: "1rem" }}>
                                 <div style={{ background: '#ecfdf5', borderRadius: 8, padding: '0.75rem', display: 'flex', flexDirection: 'column' }}>
-                                    <span style={{ fontSize: 11, color: '#065f46', fontWeight: 600 }}>Collection Target</span>
-                                    <span style={{ fontSize: 15, color: '#10b981', fontWeight: 800 }}>₹{(financeSummary?.revenue?.total + financeSummary?.pending?.total).toLocaleString()}</span>
+                                    <span style={{ fontSize: 11, color: '#065f46', fontWeight: 600 }}>Collection Target (All Time)</span>
+                                    <span style={{ fontSize: 15, color: '#10b981', fontWeight: 800 }}>₹{((financeSummary?.total_collected || 0) + (financeSummary?.pending?.total || 0)).toLocaleString()}</span>
                                 </div>
                             </div>
                         </ChartCard>

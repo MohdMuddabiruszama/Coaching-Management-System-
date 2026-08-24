@@ -31,10 +31,11 @@ exports.getRevenueSummary = async (req, res) => {
         if (studentIds) payWhere.student_id = { [Op.in]: studentIds };
         if (month_year) {
             const [y, m] = month_year.split("-");
+            const endDay = new Date(y, m, 0).getDate();
             payWhere.payment_date = {
                 [Op.between]: [
-                    new Date(y, m - 1, 1),
-                    new Date(y, m, 0, 23, 59, 59)
+                    `${y}-${m}-01`,
+                    `${y}-${m}-${String(endDay).padStart(2, '0')}`
                 ]
             };
         }
@@ -49,10 +50,11 @@ exports.getRevenueSummary = async (req, res) => {
             const expWhere = { institute_id };
             if (month_year) {
                 const [y, m] = month_year.split("-");
+                const endDay = new Date(y, m, 0).getDate();
                 expWhere.date = {
                     [Op.between]: [
-                        new Date(y, m - 1, 1),
-                        new Date(y, m, 0, 23, 59, 59)
+                        `${y}-${m}-01`,
+                        `${y}-${m}-${String(endDay).padStart(2, '0')}`
                     ]
                 };
             }
@@ -123,7 +125,9 @@ exports.getMonthlyTrend = async (req, res) => {
             const d = new Date();
             d.setDate(1);
             d.setMonth(d.getMonth() - i);
-            months.push(d.toISOString().slice(0, 7));
+            const y = d.getFullYear();
+            const m = String(d.getMonth() + 1).padStart(2, '0');
+            months.push(`${y}-${m}`);
         }
 
         const { class_id } = req.query;
@@ -141,7 +145,7 @@ exports.getMonthlyTrend = async (req, res) => {
             institute_id,
             status: "success",
             payment_date: {
-                [Op.gte]: new Date(months[0] + "-01")
+                [Op.gte]: months[0] + "-01"
             }
         };
         if (studentIds) payWhere.student_id = { [Op.in]: studentIds };
