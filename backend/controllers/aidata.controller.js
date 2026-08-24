@@ -76,7 +76,6 @@ function resolveVerifyMode(mode) {
  * Find device — priority order:
  *  1. device_token  (Biomax N300 sends token header)
  *  2. device_serial (ZKTeco ADMS protocol sends SN)
- *  3. Fallback: most recently synced active device
  */
 async function findDevice(token, sn) {
     // 1. Match by device_token (Biomax JSON REST)
@@ -93,13 +92,11 @@ async function findDevice(token, sn) {
         });
         if (d) { console.log(`[AIData] Device found by SN → ${d.device_serial}`); return d; }
     }
-    // 3. Last resort — most recently synced active device
-    const d = await BiometricDevice.findOne({
-        where: { status: "active" },
-        order: [["last_sync", "DESC"]]
-    });
-    if (d) { console.log(`[AIData] Device found by fallback → ${d.device_serial}`); }
-    return d;
+    
+    // We intentionally removed the "fallback to random active device" 
+    // because it causes punches to be assigned to the wrong device if token mismatches.
+    console.warn(`[AIData] findDevice failed: no device found for token=${token}, sn=${sn}`);
+    return null;
 }
 
 // ─── Handshake — GET /AIData.aspx ────────────────────────────────────────────
@@ -171,13 +168,25 @@ exports.receiveData = async (req, res) => {
 
             // Door status heartbeat
             if (json.door_status) {
-                return res.status(200).json({ result: "ok" });
+                return res.status(200).json({ code: 0, message: "success", success: true, result: "ok", ret: "OK" });
+            }
+
+            // Device Status Info (contains deviceId) — Auto-learn the token
+            if (json.deviceId && token) {
+                const d = await BiometricDevice.findOne({ where: { device_serial: json.deviceId } });
+                if (d && d.device_token !== token) {
+                    await d.update({ device_token: token });
+                    console.log(`[AIData] Auto-updated token for device ${json.deviceId} to match incoming token.`);
+                }
+                // Send full ACK so device doesn't loop status continuously
+                return res.status(200).json({ code: 0, message: "success", success: true, result: "ok", ret: "OK" });
             }
 
             // Type 2 — Attendance punch
             if (typeof json.userId !== "undefined" && json.time) {
                 // IMMEDIATELY SEND ACKNOWLEDGMENT TO PREVENT DEVICE TIMEOUTS
-                res.status(200).json({ result: "ok" });
+                // Send full ACK format so Biomax device clears the punch from its buffer
+                res.status(200).json({ code: 0, message: "success", success: true, result: "ok", ret: "OK" });
 
                 // Process everything in the background
                 setImmediate(async () => {
@@ -254,7 +263,7 @@ exports.receiveData = async (req, res) => {
 
             // Unknown JSON format — log and ACK
             console.log(`[AIData] Unknown JSON keys: ${Object.keys(json).join(", ")}`);
-            return res.status(200).json({ result: "ok" });
+            return res.status(200).json({ code: 0, message: "success", success: true, result: "ok", ret: "OK" });
         }
 
         // ── Plain text body (legacy ADMS text protocol) ───────────────────────
