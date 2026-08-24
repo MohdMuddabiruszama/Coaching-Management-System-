@@ -1142,6 +1142,7 @@ exports.getLiveAttendance = async (req, res) => {
         const institute_id = req.user.institute_id;
         const today = new Date().toISOString().split("T")[0];
 
+        // ── 1. Fetch processed attendance records (students marked present today) ──
         const records = await Attendance.findAll({
             where: {
                 institute_id,
@@ -1208,6 +1209,62 @@ exports.getLiveAttendance = async (req, res) => {
         const present = allRecords.filter((r) => r.status === "present" || r.status === "half_day").length;
         const late = allRecords.filter((r) => r.status === "late" || r.is_late).length;
 
+        // ── 2. Fetch raw BiometricPunch records received TODAY (last 24h) ──
+        // This shows device activity even when enrollment is missing or punch date is from device buffer.
+        const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000);
+        const rawPunches = await BiometricPunch.findAll({
+            where: {
+                institute_id,
+                created_at: { [Op.gte]: yesterday }, // when we RECEIVED it, not device time
+            },
+            include: [{ model: BiometricDevice, attributes: ["device_name", "device_serial"] }],
+            order: [["created_at", "DESC"]],
+            limit: 50,
+        });
+
+        // ── 3. Identify unmatched punches (no enrollment) ──
+        const { BiometricEnrollment } = require("../models");
+        const enrollments = await BiometricEnrollment.findAll({
+            where: { institute_id, status: "active" },
+            attributes: ["device_id", "device_user_id"],
+            raw: true,
+        });
+        const enrolledSet = new Set(enrollments.map(e => `${e.device_id}:${e.device_user_id}`));
+
+        const unmatchedPunches = rawPunches
+            .filter(p => !enrolledSet.has(`${p.device_id}:${p.device_user_id}`))
+            .map(p => ({
+                id: p.id,
+                device_user_id: p.device_user_id,
+                device_name: p.BiometricDevice?.device_name || "Unknown Device",
+                device_serial: p.BiometricDevice?.device_serial,
+                device_id: p.device_id,
+                punch_time: p.punch_time,
+                received_at: p.created_at,
+                punch_type: p.punch_type,
+            }));
+
+        // Deduplicate unmatched by device_user_id + device_id
+        const seenUnmatched = new Set();
+        const uniqueUnmatched = unmatchedPunches.filter(p => {
+            const key = `${p.device_id}:${p.device_user_id}`;
+            if (seenUnmatched.has(key)) return false;
+            seenUnmatched.add(key);
+            return true;
+        });
+
+        const recentRawPunches = rawPunches.map(p => ({
+            id: p.id,
+            device_user_id: p.device_user_id,
+            device_name: p.BiometricDevice?.device_name || "Unknown",
+            device_id: p.device_id,
+            punch_time: p.punch_time,
+            received_at: p.created_at,
+            punch_type: p.punch_type,
+            processed: p.processed,
+            is_enrolled: enrolledSet.has(`${p.device_id}:${p.device_user_id}`),
+        }));
+
         res.json({
             success: true,
             data: {
@@ -1217,12 +1274,18 @@ exports.getLiveAttendance = async (req, res) => {
                 late,
                 absent: 0,
                 records: allRecords,
+                // Raw device activity — last 50 punches received in last 24h
+                raw_punches: recentRawPunches,
+                // Unmatched punches — device_user_ids with no enrollment (need admin action)
+                unmatched_punches: uniqueUnmatched,
+                unmatched_count: uniqueUnmatched.length,
             },
         });
     } catch (err) {
         res.status(500).json({ success: false, message: err.message });
     }
 };
+
 
 /**
  * GET /api/attendance/biometric/class/:id

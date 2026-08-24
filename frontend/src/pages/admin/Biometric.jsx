@@ -506,6 +506,8 @@ function LiveAttendanceTab({ isTestMode = false, setActiveTab }) {
     }, [fetchLive, socket]);
 
     const records = data?.records || [];
+    const unmatchedPunches = data?.unmatched_punches || [];
+    const rawPunches = data?.raw_punches || [];
 
     // Fast local filtering & pagination
     const filteredRecords = useMemo(() => {
@@ -578,6 +580,76 @@ function LiveAttendanceTab({ isTestMode = false, setActiveTab }) {
                     color="#8b5cf6" bg="rgba(139,92,246,0.1)"
                 />
             </div>
+
+            {/* ⚠️ Unmatched Punch Alert — shown when device sends punches with no enrollment */}
+            {unmatchedPunches.length > 0 && (
+                <div style={{ background: "#fff7ed", border: "1.5px solid #fb923c", borderRadius: "12px", padding: "1rem 1.25rem", marginBottom: "1.5rem" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "0.75rem" }}>
+                        <div style={{ background: "#fb923c", color: "#fff", width: "30px", height: "30px", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, fontSize: "1rem" }}>⚠️</div>
+                        <div>
+                            <div style={{ fontWeight: 700, color: "#9a3412", fontSize: "0.95rem" }}>
+                                {unmatchedPunches.length} Device User{unmatchedPunches.length > 1 ? "s" : ""} Not Enrolled
+                            </div>
+                            <div style={{ color: "#c2410c", fontSize: "0.82rem" }}>
+                                The device is pushing punches but these IDs have no enrollment mapping to a student or faculty. Go to <strong>Enrollment</strong> tab to link them.
+                            </div>
+                        </div>
+                        <button onClick={() => setActiveTab("enrollment")} style={{ marginLeft: "auto", background: "#fb923c", color: "#fff", border: "none", borderRadius: "8px", padding: "0.45rem 1rem", fontWeight: 700, fontSize: "0.82rem", cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0 }}>
+                            Go Enroll →
+                        </button>
+                    </div>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem" }}>
+                        {unmatchedPunches.map((p, i) => (
+                            <div key={i} style={{ background: "#fff", border: "1px solid #fed7aa", borderRadius: "8px", padding: "0.4rem 0.85rem", fontSize: "0.82rem", fontWeight: 600, color: "#7c2d12", display: "flex", alignItems: "center", gap: "0.4rem" }}>
+                                <span style={{ background: "#fed7aa", borderRadius: "4px", padding: "0.1rem 0.35rem", fontFamily: "monospace" }}>ID: {p.device_user_id}</span>
+                                <span style={{ color: "#9a3412", fontWeight: 400, fontSize: "0.78rem" }}>via {p.device_name}</span>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+
+            {/* Raw Device Activity Feed — shown if device has pushed data but no processed records */}
+            {rawPunches.length > 0 && records.length === 0 && (
+                <div style={{ background: "#f0f9ff", border: "1.5px solid #38bdf8", borderRadius: "12px", padding: "1rem 1.25rem", marginBottom: "1.5rem" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.75rem" }}>
+                        <div style={{ width: "10px", height: "10px", borderRadius: "50%", background: "#22c55e", animation: "pulse 1.5s infinite" }} />
+                        <div style={{ fontWeight: 700, color: "#0369a1", fontSize: "0.95rem" }}>Device Activity Detected (last 24h)</div>
+                        <span style={{ fontSize: "0.78rem", color: "#0284c7", background: "#e0f2fe", padding: "0.15rem 0.5rem", borderRadius: "20px" }}>{rawPunches.length} raw punches received</span>
+                    </div>
+                    <div style={{ overflowX: "auto" }}>
+                        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.85rem" }}>
+                            <thead>
+                                <tr style={{ borderBottom: "1px solid #bae6fd" }}>
+                                    {["Device User ID", "Device", "Punch Time", "Type", "Status"].map(h => (
+                                        <th key={h} style={{ padding: "0.5rem 0.75rem", color: "#0369a1", fontWeight: 600, textAlign: "left" }}>{h}</th>
+                                    ))}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {rawPunches.slice(0, 10).map((p, i) => (
+                                    <tr key={i} style={{ borderBottom: "1px solid #e0f2fe" }}>
+                                        <td style={{ padding: "0.5rem 0.75rem", fontWeight: 700, fontFamily: "monospace", color: "#0c4a6e" }}>{p.device_user_id}</td>
+                                        <td style={{ padding: "0.5rem 0.75rem", color: "#475569" }}>{p.device_name}</td>
+                                        <td style={{ padding: "0.5rem 0.75rem", color: "#475569" }}>{p.punch_time ? new Date(p.punch_time).toLocaleString() : "—"}</td>
+                                        <td style={{ padding: "0.5rem 0.75rem" }}>
+                                            <span style={{ background: p.punch_type === "in" ? "#d1fae5" : "#fee2e2", color: p.punch_type === "in" ? "#065f46" : "#991b1b", padding: "0.15rem 0.5rem", borderRadius: "4px", fontWeight: 700, fontSize: "0.75rem" }}>
+                                                {(p.punch_type || "in").toUpperCase()}
+                                            </span>
+                                        </td>
+                                        <td style={{ padding: "0.5rem 0.75rem" }}>
+                                            {p.is_enrolled
+                                                ? <span style={{ color: p.processed ? "#10b981" : "#f59e0b", fontWeight: 600, fontSize: "0.8rem" }}>{p.processed ? "✅ Processed" : "⏳ Processing"}</span>
+                                                : <span style={{ color: "#ef4444", fontWeight: 600, fontSize: "0.8rem" }}>❌ Not Enrolled</span>
+                                            }
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            )}
 
             {/* Main Table Card */}
             <div style={{ background: "#fff", borderRadius: "12px", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.03)", padding: "1.5rem" }}>
