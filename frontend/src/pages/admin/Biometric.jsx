@@ -1316,6 +1316,12 @@ function DevicesTab() {
         }
     };
 
+    const handleTest = (device) => {
+        setRegisteredDevice(device);
+        setWizardStep(4);
+        setShowWizard(true);
+    };
+
     const handleDelete = async (id) => {
         if (!confirm("Remove this device? All enrollments on it will stop working.")) return;
         try {
@@ -1552,6 +1558,7 @@ function DevicesTab() {
                                                     </button>
                                                     <div id={`menu-${d.id}`} className="device-menu-popup" style={{ display: "none", position: "absolute", right: "0", top: "100%", zIndex: 10, background: "#fff", borderRadius: "8px", boxShadow: "0 4px 12px rgba(0,0,0,0.1)", border: "1px solid #f1f5f9", flexDirection: "column", minWidth: "130px", overflow: "hidden" }}>
                                                         <button onClick={() => { openEdit(d); document.getElementById(`menu-${d.id}`).style.display = "none"; }} style={{ padding: "0.6rem 1rem", textAlign: "left", background: "transparent", border: "none", borderBottom: "1px solid #f1f5f9", cursor: "pointer", color: "#475569", fontSize: "0.85rem", width: "100%" }}>✏️ Edit</button>
+                                                        <button onClick={() => { handleTest(d); document.getElementById(`menu-${d.id}`).style.display = "none"; }} style={{ padding: "0.6rem 1rem", textAlign: "left", background: "transparent", border: "none", borderBottom: "1px solid #f1f5f9", cursor: "pointer", color: "#3b82f6", fontSize: "0.85rem", width: "100%" }}>📡 Test</button>
                                                         <button onClick={() => { handleSync(d.id); document.getElementById(`menu-${d.id}`).style.display = "none"; }} style={{ padding: "0.6rem 1rem", textAlign: "left", background: "transparent", border: "none", borderBottom: "1px solid #f1f5f9", cursor: "pointer", color: "#10b981", fontSize: "0.85rem", width: "100%" }}>🔄 Sync</button>
                                                         <button onClick={() => { handleDelete(d.id); document.getElementById(`menu-${d.id}`).style.display = "none"; }} style={{ padding: "0.6rem 1rem", textAlign: "left", background: "transparent", border: "none", cursor: "pointer", color: "#ef4444", fontSize: "0.85rem", width: "100%" }}>🗑️ Remove</button>
                                                     </div>
