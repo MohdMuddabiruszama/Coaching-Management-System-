@@ -166,18 +166,18 @@ exports.receiveData = async (req, res) => {
             // Type 1 — Face/Palm template sync (large base64 blob) → just ACK
             if (json.face || json.faceData || json.faceTemplate || json.palm) {
                 console.log(`[AIData] Face/Palm template ACK — token=${token}`);
-                return res.status(200).json({ code: 0, message: "success", success: true, result: "ok", ret: "OK" });
+                return res.status(200).json({ result: "ok" });
             }
 
             // Door status heartbeat
             if (json.door_status) {
-                return res.status(200).json({ code: 0, message: "success", success: true, result: "ok", ret: "OK" });
+                return res.status(200).json({ result: "ok" });
             }
 
             // Type 2 — Attendance punch
             if (typeof json.userId !== "undefined" && json.time) {
                 // IMMEDIATELY SEND ACKNOWLEDGMENT TO PREVENT DEVICE TIMEOUTS
-                res.status(200).json({ code: 0, message: "success", success: true, result: "ok", ret: "OK" });
+                res.status(200).json({ result: "ok" });
 
                 // Process everything in the background
                 setImmediate(async () => {
@@ -254,7 +254,7 @@ exports.receiveData = async (req, res) => {
 
             // Unknown JSON format — log and ACK
             console.log(`[AIData] Unknown JSON keys: ${Object.keys(json).join(", ")}`);
-            return res.status(200).json({ code: 0, message: "success", success: true, result: "ok", ret: "OK" });
+            return res.status(200).json({ result: "ok" });
         }
 
         // ── Plain text body (legacy ADMS text protocol) ───────────────────────
