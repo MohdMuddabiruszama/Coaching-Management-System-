@@ -221,16 +221,6 @@ exports.getAllStudents = catchAsync(async (req, res) => {
     const whereClause = { institute_id };
     if (cursor) whereClause.id = { [Op.lt]: cursor };
 
-    // Search filter
-    const userWhereClause = search ?
-    {
-      [Op.or]: [
-      { name: { [Op.like]: `%${search}%` } },
-      { email: { [Op.like]: `%${search}%` } }]
-
-    } :
-    {};
-
     // If class_id filter is specific, we still need to filter students that belong to this class
     const classIncludeOptions = {
       model: Class,
@@ -267,7 +257,14 @@ exports.getAllStudents = catchAsync(async (req, res) => {
       {
         model: User,
         attributes: ["id", "name", "email", "phone", "status"],
-        where: userWhereClause,
+        where: search ? {
+          [Op.or]: [
+            { name: { [Op.iLike]: `%${search}%` } },
+            { email: { [Op.iLike]: `%${search}%` } },
+            { phone: { [Op.iLike]: `%${search}%` } },
+            { '$Student.roll_number$': { [Op.iLike]: `%${search}%` } }
+          ]
+        } : {},
         required: search ? true : false
       },
       {
@@ -406,14 +403,15 @@ exports.getStudentLookup = catchAsync(async (req, res) => {
     const { class_id, search = "", limit = 100 } = req.query;
     const maxLimit = Math.min(parseInt(limit, 10) || 100, 5000);
 
-    const userWhereClause = search ?
-    {
-      [Op.or]: [
-      { name: { [Op.like]: `%${search}%` } },
-      { email: { [Op.like]: `%${search}%` } }]
-
-    } :
-    {};
+    const whereClause = { institute_id };
+    if (search) {
+      whereClause[Op.or] = [
+        { '$User.name$': { [Op.iLike]: `%${search}%` } },
+        { '$User.email$': { [Op.iLike]: `%${search}%` } },
+        { '$User.phone$': { [Op.iLike]: `%${search}%` } },
+        { roll_number: { [Op.iLike]: `%${search}%` } }
+      ];
+    }
 
     const classInclude = {
       model: Class,
@@ -427,14 +425,12 @@ exports.getStudentLookup = catchAsync(async (req, res) => {
     }
 
     const students = await Student.findAll({
-      where: { institute_id },
+      where: whereClause,
       attributes: ["id", "roll_number"],
       include: [
       {
         model: User,
         attributes: ["id", "name", "email", "phone", "status"],
-        where: userWhereClause,
-        required: Boolean(search)
       },
       classInclude],
 

@@ -626,6 +626,7 @@ function Students() {
         const matchesSearch =
             (s.User?.name || "").toLowerCase().includes(search.toLowerCase()) ||
             (s.User?.email || "").toLowerCase().includes(search.toLowerCase()) ||
+            (s.User?.phone || "").toLowerCase().includes(search.toLowerCase()) ||
             (s.roll_number || "").toLowerCase().includes(search.toLowerCase());
 
         const matchesClass =
