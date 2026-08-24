@@ -483,17 +483,25 @@ function LiveAttendanceTab({ isTestMode = false, setActiveTab }) {
         const btn = document.getElementById("global-refresh-btn");
         if(btn) btn.addEventListener("click", fetchLive);
 
-        // Real-time Socket Listener
+        // Real-time Socket Listener — immediately refresh when a punch comes in
         if (socket) {
-            socket.on("biometric:punch", fetchLive);
+            const handlePunch = () => {
+                // Clear and reset the interval so it doesn't fire again too soon after the immediate fetch
+                clearInterval(intervalRef.current);
+                fetchLive();
+                intervalRef.current = setInterval(fetchLive, 15000);
+            };
+            socket.on("biometric:punch", handlePunch);
+            return () => {
+                clearInterval(intervalRef.current);
+                if(btn) btn.removeEventListener("click", fetchLive);
+                socket.off("biometric:punch", handlePunch);
+            };
         }
 
         return () => {
             clearInterval(intervalRef.current);
             if(btn) btn.removeEventListener("click", fetchLive);
-            if (socket) {
-                socket.off("biometric:punch", fetchLive);
-            }
         };
     }, [fetchLive, socket]);
 
@@ -1181,7 +1189,10 @@ function TestConnectionStep({ registeredDevice, onSuccess, socket }) {
 // ─────────────────────────────────────────────────────────────────
 // MAIN DEVICES TAB
 // ─────────────────────────────────────────────────────────────────
+// MAIN DEVICES TAB
+// ─────────────────────────────────────────────────────────────────
 function DevicesTab() {
+    const { socket: sharedSocket } = useContext(NotificationContext);
     const [devices, setDevices] = useState([]);
     const [loading, setLoading] = useState(true);
     const [showForm, setShowForm] = useState(false);
@@ -1207,7 +1218,8 @@ function DevicesTab() {
     const [wizardForm, setWizardForm] = useState({ device_name:"", device_serial:"", ip_address:"", location:"", placement_type:"gate" });
     const [registeredDevice, setRegisteredDevice] = useState(null);
     const [wizardLoading, setWizardLoading] = useState(false);
-    const [socket, setSocket] = useState(null);
+    // Use the shared NotificationContext socket — window.io does NOT exist in React/Vite builds
+    const socket = sharedSocket;
 
     // Fetch catalog once
     useEffect(() => {
@@ -1218,20 +1230,7 @@ function DevicesTab() {
         }
     }, [catalog.length]);
 
-    // Socket.io for real-time punch detection in wizard Step 4
-    useEffect(() => {
-        if (wizardStep === 4 && !socket) {
-            try {
-                const { io } = window;
-                if (io) {
-                    const token = localStorage.getItem("token") || sessionStorage.getItem("token");
-                    const s = io({ auth: { token }, transports: ["websocket"] });
-                    setSocket(s);
-                    return () => { s.disconnect(); setSocket(null); };
-                }
-            } catch {}
-        }
-    }, [wizardStep, socket]);
+    // Socket is the shared NotificationContext socket — no need to create a new one
 
     const openWizard = () => {
         setWizardStep(1); setSelectedEntry(null); setRegisteredDevice(null);
@@ -1241,7 +1240,6 @@ function DevicesTab() {
 
     const closeWizard = () => {
         setShowWizard(false); setWizardStep(1);
-        socket?.disconnect(); setSocket(null);
         fetchDevices();
     };
 
