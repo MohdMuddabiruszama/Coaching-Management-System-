@@ -176,71 +176,80 @@ exports.receiveData = async (req, res) => {
 
             // Type 2 — Attendance punch
             if (typeof json.userId !== "undefined" && json.time) {
-                const device = await findDevice(token, sn);
-                if (!device) {
-                    console.warn(`[AIData] No device found — token=${token}, SN=${sn}. Is the device registered in admin dashboard?`);
-                    return res.status(200).json({ code: 0, message: "success", success: true, result: "ok", ret: "OK" });
-                }
+                // IMMEDIATELY SEND ACKNOWLEDGMENT TO PREVENT DEVICE TIMEOUTS
+                res.status(200).json({ code: 0, message: "success", success: true, result: "ok", ret: "OK" });
 
-                // Activate pending device on first punch
-                if (device.status === "pending") {
-                    await device.update({ status: "connected" });
-                }
-
-                const punchDate   = parseBiomaxTime(json.time);
-                const punchType   = resolveInOut(json.inOut);
-                const verifyMethod = resolveVerifyMode(json.verifyMode);
-
-                if (!punchDate) {
-                    console.warn(`[AIData] Bad time value: "${json.time}"`);
-                    return res.status(200).json({ code: 0, message: "success", success: true, result: "ok", ret: "OK" });
-                }
-
-                const punch = await BiometricPunch.create({
-                    institute_id:   device.institute_id,
-                    device_id:      device.id,
-                    device_user_id: String(json.userId),
-                    punch_time:     punchDate,
-                    punch_type:     punchType,
-                    raw_payload: {
-                        ...json,
-                        protocol:    "BIOMAX_JSON_REST",
-                        device_sn:   sn || device.device_serial,
-                        verifyMethod,
-                    },
-                    processed: false,
-                });
-
+                // Process everything in the background
                 setImmediate(async () => {
-                    try { await processPunch(punch); }
-                    catch (e) { console.error(`[AIData] Background error:`, e.message); }
+                    try {
+                        const device = await findDevice(token, sn);
+                        if (!device) {
+                            console.warn(`[AIData] No device found — token=${token}, SN=${sn}. Is the device registered in admin dashboard?`);
+                            return;
+                        }
+
+                        // Activate pending device on first punch
+                        if (device.status === "pending") {
+                            await device.update({ status: "connected" });
+                        }
+
+                        const punchDate   = parseBiomaxTime(json.time);
+                        const punchType   = resolveInOut(json.inOut);
+                        const verifyMethod = resolveVerifyMode(json.verifyMode);
+
+                        if (!punchDate) {
+                            console.warn(`[AIData] Bad time value: "${json.time}"`);
+                            return;
+                        }
+
+                        const punch = await BiometricPunch.create({
+                            institute_id:   device.institute_id,
+                            device_id:      device.id,
+                            device_user_id: String(json.userId),
+                            punch_time:     punchDate,
+                            punch_type:     punchType,
+                            raw_payload: {
+                                ...json,
+                                protocol:    "BIOMAX_JSON_REST",
+                                device_sn:   sn || device.device_serial,
+                                verifyMethod,
+                            },
+                            processed: false,
+                        });
+
+                        try { await processPunch(punch); }
+                        catch (e) { console.error(`[AIData] Background error:`, e.message); }
+
+                        const statusUpdate = { last_sync: new Date(), last_punch_at: new Date() };
+                        if (device.status === "pending") {
+                            statusUpdate.status = "active";
+                        }
+                        await device.update(statusUpdate);
+
+                        try {
+                            const io = socketUtils.getIO?.();
+                            if (io) {
+                                io.to(`institute_${device.institute_id}`).emit("biometric:punch", {
+                                    device_id: device.id,
+                                    device_token: device.device_token,
+                                    device_name: device.device_name,
+                                    device_user_id: json.userId,
+                                    punch_time: punchDate.toISOString(),
+                                    punch_type: punchType,
+                                    status_changed: null,
+                                });
+                            }
+                        } catch (socketErr) {
+                            console.warn("[AIData] Socket.io emit failed:", socketErr.message);
+                        }
+
+                        console.log(`[AIData] ✅ Punch saved: userId=${json.userId} | ${punchDate.toISOString()} | ${punchType} | ${verifyMethod} | device=${device.device_serial}`);
+                    } catch (asyncErr) {
+                        console.error("[AIData] Async processing error:", asyncErr.message);
+                    }
                 });
 
-                const statusUpdate = { last_sync: new Date(), last_punch_at: new Date() };
-                if (device.status === "pending") {
-                    statusUpdate.status = "active";
-                }
-                await device.update(statusUpdate);
-
-                try {
-                    const io = socketUtils.getIO?.();
-                    if (io) {
-                        io.to(`institute_${device.institute_id}`).emit("biometric:punch", {
-                            device_id: device.id,
-                            device_token: device.device_token,
-                            device_name: device.device_name,
-                            device_user_id: json.userId,
-                            punch_time: punchDate.toISOString(),
-                            punch_type: punchType,
-                            status_changed: null,
-                        });
-                    }
-                } catch (socketErr) {
-                    console.warn("[AIData] Socket.io emit failed:", socketErr.message);
-                }
-
-                console.log(`[AIData] ✅ Punch saved: userId=${json.userId} | ${punchDate.toISOString()} | ${punchType} | ${verifyMethod} | device=${device.device_serial}`);
-                return res.status(200).json({ code: 0, message: "success", success: true, result: "ok", ret: "OK" });
+                return;
             }
 
             // Unknown JSON format — log and ACK
