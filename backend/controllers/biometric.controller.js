@@ -1409,7 +1409,15 @@ exports.getPresentReport = async (req, res) => {
             ...facultyRecords.map(r => ({ date: r.date, faculty_id: r.faculty_id, name: r.Faculty?.User?.name, role: "faculty", time_in: r.time_in, time_out: r.time_out, late_by_minutes: 0, status: r.status }))
         ].sort((a, b) => new Date(b.date) - new Date(a.date));
 
-        res.json({ success: true, data: merged });
+        const unknownCount = await BiometricPunch.count({
+            where: {
+                institute_id,
+                device_user_id: { [Op.in]: ["", "0", null] },
+                ...(start_date && end_date ? { punch_time: { [Op.between]: [new Date(start_date), new Date(end_date + "T23:59:59.999Z")] } } : {})
+            }
+        });
+
+        res.json({ success: true, data: merged, unknown_punches: unknownCount });
     } catch (err) {
         res.status(500).json({ success: false, message: err.message });
     }

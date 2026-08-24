@@ -160,18 +160,18 @@ exports.receiveData = async (req, res) => {
                 json = typeof rawBody === "string" ? JSON.parse(rawBody) : rawBody;
             } catch {
                 console.warn("[AIData] JSON parse failed, body:", String(rawBody).slice(0, 200));
-                return res.status(200).json({ result: "ok" });
+                return res.status(200).json({ code: 0, message: "success", success: true, result: "ok", ret: "OK" });
             }
 
             // Type 1 — Face/Palm template sync (large base64 blob) → just ACK
             if (json.face || json.faceData || json.faceTemplate || json.palm) {
                 console.log(`[AIData] Face/Palm template ACK — token=${token}`);
-                return res.status(200).json({ result: "ok" });
+                return res.status(200).json({ code: 0, message: "success", success: true, result: "ok", ret: "OK" });
             }
 
             // Door status heartbeat
             if (json.door_status) {
-                return res.status(200).json({ result: "ok" });
+                return res.status(200).json({ code: 0, message: "success", success: true, result: "ok", ret: "OK" });
             }
 
             // Type 2 — Attendance punch
@@ -179,7 +179,7 @@ exports.receiveData = async (req, res) => {
                 const device = await findDevice(token, sn);
                 if (!device) {
                     console.warn(`[AIData] No device found — token=${token}, SN=${sn}. Is the device registered in admin dashboard?`);
-                    return res.status(200).json({ result: "ok" });
+                    return res.status(200).json({ code: 0, message: "success", success: true, result: "ok", ret: "OK" });
                 }
 
                 // Activate pending device on first punch
@@ -193,7 +193,7 @@ exports.receiveData = async (req, res) => {
 
                 if (!punchDate) {
                     console.warn(`[AIData] Bad time value: "${json.time}"`);
-                    return res.status(200).json({ result: "ok" });
+                    return res.status(200).json({ code: 0, message: "success", success: true, result: "ok", ret: "OK" });
                 }
 
                 const punch = await BiometricPunch.create({
@@ -240,12 +240,12 @@ exports.receiveData = async (req, res) => {
                 }
 
                 console.log(`[AIData] ✅ Punch saved: userId=${json.userId} | ${punchDate.toISOString()} | ${punchType} | ${verifyMethod} | device=${device.device_serial}`);
-                return res.status(200).json({ result: "ok" });
+                return res.status(200).json({ code: 0, message: "success", success: true, result: "ok", ret: "OK" });
             }
 
             // Unknown JSON format — log and ACK
             console.log(`[AIData] Unknown JSON keys: ${Object.keys(json).join(", ")}`);
-            return res.status(200).json({ result: "ok" });
+            return res.status(200).json({ code: 0, message: "success", success: true, result: "ok", ret: "OK" });
         }
 
         // ── Plain text body (legacy ADMS text protocol) ───────────────────────
@@ -340,7 +340,7 @@ exports.receiveData = async (req, res) => {
 
     } catch (err) {
         console.error("[AIData] receiveData fatal error:", err.message);
-        res.status(200).json({ result: "ok" }); // Always ACK so device doesn't loop
+        res.status(200).json({ code: 0, message: "success", success: true, result: "ok", ret: "OK" }); // Always ACK so device doesn't loop
     }
 };
 
@@ -366,5 +366,5 @@ exports.getRequest = async (req, res) => {
 // ─── Command Result — POST /devicecmd.aspx ───────────────────────────────────
 
 exports.deviceCmd = async (req, res) => {
-    res.status(200).json({ result: "ok" });
+    res.status(200).json({ code: 0, message: "success", success: true, result: "ok", ret: "OK" });
 };

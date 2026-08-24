@@ -2599,6 +2599,7 @@ function ReportsTab() {
     const [startDate, setStartDate] = useState("");
     const [endDate, setEndDate] = useState("");
     const [roleFilter, setRoleFilter] = useState("all");
+    const [unknownPunches, setUnknownPunches] = useState(0);
     const [loading, setLoading] = useState(false);
 
     // Initialize with empty array for real-world application behavior
@@ -2633,8 +2634,12 @@ function ReportsTab() {
                     };
                 });
                 setData(mapped);
+                setUnknownPunches(res.data.unknown_punches || 0);
             } else {
-                toast.error("No records found for this period");
+                setUnknownPunches(res.data.unknown_punches || 0);
+                if (res.data.unknown_punches === 0) {
+                    toast.error("No records found for this period");
+                }
                 setData([]);
             }
         } catch { toast.error("Failed to load report"); }

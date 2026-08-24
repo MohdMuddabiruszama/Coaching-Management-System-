@@ -43,6 +43,10 @@ const Attendance = sequelize.define("Attendance", {
             // Optimized index for Biometric processPunch fast lookups
             name: "idx_attendance_student_date",
             fields: ["institute_id", "student_id", "date", "subject_id"]
+        },
+        {
+            name: "idx_attendance_report",
+            fields: ["institute_id", "status", "marked_by_type", "date"]
         }
     ]
 });

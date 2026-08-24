@@ -29,6 +29,10 @@ const FacultyAttendance = sequelize.define("FacultyAttendance", {
             name: "faculty_attendance_unique_daily",
             unique: true,
             fields: ["institute_id", "faculty_id", "date"]
+        },
+        {
+            name: "idx_faculty_attendance_report",
+            fields: ["institute_id", "status", "marked_by_type", "date"]
         }
     ]
 });
