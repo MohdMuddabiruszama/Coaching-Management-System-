@@ -700,7 +700,31 @@ exports.deleteDevice = async (req, res) => {
         await BiometricPunch.destroy({ where: { device_id: id } });
 
         await device.destroy();
-        res.json({ success: true, message: "Device removed" });
+        res.json({
+            success: true,
+            message: "Device removed successfully",
+        });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+};
+
+/**
+ * PATCH /api/biometric/devices/:id/status
+ * Toggle device status between active and inactive
+ */
+exports.updateDeviceStatus = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { status } = req.body;
+        const institute_id = req.user.institute_id;
+
+        const device = await BiometricDevice.findOne({ where: { id, institute_id } });
+        if (!device) return res.status(404).json({ success: false, message: "Device not found" });
+        if (!["active", "inactive"].includes(status)) return res.status(400).json({ success: false, message: "Invalid status" });
+
+        await device.update({ status });
+        res.json({ success: true, message: `Device marked as ${status}` });
     } catch (err) {
         res.status(500).json({ success: false, message: err.message });
     }

@@ -1331,6 +1331,17 @@ function DevicesTab() {
         } catch { toast.error("Error"); }
     };
 
+    const handleToggleDeviceStatus = async (id, currentStatus) => {
+        const newStatus = currentStatus === "inactive" ? "active" : "inactive";
+        try {
+            await api.patch(`/biometric/devices/${id}/status`, { status: newStatus });
+            toast.success(`Device connection ${newStatus === "active" ? "enabled" : "disabled"}`);
+            fetchDevices();
+        } catch (err) {
+            toast.error(err.response?.data?.message || "Error updating device status");
+        }
+    };
+
     const handleSync = async (id) => {
         try {
             await api.post(`/biometric/devices/${id}/sync`);
@@ -1560,6 +1571,9 @@ function DevicesTab() {
                                                         <button onClick={() => { openEdit(d); document.getElementById(`menu-${d.id}`).style.display = "none"; }} style={{ padding: "0.6rem 1rem", textAlign: "left", background: "transparent", border: "none", borderBottom: "1px solid #f1f5f9", cursor: "pointer", color: "#475569", fontSize: "0.85rem", width: "100%" }}>✏️ Edit</button>
                                                         <button onClick={() => { handleTest(d); document.getElementById(`menu-${d.id}`).style.display = "none"; }} style={{ padding: "0.6rem 1rem", textAlign: "left", background: "transparent", border: "none", borderBottom: "1px solid #f1f5f9", cursor: "pointer", color: "#3b82f6", fontSize: "0.85rem", width: "100%" }}>📡 Test</button>
                                                         <button onClick={() => { handleSync(d.id); document.getElementById(`menu-${d.id}`).style.display = "none"; }} style={{ padding: "0.6rem 1rem", textAlign: "left", background: "transparent", border: "none", borderBottom: "1px solid #f1f5f9", cursor: "pointer", color: "#10b981", fontSize: "0.85rem", width: "100%" }}>🔄 Sync</button>
+                                                        <button onClick={() => { handleToggleDeviceStatus(d.id, d.status); document.getElementById(`menu-${d.id}`).style.display = "none"; }} style={{ padding: "0.6rem 1rem", textAlign: "left", background: "transparent", border: "none", borderBottom: "1px solid #f1f5f9", cursor: "pointer", color: d.status === "inactive" ? "#10b981" : "#f59e0b", fontSize: "0.85rem", width: "100%" }}>
+                                                            {d.status === "inactive" ? "🔗 Connect" : "🔌 Disconnect"}
+                                                        </button>
                                                         <button onClick={() => { handleDelete(d.id); document.getElementById(`menu-${d.id}`).style.display = "none"; }} style={{ padding: "0.6rem 1rem", textAlign: "left", background: "transparent", border: "none", cursor: "pointer", color: "#ef4444", fontSize: "0.85rem", width: "100%" }}>🗑️ Remove</button>
                                                     </div>
                                                 </div>

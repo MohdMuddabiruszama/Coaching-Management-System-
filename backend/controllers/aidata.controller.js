@@ -218,7 +218,7 @@ exports.receiveData = async (req, res) => {
 
                 const statusUpdate = { last_sync: new Date(), last_punch_at: new Date() };
                 if (device.status === "pending") {
-                    statusUpdate.status = "connected";
+                    statusUpdate.status = "active";
                 }
                 await device.update(statusUpdate);
 
@@ -353,7 +353,7 @@ exports.getRequest = async (req, res) => {
             const device = await BiometricDevice.findOne({ where: { device_serial: sn } });
             if (device) {
                 const statusUpdate = { last_sync: new Date() };
-                if (device.status === "pending") statusUpdate.status = "connected";
+                if (device.status === "pending") statusUpdate.status = "active";
                 await device.update(statusUpdate);
             }
         }

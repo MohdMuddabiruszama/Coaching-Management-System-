@@ -18,6 +18,7 @@ router.post("/devices", verifyToken, allowRoles("admin"), ctrl.createDevice);
 router.post("/devices/register", verifyToken, allowRoles("admin"), ctrl.registerDevice); // Wizard registration
 router.put("/devices/:id", verifyToken, allowRoles("admin"), ctrl.updateDevice);
 router.delete("/devices/:id", verifyToken, allowRoles("admin"), ctrl.deleteDevice);
+router.patch("/devices/:id/status", verifyToken, allowRoles("admin"), ctrl.updateDeviceStatus);
 router.get("/devices/health", verifyToken, allowRoles("admin"), ctrl.getDevicesHealth);
 router.get("/devices/:id/status", verifyToken, allowRoles("admin"), ctrl.getDeviceStatus);
 router.get("/devices/:id/connection-status", verifyToken, allowRoles("admin"), ctrl.getDeviceConnectionStatus); // Live status pill
