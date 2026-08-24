@@ -177,7 +177,15 @@ async function processPunch(punch, options = {}) {
             },
         });
         if (!enrollment) {
-            await punch.update({ processed: true });
+            // Mark processed=false with reason so admin can see it in the dashboard
+            await punch.update({
+                processed: false,
+                raw_payload: {
+                    ...(punch.raw_payload || {}),
+                    _failure_reason: `No enrollment — device_user_id="${punch.device_user_id}" is not linked to any student/faculty. Go to Admin → Biometric → Enrollment to add it.`,
+                },
+            });
+            console.warn(`[processPunch] ⚠️ No enrollment for device_user_id="${punch.device_user_id}" on device ${punch.device_id}. Enroll this person in the Admin Panel.`);
             return { ok: false, reason: "No active enrollment found for this device + user ID" };
         }
 

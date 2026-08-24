@@ -211,6 +211,23 @@ exports.receiveData = async (req, res) => {
                             return;
                         }
 
+                        // ─── Deduplication: skip if same punch already saved ─────────────
+                        // Biomax retries the same punch if it thinks the ACK wasn't received.
+                        // We prevent creating duplicate records for the same punch.
+                        const existingPunch = await BiometricPunch.findOne({
+                            where: {
+                                device_id:      device.id,
+                                device_user_id: String(json.userId),
+                                punch_time:     punchDate,
+                            },
+                        });
+                        if (existingPunch) {
+                            // Update last_sync so device status stays "connected"
+                            await device.update({ last_sync: new Date() });
+                            console.log(`[AIData] ⏭️  Duplicate punch skipped (already saved): userId=${json.userId} | ${punchDate.toISOString()}`);
+                            return;
+                        }
+
                         const punch = await BiometricPunch.create({
                             institute_id:   device.institute_id,
                             device_id:      device.id,
