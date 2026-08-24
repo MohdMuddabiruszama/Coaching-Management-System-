@@ -583,7 +583,7 @@ exports.deleteFeeStructure = catchAsync(async (req, res) => {
 
 exports.syncSingleStudentFees = async (institute_id, studentObj) => {
   try {
-    const { FeesStructure, StudentFee } = require("../models");
+    const { FeesStructure, StudentFee, FeeDiscountLog } = require("../models");
 
     const structures = await FeesStructure.findAll({ where: { institute_id }, raw: true });
     const existingStudentFees = await StudentFee.findAll({
@@ -688,6 +688,9 @@ exports.syncSingleStudentFees = async (institute_id, studentObj) => {
     }
 
     if (toDeleteIds.length > 0) {
+      if (typeof FeeDiscountLog !== 'undefined' && FeeDiscountLog) {
+        await FeeDiscountLog.destroy({ where: { student_fee_id: toDeleteIds } });
+      }
       await StudentFee.destroy({ where: { id: toDeleteIds } });
     }
 
@@ -856,6 +859,9 @@ exports.getAssignedStudentFees = catchAsync(async (req, res) => {
     }
 
     if (toDeleteIds.length > 0) {
+      if (typeof FeeDiscountLog !== 'undefined' && FeeDiscountLog) {
+        await FeeDiscountLog.destroy({ where: { student_fee_id: toDeleteIds } });
+      }
       await StudentFee.destroy({ where: { id: toDeleteIds } });
     }
 
