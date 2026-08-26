@@ -322,10 +322,14 @@ exports.login = catchAsync(async (req, res) => {
     }
 
     let minMobileVersion = "1.0.0";
+    let latestMobileVersion = "1.0.0";
+    let updateNotes = [];
     try {
       if (fs.existsSync(SETTINGS_FILE_PATH)) {
         const settings = JSON.parse(fs.readFileSync(SETTINGS_FILE_PATH, 'utf8'));
         if (settings.minMobileVersion) minMobileVersion = settings.minMobileVersion;
+        if (settings.latestMobileVersion) latestMobileVersion = settings.latestMobileVersion;
+        if (settings.updateNotes) updateNotes = settings.updateNotes;
       }
     } catch (e) {}
 
@@ -358,6 +362,8 @@ exports.login = catchAsync(async (req, res) => {
       accessToken,
       refreshToken: refresh.token,
       minMobileVersion,
+      latestMobileVersion,
+      updateNotes,
       user: {
         id: user.id,
         name: user.name,
@@ -430,10 +436,14 @@ exports.getProfile = catchAsync(async (req, res) => {
     const user = await authService.getProfile(req.user.id);
     
     let minMobileVersion = "1.0.0";
+    let latestMobileVersion = "1.0.0";
+    let updateNotes = [];
     try {
       if (fs.existsSync(SETTINGS_FILE_PATH)) {
         const settings = JSON.parse(fs.readFileSync(SETTINGS_FILE_PATH, 'utf8'));
         if (settings.minMobileVersion) minMobileVersion = settings.minMobileVersion;
+        if (settings.latestMobileVersion) latestMobileVersion = settings.latestMobileVersion;
+        if (settings.updateNotes) updateNotes = settings.updateNotes;
       }
     } catch (e) {}
 
@@ -461,6 +471,8 @@ exports.getProfile = catchAsync(async (req, res) => {
     res.status(200).json({
       success: true,
       minMobileVersion,
+      latestMobileVersion,
+      updateNotes,
       user
     });
   } catch (error) {

@@ -24,6 +24,8 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [isInitializing, setIsInitializing] = useState(true);
   const [minMobileVersion, setMinMobileVersion] = useState(null);
+  const [latestMobileVersion, setLatestMobileVersion] = useState(null);
+  const [updateNotes, setUpdateNotes] = useState([]);
   const navigate = useNavigate();
 
   // Access branding setters — BrandingProvider is mounted above us in App.jsx
@@ -57,6 +59,12 @@ export const AuthProvider = ({ children }) => {
            const userData = res.data.user;
            if (res.data.minMobileVersion) {
                setMinMobileVersion(res.data.minMobileVersion);
+           }
+           if (res.data.latestMobileVersion) {
+               setLatestMobileVersion(res.data.latestMobileVersion);
+           }
+           if (res.data.updateNotes) {
+               setUpdateNotes(res.data.updateNotes);
            }
 
            // === LIFETIME BYPASS: Lifetime members NEVER expire ===
@@ -133,9 +141,15 @@ export const AuthProvider = ({ children }) => {
   const login = async (data, rememberMe = false) => {
     const response = await loginUser(data);
 
-    const { token, refreshToken, user, minMobileVersion: loginMinVer } = response.data;
+    const { token, refreshToken, user, minMobileVersion: loginMinVer, latestMobileVersion: loginLatestVer, updateNotes: loginUpdateNotes } = response.data;
     if (loginMinVer) {
         setMinMobileVersion(loginMinVer);
+    }
+    if (loginLatestVer) {
+        setLatestMobileVersion(loginLatestVer);
+    }
+    if (loginUpdateNotes) {
+        setUpdateNotes(loginUpdateNotes);
     }
 
     // === LIFETIME BYPASS: Lifetime members NEVER expire ===
@@ -325,7 +339,9 @@ export const AuthProvider = ({ children }) => {
         isInitializing, 
         login, logout, 
         impersonate, stopImpersonating,
-        minMobileVersion 
+        minMobileVersion,
+        latestMobileVersion,
+        updateNotes
       }}>
       {children}
     </AuthContext.Provider>
