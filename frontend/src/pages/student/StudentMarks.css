@@ -483,6 +483,8 @@
 .marks-status-badge.pass { background: #dcfce7; color: #16a34a; }
 .marks-status-badge.fail { background: #fee2e2; color: #e11d48; }
 .marks-status-badge.absent { background: #f1f5f9; color: #64748b; }
+.marks-status-badge.not-graded { background: #f8fafc; color: #94a3b8; border: 1px dashed #cbd5e1; }
+.marks-status-badge.pending { background: #fff7ed; color: #ea580c; border: 1px dashed #fdba74; }
 
 .marks-summary-flex {
     display: flex;

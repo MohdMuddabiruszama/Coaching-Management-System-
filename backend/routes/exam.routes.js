@@ -26,6 +26,14 @@ router.get(
     examController.getStudentMarks
 );
 
+// Student: upcoming exams for dashboard
+router.get(
+    '/student/upcoming',
+    verifyToken,
+    allowRoles('student'),
+    examController.getUpcomingExams
+);
+
 // Student: multi-subject scorecard for one exam
 router.get(
     '/student/scorecard',

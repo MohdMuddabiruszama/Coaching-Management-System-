@@ -85,7 +85,7 @@ export default function MobileFees() {
                 </div>
                 <div className="mp-fees-hero-right">
                     <div className="mp-fees-hero-graphic">
-                        💲<span>★</span>
+                        ₹<span>★</span>
                     </div>
                 </div>
             </div>
@@ -126,7 +126,7 @@ export default function MobileFees() {
                             </div>
                             <div className="mp-fees-stat-content">
                                 <p>Original Fees</p>
-                                <h3>${totalRequired.toFixed(2)}</h3>
+                                <h3>₹{totalRequired.toFixed(2)}</h3>
                             </div>
                         </div>
 
@@ -136,7 +136,7 @@ export default function MobileFees() {
                             </div>
                             <div className="mp-fees-stat-content">
                                 <p>Total Paid</p>
-                                <h3 style={{ color: '#10b981' }}>${safeTotalPaid.toFixed(2)}</h3>
+                                <h3 style={{ color: '#10b981' }}>₹{safeTotalPaid.toFixed(2)}</h3>
                             </div>
                         </div>
 
@@ -147,7 +147,7 @@ export default function MobileFees() {
                             <div className="mp-fees-stat-content">
                                 <p>Balance Due</p>
                                 <h3 style={{ color: balanceDue > 0 ? '#f59e0b' : '#10b981' }}>
-                                    ${Math.max(0, balanceDue).toFixed(2)}
+                                    ₹{Math.max(0, balanceDue).toFixed(2)}
                                 </h3>
                             </div>
                         </div>
@@ -193,9 +193,9 @@ export default function MobileFees() {
                                                     )}
                                                 </div>
                                                 <div className="mp-fees-mc-amounts">
-                                                    <div>Original: <strong>${originalAmount.toFixed(2)}</strong></div>
-                                                    <div>Paid: <span>${paidAmount.toFixed(2)}</span></div>
-                                                    <div>Due: <strong style={{ color: balance > 0 ? '#ef4444' : '#10b981' }}>${balance.toFixed(2)}</strong></div>
+                                                    <div>Original: <strong>₹{originalAmount.toFixed(2)}</strong></div>
+                                                    <div>Paid: <span>₹{paidAmount.toFixed(2)}</span></div>
+                                                    <div>Due: <strong style={{ color: balance > 0 ? '#ef4444' : '#10b981' }}>₹{balance.toFixed(2)}</strong></div>
                                                 </div>
                                             </div>
                                             

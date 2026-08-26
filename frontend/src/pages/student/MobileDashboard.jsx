@@ -6,7 +6,8 @@
 
 import { useStudentDashboard } from "../../hooks/useMobileDashboard";
 import { useStudentBadges } from "../../hooks/useStudentBadges";
-import { useContext, useState, useEffect } from "react";
+import { useContext, useState, useEffect, useRef } from "react";
+import api from "../../services/api";
 
 let overduePopupShown = false;
 import { AuthContext } from "../../context/AuthContext";
@@ -107,6 +108,58 @@ export default function MobileDashboard() {
     const [showOverdueModal, setShowOverdueModal] = useState(false);
     const [overdueModalClosing, setOverdueModalClosing] = useState(false);
     const [overdueFeesData, setOverdueFeesData] = useState({ count: 0, totalDue: 0, fees: [] });
+
+    // ── Notification Feed ───────────────────────────────────────────────────
+    const [notifications, setNotifications] = useState([]);
+    const [notifUnread, setNotifUnread] = useState(0);
+    const socketRef = useRef(null);
+
+    // Fetch recent notifications on mount
+    useEffect(() => {
+        api.get('/notifications?limit=10').then(res => {
+            if (res.data?.success) {
+                setNotifications(res.data.data || []);
+                setNotifUnread((res.data.data || []).filter(n => !n.is_read).length);
+            }
+        }).catch(() => {});
+    }, []);
+
+    // Real-time socket listener for new notifications
+    useEffect(() => {
+        let socket;
+        const connectSocket = async () => {
+            try {
+                const { io } = await import('socket.io-client');
+                const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+                if (!token) return;
+                const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || (import.meta.env.VITE_API_URL || '').replace('/api', '') || 'http://localhost:3001';
+                socket = io(SOCKET_URL, { auth: { token }, transports: ['websocket', 'polling'] });
+                socketRef.current = socket;
+                
+                socket.on('notification', (notif) => {
+                    setNotifications(prev => [notif, ...prev.slice(0, 19)]);
+                    setNotifUnread(prev => prev + 1);
+                });
+                socket.on('new_notification', (notif) => {
+                    setNotifications(prev => [notif, ...prev.slice(0, 19)]);
+                    setNotifUnread(prev => prev + 1);
+                });
+            } catch (e) { /* socket not available */ }
+        };
+        connectSocket();
+        return () => { if (socketRef.current) socketRef.current.disconnect(); };
+    }, []);
+
+    const markNotifsRead = () => {
+        const unreadIds = notifications.filter(n => !n.is_read).map(n => n.id);
+        if (unreadIds.length === 0) return;
+        api.patch('/notifications/mark-read', { ids: unreadIds }).catch(() => {});
+        setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
+        setNotifUnread(0);
+    };
+
+    const [showAllAlerts, setShowAllAlerts] = useState(false);
+    // ────────────────────────────────────────────────────────────────────────
 
     // Helper to close the overdue modal with fade-out animation
     const closeOverdueModal = () => {
@@ -740,6 +793,78 @@ export default function MobileDashboard() {
                                 <p>Enjoy your time!</p>
                             </div>
                         </div>
+                    )}
+                </div>
+            )}
+
+            {/* Notification Feed */}
+            {notifications.length > 0 && (
+                <div className="msd-section" style={{ marginTop: '24px' }}>
+                    <div className="msd-section-header" style={{ marginBottom: '16px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <h3 style={{ margin: 0 }}>Alerts & Updates</h3>
+                            {notifUnread > 0 && (
+                                <span style={{ background: '#ef4444', color: '#fff', fontSize: '0.75rem', padding: '2px 8px', borderRadius: '12px', fontWeight: 'bold' }}>
+                                    {notifUnread} New
+                                </span>
+                            )}
+                        </div>
+                        {notifUnread > 0 && (
+                            <button className="msd-view-all" onClick={markNotifsRead} style={{ fontSize: '0.85rem' }}>
+                                Mark Read
+                            </button>
+                        )}
+                    </div>
+                    
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                        {(showAllAlerts ? notifications : notifications.slice(0, 3)).map((notif, idx) => {
+                            let icon = "🔔";
+                            if (notif.type === 'attendance_punch') icon = "⏰";
+                            if (notif.type === 'fee_reminder') icon = "💳";
+                            if (notif.type?.includes('exam')) icon = "⏱️";
+                            if (notif.type?.includes('assignment')) icon = "📋";
+                            
+                            return (
+                                <div key={`notif-${notif.id}-${idx}`} style={{
+                                    display: 'flex', gap: '12px', background: '#fff', padding: '16px', borderRadius: '16px',
+                                    boxShadow: '0 4px 10px rgba(0,0,0,0.03)', border: notif.is_read ? '1px solid #f1f5f9' : '1px solid #e0e7ff',
+                                    position: 'relative', overflow: 'hidden'
+                                }}>
+                                    {!notif.is_read && (
+                                        <div style={{ position: 'absolute', top: 0, left: 0, bottom: 0, width: '4px', background: '#6366f1' }} />
+                                    )}
+                                    <div style={{
+                                        width: '40px', height: '40px', borderRadius: '12px', background: notif.is_read ? '#f8fafc' : '#eff6ff',
+                                        display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem', flexShrink: 0
+                                    }}>
+                                        {icon}
+                                    </div>
+                                    <div style={{ flex: 1, minWidth: 0 }}>
+                                        <div style={{ fontSize: '0.9rem', fontWeight: notif.is_read ? '600' : '700', color: '#1e293b', marginBottom: '2px', display: 'flex', justifyContent: 'space-between' }}>
+                                            <span>{notif.title}</span>
+                                            <span style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: '500' }}>
+                                                {safeFormatDate(notif.created_at)}
+                                            </span>
+                                        </div>
+                                        <div style={{ fontSize: '0.85rem', color: '#64748b', lineHeight: '1.4' }}>
+                                            {notif.body}
+                                        </div>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                    {notifications.length > 3 && (
+                        <button 
+                            onClick={() => setShowAllAlerts(!showAllAlerts)}
+                            style={{
+                                width: '100%', padding: '12px', marginTop: '12px', background: 'transparent',
+                                border: '1px solid #e2e8f0', borderRadius: '12px', color: '#64748b',
+                                fontSize: '0.9rem', fontWeight: '600'
+                            }}
+                        >
+                            {showAllAlerts ? 'Show Less' : `Show All ${notifications.length} Alerts`}
+                        </button>
                     )}
                 </div>
             )}

@@ -37,17 +37,14 @@ exports.createExam = async (req, res) => {
 
         // Phase 4: Notification Integration - Notify class students and subject faculty
         try {
-            const students = await Student.findAll({ where: { class_id, institute_id } });
-            for (const stu of students) {
-                NotificationService.notifyStudentAndParents(
-                    institute_id,
-                    stu.id,
-                    "exam_new",
-                    "New Exam Scheduled",
-                    `An exam "${name}" has been scheduled for ${new Date(exam_date).toLocaleDateString()}.`,
-                    `/student/exams`
-                );
-            }
+            await NotificationService.bulkNotifyClass(
+                institute_id,
+                class_id,
+                "exam_new",
+                "New Exam Scheduled",
+                `An exam "${name}" has been scheduled for ${new Date(exam_date).toLocaleDateString()}.`,
+                `/student/exams`
+            );
             
             // Notify Subject Faculty
             if (subject_id) {
@@ -194,10 +191,21 @@ exports.bulkEnterMarks = async (req, res) => {
             return res.status(403).json({ success: false, message: 'Marks are locked for this exam' });
         }
 
-        let importedCount = 0;
-        for (const md of marksData) {
-            let mark = await Mark.findOne({ where: { institute_id, exam_id, student_id: md.student_id } });
+        // 1. Fetch all existing marks for these students in ONE query
+        const existingMarks = await Mark.findAll({
+            where: { 
+                institute_id, 
+                exam_id, 
+                student_id: marksData.map(md => md.student_id) 
+            }
+        });
+        const existingMap = new Map(existingMarks.map(m => [m.student_id, m]));
 
+        const toCreate = [];
+        const updatePromises = [];
+
+        // 2. Prepare data for insert/update
+        for (const md of marksData) {
             let parsedMarks = parseFloat(md.marks_obtained);
             if (isNaN(parsedMarks)) parsedMarks = null;
 
@@ -207,10 +215,14 @@ exports.bulkEnterMarks = async (req, res) => {
                 remarks: md.remarks || null,
             };
 
-            if (mark) {
-                await mark.update(data);
+            const existingMark = existingMap.get(md.student_id);
+
+            if (existingMark) {
+                // Queue concurrent update promise
+                updatePromises.push(existingMark.update(data));
             } else {
-                await Mark.create({
+                // Queue for bulk create
+                toCreate.push({
                     institute_id,
                     exam_id,
                     student_id: md.student_id,
@@ -218,8 +230,15 @@ exports.bulkEnterMarks = async (req, res) => {
                     ...data,
                 });
             }
-            importedCount++;
         }
+
+        // 3. Execute all DB operations concurrently
+        await Promise.all([
+            ...updatePromises,
+            toCreate.length > 0 ? Mark.bulkCreate(toCreate) : Promise.resolve()
+        ]);
+        
+        const importedCount = marksData.length;
 
         res.status(200).json({ success: true, message: `${importedCount} marks imported successfully` });
     } catch (error) {
@@ -399,27 +418,11 @@ exports.getExamResults = async (req, res) => {
 
 // ═══════════════════════════════════════════════════════════════
 // NEW: getStudentMarks — all locked marks for the logged-in student
-// ✅ FIX: Computes RANK() over all marks FIRST using a CTE,
-//         then filters by the logged-in student.
+// ✅ FIX: Computes RANK() using a subquery, uses LEFT JOIN to include Not Graded
 // ═══════════════════════════════════════════════════════════════
 exports.getStudentMarks = async (req, res) => {
     try {
         const marks = await sequelize.query(`
-            WITH RankedMarks AS (
-                SELECT 
-                    m.student_id,
-                    m.exam_id,
-                    m.marks_obtained,
-                    m.is_absent,
-                    m.remarks,
-                    RANK() OVER (
-                        PARTITION BY m.exam_id
-                        ORDER BY CASE WHEN m.is_absent = true OR m.marks_obtained IS NULL THEN 0
-                                      ELSE CAST(m.marks_obtained AS NUMERIC) END DESC
-                    ) AS rank_in_class,
-                    (SELECT COUNT(*) FROM marks m2 WHERE m2.exam_id = m.exam_id) AS total_in_class
-                FROM marks m
-            )
             SELECT
                 e.id           AS exam_id,
                 e.name         AS exam_name,
@@ -428,25 +431,36 @@ exports.getStudentMarks = async (req, res) => {
                 e.total_marks,
                 e.passing_marks,
                 sub.name       AS subject_name,
-                rm.marks_obtained,
-                rm.is_absent,
-                rm.remarks,
-                CASE WHEN rm.is_absent = true OR rm.marks_obtained IS NULL THEN NULL
-                     ELSE ROUND(CAST(rm.marks_obtained AS NUMERIC) / CAST(e.total_marks AS NUMERIC) * 100, 2)
-                END AS percentage,
-                CASE WHEN rm.is_absent = true OR rm.marks_obtained IS NULL THEN 'Absent'
-                     WHEN CAST(rm.marks_obtained AS NUMERIC) >= CAST(e.passing_marks AS NUMERIC) THEN 'Pass'
+                CASE WHEN e.marks_locked = false THEN NULL ELSE m.marks_obtained END AS marks_obtained,
+                m.is_absent,
+                m.remarks,
+                CASE WHEN e.marks_locked = false THEN 'Pending'
+                     WHEN m.id IS NULL THEN 'Not Graded'
+                     WHEN m.is_absent = true OR m.marks_obtained IS NULL THEN 'Absent'
+                     WHEN CAST(m.marks_obtained AS NUMERIC) >= CAST(e.passing_marks AS NUMERIC) THEN 'Pass'
                      ELSE 'Fail'
                 END AS status,
-                rm.rank_in_class,
-                rm.total_in_class
-            FROM RankedMarks rm
-            JOIN students s   ON s.id   = rm.student_id
-            JOIN exams    e   ON e.id   = rm.exam_id
+                CASE WHEN e.marks_locked = false OR m.id IS NULL OR m.is_absent = true OR m.marks_obtained IS NULL THEN NULL
+                     ELSE ROUND(CAST(m.marks_obtained AS NUMERIC) / CAST(e.total_marks AS NUMERIC) * 100, 2)
+                END AS percentage,
+                CASE WHEN e.marks_locked = false THEN NULL
+                     ELSE (
+                         SELECT COUNT(*) + 1 
+                         FROM marks m2 
+                         WHERE m2.exam_id = e.id 
+                           AND m2.marks_obtained > m.marks_obtained 
+                           AND m2.is_absent = false
+                     ) 
+                END AS rank_in_class,
+                (SELECT COUNT(*) FROM marks m3 WHERE m3.exam_id = e.id) AS total_in_class
+            FROM students s
+            JOIN student_classes sc ON sc.student_id = s.id AND sc.enrollment_status = 'active'
+            JOIN exams e ON e.class_id = sc.class_id
             JOIN subjects sub ON sub.id = e.subject_id
-            WHERE s.user_id       = :userId
-              AND e.institute_id  = :iid
-              AND e.marks_locked  = true
+            LEFT JOIN marks m ON m.exam_id = e.id AND m.student_id = s.id
+            WHERE s.user_id = :userId
+              AND e.institute_id = :iid
+              AND (e.marks_locked = true OR e.exam_date < CURRENT_DATE)
             ORDER BY e.exam_date DESC
         `, {
             replacements: { userId: req.user.id, iid: req.user.institute_id },
@@ -456,10 +470,46 @@ exports.getStudentMarks = async (req, res) => {
         // Add grade to each row
         const withGrade = marks.map(r => ({
             ...r,
-            grade: r.percentage !== null ? examResultService.getGrade(parseFloat(r.percentage)) : 'AB',
+            grade: r.percentage !== null ? examResultService.getGrade(parseFloat(r.percentage)) : (r.status === 'Pending' ? '—' : (r.status === 'Not Graded' ? 'NG' : 'AB')),
         }));
 
         return res.json({ success: true, data: withGrade });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+// ═══════════════════════════════════════════════════════════════
+// NEW: getUpcomingExams — Upcoming exams for student dashboard
+// ═══════════════════════════════════════════════════════════════
+exports.getUpcomingExams = async (req, res) => {
+    try {
+        const exams = await sequelize.query(`
+            SELECT
+                e.id           AS exam_id,
+                e.name         AS exam_name,
+                e.exam_type,
+                e.exam_date,
+                e.total_marks,
+                e.passing_marks,
+                sub.name       AS subject_name
+            FROM students s
+            JOIN student_classes sc ON sc.student_id = s.id AND sc.enrollment_status = 'active'
+            JOIN exams e ON e.class_id = sc.class_id
+            JOIN subjects sub ON sub.id = e.subject_id
+            LEFT JOIN marks m ON m.exam_id = e.id AND m.student_id = s.id
+            WHERE s.user_id = :userId
+              AND e.institute_id = :iid
+              AND e.exam_date >= CURRENT_DATE
+              AND e.exam_date >= DATE(s.created_at)
+              AND m.id IS NULL
+            ORDER BY e.exam_date ASC
+        `, {
+            replacements: { userId: req.user.id, iid: req.user.institute_id },
+            type: QueryTypes.SELECT,
+        });
+
+        return res.json({ success: true, data: exams });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
     }

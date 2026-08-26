@@ -2,6 +2,7 @@ import { useState, useEffect, useContext } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../../context/AuthContext';
 import markService from '../../services/mark.service';
+import examService from '../../services/exam.service';
 import './StudentMarks.css';
 import '../admin/Students.css';
 
@@ -317,6 +318,7 @@ function ViewMarks() {
     const navigate = useNavigate();
     const [marks, setMarks] = useState([]);
     const [trend, setTrend] = useState([]);
+    const [upcoming, setUpcoming] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [scorecardExam, setScorecardExam] = useState(null);
@@ -329,12 +331,14 @@ function ViewMarks() {
         setLoading(true);
         setError('');
         try {
-            const [marksData, trendData] = await Promise.all([
+            const [marksData, trendData, upcomingData] = await Promise.all([
                 markService.getAll(),
                 markService.getTrend().catch(() => []),
+                examService.getUpcoming().catch(() => []),
             ]);
             setMarks(marksData || []);
             setTrend(trendData || []);
+            setUpcoming(upcomingData || []);
         } catch (err) {
             setError('Failed to load marks. Please try again.');
         } finally {
@@ -364,7 +368,7 @@ function ViewMarks() {
     const uniqueExams = new Set();
     
     marks.forEach(m => {
-        if (!m.is_absent) {
+        if (m.status !== 'Absent' && m.status !== 'Not Graded' && m.status !== 'Pending') {
             uniqueExams.add(m.exam_name);
             if (m.status === 'Pass') passedCount++;
             else failedCount++;
@@ -388,7 +392,7 @@ function ViewMarks() {
     // Calculate Top Subjects
     const subjectMap = {};
     marks.forEach(m => {
-        if (!m.is_absent && m.subject_name) {
+        if (m.status !== 'Absent' && m.status !== 'Not Graded' && m.status !== 'Pending' && m.subject_name) {
             if (!subjectMap[m.subject_name]) {
                 subjectMap[m.subject_name] = { totalPct: 0, count: 0 };
             }
@@ -496,6 +500,102 @@ function ViewMarks() {
             <div className="marks-main-grid">
                 {/* Left Column */}
                 <div className="marks-grid-left">
+                    {/* Upcoming Exams Table */}
+                    {upcoming.length > 0 && (
+                        <div className="marks-panel" style={{ marginBottom: '20px' }}>
+                            <div className="marks-panel-header-flex">
+                                <h2 className="marks-panel-title"><span className="marks-panel-title-icon">⏰</span> Upcoming Exams</h2>
+                            </div>
+                            
+                            {/* Desktop Table View */}
+                            <div className="marks-table-wrapper desktop-only-table">
+                                <table className="marks-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Exam Name</th>
+                                            <th>Type</th>
+                                            <th>Subject</th>
+                                            <th>Date</th>
+                                            <th>Total Marks</th>
+                                            <th>Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {upcoming.map((exam, i) => {
+                                            const typeColor = EXAM_TYPE_COLORS[exam.exam_type] || EXAM_TYPE_COLORS.other;
+                                            return (
+                                                <tr key={`upcoming-${exam.exam_id}-${i}`}>
+                                                    <td>
+                                                        <span className="marks-table-exam-name" style={{ cursor: 'default' }}>
+                                                            {exam.exam_name}
+                                                        </span>
+                                                    </td>
+                                                    <td>
+                                                        <span className="marks-table-type" style={{ background: typeColor.bg, color: typeColor.color }}>
+                                                            {EXAM_TYPE_LABELS[exam.exam_type] || exam.exam_type}
+                                                        </span>
+                                                    </td>
+                                                    <td style={{ fontWeight: 500, color: '#1e293b' }}>{exam.subject_name || 'N/A'}</td>
+                                                    <td>{new Date(exam.exam_date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }).replace(/ /g, '\n')}</td>
+                                                    <td>
+                                                        <strong style={{ color: '#0f172a' }}>{exam.total_marks}</strong>
+                                                    </td>
+                                                    <td>
+                                                        <span className="marks-status-badge pending">
+                                                            Upcoming
+                                                        </span>
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })}
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            {/* Mobile Cards View */}
+                            <div className="mobile-only-cards">
+                                {upcoming.map((exam, i) => {
+                                    const typeColor = EXAM_TYPE_COLORS[exam.exam_type] || EXAM_TYPE_COLORS.other;
+                                    return (
+                                        <div className="marks-result-card" key={`mobile-upcoming-${exam.exam_id}-${i}`}>
+                                            <div className="marks-result-card-header">
+                                                <div>
+                                                    <div className="marks-result-card-title" style={{ cursor: 'default' }}>
+                                                        {exam.exam_name}
+                                                    </div>
+                                                    <div className="marks-result-card-date">
+                                                        {new Date(exam.exam_date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+                                                    </div>
+                                                </div>
+                                                <span className="marks-table-type" style={{ background: typeColor.bg, color: typeColor.color }}>
+                                                    {EXAM_TYPE_LABELS[exam.exam_type] || exam.exam_type}
+                                                </span>
+                                            </div>
+                                            <div className="marks-result-card-grid">
+                                                <div className="marks-result-item">
+                                                    <span className="marks-result-label">Subject</span>
+                                                    <span className="marks-result-val">{exam.subject_name || 'N/A'}</span>
+                                                </div>
+                                                <div className="marks-result-item">
+                                                    <span className="marks-result-label">Total Marks</span>
+                                                    <span className="marks-result-val">
+                                                        {exam.total_marks}
+                                                    </span>
+                                                </div>
+                                                <div className="marks-result-item">
+                                                    <span className="marks-result-label">Status</span>
+                                                    <span className="marks-status-badge pending" style={{ alignSelf: 'flex-start' }}>
+                                                        Upcoming
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    )}
+
                     {/* Exam Results Table */}
                     <div className="marks-panel">
                         <div className="marks-panel-header-flex">
@@ -527,7 +627,10 @@ function ViewMarks() {
                                         </tr>
                                     ) : (
                                         marks.map((mark, i) => {
-                                            const isAbsent = mark.is_absent;
+                                            const isAbsent = mark.status === 'Absent';
+                                            const isNotGraded = mark.status === 'Not Graded';
+                                            const isPending = mark.status === 'Pending';
+                                            const isNoData = isNotGraded || isPending;
                                             const isPassed = mark.status === 'Pass';
                                             const typeColor = EXAM_TYPE_COLORS[mark.exam_type] || EXAM_TYPE_COLORS.other;
 
@@ -536,7 +639,8 @@ function ViewMarks() {
                                                     <td>
                                                         <span 
                                                             className="marks-table-exam-name"
-                                                            onClick={() => setScorecardExam(mark.exam_name)}
+                                                            onClick={() => !isNoData && setScorecardExam(mark.exam_name)}
+                                                            style={{ cursor: isNoData ? 'default' : 'pointer' }}
                                                         >
                                                             {mark.exam_name}
                                                         </span>
@@ -549,7 +653,9 @@ function ViewMarks() {
                                                     <td style={{ fontWeight: 500, color: '#1e293b' }}>{mark.subject_name || 'N/A'}</td>
                                                     <td>{new Date(mark.exam_date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }).replace(/ /g, '\n')}</td>
                                                     <td>
-                                                        {isAbsent ? (
+                                                        {isNoData ? (
+                                                            <span style={{ color: '#94a3b8', fontStyle: 'italic' }}>{mark.status}</span>
+                                                        ) : isAbsent ? (
                                                             <span style={{ color: '#94a3b8', fontStyle: 'italic' }}>Absent</span>
                                                         ) : (
                                                             <div className="marks-fraction">
@@ -559,11 +665,11 @@ function ViewMarks() {
                                                         )}
                                                     </td>
                                                     <td style={{ color: '#334155' }}>{mark.percentage != null ? `${mark.percentage}%` : '—'}</td>
-                                                    <td className="marks-table-grade" style={{ color: isAbsent ? '#94a3b8' : isPassed ? '#22c55e' : '#ef4444' }}>
+                                                    <td className="marks-table-grade" style={{ color: (isAbsent || isNoData) ? '#94a3b8' : isPassed ? '#22c55e' : '#ef4444' }}>
                                                         {mark.grade || '—'}
                                                     </td>
                                                     <td style={{ fontWeight: 600 }}>
-                                                        {isAbsent ? '—' : (
+                                                        {(isAbsent || isNoData) ? '—' : (
                                                             <div className="marks-fraction">
                                                                 #{mark.rank_in_class}
                                                                 <span style={{ color: '#94a3b8', fontSize: '11px', fontWeight: 500 }}> / {mark.total_in_class}</span>
@@ -571,12 +677,18 @@ function ViewMarks() {
                                                         )}
                                                     </td>
                                                     <td>
-                                                        <span className={`marks-status-badge ${isAbsent ? 'absent' : isPassed ? 'pass' : 'fail'}`}>
-                                                            {isAbsent ? 'Absent' : isPassed ? 'Pass' : 'Fail'}
+                                                        <span className={`marks-status-badge ${isNotGraded ? 'not-graded' : isPending ? 'pending' : isAbsent ? 'absent' : isPassed ? 'pass' : 'fail'}`}>
+                                                            {mark.status}
                                                         </span>
                                                     </td>
                                                     <td className="desktop-only-cell">
-                                                        <button className="marks-table-action-btn" onClick={() => setScorecardExam(mark.exam_name)} title="View Scorecard">
+                                                        <button 
+                                                            className="marks-table-action-btn" 
+                                                            onClick={() => !isNoData && setScorecardExam(mark.exam_name)} 
+                                                            title="View Scorecard"
+                                                            disabled={isNoData}
+                                                            style={{ opacity: isNoData ? 0.4 : 1, cursor: isNoData ? 'not-allowed' : 'pointer' }}
+                                                        >
                                                             👁️
                                                         </button>
                                                     </td>
@@ -596,7 +708,10 @@ function ViewMarks() {
                                 </div>
                             ) : (
                                 marks.map((mark, i) => {
-                                    const isAbsent = mark.is_absent;
+                                    const isAbsent = mark.status === 'Absent';
+                                    const isNotGraded = mark.status === 'Not Graded';
+                                    const isPending = mark.status === 'Pending';
+                                    const isNoData = isNotGraded || isPending;
                                     const isPassed = mark.status === 'Pass';
                                     const typeColor = EXAM_TYPE_COLORS[mark.exam_type] || EXAM_TYPE_COLORS.other;
 
@@ -604,7 +719,11 @@ function ViewMarks() {
                                         <div className="marks-result-card" key={`mobile-${mark.exam_id}-${i}`}>
                                             <div className="marks-result-card-header">
                                                 <div>
-                                                    <div className="marks-result-card-title" onClick={() => setScorecardExam(mark.exam_name)}>
+                                                    <div 
+                                                        className="marks-result-card-title" 
+                                                        onClick={() => !isNoData && setScorecardExam(mark.exam_name)}
+                                                        style={{ cursor: isNoData ? 'default' : 'pointer' }}
+                                                    >
                                                         {mark.exam_name}
                                                     </div>
                                                     <div className="marks-result-card-date">
@@ -623,7 +742,9 @@ function ViewMarks() {
                                                 <div className="marks-result-item">
                                                     <span className="marks-result-label">Marks / %</span>
                                                     <span className="marks-result-val">
-                                                        {isAbsent ? (
+                                                        {isNoData ? (
+                                                            <span style={{ color: '#94a3b8', fontStyle: 'italic' }}>{mark.status}</span>
+                                                        ) : isAbsent ? (
                                                             <span style={{ color: '#94a3b8', fontStyle: 'italic' }}>Absent</span>
                                                         ) : (
                                                             `${mark.marks_obtained} / ${mark.total_marks} (${mark.percentage}%)`
@@ -633,18 +754,23 @@ function ViewMarks() {
                                                 <div className="marks-result-item">
                                                     <span className="marks-result-label">Grade & Rank</span>
                                                     <span className="marks-result-val">
-                                                        {isAbsent ? '—' : `${mark.grade || '—'} (Rank #${mark.rank_in_class})`}
+                                                        {(isAbsent || isNoData) ? '—' : `${mark.grade || '—'} (Rank #${mark.rank_in_class})`}
                                                     </span>
                                                 </div>
                                                 <div className="marks-result-item">
                                                     <span className="marks-result-label">Status</span>
-                                                    <span className={`marks-status-badge ${isAbsent ? 'absent' : isPassed ? 'pass' : 'fail'}`} style={{ alignSelf: 'flex-start' }}>
-                                                        {isAbsent ? 'Absent' : isPassed ? 'Pass' : 'Fail'}
+                                                    <span className={`marks-status-badge ${isNotGraded ? 'not-graded' : isPending ? 'pending' : isAbsent ? 'absent' : isPassed ? 'pass' : 'fail'}`} style={{ alignSelf: 'flex-start' }}>
+                                                        {mark.status}
                                                     </span>
                                                 </div>
                                             </div>
                                             <div className="marks-result-card-footer">
-                                                <button className="marks-result-view-btn" onClick={() => setScorecardExam(mark.exam_name)}>
+                                                <button 
+                                                    className="marks-result-view-btn" 
+                                                    onClick={() => !isNoData && setScorecardExam(mark.exam_name)}
+                                                    disabled={isNoData}
+                                                    style={{ opacity: isNoData ? 0.4 : 1, cursor: isNoData ? 'not-allowed' : 'pointer' }}
+                                                >
                                                     View Scorecard
                                                 </button>
                                             </div>

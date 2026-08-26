@@ -1,0 +1,1 @@
+const { sequelize } = require('./models'); sequelize.query('SELECT * FROM marks WHERE student_id = 363', { type: sequelize.QueryTypes.SELECT }).then(console.log).catch(console.error).finally(() => process.exit(0));

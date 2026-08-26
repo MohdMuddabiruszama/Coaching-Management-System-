@@ -7,6 +7,7 @@ import api from "../../services/api";
 import AnnouncementBell from "../../components/AnnouncementBell";
 import WidgetErrorBoundary from "../../components/common/WidgetErrorBoundary"; // ✅ Phase 7
 import { format12Hour } from "../../utils/timeFormat";
+import examService from "../../services/exam.service";
 import "./StudentDashboard.css";
 
 // ── Pure helpers (outside component — no re-creation on render) ──────────────
@@ -62,6 +63,7 @@ function StudentDashboard() {
     const [unreadStats, setUnreadStats] = useState({ assignments: 0, notes: 0 });
     const [announcements, setAnnouncements] = useState([]);
     const [upcomingTasks, setUpcomingTasks] = useState([]);
+    const [upcomingExamsList, setUpcomingExamsList] = useState([]);
     const [timetable, setTimetable] = useState([]);
     const [todaySchedule, setTodaySchedule] = useState([]);
     const [widgetsLoading, setWidgetsLoading] = useState(true);
@@ -85,12 +87,13 @@ function StudentDashboard() {
     const fetchWidgetData = useCallback(async () => {
         setWidgetsLoading(true);
         try {
-            const [announcementsRes, assignmentsRes, studentRes, feesRes, perfRes] = await Promise.allSettled([
+            const [announcementsRes, assignmentsRes, studentRes, feesRes, perfRes, examsRes] = await Promise.allSettled([
                 user?.features?.announcements ? api.get('/announcements/institute') : Promise.resolve(null),
                 user?.features?.notes ? api.get('/assignments/student/all') : Promise.resolve(null),
                 api.get('/students/me'),
                 user?.features?.fees ? api.get('/fees/my-fees') : Promise.resolve(null),
-                api.get('/performance/me').catch(() => null)
+                api.get('/performance/me').catch(() => null),
+                user?.features?.exams ? examService.getUpcoming() : Promise.resolve(null)
             ]);
 
             // Announcements
@@ -116,6 +119,11 @@ function StudentDashboard() {
                     .sort((a, b) => new Date(a.due_date) - new Date(b.due_date))
                     .slice(0, 7);
                 setUpcomingTasks(pending);
+            }
+
+            // Upcoming Exams
+            if (examsRes.status === 'fulfilled' && examsRes.value) {
+                setUpcomingExamsList(examsRes.value || []);
             }
 
             // Fees
@@ -832,7 +840,7 @@ function StudentDashboard() {
                             <span className="sd-stat-card-title">Upcoming Exams</span>
                         </div>
                         <div className="sd-stat-card-value-row">
-                            <span className="sd-stat-card-value">2</span>
+                            <span className="sd-stat-card-value">{upcomingExamsList.length}</span>
                         </div>
                         <div style={{ height: '4px', marginBottom: '8px' }} />
                         <div className="sd-stat-card-footer">
@@ -935,6 +943,44 @@ function StudentDashboard() {
                     </div>
                 </div>
                 </WidgetErrorBoundary>
+
+                {/* Upcoming Exams Widget */}
+                {user?.features?.exams && (
+                    <WidgetErrorBoundary title="Upcoming Exams">
+                    <div className="sd-widget">
+                        <div className="sd-widget-header">
+                            <h3>Upcoming Exams</h3>
+                            <Link to="/student/exams" className="sd-view-all">View Marks</Link>
+                        </div>
+                        <div className="sd-list">
+                            {widgetsLoading ? <SkeletonList /> : upcomingExamsList.length > 0 ? (
+                                upcomingExamsList.map((exam, idx) => {
+                                    const { day, month } = formatDueDate(exam.exam_date);
+                                    return (
+                                        <div className="sd-list-item" key={exam.exam_id || idx}>
+                                            <div className="sd-date-box" style={{ background: 'linear-gradient(135deg, #fef08a 0%, #fde047 100%)', color: '#854d0e', borderColor: '#fef08a' }}>
+                                                <span className="sd-date-day">{day}</span>
+                                                <span className="sd-date-month">{month}</span>
+                                            </div>
+                                            <div className="sd-list-content" style={{ justifyContent: 'center' }}>
+                                                <div className="sd-list-title">{exam.exam_name}</div>
+                                                <div className="sd-list-desc">
+                                                    {exam.subject_name} • {exam.exam_type} ({exam.total_marks} Marks)
+                                                </div>
+                                            </div>
+                                        </div>
+                                    );
+                                })
+                            ) : (
+                                <div className="sd-empty-state">
+                                    <span>🏖️</span>
+                                    <p>No upcoming exams! Relax and study well.</p>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                    </WidgetErrorBoundary>
+                )}
 
                 {/* Today's Schedule */}
                 {user?.features?.timetable && (

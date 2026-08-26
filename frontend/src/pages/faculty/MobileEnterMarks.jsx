@@ -187,7 +187,8 @@ const MobileEnterMarks = ({
     fileInputRef,
     handleFileChange,
     avg,
-    handleRefresh
+    handleRefresh,
+    onOpenResults
 }) => {
 
     const [searchQuery, setSearchQuery] = useState("");
@@ -372,6 +373,10 @@ const MobileEnterMarks = ({
                     <div className="mem-list-header">
                         <h3 className="mem-list-title">Student List ({filteredStudents.length} Students)</h3>
                         <div className="mem-list-actions">
+                            <button onClick={onOpenResults} className="mem-btn-sm" style={{ background: "#e0e7ff", color: "#4338ca", border: "1px solid #c7d2fe" }}>
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
+                                Results
+                            </button>
                             <button onClick={markAllPresent} className="mem-btn-sm present" disabled={examObj?.marks_locked}>
                                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
                                 Mark All Present

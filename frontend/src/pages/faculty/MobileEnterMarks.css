@@ -6,6 +6,12 @@
     min-height: 100vh;
 }
 
+/* Fix for SVGs collapsing or losing color in Mobile WebViews */
+.mem-container svg {
+    flex-shrink: 0;
+    display: inline-block;
+}
+
 /* Hero Banner */
 .mem-hero-banner {
     background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
@@ -474,6 +480,10 @@
     justify-content: center;
     cursor: pointer;
     transition: all 0.2s;
+}
+
+.mem-action-button svg {
+    stroke: currentColor !important;
 }
 
 .mem-action-button.save {

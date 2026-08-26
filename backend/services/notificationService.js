@@ -148,6 +148,156 @@ class NotificationService {
             console.error("Error in notifyStudentAndParents:", error);
         }
     }
+
+    /**
+     * Highly optimized bulk notification for an entire class of students and their parents.
+     * Generates O(1) network/DB operations to maximize performance.
+     */
+    static async bulkNotifyClass(instituteId, classId, type, title, baseMessage, link = null, data = {}) {
+        try {
+            const { Student, StudentParent, User } = require("../models");
+            
+            // 1. Fetch all students in class
+            const students = await Student.findAll({ 
+                where: { class_id: classId, institute_id: instituteId },
+                include: [{ model: User, as: 'User', attributes: ['name'] }]
+            });
+            if (!students.length) return;
+
+            const studentIds = students.map(s => s.id);
+            const parentLinks = await StudentParent.findAll({ 
+                where: { student_id: studentIds }
+            });
+
+            // Map parents to student names
+            const parentMap = {}; // parent_id -> [studentName, ...]
+            parentLinks.forEach(pl => {
+                const stu = students.find(s => s.id === pl.student_id);
+                if (stu && stu.User) {
+                    if (!parentMap[pl.parent_id]) parentMap[pl.parent_id] = [];
+                    parentMap[pl.parent_id].push(stu.User.name);
+                }
+            });
+
+            const notificationsToCreate = [];
+            const userIdsToNotify = new Set();
+            const payload = { route: link, ...data };
+
+            // Student Notifications
+            for (const stu of students) {
+                if (stu.user_id) {
+                    userIdsToNotify.add(stu.user_id);
+                    notificationsToCreate.push({
+                        institute_id: instituteId,
+                        user_id: stu.user_id,
+                        type,
+                        title,
+                        body: baseMessage,
+                        data_json: payload,
+                        is_read: false
+                    });
+                }
+            }
+
+            // Parent Notifications
+            for (const parentId of Object.keys(parentMap)) {
+                userIdsToNotify.add(parseInt(parentId));
+                const stuNames = parentMap[parentId].join(" & ");
+                let parentMessage = baseMessage;
+                
+                if (parentMessage.startsWith("You were ")) {
+                    parentMessage = parentMessage.replace("You were ", `${stuNames} was `);
+                } else if (parentMessage.startsWith("You ")) {
+                    parentMessage = parentMessage.replace("You ", `${stuNames} `);
+                } else if (parentMessage.startsWith("Your ")) {
+                    parentMessage = parentMessage.replace("Your ", `${stuNames}'s `);
+                } else {
+                    parentMessage = `${stuNames}: ${parentMessage}`;
+                }
+                
+                notificationsToCreate.push({
+                    institute_id: instituteId,
+                    user_id: parseInt(parentId),
+                    type,
+                    title,
+                    body: parentMessage,
+                    data_json: payload,
+                    is_read: false
+                });
+            }
+
+            if (notificationsToCreate.length === 0) return;
+
+            // 2. Fetch all preferences for these users
+            const prefs = await NotificationPref.findAll({
+                where: { user_id: Array.from(userIdsToNotify), type }
+            });
+            const prefMap = {};
+            prefs.forEach(p => prefMap[p.user_id] = p);
+
+            // 3. Bulk Insert DB
+            const createdNotifs = await Notification.bulkCreate(notificationsToCreate);
+
+            // 4. Fire WebSockets
+            const io = getIo();
+            if (io) {
+                for (const notif of createdNotifs) {
+                    io.to(`user_${notif.user_id}`).emit("notification", notif);
+                }
+            }
+
+            // 5. Gather Device Tokens for FCM
+            const now = new Date();
+            const currentTime = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:00`;
+            
+            const validUserIdsForPush = Array.from(userIdsToNotify).filter(uid => {
+                const p = prefMap[uid];
+                if (p && p.push_enabled === false) return false;
+                if (p && p.quiet_start && p.quiet_end) {
+                    if (currentTime >= p.quiet_start && currentTime <= p.quiet_end) return false;
+                }
+                return true;
+            });
+
+            if (validUserIdsForPush.length > 0) {
+                const devices = await DeviceToken.findAll({
+                    where: { user_id: validUserIdsForPush, is_active: true }
+                });
+                
+                if (devices.length > 0) {
+                    const bodyToTokens = {};
+                    createdNotifs.forEach(notif => {
+                        if (validUserIdsForPush.includes(notif.user_id)) {
+                            const userTokens = devices.filter(d => d.user_id === notif.user_id).map(d => d.fcm_token);
+                            if (userTokens.length > 0) {
+                                if (!bodyToTokens[notif.body]) bodyToTokens[notif.body] = [];
+                                bodyToTokens[notif.body].push(...userTokens);
+                            }
+                        }
+                    });
+
+                    // Send pushes grouped by notification message body
+                    for (const [msgBody, tokens] of Object.entries(bodyToTokens)) {
+                        const pushPayload = {
+                            title,
+                            body: msgBody,
+                            data: { type, route: link || "", notification_id: "bulk" }
+                        };
+                        const result = await sendPushNotification(tokens, pushPayload);
+                        
+                        if (result && result.failedTokens && result.failedTokens.length > 0) {
+                            await DeviceToken.update(
+                                { is_active: false },
+                                { where: { fcm_token: result.failedTokens } }
+                            );
+                        }
+                    }
+                }
+            }
+        } catch (error) {
+            console.error("Error in bulkNotifyClass:", error);
+        }
+    }
 }
 
 module.exports = NotificationService;

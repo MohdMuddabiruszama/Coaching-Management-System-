@@ -6,6 +6,8 @@ import markService from '../../services/mark.service';
 import { Capacitor } from '@capacitor/core';
 import MobileEnterMarks from './MobileEnterMarks';
 import '../admin/Dashboard.css';
+import * as XLSX from 'xlsx';
+import ExamResultsDrawer from '../../components/ExamResultsDrawer';
 
 function getGrade(pct) {
     if (pct >= 90) return 'A+';
@@ -196,6 +198,7 @@ function EnterMarks() {
     const [selectedExam, setSelectedExam] = useState('');
     const [students, setStudents] = useState([]);
     const [marksData, setMarksData] = useState({});
+    const [drawerExamId, setDrawerExamId] = useState(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [lockingExam, setLockingExam] = useState(false);
@@ -369,24 +372,25 @@ function EnterMarks() {
 
         setLoading(true);
         try {
-            const text = await file.text();
-            const lines = text.split('\n');
+            const data = await file.arrayBuffer();
+            const workbook = XLSX.read(data, { type: 'array' });
+            const firstSheetName = workbook.SheetNames[0];
+            const worksheet = workbook.Sheets[firstSheetName];
+            const json = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+            
             const dataToImport = [];
 
             // Skip header (i=0)
-            for (let i = 1; i < lines.length; i++) {
-                const line = lines[i].trim();
-                if (!line) continue;
-                
-                // Splitting CSV intelligently (handles simple quotes if present)
-                const columns = line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(col => col.replace(/^"|"$/g, '').trim());
+            for (let i = 1; i < json.length; i++) {
+                const row = json[i];
+                if (!row || row.length === 0) continue;
                 
                 // Assuming format: Student ID, Roll No, Student Name, Marks, Absent (Y/N)
-                const studentId = parseInt(columns[0]);
+                const studentId = parseInt(row[0]);
                 if (isNaN(studentId)) continue;
                 
-                const marksStr = columns[3];
-                const absentStr = columns[4] ? columns[4].toUpperCase() : 'N';
+                const marksStr = row[3] != null ? String(row[3]) : undefined;
+                const absentStr = row[4] != null ? String(row[4]).toUpperCase() : 'N';
                 let isAbsent = absentStr === 'Y' || absentStr === 'YES' || absentStr === 'A';
 
                 let parsedMarks = null;
@@ -483,29 +487,38 @@ function EnterMarks() {
 
     if (isNativeEnv) {
         return (
-            <MobileEnterMarks
-                exams={exams}
-                selectedExam={selectedExam}
-                setSelectedExam={setSelectedExam}
-                students={students}
-                marksData={marksData}
-                loading={loading}
-                error={error}
-                currentPage={currentPage}
-                setCurrentPage={setCurrentPage}
-                itemsPerPage={itemsPerPage}
-                handleRowChange={handleRowChange}
-                handleSaveMark={handleSaveMark}
-                markAllPresent={markAllPresent}
-                markAllAbsent={markAllAbsent}
-                handleImportClick={handleImportClick}
-                handleLock={handleLock}
-                lockingExam={lockingExam}
-                fileInputRef={fileInputRef}
-                handleFileChange={handleFileChange}
-                avg={avg}
-                handleRefresh={handleRefresh}
-            />
+            <>
+                <MobileEnterMarks
+                    exams={exams}
+                    selectedExam={selectedExam}
+                    setSelectedExam={setSelectedExam}
+                    students={students}
+                    marksData={marksData}
+                    loading={loading}
+                    error={error}
+                    currentPage={currentPage}
+                    setCurrentPage={setCurrentPage}
+                    itemsPerPage={itemsPerPage}
+                    handleRowChange={handleRowChange}
+                    handleSaveMark={handleSaveMark}
+                    markAllPresent={markAllPresent}
+                    markAllAbsent={markAllAbsent}
+                    handleImportClick={handleImportClick}
+                    handleLock={handleLock}
+                    lockingExam={lockingExam}
+                    fileInputRef={fileInputRef}
+                    handleFileChange={handleFileChange}
+                    avg={avg}
+                    handleRefresh={handleRefresh}
+                    onOpenResults={() => setDrawerExamId(parseInt(selectedExam))}
+                />
+                {drawerExamId && (
+                    <ExamResultsDrawer
+                        examId={drawerExamId}
+                        onClose={() => setDrawerExamId(null)}
+                    />
+                )}
+            </>
         );
     }
 
@@ -647,6 +660,10 @@ function EnterMarks() {
                             Student List ({students.length} Students)
                         </h3>
                         <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
+                            <button onClick={() => setDrawerExamId(parseInt(selectedExam))} className="btn btn-sm" type="button" style={{ background: "#e0e7ff", color: "#4338ca", border: "1px solid #c7d2fe", fontWeight: "600", display: "flex", alignItems: "center", gap: "6px", padding: "0.5rem 1rem", borderRadius: "6px", cursor: "pointer" }}>
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
+                                Results
+                            </button>
                             <button onClick={markAllPresent} className="btn btn-sm" type="button" disabled={examObj.marks_locked} style={{ background: "#dcfce7", color: "#15803d", border: "1px solid #bbf7d0", fontWeight: "600", display: "flex", alignItems: "center", gap: "6px", padding: "0.5rem 1rem", borderRadius: "6px", cursor: examObj.marks_locked ? "not-allowed" : "pointer", opacity: examObj.marks_locked ? 0.6 : 1 }}>
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
                                 Mark All Present
@@ -882,6 +899,13 @@ function EnterMarks() {
                         </div>
                     </div>
                 </div>
+            )}
+            
+            {drawerExamId && (
+                <ExamResultsDrawer
+                    examId={drawerExamId}
+                    onClose={() => setDrawerExamId(null)}
+                />
             )}
         </div>
     );

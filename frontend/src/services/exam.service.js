@@ -29,6 +29,10 @@ const examService = {
     // Get full results + stats for one exam (admin/faculty)
     getResults: (id) =>
         api.get(`/exams/${id}/results`).then(r => r.data.data),
+
+    // Get upcoming exams for a student
+    getUpcoming: () =>
+        api.get('/exams/student/upcoming').then(r => r.data.data),
 };
 
 export default examService;
