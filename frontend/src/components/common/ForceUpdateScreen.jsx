@@ -10,7 +10,7 @@ const ForceUpdateScreen = ({
 }) => {
   const handleUpdate = () => {
     // In a real app, this would open the Play Store or App Store link
-    window.open('https://play.google.com/store/apps/details?id=com.zenithflows.app', '_blank');
+    window.open('https://play.google.com/store/apps/details?id=com.zenithflows.ims', '_blank');
   };
 
   const isCritical = type === 'critical';
