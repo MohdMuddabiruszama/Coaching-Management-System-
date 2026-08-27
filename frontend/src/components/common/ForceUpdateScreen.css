@@ -3,8 +3,7 @@
   align-items: center;
   justify-content: center;
   min-height: 100vh;
-  background-color: rgba(0, 0, 0, 0.4);
-  backdrop-filter: blur(8px);
+  background-color: #f3f4f6; /* light gray background */
   padding: 20px;
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 }
@@ -12,10 +11,10 @@
 .force-update-card {
   background: white;
   border-radius: 24px;
-  padding: 32px 24px;
+  padding: 40px 32px;
   max-width: 400px;
   width: 100%;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.05);
   text-align: center;
   display: flex;
   flex-direction: column;
@@ -23,32 +22,24 @@
 }
 
 .force-update-icon-wrapper {
-  width: 72px;
-  height: 72px;
+  background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+  width: 80px;
+  height: 80px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 20px;
-}
-
-.force-update-icon-wrapper.critical {
-  background: linear-gradient(135deg, #ef4444 0%, #b91c1c 100%);
-  box-shadow: 0 10px 25px -5px rgba(239, 68, 68, 0.4);
-}
-
-.force-update-icon-wrapper.normal {
-  background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+  margin-bottom: 24px;
   box-shadow: 0 10px 25px -5px rgba(99, 102, 241, 0.4);
 }
 
 .force-update-icon {
-  font-size: 32px;
+  font-size: 36px;
   line-height: 1;
 }
 
 .force-update-title {
-  font-size: 22px;
+  font-size: 24px;
   font-weight: 700;
   color: #111827;
   margin: 0 0 12px 0;
@@ -57,8 +48,8 @@
 .force-update-message {
   font-size: 15px;
   color: #4b5563;
-  line-height: 1.5;
-  margin: 0 0 24px 0;
+  line-height: 1.6;
+  margin: 0 0 32px 0;
 }
 
 .force-update-version-info {
@@ -69,8 +60,8 @@
   background: #f8fafc;
   border: 1px solid #e2e8f0;
   border-radius: 16px;
-  padding: 12px 20px;
-  margin-bottom: 24px;
+  padding: 16px 24px;
+  margin-bottom: 32px;
   width: 100%;
 }
 
@@ -90,9 +81,9 @@
 }
 
 .version-number {
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 700;
-  padding: 4px 10px;
+  padding: 4px 12px;
   border-radius: 8px;
 }
 
@@ -112,72 +103,26 @@
   font-weight: bold;
 }
 
-.update-notes-container {
-  width: 100%;
-  text-align: left;
-  background: #f1f5f9;
-  border-radius: 12px;
-  padding: 16px;
-  margin-bottom: 28px;
-}
-
-.update-notes-title {
-  font-size: 14px;
-  font-weight: 700;
-  color: #334155;
-  margin: 0 0 8px 0;
-}
-
-.update-notes-list {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  font-size: 14px;
-  color: #4b5563;
-  line-height: 1.6;
-}
-
-.force-update-actions {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  width: 100%;
-}
-
 .force-update-button {
   width: 100%;
+  background: #111827;
+  color: white;
   border: none;
   border-radius: 12px;
-  padding: 14px;
+  padding: 16px;
   font-size: 16px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
-}
-
-.force-update-button.primary {
-  background: #111827;
-  color: white;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
 }
 
-.force-update-button.primary:hover {
+.force-update-button:hover {
   background: #1f2937;
   transform: translateY(-2px);
   box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
 }
 
-.force-update-button.primary:active {
+.force-update-button:active {
   transform: translateY(0);
-}
-
-.force-update-button.secondary {
-  background: transparent;
-  color: #64748b;
-  border: 1px solid transparent;
-}
-
-.force-update-button.secondary:hover {
-  background: #f8fafc;
-  color: #334155;
 }

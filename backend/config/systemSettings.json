@@ -1,10 +1,4 @@
 {
-  "autoLogoutTimer": 2,
-  "minMobileVersion": "1.0.14",
-  "latestMobileVersion": "1.0.14",
-  "updateNotes": [
-    "Faster performance",
-    "New exam features",
-    "Bug fixes"
-  ]
+  "autoLogoutTimer": 15,
+  "minMobileVersion": "1.0.0"
 }
