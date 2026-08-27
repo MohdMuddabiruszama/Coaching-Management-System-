@@ -9,8 +9,7 @@ const ForceUpdateScreen = ({
   onDismiss 
 }) => {
   const handleUpdate = () => {
-    // In a real app, this would open the Play Store or App Store link
-    window.open('https://play.google.com/store/apps/details?id=com.zenithflows.ims', '_blank');
+    window.location.href = 'https://play.google.com/store/apps/details?id=com.zenithflows.ims';
   };
 
   const isCritical = type === 'critical';
@@ -19,18 +18,15 @@ const ForceUpdateScreen = ({
     <div className="force-update-container">
       <div className="force-update-card">
         <div className={`force-update-icon-wrapper ${isCritical ? 'critical' : 'normal'}`}>
-          <div className="force-update-icon">{isCritical ? '🔒' : '✨'}</div>
+          <div className="force-update-icon">🚀</div>
         </div>
         
         <h1 className="force-update-title">
-          {isCritical ? 'Important Update' : 'New Update Available'}
+          Time to Update!
         </h1>
         
         <p className="force-update-message">
-          {isCritical 
-            ? 'Please update ZenithFlows to continue using the app.'
-            : 'ZenithFlows has a newer version with improvements.'
-          }
+          We've added new features and made significant performance improvements. Please update your ZenithFlows app to continue.
         </p>
         
         <div className="force-update-version-info">
