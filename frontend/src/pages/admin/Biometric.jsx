@@ -895,7 +895,15 @@ const STATUS_PILL_STYLES = {
     online:    { bg: "rgba(16,185,129,0.12)", color: "#059669", dot: "#10b981", label: "Online" },
 };
 
+/**
+ * Compute live status — prefers server-authoritative `live_status` field
+ * injected by the backend's getDevices. Falls back to client-side calculation
+ * only if the server field is absent (e.g., from an older API response).
+ */
 function computeLiveStatus(device) {
+    // Server already computed this — use it directly
+    if (device.live_status) return device.live_status;
+    // Client-side fallback (stale, only fires if API is old)
     if (device.status === "pending") return "pending";
     if (device.status === "inactive") return "inactive";
     const ts = device.last_punch_at || device.last_sync;
@@ -910,15 +918,45 @@ function computeLiveStatus(device) {
 function StatusPill({ device }) {
     const status = computeLiveStatus(device);
     const s = STATUS_PILL_STYLES[status] || STATUS_PILL_STYLES.offline;
+    // Animate the dot for "connected" to give a live pulsing feel
+    const isLive = status === "connected" || status === "online";
     return (
-        <span style={{ display:"inline-flex", alignItems:"center", gap:"0.3rem", padding:"0.2rem 0.65rem",
-            borderRadius:"99px", background:s.bg, color:s.color, fontWeight:600, fontSize:"0.78rem",
-            letterSpacing:"0.01em", whiteSpace:"nowrap" }}>
-            <span style={{ width:"6px", height:"6px", borderRadius:"50%", background:s.dot,
-                boxShadow:`0 0 0 2px ${s.bg}` }}/>
+        <span style={{
+            display:"inline-flex", alignItems:"center", gap:"0.35rem",
+            padding:"0.22rem 0.7rem", borderRadius:"99px", background:s.bg,
+            color:s.color, fontWeight:700, fontSize:"0.78rem",
+            letterSpacing:"0.01em", whiteSpace:"nowrap",
+            boxShadow: isLive ? `0 0 0 1px ${s.dot}33` : "none",
+            transition:"all 0.3s ease",
+        }}>
+            <span style={{
+                width:"7px", height:"7px", borderRadius:"50%", background:s.dot,
+                boxShadow: isLive ? `0 0 0 2px ${s.dot}44` : `0 0 0 2px ${s.bg}`,
+                animation: isLive ? "bioPulse 2s infinite" : "none",
+            }}/>
             {s.label}
         </span>
     );
+}
+
+// Inject pulse keyframe once
+if (typeof document !== "undefined" && !document.getElementById("bio-pulse-style")) {
+    const st = document.createElement("style");
+    st.id = "bio-pulse-style";
+    st.textContent = `
+        @keyframes bioPulse {
+            0%,100% { opacity:1; transform:scale(1); }
+            50%      { opacity:0.4; transform:scale(1.4); }
+        }
+        @keyframes bioFadeIn {
+            from { opacity:0; transform:translateY(-6px); }
+            to   { opacity:1; transform:translateY(0); }
+        }
+        @keyframes bioSpin {
+            to { transform: rotate(360deg); }
+        }
+    `;
+    document.head.appendChild(st);
 }
 
 function BrandBadge({ brand, size = 32 }) {
@@ -1345,14 +1383,31 @@ function DevicesTab() {
         } finally { setWizardLoading(false); }
     };
 
-    const fetchDevices = useCallback(async () => {
+    const [refreshing, setRefreshing] = useState(false);
+    const [lastRefreshed, setLastRefreshed] = useState(null);
+
+    const fetchDevices = useCallback(async (showSpinner = false) => {
+        if (showSpinner) setRefreshing(true);
         try {
             const res = await api.get("/biometric/devices");
-            if (res.data.success) setDevices(res.data.data);
-        } catch { } finally { setLoading(false); }
+            if (res.data.success) {
+                setDevices(res.data.data);
+                setLastRefreshed(new Date());
+            }
+        } catch { } finally {
+            setLoading(false);
+            setRefreshing(false);
+        }
     }, []);
 
+    // Initial load
     useEffect(() => { fetchDevices(); }, [fetchDevices]);
+
+    // Auto-refresh every 60 seconds so status updates without page reload
+    useEffect(() => {
+        const interval = setInterval(() => fetchDevices(), 60_000);
+        return () => clearInterval(interval);
+    }, [fetchDevices]);
 
     const openAdd = () => {
         setEditDevice(null);
@@ -1478,28 +1533,87 @@ function DevicesTab() {
     const WIZARD_STEPS = ["Pick Brand", "Details", "Instructions", "Test Connection"];
 
     return (
-        <div style={{ animation: "fadeIn 0.3s ease-in-out" }}>
+        <div style={{ animation: "bioFadeIn 0.3s ease-in-out" }}>
             {/* Top Action Row */}
-            <div style={{ display: "flex", justifyContent: "flex-end", gap:"0.75rem", marginBottom: "1.5rem", flexWrap:"wrap" }}>
-                <button onClick={openAdd}
-                    style={{ display:"flex", alignItems:"center", gap:"0.4rem", padding:"0.55rem 1.1rem",
-                        borderRadius:"8px", background:"#f1f5f9", color:"#475569", border:"1px solid #e2e8f0",
-                        fontWeight:600, cursor:"pointer", fontSize:"0.88rem", transition:"all 0.2s" }}>
-                    <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                    Manual Add
-                </button>
-                <button onClick={openWizard}
-                    style={{ display:"flex", alignItems:"center", gap:"0.5rem", padding:"0.6rem 1.25rem",
-                        borderRadius:"8px", background:"linear-gradient(135deg,#6366f1,#8b5cf6)", color:"#fff",
-                        border:"none", fontWeight:700, cursor:"pointer", fontSize:"0.9rem",
-                        transition:"all 0.2s", boxShadow:"0 4px 12px rgba(99,102,241,0.3)" }}>
-                    <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-                        <polyline points="9 12 11 14 15 10"/>
-                    </svg>
-                    Connect Device
-                </button>
+            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", gap:"0.75rem", marginBottom:"1.5rem", flexWrap:"wrap" }}>
+                {/* Left: last-refreshed timestamp */}
+                <div style={{ display:"flex", alignItems:"center", gap:"0.5rem" }}>
+                    {lastRefreshed && (
+                        <span style={{ fontSize:"0.78rem", color:"#94a3b8" }}>
+                            Updated {lastRefreshed.toLocaleTimeString("en-US", { hour:"2-digit", minute:"2-digit", second:"2-digit" })}
+                        </span>
+                    )}
+                    <button
+                        onClick={() => fetchDevices(true)}
+                        disabled={refreshing}
+                        title="Refresh device statuses"
+                        style={{ display:"flex", alignItems:"center", gap:"0.35rem", padding:"0.4rem 0.8rem",
+                            borderRadius:"8px", background:"#f8fafc", color: refreshing ? "#94a3b8" : "#475569",
+                            border:"1px solid #e2e8f0", fontSize:"0.82rem", fontWeight:600, cursor: refreshing ? "not-allowed" : "pointer",
+                            transition:"all 0.2s" }}>
+                        <svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"
+                            style={{ animation: refreshing ? "bioSpin 0.8s linear infinite" : "none" }}>
+                            <path d="M23 4v6h-6"/><path d="M1 20v-6h6"/>
+                            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+                        </svg>
+                        {refreshing ? "Refreshing…" : "Refresh"}
+                    </button>
+                </div>
+                {/* Right: action buttons */}
+                <div style={{ display:"flex", gap:"0.75rem", flexWrap:"wrap" }}>
+                    <button onClick={openAdd}
+                        style={{ display:"flex", alignItems:"center", gap:"0.4rem", padding:"0.55rem 1.1rem",
+                            borderRadius:"8px", background:"#f1f5f9", color:"#475569", border:"1px solid #e2e8f0",
+                            fontWeight:600, cursor:"pointer", fontSize:"0.88rem", transition:"all 0.2s" }}>
+                        <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                        Manual Add
+                    </button>
+                    <button onClick={openWizard}
+                        style={{ display:"flex", alignItems:"center", gap:"0.5rem", padding:"0.6rem 1.25rem",
+                            borderRadius:"8px", background:"linear-gradient(135deg,#6366f1,#8b5cf6)", color:"#fff",
+                            border:"none", fontWeight:700, cursor:"pointer", fontSize:"0.9rem",
+                            transition:"all 0.2s", boxShadow:"0 4px 12px rgba(99,102,241,0.3)" }}>
+                        <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                            <polyline points="9 12 11 14 15 10"/>
+                        </svg>
+                        Connect Device
+                    </button>
+                </div>
             </div>
+
+            {/* ── Offline Device Alert Banner ── */}
+            {devices.some(d => ["offline","stale"].includes(computeLiveStatus(d))) && (
+                <div style={{
+                    background:"linear-gradient(135deg, #fffbeb, #fef3c7)",
+                    border:"1px solid #fbbf24", borderLeft:"4px solid #f59e0b",
+                    borderRadius:"10px", padding:"0.9rem 1.25rem", marginBottom:"1.25rem",
+                    display:"flex", alignItems:"flex-start", gap:"0.85rem",
+                    animation:"bioFadeIn 0.3s ease",
+                }}>
+                    <div style={{ background:"#f59e0b", color:"#fff", width:"32px", height:"32px",
+                        borderRadius:"50%", display:"flex", alignItems:"center", justifyContent:"center",
+                        flexShrink:0, fontSize:"1rem", fontWeight:700 }}>!</div>
+                    <div style={{ flex:1 }}>
+                        <div style={{ fontWeight:700, color:"#92400e", fontSize:"0.9rem", marginBottom:"0.2rem" }}>
+                            {devices.filter(d => ["offline","stale"].includes(computeLiveStatus(d))).length} device(s) not responding
+                        </div>
+                        <div style={{ color:"#a16207", fontSize:"0.82rem", lineHeight:1.5 }}>
+                            These devices haven&apos;t sent a heartbeat in the last 15 minutes. Common fixes:
+                            <strong> (1)</strong> Change ServerPort on device to <code style={{ background:"#fde68a", padding:"0 3px", borderRadius:3 }}>80</code> (not 443).
+                            <strong> (2)</strong> Verify ServerIP matches your Hostinger server IP.
+                            <strong> (3)</strong> Ensure the device Wi-Fi is connected to the internet.
+                        </div>
+                    </div>
+                    <button
+                        onClick={() => fetchDevices(true)}
+                        style={{ background:"#f59e0b", color:"#fff", border:"none",
+                            borderRadius:"8px", padding:"0.35rem 0.85rem",
+                            fontWeight:600, fontSize:"0.8rem", cursor:"pointer", flexShrink:0 }}>
+                        Recheck
+                    </button>
+                </div>
+            )}
 
             {/* Stats Cards */}
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "1rem", marginBottom: "1.5rem" }}>
@@ -1613,6 +1727,15 @@ function DevicesTab() {
                                             <td style={{ padding: "1rem 0.75rem", color: "#475569", fontFamily:"monospace", fontSize:"0.83rem" }}>{d.ip_address || "—"}</td>
                                             <td style={{ padding: "1rem 0.75rem" }}>
                                                 <StatusPill device={d} />
+                                                {/* Show mins since last contact below the pill */}
+                                                {d.mins_since_last_contact !== null && d.mins_since_last_contact !== undefined && (
+                                                    <div style={{ fontSize:"0.7rem", color:"#94a3b8", marginTop:"2px" }}>
+                                                        {d.mins_since_last_contact < 60
+                                                            ? `${d.mins_since_last_contact}m`
+                                                            : `${Math.floor(d.mins_since_last_contact / 60)}h ${d.mins_since_last_contact % 60}m`
+                                                        } ago
+                                                    </div>
+                                                )}
                                             </td>
                                             <td style={{ padding: "1rem 0.75rem", color: "#475569", fontSize: "0.85rem" }}>
                                                 {lastSeenDate ? (
