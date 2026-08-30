@@ -32,6 +32,29 @@ const NotificationService = require("../services/notificationService");
 const { getCatalog: getDeviceCatalog, findById: findCatalogById } = require("../config/deviceCatalog");
 
 // ─────────────────────────────────────────────────────────────────
+// IN-MEMORY CACHE — 30s TTL per institute for getLiveAttendance
+// Eliminates redundant DB queries when multiple admin sessions poll simultaneously
+// ─────────────────────────────────────────────────────────────────
+const _liveCache = new Map(); // Map<institute_id, { data, expiresAt }>
+const LIVE_CACHE_TTL_MS = 30_000; // 30 seconds
+
+/**
+ * Compute server-authoritative live connection status for a device.
+ * Used in getDevices so the frontend always shows a fresh, server-calculated status.
+ */
+function computeDeviceLiveStatus(device) {
+    if (device.status === "pending")  return "pending";
+    if (device.status === "inactive") return "inactive";
+    const ts = device.last_punch_at || device.last_sync;
+    if (!ts) return "offline";
+    const diffMins = Math.floor((Date.now() - new Date(ts).getTime()) / 60000);
+    if (diffMins < 15)       return "connected";
+    if (diffMins < 60 * 24) return "idle";
+    if (diffMins < 60 * 48) return "stale";
+    return "offline";
+}
+
+// ─────────────────────────────────────────────────────────────────
 // HELPERS
 // ─────────────────────────────────────────────────────────────────
 
@@ -557,7 +580,9 @@ async function sendParentNotification(
 
 /**
  * GET /api/biometric/devices
- * List all devices for institute
+ * List all devices for institute.
+ * Attaches server-authoritative `live_status` and `mins_since_last_contact`
+ * so the frontend never shows a stale client-calculated status.
  */
 exports.getDevices = async (req, res) => {
     try {
@@ -566,7 +591,19 @@ exports.getDevices = async (req, res) => {
             where: { institute_id },
             order: [["created_at", "DESC"]],
         });
-        res.json({ success: true, data: devices });
+
+        const now = Date.now();
+        const withStatus = devices.map(d => {
+            const ts = d.last_punch_at || d.last_sync;
+            const mins = ts ? Math.floor((now - new Date(ts).getTime()) / 60000) : null;
+            return {
+                ...d.toJSON(),
+                live_status: computeDeviceLiveStatus(d),
+                mins_since_last_contact: mins,
+            };
+        });
+
+        res.json({ success: true, data: withStatus });
     } catch (err) {
         res.status(500).json({ success: false, message: err.message });
     }
@@ -1150,6 +1187,13 @@ exports.getLiveAttendance = async (req, res) => {
         const institute_id = req.user.institute_id;
         const today = new Date().toISOString().split("T")[0];
 
+        // ── Cache check: return cached response if still fresh (30s TTL) ──
+        const cacheKey = `${institute_id}:${today}`;
+        const cached = _liveCache.get(cacheKey);
+        if (cached && Date.now() < cached.expiresAt) {
+            return res.json(cached.data);
+        }
+
         // ── 1. Fetch processed attendance records (students marked present today) ──
         const records = await Attendance.findAll({
             where: {
@@ -1218,12 +1262,11 @@ exports.getLiveAttendance = async (req, res) => {
         const late = allRecords.filter((r) => r.status === "late" || r.is_late).length;
 
         // ── 2. Fetch raw BiometricPunch records received TODAY (last 24h) ──
-        // This shows device activity even when enrollment is missing or punch date is from device buffer.
         const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000);
         const rawPunches = await BiometricPunch.findAll({
             where: {
                 institute_id,
-                created_at: { [Op.gte]: yesterday }, // when we RECEIVED it, not device time
+                created_at: { [Op.gte]: yesterday }, 
             },
             include: [{ model: BiometricDevice, attributes: ["device_name", "device_serial"] }],
             order: [["created_at", "DESC"]],
