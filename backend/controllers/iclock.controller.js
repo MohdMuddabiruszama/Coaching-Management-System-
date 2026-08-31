@@ -9,21 +9,31 @@ const { Op } = require("sequelize");
 exports.handshake = async (req, res) => {
     try {
         const sn = req.query.SN || req.query.sn;
-        if (!sn) return res.send("ERROR: NO SN");
+        console.log(`[ADMS] 🤝 Handshake | SN=${sn} | IP=${req.ip}`);
+        
+        if (!sn) {
+            console.warn(`[ADMS] ⚠️ Handshake missing SN query param`);
+            return res.send("ERROR: NO SN");
+        }
 
         const device = await BiometricDevice.findOne({ 
-            where: { device_serial: sn, status: { [Op.in]: ["active", "pending"] } } 
+            where: { device_serial: sn, status: { [Op.not]: "inactive" } } 
         });
-        if (!device) return res.send("ERROR: UNREGISTERED DEVICE");
+        
+        if (!device) {
+            console.warn(`[ADMS] ⚠️ Handshake from UNREGISTERED device: ${sn}`);
+            return res.send("ERROR: UNREGISTERED DEVICE");
+        }
 
-        const updateData = { last_sync: new Date() };
+        const updateData = { last_sync: new Date(), last_punch_at: new Date() };
         if (device.status === "pending") updateData.status = "active";
         await device.update(updateData);
         
+        console.log(`[ADMS] ✅ Handshake OK — ${sn}`);
         res.setHeader("Content-Type", "text/plain");
         res.send("OK");
     } catch (err) {
-        console.error("ADMS Handshake Error:", err);
+        console.error("[ADMS] ❌ Handshake Error:", err);
         res.status(500).send("ERROR");
     }
 };
@@ -35,9 +45,12 @@ exports.handshake = async (req, res) => {
 exports.receiveData = async (req, res) => {
     try {
         const sn = req.query.SN || req.query.sn;
+        const rawData = req.body;
+        console.log(`[ADMS] 📨 ReceiveData | SN=${sn} | CT=${req.headers["content-type"]} | body(${String(rawData||"").length}b)`);
+
         if (!sn) return res.send("ERROR: NO SN");
         const device = await BiometricDevice.findOne({ 
-            where: { device_serial: sn, status: { [Op.in]: ["active", "pending"] } } 
+            where: { device_serial: sn, status: { [Op.not]: "inactive" } } 
         });
         if (!device) return res.send("ERROR: UNREGISTERED DEVICE");
 
@@ -49,15 +62,15 @@ exports.receiveData = async (req, res) => {
         res.setHeader("Content-Type", "text/plain");
         res.send("OK");
 
-        const rawData = req.body;
-        if (typeof rawData !== 'string') {
+        if (!rawData || typeof rawData !== 'string') {
+            console.warn(`[ADMS] ⚠️ No raw string data found in request body`);
             return;
         }
 
         // Process entirely in background
         setImmediate(async () => {
             try {
-                const lines = rawData.split('\n');
+                const lines = rawData.split(/\r?\n/);
 
                 for (let line of lines) {
                     line = line.trim();
@@ -90,11 +103,12 @@ exports.receiveData = async (req, res) => {
 
                     // Process logic
                     await processPunch(punch);
+                    console.log(`[ADMS] ✅ Punch saved: PIN=${pin} | ${punchDate.toISOString()} | ${punchType}`);
                 }
 
-                await device.update({ last_sync: new Date() });
+                await device.update({ last_sync: new Date(), last_punch_at: new Date() });
             } catch(e) {
-                console.error("❌ ADMS Background Process Error:", e.message);
+                console.error("[ADMS] ❌ Background Process Error:", e.message);
             }
         });
 
@@ -113,13 +127,15 @@ exports.receiveData = async (req, res) => {
 exports.getRequest = async (req, res) => {
     try {
         const sn = req.query.SN || req.query.sn;
+        console.log(`[ADMS] 📡 GetRequest (heartbeat) | SN=${sn}`);
         if (sn) {
-            const device = await BiometricDevice.findOne({ where: { device_serial: sn } });
-            if (device) await device.update({ last_sync: new Date() });
+            const device = await BiometricDevice.findOne({ where: { device_serial: sn, status: { [Op.not]: "inactive" } } });
+            if (device) await device.update({ last_sync: new Date(), last_punch_at: new Date() });
         }
         res.setHeader("Content-Type", "text/plain");
         res.send("OK");
     } catch (err) {
+        console.error("[ADMS] ❌ GetRequest Error:", err);
         res.status(500).send("ERROR");
     }
 };

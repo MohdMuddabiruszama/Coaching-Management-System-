@@ -282,6 +282,17 @@ app.post("/devicecmd.aspx", _aidataRaw, _aidataBufToStr, aidataCtrl.deviceCmd);
 app.post("/devicecmd",      _aidataRaw, _aidataBufToStr, aidataCtrl.deviceCmd);
 
 /**
+ * ZKTeco ADMS Routes (standard /iclock/cdata protocol)
+ * MUST be registered before global body parsers to avoid destroying the raw body.
+ */
+const _iclockRaw = express.raw({ type: "*/*", limit: "2mb" });
+const _iclockBufToStr = (req, _res, next) => {
+    if (Buffer.isBuffer(req.body)) req.body = req.body.toString("utf8");
+    next();
+};
+app.use("/iclock", _iclockRaw, _iclockBufToStr, require("./routes/iclock.routes"));
+
+/**
  * Body Parsers
  * Parse JSON and URL-encoded data
  */
@@ -443,10 +454,7 @@ app.use("/api/public", require("./routes/publicSite.routes"));
 app.use("/api/leads", require("./routes/lead.routes"));
 app.use("/api/lifetime", require("./routes/lifetime.routes"));
 
-// ZKTeco ADMS Routes (standard /iclock/cdata protocol)
-app.use("/iclock", require("express").text({ type: ["text/plain", "application/x-www-form-urlencoded"] }), require("./routes/iclock.routes"));
-
-// Biomax AIData routes are mounted early (before body parsers) — see above.
+// Biomax AIData and ZKTeco ADMS routes are mounted early (before body parsers) — see above.
 
 
 // ============================================

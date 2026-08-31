@@ -9,11 +9,29 @@ import { AuthContext } from "../../context/AuthContext";
 import "./StudentNotesV2.css";
 import "../admin/Students.css";
 
+const getYoutubeEmbedUrl = (url) => {
+    if (!url) return '';
+    try {
+        const urlObj = new URL(url);
+        if (urlObj.hostname.includes('youtube.com')) {
+            const v = urlObj.searchParams.get('v');
+            if (v) return `https://www.youtube.com/embed/${v}`;
+        }
+        if (urlObj.hostname.includes('youtu.be')) {
+            return `https://www.youtube.com/embed${urlObj.pathname}`;
+        }
+        return url;
+    } catch {
+        return url;
+    }
+};
+
 const getFileTypeConfig = (note) => {
     const title = (note.title || '').toLowerCase();
     const type = (note.file_type || '').toLowerCase();
     const url = (note.file_url || '').toLowerCase();
     
+    if (type === 'youtube' || url.includes('youtube.com') || url.includes('youtu.be')) return { label: 'YOUTUBE', class: 'notes-v2-file-pdf' };
     if (type.includes('pdf') || title.includes('.pdf') || url.includes('.pdf')) return { label: 'PDF', class: 'notes-v2-file-pdf' };
     if (type.includes('ppt') || title.includes('.ppt') || url.includes('.ppt')) return { label: 'PPT', class: 'notes-v2-file-ppt' };
     if (type.includes('doc') || type.includes('word') || title.includes('.doc') || url.includes('.doc')) return { label: 'DOCX', class: 'notes-v2-file-doc' };
@@ -48,6 +66,7 @@ function StudentNotes() {
     // New UI State
     const [typeFilter, setTypeFilter] = useState('All Materials');
     const [sortOrder, setSortOrder] = useState('Latest Upload');
+    const [selectedVideoUrl, setSelectedVideoUrl] = useState(null);
 
     useEffect(() => {
         loadAll();
@@ -142,8 +161,8 @@ function StudentNotes() {
                 if (typeFilter === 'Notes' && typeInfo.label !== 'PDF' && typeInfo.label !== 'DOCX') return false;
                 if (typeFilter === 'PPTs' && typeInfo.label !== 'PPT') return false;
                 if (typeFilter === 'PDFs' && typeInfo.label !== 'PDF') return false;
-                if (typeFilter === 'Videos' && typeInfo.label !== 'VID') return false;
-                if (typeFilter === 'Others' && ['PDF', 'PPT', 'DOCX', 'VID'].includes(typeInfo.label)) return false;
+                if (typeFilter === 'Videos' && typeInfo.label !== 'VID' && typeInfo.label !== 'YOUTUBE') return false;
+                if (typeFilter === 'Others' && ['PDF', 'PPT', 'DOCX', 'VID', 'YOUTUBE'].includes(typeInfo.label)) return false;
                 return true;
             });
         }
@@ -380,16 +399,22 @@ function StudentNotes() {
                                                 <div className="notes-v2-cell-date-time">{dateTime.time}</div>
                                             </td>
                                             <td>
-                                                <div className="notes-v2-cell-size">{formatSize(note.file_size)}</div>
+                                                <div className="notes-v2-cell-size">{typeInfo.label === 'YOUTUBE' ? 'Video Link' : formatSize(note.file_size)}</div>
                                             </td>
                                             <td>
                                                 <div className="notes-v2-cell-downloads">{note.id % 25 + 5}</div>
                                             </td>
                                             <td>
                                                 <div className="notes-v2-cell-action">
-                                                    <button className="notes-v2-dl-btn" onClick={() => handleDownload(note)}>
-                                                        <span style={{ fontSize: '1rem', color: '#8b5cf6' }}>⬇</span> Download
-                                                    </button>
+                                                    {typeInfo.label === 'YOUTUBE' ? (
+                                                        <button className="notes-v2-dl-btn" onClick={() => setSelectedVideoUrl(note.file_url)} style={{ background: '#fef2f2', color: '#ef4444', borderColor: '#fee2e2' }}>
+                                                            <span style={{ fontSize: '1rem', color: '#ef4444', marginRight: '4px' }}>▶</span> Watch
+                                                        </button>
+                                                    ) : (
+                                                        <button className="notes-v2-dl-btn" onClick={() => handleDownload(note)}>
+                                                            <span style={{ fontSize: '1rem', color: '#8b5cf6', marginRight: '4px' }}>⬇</span> Download
+                                                        </button>
+                                                    )}
                                                     <button className="notes-v2-more-btn">⋮</button>
                                                 </div>
                                             </td>
@@ -420,10 +445,15 @@ function StudentNotes() {
                                             <p className="nmc-desc">{note.description || 'No additional description provided.'}</p>
                                         </div>
                                         <div className="nmc-top-actions">
-                                            <button className="notes-v2-dl-btn nmc-dl-btn-top" onClick={() => handleDownload(note)}>
-                                                <span style={{ fontSize: '1rem', color: '#8b5cf6', marginRight: '4px' }}>⬇</span> Download
-                                            </button>
-
+                                            {typeInfo.label === 'YOUTUBE' ? (
+                                                <button className="notes-v2-dl-btn nmc-dl-btn-top" onClick={() => setSelectedVideoUrl(note.file_url)} style={{ background: '#fef2f2', color: '#ef4444', borderColor: '#fee2e2' }}>
+                                                    <span style={{ fontSize: '1rem', color: '#ef4444', marginRight: '4px' }}>▶</span> Watch
+                                                </button>
+                                            ) : (
+                                                <button className="notes-v2-dl-btn nmc-dl-btn-top" onClick={() => handleDownload(note)}>
+                                                    <span style={{ fontSize: '1rem', color: '#8b5cf6', marginRight: '4px' }}>⬇</span> Download
+                                                </button>
+                                            )}
                                         </div>
                                     </div>
                                     <div className="nmc-meta-row">
@@ -438,7 +468,7 @@ function StudentNotes() {
                                                 <span>📅</span> {dateTime.date}, {dateTime.time}
                                             </div>
                                             <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#64748b', fontSize: '0.8rem' }}>
-                                                <span>📄</span> {formatSize(note.file_size)}
+                                                <span>📄</span> {typeInfo.label === 'YOUTUBE' ? 'Video Link' : formatSize(note.file_size)}
                                             </div>
                                         </div>
                                     </div>
@@ -468,6 +498,24 @@ function StudentNotes() {
                     )}
                 </div>
             </div>
+
+            {/* Video Modal */}
+            {selectedVideoUrl && (
+                <div className="modal-overlay" onClick={() => setSelectedVideoUrl(null)} style={{ background: 'rgba(15, 23, 42, 0.85)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'fixed', inset: 0, zIndex: 1000, padding: '1rem' }}>
+                    <div className="modal-content" onClick={e => e.stopPropagation()} style={{ background: 'black', borderRadius: '16px', width: '100%', maxWidth: '800px', aspectRatio: '16/9', position: 'relative', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)', overflow: 'hidden' }}>
+                        <button onClick={() => setSelectedVideoUrl(null)} style={{ position: 'absolute', top: '10px', right: '10px', background: 'rgba(0,0,0,0.5)', border: 'none', borderRadius: '50%', width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', cursor: 'pointer', zIndex: 10 }}>
+                            ✕
+                        </button>
+                        <iframe 
+                            src={getYoutubeEmbedUrl(selectedVideoUrl)} 
+                            style={{ width: '100%', height: '100%', border: 'none' }}
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                            allowFullScreen
+                            title="Study Material Video"
+                        ></iframe>
+                    </div>
+                </div>
+            )}
             
         </div>
     );

@@ -33,10 +33,10 @@ exports.uploadNote = async (req, res) => {
             return res.status(403).json({ success: false, message: "Not authorized to upload notes" });
         }
 
-        const { title, description, class_id, subject_id } = req.body;
+        const { title, description, class_id, subject_id, youtube_url } = req.body;
 
-        if (!req.file) {
-            return res.status(400).json({ success: false, message: "File is required" });
+        if (!req.file && !youtube_url) {
+            return res.status(400).json({ success: false, message: "File or YouTube Link is required" });
         }
 
         // Input validation
@@ -51,14 +51,14 @@ exports.uploadNote = async (req, res) => {
             subject_id: subject_id,
             title: title,
             description: description || "",
-            file_url: req.file.path,  // Cloudinary permanent URL
-            file_type: req.file.mimetype,
-            file_size: req.file.size
+            file_url: youtube_url ? youtube_url : req.file.path,
+            file_type: youtube_url ? "youtube" : req.file.mimetype,
+            file_size: youtube_url ? 0 : req.file.size
         });
 
         res.status(201).json({
             success: true,
-            message: "Note uploaded successfully",
+            message: "Study Material uploaded successfully",
             note: newNote
         });
 
@@ -105,7 +105,7 @@ exports.uploadNote = async (req, res) => {
 exports.updateNote = async (req, res) => {
     try {
         const { id } = req.params;
-        const { title, description, class_id, subject_id } = req.body;
+        const { title, description, class_id, subject_id, youtube_url } = req.body;
         const { user } = req;
 
         const note = await Note.findOne({ where: { id: id, institute_id: user.institute_id } });
@@ -137,13 +137,21 @@ exports.updateNote = async (req, res) => {
             subject_id: subject_id || note.subject_id
         };
 
-        if (req.file) {
-            // Delete old file from Cloudinary safely
-            const imageTypes = ["image/jpeg", "image/png", "image/jpg", "image/webp"];
-            const resourceType = imageTypes.includes(note.file_type) ? "image" : "raw";
-            destroyCloudinary(note.file_url, resourceType);
-
-            // Set new file details
+        if (youtube_url) {
+            if (note.file_type !== "youtube") {
+                const imageTypes = ["image/jpeg", "image/png", "image/jpg", "image/webp"];
+                const resourceType = imageTypes.includes(note.file_type) ? "image" : "raw";
+                destroyCloudinary(note.file_url, resourceType);
+            }
+            updateData.file_url = youtube_url;
+            updateData.file_type = "youtube";
+            updateData.file_size = 0;
+        } else if (req.file) {
+            if (note.file_type !== "youtube") {
+                const imageTypes = ["image/jpeg", "image/png", "image/jpg", "image/webp"];
+                const resourceType = imageTypes.includes(note.file_type) ? "image" : "raw";
+                destroyCloudinary(note.file_url, resourceType);
+            }
             updateData.file_url = req.file.path;
             updateData.file_type = req.file.mimetype;
             updateData.file_size = req.file.size;

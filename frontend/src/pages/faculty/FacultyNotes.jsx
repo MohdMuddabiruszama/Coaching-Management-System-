@@ -23,12 +23,14 @@ function FacultyNotes() {
     const [showModal, setShowModal] = useState(false);
     const [editingId, setEditingId] = useState(null);
     const [activeMenuId, setActiveMenuId] = useState(null);
+    const [materialType, setMaterialType] = useState('file'); // 'file' or 'youtube'
     const [formData, setFormData] = useState({
         title: "",
         description: "",
         class_id: "",
         subject_id: "",
-        file: null
+        file: null,
+        youtube_url: ""
     });
 
     useEffect(() => {
@@ -87,7 +89,8 @@ function FacultyNotes() {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        if (!formData.file && !editingId) { toast.error("Please select a file"); return; }
+        if (materialType === 'file' && !formData.file && !editingId) { toast.error("Please select a file"); return; }
+        if (materialType === 'youtube' && !formData.youtube_url) { toast.error("Please enter a YouTube URL"); return; }
         setUploading(true);
 
         const data = new FormData();
@@ -95,7 +98,13 @@ function FacultyNotes() {
         data.append("description", formData.description);
         data.append("class_id", formData.class_id);
         data.append("subject_id", formData.subject_id);
-        if (formData.file) data.append("file", formData.file);
+        
+        if (materialType === 'file') {
+            if (formData.file) data.append("file", formData.file);
+            data.append("youtube_url", "");
+        } else {
+            data.append("youtube_url", formData.youtube_url);
+        }
 
         try {
             let res;
@@ -108,7 +117,7 @@ function FacultyNotes() {
                 toast.success(editingId ? "Note updated successfully!" : "Note uploaded successfully!");
                 setShowModal(false);
                 setEditingId(null);
-                setFormData({ title: "", description: "", class_id: "", subject_id: "", file: null });
+                setFormData({ title: "", description: "", class_id: "", subject_id: "", file: null, youtube_url: "" });
                 loadAll();
             }
         } catch (err) {
@@ -120,6 +129,7 @@ function FacultyNotes() {
 
     const handleEditClick = (note) => {
         setEditingId(note.id);
+        setMaterialType(note.file_type === 'youtube' ? 'youtube' : 'file');
         const subForClass = subjects.filter(s => String(s.class_id) === String(note.class_id) || String(s.Class?.id) === String(note.class_id) || String(s.Class?.id) === String(note.classId));
         setFilteredSubjects(subForClass);
         setFormData({
@@ -127,7 +137,8 @@ function FacultyNotes() {
             description: note.description || "",
             class_id: note.classId || note.class_id || note.Class?.id || "",
             subject_id: note.subject_id || "",
-            file: null
+            file: null,
+            youtube_url: note.file_type === 'youtube' ? note.file_url : ""
         });
         setActiveMenuId(null);
         setShowModal(true);
@@ -165,7 +176,8 @@ function FacultyNotes() {
     const paginatedNotes = filteredNotes.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
     // Helpers
-    const getFileExt = (url) => {
+    const getFileExt = (url, fileType) => {
+        if (fileType === 'youtube') return 'YOUTUBE';
         if (!url) return 'PDF';
         const parts = url.split('.');
         if (parts.length <= 1) return 'FILE';
@@ -175,7 +187,7 @@ function FacultyNotes() {
         return ext;
     };
     const getFileColor = (ext) => {
-        if (['PDF'].includes(ext)) return '#ef4444'; // red
+        if (['PDF', 'YOUTUBE'].includes(ext)) return '#ef4444'; // red
         if (['DOC', 'DOCX'].includes(ext)) return '#3b82f6'; // blue
         if (['PPT', 'PPTX'].includes(ext)) return '#f97316'; // orange
         if (['JPG', 'JPEG', 'PNG'].includes(ext)) return '#10b981'; // green
@@ -208,7 +220,7 @@ function FacultyNotes() {
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
                         Back
                     </button>
-                    <button onClick={() => { setFilteredSubjects([]); setFormData({ title: "", description: "", class_id: "", subject_id: "", file: null }); setShowModal(true); }} style={{ background: '#6d28d9', border: 'none', color: 'white', padding: '0.6rem 1.25rem', borderRadius: '10px', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', boxShadow: '0 4px 6px -1px rgba(109, 40, 217, 0.2)', transition: 'all 0.2s' }}>
+                    <button onClick={() => { setEditingId(null); setMaterialType('file'); setFilteredSubjects([]); setFormData({ title: "", description: "", class_id: "", subject_id: "", file: null, youtube_url: "" }); setShowModal(true); }} style={{ background: '#6d28d9', border: 'none', color: 'white', padding: '0.6rem 1.25rem', borderRadius: '10px', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', boxShadow: '0 4px 6px -1px rgba(109, 40, 217, 0.2)', transition: 'all 0.2s' }}>
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
                         Upload Note
                     </button>
@@ -307,7 +319,7 @@ function FacultyNotes() {
                             </thead>
                             <tbody>
                                 {paginatedNotes.map((note, idx) => {
-                                    const ext = getFileExt(note.file_url);
+                                    const ext = getFileExt(note.file_url, note.file_type);
                                     const extColor = getFileColor(ext);
                                     const dateObj = new Date(note.created_at);
                                     
@@ -316,7 +328,11 @@ function FacultyNotes() {
                                             <td style={{ padding: '1.25rem 1.5rem' }}>
                                                 <div style={{ display: 'flex', alignItems: 'flex-start', gap: '1rem' }}>
                                                     <div style={{ width: '42px', height: '42px', background: `${extColor}15`, color: extColor, borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: '2px' }}>
-                                                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                                                        {ext === 'YOUTUBE' ? (
+                                                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M22.54 6.42a2.78 2.78 0 0 0-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.42a2.78 2.78 0 0 0-1.94 2C1 8.17 1 12 1 12s0 3.83.46 5.58a2.78 2.78 0 0 0 1.94 2C5.12 20 12 20 12 20s6.88 0 8.6-.42a2.78 2.78 0 0 0 1.94-2C23 15.83 23 12 23 12s0-3.83-.46-5.58z"></path><polygon points="9.75 15.02 15.5 12 9.75 8.98 9.75 15.02"></polygon></svg>
+                                                        ) : (
+                                                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                                                        )}
                                                     </div>
                                                     <div>
                                                         <h4 style={{ margin: 0, fontSize: '0.95rem', color: '#0f172a', fontWeight: '700', lineHeight: '1.4' }}>{note.title}</h4>
@@ -340,10 +356,10 @@ function FacultyNotes() {
                                                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={extColor} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
                                                     <div>
                                                         <p style={{ margin: 0, fontSize: '0.85rem', color: '#334155', fontWeight: '600', maxWidth: '140px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                                                            {note.file_url ? note.file_url.split('/').pop() : 'Unknown'}
+                                                            {ext === 'YOUTUBE' ? 'YouTube Video' : (note.file_url ? note.file_url.split('/').pop() : 'Unknown')}
                                                         </p>
                                                         <p style={{ margin: 0, fontSize: '0.75rem', color: '#94a3b8', fontWeight: '500' }}>
-                                                            {formatBytes(note.file_size || 2500000)}
+                                                            {ext === 'YOUTUBE' ? 'Video Link' : formatBytes(note.file_size || 2500000)}
                                                         </p>
                                                     </div>
                                                 </div>
@@ -493,31 +509,52 @@ function FacultyNotes() {
                             </div>
 
                             <div className="form-group" style={{ marginBottom: '1.25rem' }}>
-                                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '600', color: '#0f172a', marginBottom: '0.4rem' }}>{editingId ? "File (Leave empty to keep existing)" : "File (PDF, DOCX, PPT, Image)"} <span style={{ color: '#ef4444' }}>*</span></label>
-                                <div style={{ position: 'relative', border: '2px dashed #c4b5fd', borderRadius: '12px', background: '#faf5ff', padding: '2rem 1.5rem', textAlign: 'center', transition: 'all 0.2s', cursor: 'pointer' }} onMouseEnter={e => {e.currentTarget.style.borderColor = '#8b5cf6'; e.currentTarget.style.background = '#f3e8ff'}} onMouseLeave={e => {e.currentTarget.style.borderColor = '#c4b5fd'; e.currentTarget.style.background = '#faf5ff'}}>
-                                    <input type="file" name="file" onChange={handleChange} accept=".pdf,.doc,.docx,.ppt,.pptx,.jpg,.jpeg,.png,.zip" required={!editingId} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', opacity: 0, cursor: 'pointer' }} />
-                                    
-                                    {!formData.file ? (
-                                        <div style={{ pointerEvents: 'none' }}>
-                                            <div style={{ display: 'inline-flex', background: '#8b5cf6', color: 'white', borderRadius: '50%', padding: '0.6rem', marginBottom: '0.8rem', boxShadow: '0 4px 6px -1px rgba(139, 92, 246, 0.3)' }}>
-                                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
-                                            </div>
-                                            <p style={{ margin: '0 0 0.4rem', fontSize: '0.95rem', color: '#334155', fontWeight: '600' }}>Drag & drop your file here, or <span style={{ color: '#6d28d9' }}>click to browse</span></p>
-                                            <p style={{ margin: 0, fontSize: '0.75rem', color: '#64748b' }}>Max file size: 50 MB | Supported: PDF, DOCX, PPT, JPG, PNG</p>
-                                        </div>
-                                    ) : (
-                                        <div style={{ pointerEvents: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.75rem' }}>
-                                            <div style={{ display: 'inline-flex', background: '#10b981', color: 'white', borderRadius: '50%', padding: '0.6rem', boxShadow: '0 4px 6px -1px rgba(16, 185, 129, 0.3)' }}>
-                                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
-                                            </div>
-                                            <div style={{ textAlign: 'left' }}>
-                                                <p style={{ margin: '0 0 0.2rem', fontSize: '0.95rem', color: '#0f172a', fontWeight: '600' }}>{formData.file.name}</p>
-                                                <p style={{ margin: 0, fontSize: '0.75rem', color: '#64748b' }}>{(formData.file.size / 1024 / 1024).toFixed(2)} MB</p>
-                                            </div>
-                                        </div>
-                                    )}
+                                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '600', color: '#0f172a', marginBottom: '0.4rem' }}>Material Type</label>
+                                <div style={{ display: 'flex', gap: '1rem' }}>
+                                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.9rem' }}>
+                                        <input type="radio" name="materialType" value="file" checked={materialType === 'file'} onChange={() => setMaterialType('file')} />
+                                        File Upload
+                                    </label>
+                                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.9rem' }}>
+                                        <input type="radio" name="materialType" value="youtube" checked={materialType === 'youtube'} onChange={() => setMaterialType('youtube')} />
+                                        YouTube Link
+                                    </label>
                                 </div>
                             </div>
+
+                            {materialType === 'file' ? (
+                                <div className="form-group" style={{ marginBottom: '1.25rem' }}>
+                                    <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '600', color: '#0f172a', marginBottom: '0.4rem' }}>{editingId ? "File (Leave empty to keep existing)" : "File (PDF, DOCX, PPT, Image)"} <span style={{ color: '#ef4444' }}>*</span></label>
+                                    <div style={{ position: 'relative', border: '2px dashed #c4b5fd', borderRadius: '12px', background: '#faf5ff', padding: '2rem 1.5rem', textAlign: 'center', transition: 'all 0.2s', cursor: 'pointer' }} onMouseEnter={e => {e.currentTarget.style.borderColor = '#8b5cf6'; e.currentTarget.style.background = '#f3e8ff'}} onMouseLeave={e => {e.currentTarget.style.borderColor = '#c4b5fd'; e.currentTarget.style.background = '#faf5ff'}}>
+                                        <input type="file" name="file" onChange={handleChange} accept=".pdf,.doc,.docx,.ppt,.pptx,.jpg,.jpeg,.png,.zip" required={!editingId && materialType === 'file'} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', opacity: 0, cursor: 'pointer' }} />
+                                        
+                                        {!formData.file ? (
+                                            <div style={{ pointerEvents: 'none' }}>
+                                                <div style={{ display: 'inline-flex', background: '#8b5cf6', color: 'white', borderRadius: '50%', padding: '0.6rem', marginBottom: '0.8rem', boxShadow: '0 4px 6px -1px rgba(139, 92, 246, 0.3)' }}>
+                                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                                                </div>
+                                                <p style={{ margin: '0 0 0.4rem', fontSize: '0.95rem', color: '#334155', fontWeight: '600' }}>Drag & drop your file here, or <span style={{ color: '#6d28d9' }}>click to browse</span></p>
+                                                <p style={{ margin: 0, fontSize: '0.75rem', color: '#64748b' }}>Max file size: 50 MB | Supported: PDF, DOCX, PPT, JPG, PNG</p>
+                                            </div>
+                                        ) : (
+                                            <div style={{ pointerEvents: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.75rem' }}>
+                                                <div style={{ display: 'inline-flex', background: '#10b981', color: 'white', borderRadius: '50%', padding: '0.6rem', boxShadow: '0 4px 6px -1px rgba(16, 185, 129, 0.3)' }}>
+                                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+                                                </div>
+                                                <div style={{ textAlign: 'left' }}>
+                                                    <p style={{ margin: '0 0 0.2rem', fontSize: '0.95rem', color: '#0f172a', fontWeight: '600' }}>{formData.file.name}</p>
+                                                    <p style={{ margin: 0, fontSize: '0.75rem', color: '#64748b' }}>{(formData.file.size / 1024 / 1024).toFixed(2)} MB</p>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="form-group" style={{ marginBottom: '1.25rem' }}>
+                                    <label style={{ fontSize: '0.85rem', fontWeight: '600', color: '#0f172a', display: 'block', marginBottom: '0.4rem' }}>YouTube Video Link <span style={{ color: '#ef4444' }}>*</span></label>
+                                    <input type="url" name="youtube_url" placeholder="https://www.youtube.com/watch?v=..." value={formData.youtube_url} onChange={handleChange} required={materialType === 'youtube'} style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid #e2e8f0', outline: 'none', fontSize: '0.9rem', color: '#334155', boxSizing: 'border-box' }} />
+                                </div>
+                            )}
 
                             <div style={{ background: '#f3e8ff', border: '1px solid #e9d5ff', borderRadius: '8px', padding: '0.75rem 1rem', display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.5rem', color: '#6b21a8' }}>
                                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>

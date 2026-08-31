@@ -333,24 +333,107 @@ html.dark-mode .auth-input:focus {
     margin-bottom: 1.5rem;
 }
 
-.auth-checkbox {
+.auth-checkbox-wrapper {
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 8px;
     font-size: 0.85rem;
     color: #4b5563;
     cursor: pointer;
+    user-select: none;
+    transition: color 0.2s;
 }
 
-html.dark-mode .auth-checkbox {
+html.dark-mode .auth-checkbox-wrapper {
     color: #94a3b8;
 }
 
-.auth-checkbox input[type="checkbox"] {
-    width: 15px;
-    height: 15px;
+.auth-checkbox-wrapper:hover {
+    color: #1f2937;
+}
+
+html.dark-mode .auth-checkbox-wrapper:hover {
+    color: #f1f5f9;
+}
+
+.auth-checkbox-input {
+    position: absolute;
+    opacity: 0;
     cursor: pointer;
-    accent-color: #667eea;
+    height: 0;
+    width: 0;
+}
+
+.auth-checkbox-custom {
+    position: relative;
+    height: 18px;
+    width: 18px;
+    background-color: rgba(255, 255, 255, 0.8);
+    border: 1.5px solid #e5e7eb;
+    border-radius: 4px;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+html.dark-mode .auth-checkbox-custom {
+    background-color: rgba(30, 41, 59, 0.8);
+    border-color: #334155;
+}
+
+.auth-checkbox-wrapper:hover .auth-checkbox-input ~ .auth-checkbox-custom {
+    border-color: #667eea;
+}
+
+html.dark-mode .auth-checkbox-wrapper:hover .auth-checkbox-input ~ .auth-checkbox-custom {
+    border-color: #818cf8;
+}
+
+.auth-checkbox-input:checked ~ .auth-checkbox-custom {
+    background-color: #667eea;
+    border-color: #667eea;
+}
+
+html.dark-mode .auth-checkbox-input:checked ~ .auth-checkbox-custom {
+    background-color: #818cf8;
+    border-color: #818cf8;
+}
+
+.auth-checkbox-input:focus-visible ~ .auth-checkbox-custom {
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.3);
+}
+
+html.dark-mode .auth-checkbox-input:focus-visible ~ .auth-checkbox-custom {
+    box-shadow: 0 0 0 3px rgba(129, 140, 248, 0.3);
+}
+
+.auth-checkbox-custom:after {
+    content: "";
+    position: absolute;
+    display: none;
+    width: 5px;
+    height: 10px;
+    border: solid white;
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+    margin-top: -2px;
+}
+
+.auth-checkbox-input:checked ~ .auth-checkbox-custom:after {
+    display: block;
+    animation: checkmarkIn 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275) both;
+}
+
+@keyframes checkmarkIn {
+    0% {
+        opacity: 0;
+        transform: rotate(45deg) scale(0);
+    }
+    100% {
+        opacity: 1;
+        transform: rotate(45deg) scale(1);
+    }
 }
 
 .auth-forgot {
@@ -641,8 +724,19 @@ html.dark-mode .auth-footer__text {
         color: rgba(255, 255, 255, 0.4) !important;
     }
 
-    .auth-checkbox {
+    .auth-checkbox-wrapper {
         color: rgba(255, 255, 255, 0.8);
+    }
+    .auth-checkbox-custom {
+        background: rgba(255, 255, 255, 0.08);
+        border-color: rgba(255, 255, 255, 0.3);
+    }
+    .auth-checkbox-wrapper:hover .auth-checkbox-input ~ .auth-checkbox-custom {
+        border-color: rgba(255, 255, 255, 0.6);
+    }
+    .auth-checkbox-input:checked ~ .auth-checkbox-custom {
+        background-color: #818cf8;
+        border-color: #818cf8;
     }
 
     .auth-forgot {

@@ -348,12 +348,15 @@ function Login() {
             </div>
 
             <div className="auth-row">
-              <label className="auth-checkbox">
+              <label className="auth-checkbox-wrapper" htmlFor="rememberMe">
                 <input 
                   type="checkbox" 
+                  id="rememberMe"
+                  className="auth-checkbox-input"
                   checked={rememberMe}
                   onChange={(e) => setRememberMe(e.target.checked)}
                 />
+                <span className="auth-checkbox-custom"></span>
                 <span>Remember me</span>
               </label>
               <Link to="/forgot-password" className="auth-forgot">Forgot password?</Link>

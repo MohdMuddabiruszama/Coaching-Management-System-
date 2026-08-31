@@ -13,8 +13,8 @@ const AutoLogoutWrapper = () => {
 
   const { showWarning, countdown, stayLoggedIn } = useAutoLogout(handleLogout);
 
-  // Only apply auto-logout if the user is authenticated
-  if (!user) return null;
+  // Only apply auto-logout if the user is authenticated and is an admin or super admin
+  if (!user || (user.role !== 'admin' && user.role !== 'super_admin')) return null;
 
   return (
     <>

@@ -45,6 +45,9 @@ const MoreVerticalIcon = () => (
 const FilePdfIcon = () => (
   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><path d="M16 13H8"></path><path d="M16 17H8"></path><path d="M10 9H8"></path></svg>
 );
+const YoutubeIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22.54 6.42a2.78 2.78 0 0 0-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.42a2.78 2.78 0 0 0-1.94 2C1 8.17 1 12 1 12s0 3.83.46 5.58a2.78 2.78 0 0 0 1.94 2C5.12 20 12 20 12 20s6.88 0 8.6-.42a2.78 2.78 0 0 0 1.94-2C23 15.83 23 12 23 12s0-3.83-.46-5.58z"></path><polygon points="9.75 15.02 15.5 12 9.75 8.98 9.75 15.02"></polygon></svg>
+);
 
 // Helper: human-readable file size
 function formatSize(bytes) {
@@ -57,6 +60,7 @@ function formatSize(bytes) {
 // Helper: get icon config based on mime-type
 function getFileConfig(mime) {
     if (!mime) return { icon: <DocumentTextIcon />, colorClass: "default", typeName: "DOC" };
+    if (mime === "youtube") return { icon: <YoutubeIcon />, colorClass: "youtube", typeName: "YOUTUBE" };
     if (mime.includes("pdf")) return { icon: <FilePdfIcon />, colorClass: "pdf", typeName: "PDF" };
     if (mime.includes("presentation") || mime.includes("ppt")) return { icon: <DocumentTextIcon />, colorClass: "ppt", typeName: "PPT" };
     if (mime.includes("image")) return { icon: <DocumentTextIcon />, colorClass: "img", typeName: "PNG" };
@@ -77,13 +81,15 @@ function AdminNotes() {
     const [showModal, setShowModal] = useState(false);
     const [editingId, setEditingId] = useState(null);
     const [activeMenuId, setActiveMenuId] = useState(null);
+    const [materialType, setMaterialType] = useState('file'); // 'file' or 'youtube'
     const [formData, setFormData] = useState({
         title: "",
         description: "",
         class_id: "",
         subject_id: "",
         faculty_id: "",
-        file: null
+        file: null,
+        youtube_url: ""
     });
 
 
@@ -132,7 +138,8 @@ function AdminNotes() {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        if (!formData.file && !editingId) { toast.error("Please select a file"); return; }
+        if (materialType === 'file' && !formData.file && !editingId) { toast.error("Please select a file"); return; }
+        if (materialType === 'youtube' && !formData.youtube_url) { toast.error("Please enter a YouTube URL"); return; }
         if (!formData.faculty_id) { toast.error("Please select a faculty member"); return; }
         
         setUploading(true);
@@ -142,7 +149,12 @@ function AdminNotes() {
         data.append("class_id", formData.class_id);
         data.append("subject_id", formData.subject_id);
         data.append("faculty_id", formData.faculty_id);
-        if (formData.file) data.append("file", formData.file);
+        if (materialType === 'file') {
+            if (formData.file) data.append("file", formData.file);
+            data.append("youtube_url", "");
+        } else {
+            data.append("youtube_url", formData.youtube_url);
+        }
 
         try {
             let res;
@@ -155,7 +167,7 @@ function AdminNotes() {
                 toast.success(editingId ? "Note updated successfully!" : "Note uploaded successfully!");
                 setShowModal(false);
                 setEditingId(null);
-                setFormData({ title: "", description: "", class_id: "", subject_id: "", faculty_id: "", file: null });
+                setFormData({ title: "", description: "", class_id: "", subject_id: "", faculty_id: "", file: null, youtube_url: "" });
                 fetchAll();
             }
         } catch (err) {
@@ -167,13 +179,15 @@ function AdminNotes() {
 
     const handleEditClick = (note) => {
         setEditingId(note.id);
+        setMaterialType(note.file_type === 'youtube' ? 'youtube' : 'file');
         setFormData({
             title: note.title,
             description: note.description || "",
             class_id: note.class_id || note.Class?.id || "",
             subject_id: note.subject_id || "",
             faculty_id: note.faculty_id || "",
-            file: null
+            file: null,
+            youtube_url: note.file_type === 'youtube' ? note.file_url : ""
         });
         setActiveMenuId(null);
         setShowModal(true);
@@ -301,7 +315,7 @@ const handleDelete = async (id) => {
                         <button className="st-btn st-btn-outline" onClick={handleExport} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                             <DownloadIcon /> Export CSV
                         </button>
-                        <button className="st-btn st-btn-primary" onClick={() => { setEditingId(null); setFormData({ title: "", description: "", class_id: "", subject_id: "", faculty_id: "", file: null }); setShowModal(true); }} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <button className="st-btn st-btn-primary" onClick={() => { setEditingId(null); setMaterialType('file'); setFormData({ title: "", description: "", class_id: "", subject_id: "", faculty_id: "", file: null, youtube_url: "" }); setShowModal(true); }} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                             <UploadCloudIcon /> Upload Material
                         </button>
                     </div>
@@ -541,25 +555,46 @@ const handleDelete = async (id) => {
                             </div>
 
                             <div className="form-group" style={{ marginBottom: '1.25rem' }}>
-                                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '600', color: '#0f172a', marginBottom: '0.4rem' }}>{editingId ? "File (Leave empty to keep existing)" : "File (PDF, DOCX, PPT, Image)"} <span style={{ color: '#ef4444' }}>*</span></label>
-                                <div style={{ position: 'relative', border: '2px dashed #bfdbfe', borderRadius: '12px', background: '#eff6ff', padding: '2rem 1.5rem', textAlign: 'center', cursor: 'pointer' }}>
-                                    <input type="file" name="file" onChange={handleChange} accept=".pdf,.doc,.docx,.ppt,.pptx,.jpg,.jpeg,.png,.zip" required={!editingId} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', opacity: 0, cursor: 'pointer' }} />
-                                    
-                                    {!formData.file ? (
-                                        <>
-                                            <div style={{ width: '40px', height: '40px', background: 'white', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 0.5rem', color: '#3b82f6', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
-                                                <UploadCloudIcon />
-                                            </div>
-                                            <p style={{ margin: 0, fontSize: '0.9rem', color: '#334155', fontWeight: '600' }}>Drag & drop your file here, or <span style={{ color: 'transparent' }}>click to browse</span></p>
-                                            <p style={{ margin: '0.2rem 0 0', fontSize: '0.75rem', color: '#64748b' }}>Max file size: 50 MB | Supported: PDF, DOCX, PPT, JPG, PNG</p>
-                                        </>
-                                    ) : (
-                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', color: '#0369a1' }}>
-                                            <span style={{ fontSize: '0.9rem', fontWeight: '600' }}>{formData.file.name}</span>
-                                        </div>
-                                    )}
+                                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '600', color: '#0f172a', marginBottom: '0.4rem' }}>Material Type</label>
+                                <div style={{ display: 'flex', gap: '1rem' }}>
+                                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.9rem' }}>
+                                        <input type="radio" name="materialType" value="file" checked={materialType === 'file'} onChange={() => setMaterialType('file')} />
+                                        File Upload
+                                    </label>
+                                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.9rem' }}>
+                                        <input type="radio" name="materialType" value="youtube" checked={materialType === 'youtube'} onChange={() => setMaterialType('youtube')} />
+                                        YouTube Link
+                                    </label>
                                 </div>
                             </div>
+
+                            {materialType === 'file' ? (
+                                <div className="form-group" style={{ marginBottom: '1.25rem' }}>
+                                    <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '600', color: '#0f172a', marginBottom: '0.4rem' }}>{editingId ? "File (Leave empty to keep existing)" : "File (PDF, DOCX, PPT, Image)"} <span style={{ color: '#ef4444' }}>*</span></label>
+                                    <div style={{ position: 'relative', border: '2px dashed #bfdbfe', borderRadius: '12px', background: '#eff6ff', padding: '2rem 1.5rem', textAlign: 'center', cursor: 'pointer' }}>
+                                        <input type="file" name="file" onChange={handleChange} accept=".pdf,.doc,.docx,.ppt,.pptx,.jpg,.jpeg,.png,.zip" required={!editingId && materialType === 'file'} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', opacity: 0, cursor: 'pointer' }} />
+                                        
+                                        {!formData.file ? (
+                                            <>
+                                                <div style={{ width: '40px', height: '40px', background: 'white', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 0.5rem', color: '#3b82f6', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
+                                                    <UploadCloudIcon />
+                                                </div>
+                                                <p style={{ margin: 0, fontSize: '0.9rem', color: '#334155', fontWeight: '600' }}>Drag & drop your file here, or <span style={{ color: 'transparent' }}>click to browse</span></p>
+                                                <p style={{ margin: '0.2rem 0 0', fontSize: '0.75rem', color: '#64748b' }}>Max file size: 50 MB | Supported: PDF, DOCX, PPT, JPG, PNG</p>
+                                            </>
+                                        ) : (
+                                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', color: '#0369a1' }}>
+                                                <span style={{ fontSize: '0.9rem', fontWeight: '600' }}>{formData.file.name}</span>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="form-group" style={{ marginBottom: '1.25rem' }}>
+                                    <label style={{ fontSize: '0.85rem', fontWeight: '600', color: '#0f172a', display: 'block', marginBottom: '0.4rem' }}>YouTube Video Link <span style={{ color: '#ef4444' }}>*</span></label>
+                                    <input type="url" name="youtube_url" placeholder="https://www.youtube.com/watch?v=..." value={formData.youtube_url} onChange={handleChange} required={materialType === 'youtube'} style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid #e2e8f0', outline: 'none', fontSize: '0.9rem', color: '#334155', boxSizing: 'border-box' }} />
+                                </div>
+                            )}
 
                             <div style={{ display: 'flex', gap: '1rem', marginTop: '2rem' }}>
                                 <button type="button" onClick={() => setShowModal(false)} disabled={uploading} style={{ flex: 1, padding: '0.75rem', borderRadius: '10px', border: '1px solid #e2e8f0', background: 'white', color: '#475569', fontSize: '0.95rem', fontWeight: '600', cursor: uploading ? 'not-allowed' : 'pointer' }}>

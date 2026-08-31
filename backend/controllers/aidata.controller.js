@@ -1,7 +1,20 @@
 /**
- * Biomax N-series Push Protocol Controller
+ * Biomax N-series Push Protocol Controller (AIData / ADMS)
  * ─────────────────────────────────────────────────────────────────────────────
- * The Biomax N300 (N-MULTIBIO300) sends TWO types of POST /AIData.aspx requests:
+ * Compatible devices: Biomax N-WL20, N300, N-MULTIBIO300, BM300W, and any
+ * Biomax device using the HTTP AIData push protocol.
+ *
+ * The Biomax N-WL20 sends HTTP requests to /AIData.aspx (NOT /iclock/cdata).
+ * No SDK is needed — the device pushes data natively over HTTP.
+ *
+ * Device ADMS Settings (set on the physical device screen):
+ *   Server Address : <your-server-ip-or-domain>
+ *   Server Port    : 80 (live) or 5000 (local dev)
+ *   URL Path       : /AIData.aspx
+ *   Enable Domain  : Yes (if using domain) / No (if using IP)
+ *   Server Mode    : ADMS or Cloud
+ *
+ * The device sends TWO types of POST /AIData.aspx requests:
  *
  *  Type 1 — Face template upload (CT: application/json, ~82 KB):
  *    {"face":"AAQEAA...base64..."}
@@ -14,6 +27,7 @@
  *
  * The device does NOT include its SN in the JSON body.
  * SN is sent either as a request header or a query param, so we check both.
+ * Biomax N-WL20 also sends a "token" header — we use this to identify the device.
  */
 
 const { BiometricDevice, BiometricPunch } = require("../models");
@@ -74,28 +88,33 @@ function resolveVerifyMode(mode) {
 
 /**
  * Find device — priority order:
- *  1. device_token  (Biomax N300 sends token header)
- *  2. device_serial (ZKTeco ADMS protocol sends SN)
+ *  1. device_token  (Biomax N-WL20/N300 sends "token" header)
+ *  2. device_serial (ZKTeco/Biomax ADMS SN query param)
+ *
+ * Accepts any status EXCEPT "inactive" (admin-disabled).
+ * This allows "connected", "offline", "pending", and "active" devices
+ * to all receive and process pushes.
  */
 async function findDevice(token, sn) {
-    // 1. Match by device_token (Biomax JSON REST)
+    // 1. Match by device_token (Biomax JSON REST — N-WL20 sends this as header)
     if (token) {
         const d = await BiometricDevice.findOne({
-            where: { device_token: token, status: { [Op.in]: ["active", "pending"] } }
+            where: { device_token: token, status: { [Op.not]: "inactive" } }
         });
-        if (d) { console.log(`[AIData] Device found by token → ${d.device_serial}`); return d; }
+        if (d) { console.log(`[AIData] ✅ Device found by token → ${d.device_serial} (status: ${d.status})`); return d; }
+        console.warn(`[AIData] ⚠️  No device matched token=${token} — check device_token in DB`);
     }
-    // 2. Match by serial number (ADMS text protocol)
+    // 2. Match by serial number (SN query param)
     if (sn) {
         const d = await BiometricDevice.findOne({
-            where: { device_serial: sn, status: { [Op.in]: ["active", "pending"] } }
+            where: { device_serial: sn, status: { [Op.not]: "inactive" } }
         });
-        if (d) { console.log(`[AIData] Device found by SN → ${d.device_serial}`); return d; }
+        if (d) { console.log(`[AIData] ✅ Device found by SN → ${d.device_serial} (status: ${d.status})`); return d; }
+        console.warn(`[AIData] ⚠️  No device matched SN=${sn} — is the device registered in Admin → Biometric → Devices?`);
     }
-    
-    // We intentionally removed the "fallback to random active device" 
-    // because it causes punches to be assigned to the wrong device if token mismatches.
-    console.warn(`[AIData] findDevice failed: no device found for token=${token}, sn=${sn}`);
+
+    console.warn(`[AIData] ❌ findDevice failed: token=${token}, sn=${sn}`);
+    console.warn(`[AIData] 💡 Fix: Register the device in Admin Panel → Biometric → Connect Device → paste the serial number`);
     return null;
 }
 
@@ -103,39 +122,42 @@ async function findDevice(token, sn) {
 
 exports.handshake = async (req, res) => {
     try {
-        const sn = extractSN(req);
-        console.log(`[AIData] Handshake | SN=${sn} | headers=${JSON.stringify(req.headers)}`);
+        const sn    = extractSN(req);
+        const token = extractToken(req);
+        console.log(`[AIData] 🤝 Handshake | SN=${sn} | token=${token} | IP=${req.ip} | UA=${req.headers["user-agent"]?.slice(0,60)}`);
 
-        if (!sn) {
-            // Device did not send SN — still respond OK so it keeps pushing data
-            return res.status(200).type("text/plain").set("Connection", "close").send("OK");
+        // Always respond OK — the device must get a response or it will keep retrying
+        const ackText = sn
+            ? [`GET OPTION FROM: ${sn}`, `ATTLOGStamp=9999`, `OPERLOGStamp=9999`, `Realtime=1`, `Encrypt=None`].join("\r\n")
+            : "OK";
+
+        // Try to find and update device — but don't block the response
+        const device = await (async () => {
+            if (token) {
+                const d = await BiometricDevice.findOne({ where: { device_token: token, status: { [Op.not]: "inactive" } } });
+                if (d) return d;
+            }
+            if (sn) {
+                const d = await BiometricDevice.findOne({ where: { device_serial: sn, status: { [Op.not]: "inactive" } } });
+                if (d) return d;
+            }
+            return null;
+        })();
+
+        if (device) {
+            const upd = { last_sync: new Date(), last_punch_at: new Date() };
+            if (device.status === "pending") upd.status = "active";
+            await device.update(upd);
+            console.log(`[AIData] ✅ Handshake OK — device "${device.device_name}" (${device.device_serial}) last_sync updated`);
+        } else {
+            console.warn(`[AIData] ⚠️  Handshake from UNREGISTERED device — SN=${sn}, token=${token}`);
+            console.warn(`[AIData] 💡 Register it: Admin Panel → Biometric → Connect Device → serial: ${sn || "(unknown)"}`);
         }
 
-        const device = await BiometricDevice.findOne({
-            where: { device_serial: sn, status: { [Op.in]: ["active", "pending"] } }
-        });
-
-        if (!device) {
-            console.warn(`[AIData] Unregistered device: SN=${sn}`);
-            return res.status(200).type("text/plain").send("ERROR: UNREGISTERED DEVICE");
-        }
-
-        const upd = { last_sync: new Date() };
-        if (device.status === "pending") { upd.status = "active"; }
-        await device.update(upd);
-
-        const reply = [
-            `GET OPTION FROM: ${sn}`,
-            `ATTLOGStamp=9999`,
-            `OPERLOGStamp=9999`,
-            `Realtime=1`,
-            `Encrypt=None`,
-        ].join("\r\n");
-
-        res.status(200).type("text/plain").set("Connection", "close").send(reply);
+        res.status(200).type("text/plain").set("Connection", "close").send(ackText);
     } catch (err) {
         console.error("[AIData] Handshake error:", err.message);
-        res.status(200).type("text/plain").send("ERROR");
+        res.status(200).type("text/plain").send("OK"); // Always ACK
     }
 };
 
@@ -383,13 +405,19 @@ exports.receiveData = async (req, res) => {
 
 exports.getRequest = async (req, res) => {
     try {
-        const sn = extractSN(req);
-        if (sn) {
-            const device = await BiometricDevice.findOne({ where: { device_serial: sn } });
+        const sn    = extractSN(req);
+        const token = extractToken(req);
+        console.log(`[AIData] 📡 GetRequest (heartbeat) | SN=${sn} | token=${token}`);
+        if (sn || token) {
+            const where = sn
+                ? { device_serial: sn, status: { [Op.not]: "inactive" } }
+                : { device_token: token, status: { [Op.not]: "inactive" } };
+            const device = await BiometricDevice.findOne({ where });
             if (device) {
-                const statusUpdate = { last_sync: new Date() };
+                const statusUpdate = { last_sync: new Date(), last_punch_at: new Date() };
                 if (device.status === "pending") statusUpdate.status = "active";
                 await device.update(statusUpdate);
+                console.log(`[AIData] ✅ Heartbeat updated for device "${device.device_name}"`);
             }
         }
         res.status(200).type("text/plain").set("Connection", "close").send("OK");
