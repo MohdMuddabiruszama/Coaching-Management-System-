@@ -26,6 +26,22 @@ const getYoutubeEmbedUrl = (url) => {
     }
 };
 
+const getYoutubeVideoId = (url) => {
+    if (!url) return null;
+    try {
+        const urlObj = new URL(url);
+        if (urlObj.hostname.includes('youtube.com')) {
+            return urlObj.searchParams.get('v');
+        }
+        if (urlObj.hostname.includes('youtu.be')) {
+            return urlObj.pathname.substring(1);
+        }
+        return null;
+    } catch {
+        return null;
+    }
+};
+
 const getFileTypeConfig = (note) => {
     const title = (note.title || '').toLowerCase();
     const type = (note.file_type || '').toLowerCase();
@@ -444,24 +460,40 @@ function StudentNotes() {
                                             <h3 className="nmc-title">{note.title}</h3>
                                             <p className="nmc-desc">{note.description || 'No additional description provided.'}</p>
                                         </div>
-                                        <div className="nmc-top-actions">
-                                            {typeInfo.label === 'YOUTUBE' ? (
-                                                <button className="notes-v2-dl-btn nmc-dl-btn-top" onClick={() => setSelectedVideoUrl(note.file_url)} style={{ background: '#fef2f2', color: '#ef4444', borderColor: '#fee2e2' }}>
-                                                    <span style={{ fontSize: '1rem', color: '#ef4444', marginRight: '4px' }}>▶</span> Watch
-                                                </button>
-                                            ) : (
+                                        {typeInfo.label !== 'YOUTUBE' && (
+                                            <div className="nmc-top-actions">
                                                 <button className="notes-v2-dl-btn nmc-dl-btn-top" onClick={() => handleDownload(note)}>
                                                     <span style={{ fontSize: '1rem', color: '#8b5cf6', marginRight: '4px' }}>⬇</span> Download
                                                 </button>
-                                            )}
-                                        </div>
+                                            </div>
+                                        )}
                                     </div>
-                                    <div className="nmc-meta-row">
+
+                                    {/* Beautiful YouTube Thumbnail inline for Mobile */}
+                                    {typeInfo.label === 'YOUTUBE' && getYoutubeVideoId(note.file_url) && (
+                                        <div 
+                                            className="notes-mobile-yt-wrapper"
+                                            onClick={() => setSelectedVideoUrl(note.file_url)}
+                                        >
+                                            <img 
+                                                src={`https://img.youtube.com/vi/${getYoutubeVideoId(note.file_url)}/hqdefault.jpg`} 
+                                                alt={note.title} 
+                                                className="notes-mobile-yt-img"
+                                            />
+                                            <div className="notes-mobile-yt-play">
+                                                <svg width="24" height="24" viewBox="0 0 24 24" fill="white" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                                    <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                                                </svg>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    <div className="nmc-meta-row" style={typeInfo.label === 'YOUTUBE' ? { marginTop: '12px' } : {}}>
                                         <div className="nmc-subject">
                                             <span style={{color: '#3b82f6', fontSize: '1.1rem', marginRight: '6px'}}>📖</span>
                                             {note.subjectName || note.Subject?.name || "—"}
                                         </div>
-                                        <div className="nmc-type-pill" style={{color: '#9333ea', background: '#faf5ff', padding: '4px 10px', borderRadius: '6px', fontSize: '0.7rem', fontWeight: 'bold'}}>{typeInfo.label}</div>
+                                        <div className="nmc-type-pill" style={{color: typeInfo.label === 'YOUTUBE' ? '#ef4444' : '#9333ea', background: typeInfo.label === 'YOUTUBE' ? '#fef2f2' : '#faf5ff', padding: '4px 10px', borderRadius: '6px', fontSize: '0.7rem', fontWeight: 'bold'}}>{typeInfo.label}</div>
                                         
                                         <div className="nmc-date-size">
                                             <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px', color: '#64748b', fontSize: '0.8rem' }}>

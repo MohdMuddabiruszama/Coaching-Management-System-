@@ -33,7 +33,9 @@ function MobileFacultyNotes() {
         description: "",
         class_id: "",
         subject_id: "",
-        file: null
+        file: null,
+        uploadType: "file",
+        youtube_url: ""
     });
 
     useEffect(() => {
@@ -85,6 +87,8 @@ function MobileFacultyNotes() {
             const subForClass = subjects.filter(s => String(s.class_id) === String(value) || String(s.Class?.id) === String(value));
             setFilteredSubjects(subForClass);
             setFormData(f => ({ ...f, class_id: value, subject_id: "" }));
+        } else if (name === "uploadType") {
+            setFormData(f => ({ ...f, uploadType: value, file: null, youtube_url: "" }));
         } else {
             setFormData(f => ({ ...f, [name]: value }));
         }
@@ -92,7 +96,8 @@ function MobileFacultyNotes() {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        if (!formData.file && !editingId) { toast.error("Please select a file"); return; }
+        if (formData.uploadType === 'file' && !formData.file && !editingId) { toast.error("Please select a file"); return; }
+        if (formData.uploadType === 'youtube' && !formData.youtube_url && !editingId) { toast.error("Please enter a YouTube link"); return; }
         setUploading(true);
 
         const data = new FormData();
@@ -100,7 +105,14 @@ function MobileFacultyNotes() {
         data.append("description", formData.description);
         data.append("class_id", formData.class_id);
         data.append("subject_id", formData.subject_id);
-        if (formData.file) data.append("file", formData.file);
+        
+        if (formData.uploadType === 'youtube') {
+            data.append("youtube_url", formData.youtube_url);
+            data.append("upload_type", "youtube");
+        } else {
+            if (formData.file) data.append("file", formData.file);
+            data.append("upload_type", "file");
+        }
 
         try {
             let res;
@@ -113,7 +125,7 @@ function MobileFacultyNotes() {
                 toast.success(editingId ? "Note updated successfully!" : "Note uploaded successfully!");
                 setViewMode("list");
                 setEditingId(null);
-                setFormData({ title: "", description: "", class_id: "", subject_id: "", file: null });
+                setFormData({ title: "", description: "", class_id: "", subject_id: "", file: null, uploadType: "file", youtube_url: "" });
                 loadAll();
             }
         } catch (err) {
@@ -132,7 +144,9 @@ function MobileFacultyNotes() {
             description: note.description || "",
             class_id: note.classId || note.class_id || note.Class?.id || "",
             subject_id: note.subject_id || "",
-            file: null
+            file: null,
+            uploadType: note.file_type === 'youtube' ? 'youtube' : 'file',
+            youtube_url: note.file_type === 'youtube' ? note.file_url : ""
         });
         setActiveMenuId(null);
         setViewMode("upload");
@@ -404,9 +418,8 @@ function MobileFacultyNotes() {
                     </div>
                 )}
 
-                {/* FAB Upload Button */}
                 <div 
-                    onClick={() => { setFilteredSubjects([]); setFormData({ title: "", description: "", class_id: "", subject_id: "", file: null }); setEditingId(null); setViewMode("upload"); }}
+                    onClick={() => { setFilteredSubjects([]); setFormData({ title: "", description: "", class_id: "", subject_id: "", file: null, uploadType: "file", youtube_url: "" }); setEditingId(null); setViewMode("upload"); }}
                     style={{ position: 'fixed', bottom: '110px', right: '1.5rem', width: '68px', height: '68px', borderRadius: '50%', background: '#6d28d9', color: '#fff', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', boxShadow: '0 8px 24px rgba(109, 40, 217, 0.4)', cursor: 'pointer', zIndex: 100 }}
                 >
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginBottom: '2px' }}><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
@@ -629,23 +642,54 @@ function MobileFacultyNotes() {
                         </div>
                     </div>
 
-                    {/* File Attachment */}
-                    <div>
-                        <label style={{ display: 'flex', alignItems: 'baseline', gap: '4px', fontSize: '0.9rem', fontWeight: '700', color: '#1e293b', marginBottom: '0.5rem' }}>Attachment {(!editingId && <span style={{ color: '#ef4444' }}>*</span>)}</label>
-                        <div style={{ position: 'relative' }}>
-                            <input type="file" name="file" id="note-file-upload" onChange={handleChange} required={!editingId} style={{ opacity: 0, position: 'absolute', inset: 0, width: '100%', height: '100%', cursor: 'pointer', zIndex: 10 }} />
-                            <div style={{ background: '#f8fafc', border: '1px dashed #cbd5e1', borderRadius: '12px', padding: '1.5rem', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem' }}>
-                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={formData.file ? '#10b981' : '#64748b'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
-                                <span style={{ fontSize: '0.85rem', fontWeight: '600', color: formData.file ? '#10b981' : '#334155', textAlign: 'center' }}>
-                                    {formData.file ? formData.file.name : "Tap to upload file"}
-                                </span>
-                                {!formData.file && <span style={{ fontSize: '0.7rem', color: '#94a3b8' }}>PDF, DOC, DOCX, JPG, PNG (Max 10MB)</span>}
-                            </div>
-                        </div>
-                        {editingId && !formData.file && (
-                            <p style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.5rem' }}>Leave empty to keep existing file.</p>
-                        )}
+                    {/* Upload Type Selector */}
+                    <div style={{ display: 'flex', gap: '1rem' }}>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.9rem', color: '#1e293b', fontWeight: '600' }}>
+                            <input 
+                                type="radio" 
+                                name="uploadType" 
+                                value="file" 
+                                checked={formData.uploadType === 'file'} 
+                                onChange={handleChange} 
+                            />
+                            Upload File
+                        </label>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.9rem', color: '#1e293b', fontWeight: '600' }}>
+                            <input 
+                                type="radio" 
+                                name="uploadType" 
+                                value="youtube" 
+                                checked={formData.uploadType === 'youtube'} 
+                                onChange={handleChange} 
+                            />
+                            YouTube Link
+                        </label>
                     </div>
+
+                    {/* File Attachment / YouTube URL */}
+                    {formData.uploadType === 'file' ? (
+                        <div>
+                            <label style={{ display: 'flex', alignItems: 'baseline', gap: '4px', fontSize: '0.9rem', fontWeight: '700', color: '#1e293b', marginBottom: '0.5rem' }}>Attachment {(!editingId && <span style={{ color: '#ef4444' }}>*</span>)}</label>
+                            <div style={{ position: 'relative' }}>
+                                <input type="file" name="file" id="note-file-upload" onChange={handleChange} required={!editingId} style={{ opacity: 0, position: 'absolute', inset: 0, width: '100%', height: '100%', cursor: 'pointer', zIndex: 10 }} />
+                                <div style={{ background: '#f8fafc', border: '1px dashed #cbd5e1', borderRadius: '12px', padding: '1.5rem', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem' }}>
+                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={formData.file ? '#10b981' : '#64748b'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                                    <span style={{ fontSize: '0.85rem', fontWeight: '600', color: formData.file ? '#10b981' : '#334155', textAlign: 'center' }}>
+                                        {formData.file ? formData.file.name : "Tap to upload file"}
+                                    </span>
+                                    {!formData.file && <span style={{ fontSize: '0.7rem', color: '#94a3b8' }}>PDF, DOC, DOCX, JPG, PNG (Max 10MB)</span>}
+                                </div>
+                            </div>
+                            {editingId && !formData.file && (
+                                <p style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.5rem' }}>Leave empty to keep existing file.</p>
+                            )}
+                        </div>
+                    ) : (
+                        <div>
+                            <label style={{ display: 'flex', alignItems: 'baseline', gap: '4px', fontSize: '0.9rem', fontWeight: '700', color: '#1e293b', marginBottom: '0.5rem' }}>YouTube URL {(!editingId && <span style={{ color: '#ef4444' }}>*</span>)}</label>
+                            <input type="url" name="youtube_url" value={formData.youtube_url} onChange={handleChange} placeholder="https://youtube.com/watch?v=..." required={!editingId} style={{ width: '100%', padding: '1rem', borderRadius: '12px', border: '1px solid #e2e8f0', outline: 'none', fontSize: '0.95rem', background: '#fff', color: '#334155', boxSizing: 'border-box' }} />
+                        </div>
+                    )}
 
                     {/* Buttons Bottom */}
                     <div style={{ marginTop: '1rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>

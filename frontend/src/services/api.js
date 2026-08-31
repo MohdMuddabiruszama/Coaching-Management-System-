@@ -188,6 +188,13 @@ api.interceptors.response.use(
                         const newToken = refreshResponse.data.token;
                         sessionStorage.setItem("token", newToken);
 
+                        // If it's a native app or rememberMe was set (localStorage has the old token),
+                        // we must update localStorage so the app stays logged in across restarts.
+                        // BUT do NOT overwrite localStorage if we are impersonating (original_session_token exists).
+                        if (localStorage.getItem("token") && !sessionStorage.getItem("original_session_token")) {
+                            localStorage.setItem("token", newToken);
+                        }
+
                         // Retry the original request with the new token
                         config.headers.Authorization = `Bearer ${newToken}`;
                         return api(config);

@@ -229,7 +229,10 @@ export const AuthProvider = ({ children }) => {
        user.is_lifetime_member = isLifetime;
     }
 
-    persistSession(token, user);
+    // We only update sessionStorage when impersonating so we don't lose the original persistent session
+    sessionStorage.setItem("token", token);
+    sessionStorage.setItem("user", JSON.stringify(user));
+    
     sessionStorage.setItem("isPlanExpired", isExpired ? "true" : "false");
     sessionStorage.setItem("isLifetimeMember", isLifetime ? "true" : "false");
     if (refreshToken) sessionStorage.setItem("refreshToken", refreshToken);
