@@ -1,6 +1,6 @@
 const { User, StudentParent, Student, Class, Subject, Institute, Attendance, Mark, Exam, StudentFee, Note, NoteDownload, Faculty } = require("../models");
 const { hashPassword } = require("../utils/hashPassword");
-const { Op } = require("sequelize");
+const { Op, Sequelize } = require("sequelize");
 
 // Helper function to check if student is linked to parent
 const isStudentLinked = async (parent_id, student_id) => {
@@ -92,10 +92,11 @@ exports.getAllParents = async (req, res) => {
         if (cursor) whereClause.id = { [Op.lt]: cursor };
 
         if (search) {
+            const q = search.toLowerCase().trim();
             whereClause[Op.or] = [
-                { name: { [Op.like]: `%${search}%` } },
-                { email: { [Op.like]: `%${search}%` } },
-                { phone: { [Op.like]: `%${search}%` } }
+                Sequelize.where(Sequelize.fn('LOWER', Sequelize.col('name')), { [Op.like]: `%${q}%` }),
+                Sequelize.where(Sequelize.fn('LOWER', Sequelize.col('email')), { [Op.like]: `%${q}%` }),
+                Sequelize.where(Sequelize.fn('LOWER', Sequelize.col('phone')), { [Op.like]: `%${q}%` })
             ];
         }
 

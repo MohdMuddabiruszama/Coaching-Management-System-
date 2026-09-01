@@ -182,13 +182,13 @@ export default function MobileFees() {
                                             
                                             <div className="mp-fees-mc-middle">
                                                 <div className="mp-fees-mc-due">
-                                                    <span className="label">Due Date</span>
-                                                    <span className="val">{fee.FeesStructure?.due_date ? new Date(fee.FeesStructure.due_date).toLocaleDateString('en-GB') : '-'}</span>
-                                                    {balance > 0 && fee.FeesStructure?.due_date && (
+                                                    <span className="label">Reminder Date</span>
+                                                    <span className="val">{fee.reminder_date ? new Date(fee.reminder_date).toLocaleDateString('en-GB') : '-'}</span>
+                                                    {balance > 0 && fee.reminder_date && (
                                                         <span className="overdue-text">
-                                                            {Math.ceil((new Date(fee.FeesStructure.due_date) - new Date()) / (1000 * 60 * 60 * 24)) > 0 
-                                                                ? `(Due in ${Math.ceil((new Date(fee.FeesStructure.due_date) - new Date()) / (1000 * 60 * 60 * 24))} days)` 
-                                                                : '(Overdue)'}
+                                                            {Math.ceil((new Date(fee.reminder_date) - new Date()) / (1000 * 60 * 60 * 24)) > 0 
+                                                                ? `(Reminder in ${Math.ceil((new Date(fee.reminder_date) - new Date()) / (1000 * 60 * 60 * 24))} days)` 
+                                                                : '(Reminder passed)'}
                                                         </span>
                                                     )}
                                                 </div>

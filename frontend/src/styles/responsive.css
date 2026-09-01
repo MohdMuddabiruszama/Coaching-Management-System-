@@ -1797,4 +1797,105 @@
     to   { opacity: 1; transform: translateY(0); }
   }
 }
+/* ==========================================================================
+   27.  ANDROID 16 TABLET ADAPTIVE LAYOUT (min-width: 600px)
+        Android 16 (API 36) forces apps on devices with sw≥600dp to be fully
+        resizable. These rules ensure the UI adapts gracefully on tablets,
+        foldables, and large-screen devices rather than stretching mobile UI.
+   ========================================================================== */
+@media (min-width: 600px) and (max-width: 1024px) {
 
+  /* ── Dashboard containers — wider, centred ── */
+  .dashboard-container,
+  .parent-dashboard-container {
+    padding: 1.5rem 2rem !important;
+    max-width: 960px !important;
+    margin: 0 auto !important;
+  }
+
+  /* ── Stats grid — 3 columns on tablet ── */
+  .stats-grid {
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 1.25rem !important;
+  }
+
+  /* ── Action grid — 4 columns on tablet ── */
+  .action-grid {
+    grid-template-columns: repeat(4, 1fr) !important;
+    gap: 1rem !important;
+  }
+
+  /* ── Modals — centred, not full-width bottom sheet ── */
+  .modal-overlay {
+    align-items: center !important;
+    padding: 1rem !important;
+  }
+
+  .modal {
+    width: 90% !important;
+    max-width: 680px !important;
+    max-height: 85vh !important;
+    border-radius: 1rem !important;
+    animation: none !important;
+  }
+
+  /* ── Tables — no forced horizontal scroll on tablets ── */
+  .table-container {
+    overflow-x: visible !important;
+    background: none !important;
+  }
+
+  /* ── Cards — 2 column card layouts ── */
+  .card-grid-2,
+  .mobile-card-list {
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 1rem !important;
+  }
+
+  /* ── Typography scale-up ── */
+  .dashboard-header h1 {
+    font-size: 1.75rem !important;
+  }
+
+  .dashboard-header p {
+    font-size: 1rem !important;
+  }
+
+  /* ── Mobile bottom nav — hide on tablet, show sidebar hint ── */
+  /* NOTE: if you have a bottom tab bar in mobile layouts, it should be
+     conditionally rendered via JS media query (useMediaQuery hook).
+     This CSS hides it on tablet to avoid wasted screen space. */
+  .mobile-bottom-nav,
+  .msl-bottom-nav,
+  .mfl-bottom-nav,
+  .mpl-bottom-nav,
+  .mml-bottom-nav,
+  .mal-bottom-nav {
+    display: none !important;
+  }
+
+  /* ── Mobile content area — remove bottom nav padding on tablet ── */
+  .msl-content,
+  .mfl-content,
+  .mpl-content,
+  .mml-content,
+  .mal-content {
+    padding-bottom: 1rem !important;
+  }
+
+  /* ── Horizontal forms — side-by-side on tablet ── */
+  .form-row {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 1rem !important;
+  }
+
+  /* ── Attendance/fee record cards — 2 columns ── */
+  .fee-row-card {
+    display: grid !important;
+    grid-template-columns: 1fr auto !important;
+    align-items: center !important;
+    gap: 1rem !important;
+  }
+}

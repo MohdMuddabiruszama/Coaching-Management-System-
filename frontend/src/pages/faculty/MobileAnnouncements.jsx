@@ -631,16 +631,6 @@ function FacultyMobileAnnouncements() {
                     <p style={{ margin: 0, fontSize: '0.8rem', color: '#7e22ce', lineHeight: '1.4', fontWeight: '500' }}>This announcement will be visible to selected audience immediately after publishing.</p>
                 </div>
 
-                {/* Attachments */}
-                <div>
-                    <label style={{ display: 'flex', alignItems: 'baseline', gap: '4px', fontSize: '0.9rem', fontWeight: '700', color: '#1e293b', marginBottom: '2px' }}>Attachments <span style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: '400' }}>(Optional)</span></label>
-                    <p style={{ fontSize: '0.75rem', color: '#64748b', margin: '0 0 0.5rem 0' }}>Add files if required</p>
-                    <div style={{ background: '#f8fafc', border: '1px dashed #cbd5e1', borderRadius: '12px', padding: '1.5rem', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
-                        <span style={{ fontSize: '0.85rem', fontWeight: '600', color: '#334155' }}>Tap to upload files</span>
-                        <span style={{ fontSize: '0.7rem', color: '#94a3b8' }}>PDF, DOC, DOCX, JPG, PNG (Max 10MB)</span>
-                    </div>
-                </div>
 
                 {/* Buttons Bottom */}
                 <div style={{ marginTop: '0.5rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>

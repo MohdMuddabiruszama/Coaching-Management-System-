@@ -894,3 +894,17 @@
 .notes-mobile-yt-wrapper:hover .notes-mobile-yt-play {
     transform: translate(-50%, -50%) scale(1.05);
 }
+
+/* ── VIDEO MODAL OVERLAY — always centered, never bottom-sheet ── */
+.video-modal-overlay {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    position: fixed !important;
+    inset: 0 !important;
+    z-index: 1000 !important;
+    padding: 1rem !important;
+    /* ensure no bottom-sheet animation from responsive.css overrides */
+    animation: none !important;
+    border-radius: 0 !important;
+}

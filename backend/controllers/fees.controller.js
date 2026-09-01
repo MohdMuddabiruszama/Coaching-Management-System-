@@ -881,7 +881,10 @@ exports.getAssignedStudentFees = catchAsync(async (req, res) => {
     let studentFees = await StudentFee.findAll({
       where: { institute_id },
       include: [
-      { model: Student, include: [{ model: User, attributes: ['name', 'email'] }] },
+      { model: Student, include: [
+        { model: User, attributes: ['name', 'email'] },
+        { model: User, as: 'Parents', attributes: ['name'] }
+      ] },
       { model: Class, attributes: ['name', 'section'] },
       { model: FeesStructure, include: [{ model: Subject, required: false }] }],
 
@@ -894,6 +897,7 @@ exports.getAssignedStudentFees = catchAsync(async (req, res) => {
       where: { institute_id },
       include: [
       { model: User, attributes: ['name', 'email'] },
+      { model: User, as: 'Parents', attributes: ['name'] },
       { model: Class, attributes: ['name', 'section'] }]
 
     });

@@ -1309,12 +1309,9 @@ function ParentDashboard() {
                                                     <tr>
                                                         <th>Fee Type</th>
                                                         <th>Original</th>
-                                                        {/* <th>Discount</th> */}
-                                                        {/* <th>Final</th> */}
                                                         <th>Paid</th>
                                                         <th>Due</th>
-                                                        <th>Due Date</th>
-                                                        <th>Reminder</th>
+                                                        <th>Reminder Date</th>
                                                         <th>Status</th>
                                                     </tr>
                                                 </thead>
@@ -1323,11 +1320,8 @@ function ParentDashboard() {
                                                         <tr key={fee.id}>
                                                             <td><strong>{fee.FeesStructure?.fee_type || 'Fee'}</strong></td>
                                                             <td>₹{parseFloat(fee.original_amount || 0).toLocaleString()}</td>
-                                                            {/* <td style={{ color: '#a855f7' }}>-₹{parseFloat(fee.discount_amount || 0).toLocaleString()}</td> */}
-                                                            {/* <td><strong>₹{parseFloat(fee.final_amount || 0).toLocaleString()}</strong></td> */}
                                                             <td style={{ color: '#10b981' }}>₹{parseFloat(fee.paid_amount || 0).toLocaleString()}</td>
                                                             <td style={{ color: '#ef4444', fontWeight: 700 }}>₹{parseFloat(fee.due_amount || 0).toLocaleString()}</td>
-                                                            <td>{fee.FeesStructure?.due_date ? new Date(fee.FeesStructure.due_date).toLocaleDateString() : '—'}</td>
                                                             <td>
                                                                 {fee.reminder_date ? (
                                                                     <span style={{ color: fee.reminder_date <= TODAY_STR ? '#ef4444' : '#f59e0b', fontWeight: 700 }}>
@@ -1359,14 +1353,11 @@ function ParentDashboard() {
                                                             <div className="fee-amount-item" style={{ color: '#10b981' }}>Paid: <strong>₹{parseFloat(fee.paid_amount || 0).toLocaleString()}</strong></div>
                                                             <div className="fee-amount-item" style={{ color: '#ef4444' }}>Due: <strong>₹{parseFloat(fee.due_amount || 0).toLocaleString()}</strong></div>
                                                         </div>
-                                                        {fee.FeesStructure?.due_date && (
-                                                            <div style={{ fontSize: '12px', color: '#888', marginTop: '6px' }}>
-                                                                📅 Due: {new Date(fee.FeesStructure.due_date).toLocaleDateString()}
-                                                                {fee.reminder_date && (
-                                                                    <span style={{ marginLeft: '8px', color: fee.reminder_date <= TODAY_STR ? '#ef4444' : '#f59e0b', fontWeight: 600 }}>
-                                                                        ⏰ Reminder: {new Date(fee.reminder_date).toLocaleDateString()}
-                                                                    </span>
-                                                                )}
+                                                        {fee.reminder_date && (
+                                                            <div style={{ fontSize: '12px', marginTop: '6px' }}>
+                                                                <span style={{ color: fee.reminder_date <= TODAY_STR ? '#ef4444' : '#f59e0b', fontWeight: 600 }}>
+                                                                    ⏰ Reminder Date: {new Date(fee.reminder_date).toLocaleDateString()}
+                                                                </span>
                                                             </div>
                                                         )}
                                                     </div>

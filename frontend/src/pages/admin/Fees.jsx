@@ -784,7 +784,9 @@ function Fees() {
                                                         </div>
                                                         <div>
                                                             <div style={{ fontWeight: '600', color: '#111827', fontSize: '0.9rem' }}>{sf.Student?.User?.name}</div>
-                                                            <div style={{ fontSize: '0.75rem', color: '#6b7280' }}>{sf.Student?.roll_number}</div>
+                                                            <div style={{ fontSize: '0.75rem', color: '#6b7280' }}>
+                                                                {sf.Student?.roll_number} {sf.Student?.Parents?.[0]?.name ? `| Parent: ${sf.Student.Parents[0].name}` : ''}
+                                                            </div>
                                                         </div>
                                                     </div>
                                                 </td>

@@ -533,7 +533,7 @@ function StudentNotes() {
 
             {/* Video Modal */}
             {selectedVideoUrl && (
-                <div className="modal-overlay" onClick={() => setSelectedVideoUrl(null)} style={{ background: 'rgba(15, 23, 42, 0.85)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'fixed', inset: 0, zIndex: 1000, padding: '1rem' }}>
+                <div className="video-modal-overlay" onClick={() => setSelectedVideoUrl(null)} style={{ background: 'rgba(15, 23, 42, 0.85)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'fixed', inset: 0, zIndex: 1000, padding: '1rem' }}>
                     <div className="modal-content" onClick={e => e.stopPropagation()} style={{ background: 'black', borderRadius: '16px', width: '100%', maxWidth: '800px', aspectRatio: '16/9', position: 'relative', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)', overflow: 'hidden' }}>
                         <button onClick={() => setSelectedVideoUrl(null)} style={{ position: 'absolute', top: '10px', right: '10px', background: 'rgba(0,0,0,0.5)', border: 'none', borderRadius: '50%', width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', cursor: 'pointer', zIndex: 10 }}>
                             ✕
