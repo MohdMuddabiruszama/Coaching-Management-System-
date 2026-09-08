@@ -238,9 +238,20 @@ app.use((req, res, next) => {
 });
 
 /**
- * Serve static files for the Biometric Gateway Agent downloads
+ * Serve the Biometric Gateway Agent installer for download
  */
-app.use("/gateway", express.static(path.join(__dirname, "../gateway-agent")));
+app.get("/gateway/ZenithFlowsGateway-Installer.exe", (req, res) => {
+  const filePath = path.join(__dirname, "../gateway-agent/ZenithFlowsGateway-Installer.exe");
+  res.download(filePath, "ZenithFlowsGateway-Installer.exe", (err) => {
+    if (err) {
+      res.status(404).json({ 
+        success: false, 
+        message: "Installer file not found on disk.", 
+        path_searched: filePath 
+      });
+    }
+  });
+});
 
 
 /**
