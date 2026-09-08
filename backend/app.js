@@ -237,6 +237,11 @@ app.use((req, res, next) => {
   next();
 });
 
+/**
+ * Serve static files for the Biometric Gateway Agent downloads
+ */
+app.use("/gateway", express.static(path.join(__dirname, "../gateway-agent")));
+
 
 /**
  * Webhook Routes (Must be parsed as raw body for signature verification)
