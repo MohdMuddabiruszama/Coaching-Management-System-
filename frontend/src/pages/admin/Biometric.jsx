@@ -20,6 +20,7 @@ const TABS = [
     { id: "otp", label: "OTP/QR", icon: <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><path d="M7 7h.01M17 7h.01M7 17h.01M17 17h.01"></path></svg> },
     { id: "reports", label: "Reports", icon: <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M18 20V10M12 20V4M6 20v-6"></path></svg> },
     { id: "settings", label: "Settings", icon: <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg> },
+    { id: "gateway", label: "Gateway", icon: <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M5 12.55a11 11 0 0 1 14.08 0M1.42 9a16 16 0 0 1 21.16 0M8.53 16.11a6 6 0 0 1 6.95 0M12 20h.01"></path></svg> },
 ];
 
 export default function BiometricPage() {
@@ -129,6 +130,7 @@ export default function BiometricPage() {
             {activeTab === "otp" && <OtpQrTab />}
             {activeTab === "reports" && <ReportsTab />}
             {activeTab === "settings" && <SettingsTab />}
+            {activeTab === "gateway" && <GatewayTab />}
         </div>
     );
 }
@@ -1311,7 +1313,14 @@ function DevicesTab() {
         device_name: "", device_serial: "", device_type: "fingerprint",
         placement_type: "gate", room_identifier: "",
         location: "", ip_address: "",
+        connection_type: "tcp_ip_lan", brand: "biomax", port: 4370
     });
+    
+    // Gateway Agent Setup State
+    const [showAgentSetup, setShowAgentSetup] = useState(false);
+    const [agentDeviceToken, setAgentDeviceToken] = useState("");
+    const [agentDeviceIp, setAgentDeviceIp] = useState("");
+    const [agentDevicePort, setAgentDevicePort] = useState("");
 
     const [searchTerm, setSearchTerm] = useState("");
     const [filterType, setFilterType] = useState("all");
@@ -1411,13 +1420,13 @@ function DevicesTab() {
 
     const openAdd = () => {
         setEditDevice(null);
-        setForm({ device_name: "", device_serial: "", device_type: "fingerprint", placement_type: "gate", room_identifier: "", location: "", ip_address: "" });
+        setForm({ device_name: "", device_serial: "", device_type: "fingerprint", placement_type: "gate", room_identifier: "", location: "", ip_address: "", connection_type: "tcp_ip_lan", brand: "biomax", port: 4370 });
         setShowForm(true);
     };
 
     const openEdit = (d) => {
         setEditDevice(d);
-        setForm({ device_name: d.device_name, device_serial: d.device_serial, device_type: d.device_type, placement_type: d.placement_type || "gate", room_identifier: d.room_identifier || "", location: d.location || "", ip_address: d.ip_address || "" });
+        setForm({ device_name: d.device_name, device_serial: d.device_serial, device_type: d.device_type, placement_type: d.placement_type || "gate", room_identifier: d.room_identifier || "", location: d.location || "", ip_address: d.ip_address || "", connection_type: d.connection_type || "tcp_ip_lan", brand: d.brand || "biomax", port: d.port || 4370 });
         setShowForm(true);
     };
 
@@ -1426,15 +1435,30 @@ function DevicesTab() {
             toast.error("Device name and serial are required");
             return;
         }
+        if (form.connection_type === "tcp_ip_lan" && !form.ip_address) {
+            toast.error("IP Address is required for TCP/IP connection");
+            return;
+        }
         try {
             if (editDevice) {
                 await api.put(`/biometric/devices/${editDevice.id}`, form);
                 toast.success("Device updated");
+                setShowForm(false);
             } else {
                 const res = await api.post("/biometric/devices", form);
-                toast.success("Device registered! Secret key: " + res.data.data.secret_key);
+                toast.success("Device registered successfully!");
+                setShowForm(false);
+                
+                // If it's a TCP/IP device, show the Gateway Agent setup modal
+                if (form.connection_type === "tcp_ip_lan") {
+                    setAgentDeviceToken(res.data.data.device_token);
+                    setAgentDeviceIp(form.ip_address);
+                    setAgentDevicePort(form.port);
+                    setShowAgentSetup(true);
+                } else {
+                    toast.success("Secret key: " + res.data.data.secret_key);
+                }
             }
-            setShowForm(false);
             fetchDevices();
         } catch (err) {
             toast.error(err.response?.data?.message || "Error saving device");
@@ -1961,15 +1985,96 @@ function DevicesTab() {
                                 <label style={{ fontSize: "0.85rem", fontWeight: 700, color: "#1e293b", marginBottom: "0.5rem", display: "block" }}>Location</label>
                                 <input type="text" value={form.location} onChange={(e) => setForm({ ...form, location: e.target.value })} placeholder="e.g. Main Gate" style={{ width: "100%", padding: "0.7rem 1rem", borderRadius: "8px", border: "1px solid #e2e8f0", fontSize: "0.95rem", color: "#1e293b", outline: "none", boxSizing: "border-box" }} />
                             </div>
-                            <div>
-                                <label style={{ fontSize: "0.85rem", fontWeight: 700, color: "#1e293b", marginBottom: "0.5rem", display: "block" }}>IP Address</label>
-                                <input type="text" value={form.ip_address} onChange={(e) => setForm({ ...form, ip_address: e.target.value })} placeholder="e.g. 192.168.1.100" style={{ width: "100%", padding: "0.7rem 1rem", borderRadius: "8px", border: "1px solid #e2e8f0", fontSize: "0.95rem", color: "#1e293b", outline: "none", boxSizing: "border-box", fontFamily:"monospace" }} />
+                            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
+                                <div>
+                                    <label style={{ fontSize: "0.85rem", fontWeight: 700, color: "#1e293b", marginBottom: "0.5rem", display: "block" }}>Connection Type <span style={{ color: "#ef4444" }}>*</span></label>
+                                    <select value={form.connection_type} onChange={(e) => setForm({ ...form, connection_type: e.target.value })} style={{ width: "100%", padding: "0.7rem 1rem", borderRadius: "8px", border: "1px solid #e2e8f0", fontSize: "0.95rem", color: "#1e293b", outline: "none", boxSizing: "border-box", backgroundColor: "#fff", cursor: "pointer" }}>
+                                        <option value="tcp_ip_lan">TCP/IP LAN (Recommended)</option>
+                                        <option value="adms_push">ADMS / HTTP Push</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label style={{ fontSize: "0.85rem", fontWeight: 700, color: "#1e293b", marginBottom: "0.5rem", display: "block" }}>Device Brand <span style={{ color: "#ef4444" }}>*</span></label>
+                                    <select value={form.brand} onChange={(e) => setForm({ ...form, brand: e.target.value })} style={{ width: "100%", padding: "0.7rem 1rem", borderRadius: "8px", border: "1px solid #e2e8f0", fontSize: "0.95rem", color: "#1e293b", outline: "none", boxSizing: "border-box", backgroundColor: "#fff", cursor: "pointer" }}>
+                                        <option value="biomax">BioMax</option>
+                                        <option value="zkteco">ZKTeco</option>
+                                        <option value="essl">eSSL</option>
+                                        <option value="realtime">Realtime</option>
+                                        <option value="other">Other</option>
+                                    </select>
+                                </div>
                             </div>
+                            
+                            {form.connection_type === "tcp_ip_lan" && (
+                                <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: "1rem" }}>
+                                    <div>
+                                        <label style={{ fontSize: "0.85rem", fontWeight: 700, color: "#1e293b", marginBottom: "0.5rem", display: "block" }}>LAN IP Address <span style={{ color: "#ef4444" }}>*</span></label>
+                                        <input type="text" value={form.ip_address} onChange={(e) => setForm({ ...form, ip_address: e.target.value })} placeholder="e.g. 192.168.1.100" style={{ width: "100%", padding: "0.7rem 1rem", borderRadius: "8px", border: "1px solid #e2e8f0", fontSize: "0.95rem", color: "#1e293b", outline: "none", boxSizing: "border-box", fontFamily:"monospace" }} />
+                                    </div>
+                                    <div>
+                                        <label style={{ fontSize: "0.85rem", fontWeight: 700, color: "#1e293b", marginBottom: "0.5rem", display: "block" }}>Port <span style={{ color: "#ef4444" }}>*</span></label>
+                                        <input type="number" value={form.port} onChange={(e) => setForm({ ...form, port: parseInt(e.target.value) || "" })} placeholder="4370" style={{ width: "100%", padding: "0.7rem 1rem", borderRadius: "8px", border: "1px solid #e2e8f0", fontSize: "0.95rem", color: "#1e293b", outline: "none", boxSizing: "border-box", fontFamily:"monospace" }} />
+                                    </div>
+                                </div>
+                            )}
+
                             <div style={{ display: "flex", gap: "1rem", justifyContent: "flex-end", marginTop: "0.5rem" }}>
                                 <button onClick={() => setShowForm(false)} style={{ padding: "0.7rem 1.5rem", borderRadius: "8px", background: "#fff", color: "#475569", border: "1px solid #e2e8f0", fontWeight: 600, fontSize: "0.9rem", cursor: "pointer" }}>Cancel</button>
                                 <button onClick={handleSave} style={{ padding: "0.7rem 1.5rem", borderRadius: "8px", background: "#6366f1", color: "#fff", border: "none", fontWeight: 600, fontSize: "0.9rem", cursor: "pointer", boxShadow: "0 4px 6px rgba(99,102,241,0.2)" }}>
                                     {editDevice ? "Update Device" : "Register Device"}
                                 </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Gateway Agent Setup Modal */}
+            {showAgentSetup && (
+                <div style={{ position: "fixed", inset: 0, background: "rgba(15, 23, 42, 0.4)", backdropFilter: "blur(4px)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: "1rem", animation: "fadeIn 0.2s ease-out" }}>
+                    <div style={{ background: "#fff", borderRadius: "16px", padding: "2rem", width: "100%", maxWidth: "600px", maxHeight: "90vh", overflowY: "auto", boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1)" }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "1.5rem" }}>
+                            <div style={{ display: "flex", gap: "1rem" }}>
+                                <div style={{ width: "40px", height: "40px", borderRadius: "10px", background: "linear-gradient(135deg, #10b981 0%, #059669 100%)", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", flexShrink: 0 }}>
+                                    <svg width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                                </div>
+                                <div>
+                                    <h3 style={{ margin: "0 0 0.25rem", fontWeight: 700, fontSize: "1.25rem", color: "#1e293b" }}>Setup Gateway Agent</h3>
+                                    <p style={{ margin: 0, fontSize: "0.85rem", color: "#64748b" }}>To sync attendance, run the Gateway Agent on a PC connected to the same LAN as the biometric device.</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
+                            <div style={{ padding: "1rem", background: "#f8fafc", borderRadius: "8px", border: "1px solid #e2e8f0" }}>
+                                <h4 style={{ margin: "0 0 0.5rem", fontSize: "0.9rem", color: "#1e293b" }}>Step 1: Download Agent</h4>
+                                <p style={{ margin: "0 0 0.75rem", fontSize: "0.85rem", color: "#475569" }}>Download the Windows installer package for the ZenithFlows Gateway Agent.</p>
+                                <a href="https://api.zenithflows.in/gateway/ZenithFlowsGateway-Installer.exe" target="_blank" rel="noreferrer" style={{ display: "inline-block", padding: "0.6rem 1rem", background: "#10b981", color: "#fff", borderRadius: "6px", textDecoration: "none", fontSize: "0.85rem", fontWeight: 600 }}>Download Installer (.exe)</a>
+                            </div>
+
+                            <div style={{ padding: "1rem", background: "#f8fafc", borderRadius: "8px", border: "1px solid #e2e8f0" }}>
+                                <h4 style={{ margin: "0 0 0.5rem", fontSize: "0.9rem", color: "#1e293b" }}>Step 2: Enter Configuration</h4>
+                                <p style={{ margin: "0 0 0.75rem", fontSize: "0.85rem", color: "#475569" }}>During installation, when prompted, enter the following connection details:</p>
+                                
+                                <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "0.5rem" }}>
+                                    <div style={{ display: "flex", justifyContent: "space-between", padding: "0.5rem", background: "#fff", border: "1px solid #cbd5e1", borderRadius: "4px" }}>
+                                        <span style={{ fontSize: "0.8rem", color: "#64748b", fontWeight: 600 }}>Device Token:</span>
+                                        <span style={{ fontSize: "0.85rem", fontFamily: "monospace", color: "#0f172a" }}>{agentDeviceToken}</span>
+                                    </div>
+                                    <div style={{ display: "flex", justifyContent: "space-between", padding: "0.5rem", background: "#fff", border: "1px solid #cbd5e1", borderRadius: "4px" }}>
+                                        <span style={{ fontSize: "0.8rem", color: "#64748b", fontWeight: 600 }}>API URL:</span>
+                                        <span style={{ fontSize: "0.85rem", fontFamily: "monospace", color: "#0f172a" }}>https://api.zenithflows.in</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div style={{ padding: "1rem", background: "#f8fafc", borderRadius: "8px", border: "1px solid #e2e8f0" }}>
+                                <h4 style={{ margin: "0 0 0.5rem", fontSize: "0.9rem", color: "#1e293b" }}>Step 3: Verify Connection</h4>
+                                <p style={{ margin: 0, fontSize: "0.85rem", color: "#475569" }}>Once the service starts, the device status in the background will change to <strong style={{color:"#10b981"}}>Online</strong>.</p>
+                            </div>
+
+                            <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "0.5rem" }}>
+                                <button onClick={() => setShowAgentSetup(false)} style={{ padding: "0.7rem 1.5rem", borderRadius: "8px", background: "#1e293b", color: "#fff", border: "none", fontWeight: 600, fontSize: "0.9rem", cursor: "pointer" }}>Done</button>
                             </div>
                         </div>
                     </div>
@@ -3442,6 +3547,391 @@ function InfoCard({ icon, title, desc }) {
             <div style={{ fontSize: "2rem", marginBottom: "0.5rem" }}>⏳</div>
             <h4 style={{ margin: "0 0 0.5rem", fontWeight: 700 }}>{title}</h4>
             <p style={{ margin: 0, color: "var(--text-secondary)", fontSize: "0.88rem", lineHeight: 1.5 }}>{desc}</p>
+        </div>
+    );
+}
+
+// ─────────────────────────────────────────────────────────────────
+// GATEWAY TAB — Download, Status, Token Management, Activity Log
+// ─────────────────────────────────────────────────────────────────
+function GatewayTab() {
+    const [devices, setDevices] = useState([]);
+    const [punchLogs, setPunchLogs] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [logsLoading, setLogsLoading] = useState(true);
+    const [copiedToken, setCopiedToken] = useState(null);
+    const [refreshing, setRefreshing] = useState(false);
+
+    // Derive the backend root URL (strip /api suffix) for static file downloads
+    const apiBase = api.defaults.baseURL || "";
+    const backendRoot = apiBase.replace(/\/api$/, "");
+    const downloadUrl = `${backendRoot}/gateway/ZenithFlowsGateway-Installer.exe`;
+
+    const fetchData = useCallback(async (silent = false) => {
+        if (!silent) setLoading(true);
+        else setRefreshing(true);
+        try {
+            const res = await api.get("/biometric/devices");
+            const all = res.data?.data || res.data?.devices || [];
+            // Show all devices that can work with gateway (tcp_ip_lan)
+            setDevices(all.filter(d => d.connection_type === "tcp_ip_lan" || d.brand === "biomax" || d.brand === "zkteco"));
+        } catch (err) {
+            console.error("[GatewayTab] Failed to load devices:", err.message);
+        } finally {
+            if (!silent) setLoading(false);
+            else setRefreshing(false);
+        }
+    }, []);
+
+    const fetchLogs = useCallback(async () => {
+        setLogsLoading(true);
+        try {
+            const res = await api.get("/biometric/punch-log", { params: { limit: 15 } });
+            const logs = res.data?.data || res.data?.punches || [];
+            // Show all recent logs (no filtering by source) so we can see if data is syncing
+            setPunchLogs(logs.slice(0, 15));
+        } catch (err) {
+            console.error("[GatewayTab] Failed to load punch logs:", err.message);
+        } finally {
+            setLogsLoading(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        fetchData();
+        fetchLogs();
+        // Auto-refresh status every 30s
+        const interval = setInterval(() => fetchData(true), 30000);
+        return () => clearInterval(interval);
+    }, [fetchData, fetchLogs]);
+
+    const handleCopyToken = (token, deviceId) => {
+        navigator.clipboard.writeText(token).then(() => {
+            setCopiedToken(deviceId);
+            toast.success("Token copied to clipboard!");
+            setTimeout(() => setCopiedToken(null), 2500);
+        }).catch(() => toast.error("Copy failed — please select and copy manually."));
+    };
+
+    // Compute live status label + color from device timestamps
+    function getAgentStatus(device) {
+        const ts = device.last_punch_at || device.last_sync;
+        if (!ts) return { label: "Never Connected", color: "#94a3b8", bg: "#f1f5f9", dot: "#94a3b8" };
+        const diffMins = Math.floor((Date.now() - new Date(ts).getTime()) / 60000);
+        if (diffMins < 15) return { label: "Connected", color: "#065f46", bg: "#ecfdf5", dot: "#10b981" };
+        if (diffMins < 60) return { label: "Idle", color: "#92400e", bg: "#fef3c7", dot: "#f59e0b" };
+        if (diffMins < 60 * 24) return { label: "Not Seen (24h)", color: "#7c3aed", bg: "#ede9fe", dot: "#8b5cf6" };
+        return { label: "Offline", color: "#991b1b", bg: "#fee2e2", dot: "#ef4444" };
+    }
+
+    const sectionTitle = (icon, text) => (
+        <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", marginBottom: "1.25rem" }}>
+            <div style={{ width: "32px", height: "32px", borderRadius: "8px", background: "rgba(99,102,241,0.1)", color: "#6366f1", display: "flex", alignItems: "center", justifyContent: "center" }}>{icon}</div>
+            <h3 style={{ margin: 0, fontSize: "1rem", fontWeight: 700, color: "#0f172a" }}>{text}</h3>
+        </div>
+    );
+
+    const card = { background: "#fff", borderRadius: "14px", padding: "1.5rem", border: "1px solid #e2e8f0", marginBottom: "1.25rem", boxShadow: "0 1px 4px rgba(0,0,0,0.05)" };
+
+    if (loading) return <LoadingCard />;
+
+    const lanDevices = devices;
+    const hasLanDevices = lanDevices.length > 0;
+
+    return (
+        <div style={{ maxWidth: "900px" }}>
+
+            {/* ── SECTION 1: Gateway Agent Status ── */}
+            <div style={card}>
+                {sectionTitle(
+                    <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="2"></circle><path d="M16.24 7.76a6 6 0 0 1 0 8.49M7.76 16.24a6 6 0 0 1 0-8.49M20.49 3.51a12 12 0 0 1 0 16.98M3.51 20.49a12 12 0 0 1 0-16.98"></path></svg>,
+                    "Gateway Agent Status"
+                )}
+
+                {!hasLanDevices ? (
+                    <div style={{ background: "#f8fafc", border: "1px dashed #cbd5e1", borderRadius: "10px", padding: "2rem", textAlign: "center", color: "#64748b" }}>
+                        <div style={{ fontSize: "2rem", marginBottom: "0.5rem" }}>📡</div>
+                        <div style={{ fontWeight: 600, marginBottom: "0.3rem" }}>No TCP/IP LAN devices registered</div>
+                        <div style={{ fontSize: "0.85rem" }}>Go to <strong>Devices</strong> tab → Add a device with connection type <strong>TCP/IP LAN</strong> to use the Gateway Agent.</div>
+                    </div>
+                ) : (
+                    <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+                        {lanDevices.map(device => {
+                            const status = getAgentStatus(device);
+                            const lastSeen = device.last_punch_at || device.last_sync;
+                            return (
+                                <div key={device.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "0.75rem", padding: "1rem 1.25rem", borderRadius: "10px", border: "1px solid #e2e8f0", background: "#fafafa" }}>
+                                    <div style={{ display: "flex", alignItems: "center", gap: "0.85rem" }}>
+                                        {/* Animated status dot */}
+                                        <div style={{ position: "relative", width: "12px", height: "12px" }}>
+                                            <div style={{ width: "12px", height: "12px", borderRadius: "50%", background: status.dot }}></div>
+                                            {status.label === "Connected" && (
+                                                <div style={{ position: "absolute", inset: 0, borderRadius: "50%", background: status.dot, opacity: 0.4, animation: "ping 1.5s cubic-bezier(0,0,0.2,1) infinite" }}></div>
+                                            )}
+                                        </div>
+                                        <div>
+                                            <div style={{ fontWeight: 700, fontSize: "0.95rem", color: "#0f172a" }}>{device.device_name}</div>
+                                            <div style={{ fontSize: "0.8rem", color: "#64748b", marginTop: "0.1rem" }}>{device.ip_address}:{device.port || 4370} &nbsp;·&nbsp; SN: {device.device_serial}</div>
+                                        </div>
+                                    </div>
+                                    <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+                                        {lastSeen && (
+                                            <div style={{ fontSize: "0.78rem", color: "#64748b" }}>
+                                                Last sync: {new Date(lastSeen).toLocaleString("en-IN", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit", hour12: true })}
+                                            </div>
+                                        )}
+                                        <span style={{ background: status.bg, color: status.color, fontWeight: 700, fontSize: "0.75rem", padding: "0.25rem 0.75rem", borderRadius: "20px", whiteSpace: "nowrap" }}>
+                                            {status.label}
+                                        </span>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                        <div style={{ fontSize: "0.78rem", color: "#94a3b8", marginTop: "0.25rem", display: "flex", alignItems: "center", gap: "0.4rem" }}>
+                            <svg width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                            Status auto-refreshes every 30 seconds
+                            {refreshing && <span style={{ color: "#6366f1" }}> · Refreshing…</span>}
+                        </div>
+                    </div>
+                )}
+            </div>
+
+            {/* ── SECTION 2: Download Gateway ── */}
+            <div style={{ ...card, background: "linear-gradient(135deg, #f0f4ff 0%, #e8f2ff 100%)", border: "1px solid #c7d7fb" }}>
+                {sectionTitle(
+                    <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"></path></svg>,
+                    "Download Gateway Agent"
+                )}
+                <div style={{ display: "flex", alignItems: "flex-start", gap: "2rem", flexWrap: "wrap" }}>
+                    <div style={{ flex: 1, minWidth: "220px" }}>
+                        <p style={{ margin: "0 0 1rem", fontSize: "0.9rem", color: "#334155", lineHeight: 1.6 }}>
+                            The <strong>ZenithFlows Gateway Agent</strong> is a lightweight Windows background service that runs on a PC connected to the same LAN as your biometric device. It polls the device every few seconds and sends attendance punches to ZenithFlows automatically.
+                        </p>
+                        <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem", marginBottom: "1.25rem" }}>
+                            {[
+                                { icon: "🖥️", text: "Windows 10 / 11 (64-bit)" },
+                                { icon: "🌐", text: "Same Wi-Fi or LAN as biometric device" },
+                                { icon: "⚡", text: "No Node.js or developer tools needed" },
+                                { icon: "📦", text: "Standalone .exe (~42 MB)" },
+                            ].map(item => (
+                                <div key={item.text} style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.85rem", color: "#475569" }}>
+                                    <span>{item.icon}</span> {item.text}
+                                </div>
+                            ))}
+                        </div>
+                        <a
+                            href={downloadUrl}
+                            download="ZenithFlowsGateway-Installer.exe"
+                            id="gateway-download-btn"
+                            style={{
+                                display: "inline-flex", alignItems: "center", gap: "0.6rem",
+                                padding: "0.75rem 1.5rem", borderRadius: "10px",
+                                background: "linear-gradient(135deg, #6366f1, #4f46e5)",
+                                color: "#fff", fontWeight: 700, fontSize: "0.95rem",
+                                textDecoration: "none", boxShadow: "0 4px 12px rgba(99,102,241,0.35)",
+                                transition: "transform 0.15s, box-shadow 0.15s"
+                            }}
+                            onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-1px)"; e.currentTarget.style.boxShadow = "0 6px 18px rgba(99,102,241,0.45)"; }}
+                            onMouseLeave={e => { e.currentTarget.style.transform = ""; e.currentTarget.style.boxShadow = "0 4px 12px rgba(99,102,241,0.35)"; }}
+                        >
+                            <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"></path></svg>
+                            Download Gateway (.exe)
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            {/* ── SECTION 3: Step-by-Step Setup ── */}
+            <div style={card}>
+                {sectionTitle(
+                    <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M9 11l3 3L22 4M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg>,
+                    "Setup Instructions"
+                )}
+                <div style={{ display: "flex", flexDirection: "column", gap: "0" }}>
+                    {[
+                        {
+                            step: 1,
+                            title: "Download & Run the Gateway",
+                            desc: "Click the Download button above. Copy the .exe to a Windows PC that is on the same Wi-Fi or LAN network as your biometric device. Double-click to run — no installation wizard required.",
+                            icon: "📥"
+                        },
+                        {
+                            step: 2,
+                            title: "Get Your Device Token",
+                            desc: "Open the Device Token section below. Find the device you want to connect and click \"Copy Token\". The token is a unique 32-character key that identifies this device to the Gateway.",
+                            icon: "🔑"
+                        },
+                        {
+                            step: 3,
+                            title: "Edit config.json",
+                            desc: "Open config.json (located next to the .exe file) in Notepad. Paste your Device Token into the device_token field. Set api_url to your ZenithFlows backend URL. Save the file.",
+                            icon: "📝",
+                            code: `{\n  "api_url": "${backendRoot}",\n  "device_token": "PASTE_YOUR_TOKEN_HERE",\n  "poll_interval_seconds": 15,\n  "last_sync": "1970-01-01T00:00:00.000Z"\n}`
+                        },
+                        {
+                            step: 4,
+                            title: "Run the Gateway & Verify",
+                            desc: "Double-click the .exe (or run it from Command Prompt). The agent will authenticate, connect to the device, and start polling. Return here and watch the Status panel turn 🟢 Connected within 30 seconds.",
+                            icon: "✅"
+                        },
+                    ].map((item, idx, arr) => (
+                        <div key={item.step} style={{ display: "flex", gap: "1rem", paddingBottom: idx < arr.length - 1 ? "1.25rem" : 0 }}>
+                            {/* Connector line */}
+                            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", flexShrink: 0 }}>
+                                <div style={{ width: "36px", height: "36px", borderRadius: "50%", background: "linear-gradient(135deg, #6366f1, #4f46e5)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, fontSize: "0.9rem", flexShrink: 0 }}>{item.step}</div>
+                                {idx < arr.length - 1 && <div style={{ width: "2px", flex: 1, background: "#e2e8f0", margin: "0.5rem 0" }}></div>}
+                            </div>
+                            {/* Content */}
+                            <div style={{ flex: 1, paddingTop: "0.35rem" }}>
+                                <div style={{ fontWeight: 700, fontSize: "0.95rem", color: "#0f172a", marginBottom: "0.35rem" }}>
+                                    <span style={{ marginRight: "0.4rem" }}>{item.icon}</span>{item.title}
+                                </div>
+                                <p style={{ margin: "0 0 0.75rem", fontSize: "0.85rem", color: "#475569", lineHeight: 1.6 }}>{item.desc}</p>
+                                {item.code && (
+                                    <pre style={{ background: "#0f172a", color: "#e2e8f0", borderRadius: "8px", padding: "0.85rem 1rem", fontSize: "0.8rem", overflowX: "auto", margin: 0, lineHeight: 1.6 }}>{item.code}</pre>
+                                )}
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </div>
+
+            {/* ── SECTION 4: Device Token Management ── */}
+            <div style={card}>
+                {sectionTitle(
+                    <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"></path></svg>,
+                    "Device Tokens"
+                )}
+                <p style={{ margin: "0 0 1rem", fontSize: "0.85rem", color: "#64748b" }}>
+                    Each TCP/IP LAN device has a unique token. Paste this into <code style={{ background: "#f1f5f9", padding: "0.1rem 0.4rem", borderRadius: "4px", fontFamily: "monospace", fontSize: "0.82rem" }}>config.json</code> on the Gateway PC.
+                </p>
+
+                {!hasLanDevices ? (
+                    <div style={{ background: "#f8fafc", border: "1px dashed #cbd5e1", borderRadius: "10px", padding: "1.5rem", textAlign: "center", color: "#64748b", fontSize: "0.85rem" }}>
+                        No TCP/IP LAN devices found. Add one from the <strong>Devices</strong> tab first.
+                    </div>
+                ) : (
+                    <div style={{ display: "flex", flexDirection: "column", gap: "0.6rem" }}>
+                        {lanDevices.map(device => (
+                            <div key={device.id} style={{ display: "flex", alignItems: "center", gap: "0.75rem", padding: "0.85rem 1rem", borderRadius: "10px", border: "1px solid #e2e8f0", background: "#fafafa", flexWrap: "wrap" }}>
+                                <div style={{ flexShrink: 0, width: "36px", height: "36px", borderRadius: "8px", background: "rgba(99,102,241,0.1)", color: "#6366f1", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                                    <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><path d="M8 21h8M12 17v4"></path></svg>
+                                </div>
+                                <div style={{ flex: 1, minWidth: "160px" }}>
+                                    <div style={{ fontWeight: 700, fontSize: "0.9rem", color: "#0f172a" }}>{device.device_name}</div>
+                                    <div style={{ fontSize: "0.75rem", color: "#64748b" }}>{device.ip_address}:{device.port || 4370}</div>
+                                </div>
+                                {device.device_token ? (
+                                    <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", flex: 2, minWidth: "240px" }}>
+                                        <code style={{
+                                            flex: 1, background: "#f1f5f9", padding: "0.4rem 0.75rem", borderRadius: "6px",
+                                            fontFamily: "monospace", fontSize: "0.8rem", color: "#334155",
+                                            overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "block"
+                                        }}>
+                                            {device.device_token}
+                                        </code>
+                                        <button
+                                            id={`copy-token-${device.id}`}
+                                            onClick={() => handleCopyToken(device.device_token, device.id)}
+                                            title="Copy token to clipboard"
+                                            style={{
+                                                padding: "0.4rem 0.85rem", borderRadius: "7px", border: "none", cursor: "pointer", fontWeight: 600, fontSize: "0.8rem", whiteSpace: "nowrap",
+                                                background: copiedToken === device.id ? "#10b981" : "#6366f1",
+                                                color: "#fff", transition: "background 0.2s", flexShrink: 0
+                                            }}
+                                        >
+                                            {copiedToken === device.id ? "✓ Copied" : "Copy Token"}
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <span style={{ fontSize: "0.8rem", color: "#f59e0b", background: "#fef3c7", padding: "0.3rem 0.75rem", borderRadius: "6px", fontWeight: 600 }}>No token — re-register device</span>
+                                )}
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </div>
+
+            {/* ── SECTION 5: Gateway Activity Log ── */}
+            <div style={card}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1.25rem", flexWrap: "wrap", gap: "0.5rem" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "0.6rem" }}>
+                        <div style={{ width: "32px", height: "32px", borderRadius: "8px", background: "rgba(99,102,241,0.1)", color: "#6366f1", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                            <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
+                        </div>
+                        <h3 style={{ margin: 0, fontSize: "1rem", fontWeight: 700, color: "#0f172a" }}>Gateway Activity Log</h3>
+                        <span style={{ background: "#f1f5f9", color: "#64748b", fontSize: "0.75rem", fontWeight: 600, padding: "0.15rem 0.6rem", borderRadius: "12px" }}>Last 15</span>
+                    </div>
+                    <button
+                        onClick={() => fetchLogs()}
+                        id="gateway-refresh-logs-btn"
+                        style={{ display: "flex", alignItems: "center", gap: "0.4rem", padding: "0.45rem 0.9rem", borderRadius: "7px", border: "1px solid #e2e8f0", background: "#fff", color: "#475569", fontWeight: 600, fontSize: "0.82rem", cursor: "pointer" }}
+                    >
+                        <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.92-10.26l3.08 3.69"></path></svg>
+                        Refresh
+                    </button>
+                </div>
+
+                {logsLoading ? (
+                    <div style={{ textAlign: "center", padding: "2rem", color: "#94a3b8" }}>Loading activity log…</div>
+                ) : punchLogs.length === 0 ? (
+                    <div style={{ background: "#f8fafc", border: "1px dashed #cbd5e1", borderRadius: "10px", padding: "2rem", textAlign: "center", color: "#64748b" }}>
+                        <div style={{ fontSize: "1.75rem", marginBottom: "0.4rem" }}>📭</div>
+                        <div style={{ fontWeight: 600, marginBottom: "0.25rem" }}>No gateway punches yet</div>
+                        <div style={{ fontSize: "0.82rem" }}>Once the Gateway Agent starts sending data, punches will appear here.</div>
+                    </div>
+                ) : (
+                    <div style={{ overflowX: "auto" }}>
+                        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.85rem" }}>
+                            <thead>
+                                <tr style={{ background: "#f8fafc", borderBottom: "1px solid #e2e8f0" }}>
+                                    {["Time", "Device", "PIN / User ID", "Type", "Status"].map(h => (
+                                        <th key={h} style={{ padding: "0.6rem 0.85rem", textAlign: "left", fontWeight: 700, color: "#475569", whiteSpace: "nowrap" }}>{h}</th>
+                                    ))}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {punchLogs.map((log, i) => (
+                                    <tr key={log.id || i} style={{ borderBottom: "1px solid #f1f5f9", background: i % 2 === 0 ? "#fff" : "#fafafa" }}>
+                                        <td style={{ padding: "0.6rem 0.85rem", color: "#334155", whiteSpace: "nowrap" }}>
+                                            {new Date(log.punch_time || log.createdAt).toLocaleString("en-IN", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit", hour12: true })}
+                                        </td>
+                                        <td style={{ padding: "0.6rem 0.85rem", color: "#334155" }}>{log.device_name || log.BiometricDevice?.device_name || `Device #${log.device_id}`}</td>
+                                        <td style={{ padding: "0.6rem 0.85rem" }}>
+                                            <code style={{ background: "#f1f5f9", padding: "0.1rem 0.4rem", borderRadius: "4px", fontFamily: "monospace", fontSize: "0.8rem" }}>{log.device_user_id}</code>
+                                        </td>
+                                        <td style={{ padding: "0.6rem 0.85rem" }}>
+                                            <span style={{
+                                                background: log.punch_type === "in" ? "#ecfdf5" : "#fee2e2",
+                                                color: log.punch_type === "in" ? "#065f46" : "#991b1b",
+                                                fontWeight: 700, fontSize: "0.75rem", padding: "0.2rem 0.6rem", borderRadius: "12px", textTransform: "uppercase"
+                                            }}>
+                                                {log.punch_type === "in" ? "▶ IN" : "◀ OUT"}
+                                            </span>
+                                        </td>
+                                        <td style={{ padding: "0.6rem 0.85rem" }}>
+                                            <span style={{
+                                                background: log.processed ? "#ecfdf5" : "#fef3c7",
+                                                color: log.processed ? "#065f46" : "#92400e",
+                                                fontWeight: 600, fontSize: "0.75rem", padding: "0.2rem 0.6rem", borderRadius: "12px"
+                                            }}>
+                                                {log.processed ? "✓ Processed" : "⏳ Pending"}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                )}
+            </div>
+
+            {/* ── Ping Animation keyframes ── */}
+            <style>{`
+                @keyframes ping {
+                    75%, 100% { transform: scale(2); opacity: 0; }
+                }
+            `}</style>
         </div>
     );
 }

@@ -616,7 +616,7 @@ exports.getDevices = async (req, res) => {
 exports.createDevice = async (req, res) => {
     try {
         const institute_id = req.user.institute_id;
-        const { device_name, device_serial, device_type, placement_type, room_identifier, location, ip_address } =
+        const { device_name, device_serial, device_type, placement_type, room_identifier, location, ip_address, connection_type, port, brand } =
             req.body;
 
         if (!device_name || !device_serial) {
@@ -638,6 +638,9 @@ exports.createDevice = async (req, res) => {
             room_identifier: room_identifier || null,
             location: location || "",
             ip_address: ip_address || "",
+            connection_type: connection_type || null,
+            port: port || null,
+            brand: brand || null,
             secret_key,
             device_token,
             status: "active",
@@ -720,8 +723,8 @@ exports.updateDevice = async (req, res) => {
         if (!device)
             return res.status(404).json({ success: false, message: "Device not found" });
 
-        const { device_name, location, ip_address, status, device_type, placement_type, room_identifier } = req.body;
-        await device.update({ device_name, location, ip_address, status, device_type, placement_type, room_identifier });
+        const { device_name, location, ip_address, status, device_type, placement_type, room_identifier, connection_type, port, brand } = req.body;
+        await device.update({ device_name, location, ip_address, status, device_type, placement_type, room_identifier, connection_type, port, brand });
         res.json({ success: true, message: "Device updated", data: device });
     } catch (err) {
         res.status(500).json({ success: false, message: err.message });
@@ -2297,3 +2300,202 @@ exports.exportExcel = async (req, res) => {
 };
 
 exports.processPunch = processPunch;
+
+// ─────────────────────────────────────────────────────────────────
+// GATEWAY AGENT ENDPOINTS (TCP/IP LAN Pull)
+// Auth: device_token header — no JWT required
+// ─────────────────────────────────────────────────────────────────
+
+/**
+ * Helper: Authenticate gateway request via x-device-token header
+ * Returns the BiometricDevice record or null
+ */
+async function _authenticateGateway(req) {
+    const token = req.headers["x-device-token"];
+    if (!token) return null;
+    const device = await BiometricDevice.findOne({
+        where: { device_token: token },
+        attributes: ["id", "institute_id", "device_name", "device_serial", "ip_address", "port", "brand", "connection_type", "status", "secret_key"],
+    });
+    if (!device || device.status === "inactive") return null;
+    return device;
+}
+
+/**
+ * POST /api/biometric/gateway/punch
+ * Bulk punch receiver — Gateway Agent sends batches of punches
+ *
+ * Headers: x-device-token: <device_token>
+ * Body: { punches: [{ pin, punch_time, punch_type? }] }
+ *
+ * Performance:
+ *   - Single bulkCreate with ignoreDuplicates for O(1) DB roundtrip
+ *   - WebSocket emit once per batch (not per punch)
+ *   - processPunch runs async via setImmediate (non-blocking response)
+ */
+exports.gatewayBulkPunch = async (req, res) => {
+    try {
+        const device = await _authenticateGateway(req);
+        if (!device) {
+            return res.status(401).json({ success: false, message: "Invalid or missing device token" });
+        }
+
+        const { punches } = req.body;
+        if (!Array.isArray(punches) || punches.length === 0) {
+            return res.status(400).json({ success: false, message: "punches array is required" });
+        }
+
+        // Cap batch size to prevent abuse
+        const batch = punches.slice(0, 500);
+
+        // Build punch records — deduplicate in memory by (pin + punch_time)
+        const seen = new Set();
+        const records = [];
+        for (const p of batch) {
+            const pin = String(p.pin || "").trim();
+            const punchTime = new Date(p.punch_time);
+            if (!pin || isNaN(punchTime.getTime())) continue;
+
+            const key = `${pin}_${punchTime.getTime()}`;
+            if (seen.has(key)) continue;
+            seen.add(key);
+
+            const punchType = ["1", "2", "5"].includes(String(p.status || p.punch_type))
+                ? "out"
+                : (p.punch_type === "out" ? "out" : "in");
+
+            records.push({
+                institute_id: device.institute_id,
+                device_id: device.id,
+                device_user_id: pin,
+                punch_time: punchTime,
+                punch_type: punchType,
+                raw_payload: { source: "gateway_agent", original: p },
+                processed: false,
+            });
+        }
+
+        if (records.length === 0) {
+            return res.json({ success: true, accepted: 0, skipped: batch.length, message: "No valid punches" });
+        }
+
+        // Bulk insert — ignoreDuplicates skips existing (device_id + device_user_id + punch_time)
+        const created = await BiometricPunch.bulkCreate(records, {
+            ignoreDuplicates: true,
+            returning: true,
+        });
+
+        const accepted = created.length;
+        const skipped = records.length - accepted;
+
+        // Update device timestamps + flip pending → connected
+        const statusUpdate = { last_punch_at: new Date(), last_sync: new Date() };
+        if (device.status === "pending") statusUpdate.status = "connected";
+        await device.update(statusUpdate);
+
+        // Respond immediately — processing happens async
+        res.json({ success: true, accepted, skipped, message: `${accepted} punches accepted` });
+
+        // Process each new punch through the attendance pipeline (async, non-blocking)
+        setImmediate(async () => {
+            for (const punch of created) {
+                try {
+                    await processPunch(punch);
+                } catch (err) {
+                    console.error(`[Gateway] processPunch error for punch ${punch.id}:`, err.message);
+                }
+            }
+
+            // Emit WebSocket event once per batch
+            try {
+                const io = socketUtils.getIO?.();
+                if (io) {
+                    io.to(`institute_${device.institute_id}`).emit("biometric:punch", {
+                        device_id: device.id,
+                        device_name: device.device_name,
+                        batch_size: accepted,
+                        source: "gateway_agent",
+                        timestamp: new Date().toISOString(),
+                    });
+                }
+            } catch (socketErr) {
+                console.warn("[Gateway] Socket.io emit failed:", socketErr.message);
+            }
+        });
+
+        console.log(`[Gateway] ✅ ${device.device_name} (SN=${device.device_serial}): ${accepted} punches accepted, ${skipped} skipped`);
+    } catch (err) {
+        console.error("[Gateway] Bulk punch error:", err.message);
+        res.status(500).json({ success: false, message: err.message });
+    }
+};
+
+/**
+ * POST /api/biometric/gateway/heartbeat
+ * Agent sends periodic heartbeat to keep device status "online"
+ *
+ * Headers: x-device-token: <device_token>
+ * Body: { agent_version?, uptime_seconds?, last_device_connect? }
+ */
+exports.gatewayHeartbeat = async (req, res) => {
+    try {
+        const device = await _authenticateGateway(req);
+        if (!device) {
+            return res.status(401).json({ success: false, message: "Invalid or missing device token" });
+        }
+
+        const statusUpdate = { last_sync: new Date() };
+        if (device.status === "pending") statusUpdate.status = "connected";
+        await device.update(statusUpdate);
+
+        res.json({
+            success: true,
+            message: "Heartbeat received",
+            data: {
+                device_id: device.id,
+                device_name: device.device_name,
+                status: statusUpdate.status || device.status,
+            },
+        });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+};
+
+/**
+ * GET /api/biometric/gateway/config/:token
+ * Agent fetches its configuration at startup
+ *
+ * No auth header needed — token is in URL path
+ */
+exports.gatewayConfig = async (req, res) => {
+    try {
+        const { token } = req.params;
+        if (!token) {
+            return res.status(400).json({ success: false, message: "Token is required" });
+        }
+
+        const device = await BiometricDevice.findOne({
+            where: { device_token: token },
+        });
+        if (!device) {
+            return res.status(404).json({ success: false, message: "Device not found for this token" });
+        }
+
+        res.json({
+            success: true,
+            data: {
+                device_id: device.id,
+                device_name: device.device_name,
+                device_serial: device.device_serial,
+                ip_address: device.ip_address,
+                port: device.port || 4370,
+                brand: device.brand,
+                connection_type: device.connection_type,
+                status: device.status,
+            },
+        });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+};

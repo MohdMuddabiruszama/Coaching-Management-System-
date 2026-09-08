@@ -38,6 +38,8 @@ const BiometricDevice = sequelize.define("BiometricDevice", {
         type: DataTypes.STRING(20),
         allowNull: true
     },
+    // port: TCP port on the biometric device (default 4370 for ZKTeco/Biomax)
+    port: { type: DataTypes.INTEGER, allowNull: true, defaultValue: null },
     // device_token: per-device webhook token — used in /api/biometric/webhook/:deviceToken
     // Generated at registration time, never changes. Stored unhashed (random 32-byte hex).
     device_token: { type: DataTypes.STRING(64), allowNull: true, unique: true },

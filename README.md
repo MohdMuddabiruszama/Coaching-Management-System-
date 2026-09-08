@@ -1,366 +1,155 @@
-# 🎓 ZF Solution – Multi-Tenant Coaching ERP System
+# 🎓 ZenithFlows IMS – Multi-Tenant Coaching ERP System
 
-A scalable, modular, multi-tenant SaaS platform for coaching institutes.
+<p align="center">
+  <img src="https://img.shields.io/badge/Node.js-339933?style=for-the-badge&logo=nodedotjs&logoColor=white" />
+  <img src="https://img.shields.io/badge/Express.js-404D59?style=for-the-badge" />
+  <img src="https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB" />
+  <img src="https://img.shields.io/badge/PostgreSQL-316192?style=for-the-badge&logo=postgresql&logoColor=white" />
+  <img src="https://img.shields.io/badge/Vite-B73BFE?style=for-the-badge&logo=vite&logoColor=FFD62E" />
+  <img src="https://img.shields.io/badge/Capacitor-119EFF?style=for-the-badge&logo=capacitor&logoColor=white" />
+</p>
 
-Built With:
+## 🎯 Project Aim & Goal
 
-- Node.js
-- Express.js
-- MySQL
-- Sequelize ORM
-- JWT Authentication
-- Razorpay
-- Modular Clean Architecture
+**ZenithFlows IMS** is a scalable, multi-tenant Software-as-a-Service (SaaS) platform designed specifically for coaching institutes and educational organizations. 
 
----
+**Our Goal:** To digitize and streamline the day-to-day operations of educational institutes by providing a unified platform for administration, faculty, students, and parents. This system aims to eliminate manual paperwork, automate fee collections, provide real-time attendance tracking (including biometric integration), and deliver comprehensive academic analytics.
 
-# 🏗 Project Architecture
+## 🏢 Services & Modules Provided
 
-zf-solution/
-│
-├── backend/
-│ ├── config/
-│ ├── controllers/
-│ ├── services/
-│ ├── models/
-│ ├── routes/
-│ ├── middlewares/
-│ ├── utils/
-│ ├── validations/
-│ ├── templates/
-│ ├── migrations/
-│ ├── seeders/
-│ ├── uploads/
-│ └── server.js
-│
-├── frontend/
-│ ├── src/
-│ └── public/
-│
-└── README.md
+1. **Multi-Tenant Architecture:** Secure data isolation for multiple institutes under a single Super Admin dashboard.
+2. **User Roles:** Distinct portals and mobile apps for Super Admin, Institute Admin, Faculty, Students, and Parents.
+3. **Academic Management:** Class, subject, and syllabus management.
+4. **Attendance Tracking:** Manual attendance and automated biometric (fingerprint/RFID) integration via a local gateway agent.
+5. **Exam & Results:** Test creation, marks entry, and automated report card generation.
+6. **Finance & Subscriptions:** Fee management for students and automated SaaS subscription billing for institutes via Razorpay.
+7. **Communication:** Integrated email (via Brevo) and push notifications (via Firebase) for instant alerts.
 
 ---
 
-# 🚀 COMPLETE BUILD ROADMAP (PHASE-WISE EXECUTION)
+## 🛠 Technology Stack & Plugins
 
-Execute one phase at a time.
+### **Frontend (Web & Mobile)**
+- **Framework:** React.js (v18) with Vite
+- **Mobile App:** Capacitor (Android/Universal APK generation)
+- **State Management & Fetching:** React Query (Tanstack), Axios
+- **UI & Visualization:** Chart.js, Recharts, React Icons
+- **Utilities:** HTML2Canvas, JSPDF (for report generation), QRCode
+- **Monitoring:** Sentry for React
 
-Do NOT skip order.
+### **Backend (API)**
+- **Environment:** Node.js (v18+)
+- **Framework:** Express.js
+- **Database ORM:** Sequelize
+- **Security:** Helmet, XSS, CORS, Rate Limiting, JWT Authentication, Bcrypt
+- **Caching:** Redis (Upstash) / Node-cache
+- **File Uploads:** Multer with Cloudinary Storage
+- **Task Scheduling:** Node-cron
+
+### **Database & Infrastructure**
+- **Primary Database:** PostgreSQL (Hosted on Neon)
+- **Local Gateway:** Custom `gateway-agent` (Node.js) for biometric device LAN communication
+
+### **Third-Party Services & Integrations**
+- **Payment Gateway:** Razorpay
+- **Email Service:** Brevo (SMTP Relay)
+- **Cloud Storage:** Cloudinary (Profile pictures, documents)
+- **Push Notifications & Auth:** Firebase Admin SDK
 
 ---
 
-# 🟢 PHASE 1 – CORE SYSTEM (Foundation)
-
-## Objective:
-
-Setup backend foundation correctly.
-
-### 1️⃣ Database Configuration
-
-- Setup MySQL
-- Configure Sequelize
-- Setup environment variables (.env)
-- Test DB connection
-
-### 2️⃣ Model Initialization
-
-- Create model index loader
-- Setup associations
-- Enable foreign keys
-
-### 3️⃣ Global Middleware Setup
-
-- JSON parser
-- CORS
-- Request logger
-- Central error handler
-
-### 4️⃣ Standard API Response Structure
-
-All responses must follow:
-
-```json
-{
-  "success": true,
-  "message": "Operation successful",
-  "data": {}
-}
-
-🔐 PHASE 2 – AUTH MODULE (Complete Security Layer)
-Objective:
-
-Implement secure authentication system.
-
-Features:
-
-Super Admin creation
-
-Institute Admin registration
-
-Login system
-
-JWT generation
-
-Token verification middleware
-
-Role-based access middleware
-
-Password hashing (bcrypt)
-
-APIs:
-
-POST /api/auth/register
-POST /api/auth/login
-
-Middleware:
-
-verifyToken
-
-allowRoles("admin", "faculty")
-
-✔ After Phase 2 → Secure login system ready
-
-🏢 PHASE 3 – INSTITUTE MODULE (Multi-Tenant Core)
-Objective:
-
-Enable multi-tenant architecture.
-
-Features:
-
-Create institute
-
-Update institute
-
-Suspend institute
-
-Get all institutes (Super Admin only)
-
-Core Rule:
-
-All queries must include:
-
-where: { institute_id: req.user.institute_id }
-
-
-✔ Data isolation per institute
-
-✔ After Phase 3 → Multi-tenant SaaS ready
-
-👨‍🎓 PHASE 4 – STUDENT MODULE
-Objective:
-
-Manage students within institute.
-
-Features:
-
-Create student
-
-Update student
-
-Delete student
-
-List students
-
-Pagination
-
-Search functionality
-
-Security:
-
-Admin-only access
-
-✔ After Phase 4 → Student management complete
-
-👩‍🏫 PHASE 5 – FACULTY MODULE
-Objective:
-
-Manage faculty records.
-
-Features:
-
-Create faculty
-
-Update faculty
-
-Delete faculty
-
-Assign to subjects
-
-List faculty (institute-based)
-
-✔ After Phase 5 → Faculty system complete
-
-📚 PHASE 6 – CLASS & SUBJECT MODULE
-Objective:
-
-Build academic structure.
-
-Features:
-
-Create classes
-
-Assign subjects
-
-Assign faculty to subjects
-
-Link students to classes
-
-Relationship:
-
-Class → Subject → Faculty → Student
-
-✔ After Phase 6 → Academic hierarchy complete
-
-📅 PHASE 7 – ATTENDANCE MODULE
-Objective:
-
-Track attendance properly.
-
-Features:
-
-Mark attendance (present/absent)
-
-Get monthly attendance
-
-Calculate percentage
-
-Attendance analytics
-
-Institute Filter Required
-
-✔ After Phase 7 → Attendance system ready
-
-📝 PHASE 8 – EXAM & MARKS MODULE
-Objective:
-
-Manage exams and results.
-
-Features:
-
-Create exam
-
-Enter marks
-
-Calculate total
-
-Calculate percentage
-
-Generate result summary
-
-✔ After Phase 8 → Result system ready
-
-💳 PHASE 9 – SUBSCRIPTION & PAYMENT (Razorpay)
-Objective:
-
-Monetize SaaS platform.
-
-Plan Management:
-
-Basic
-
-Pro
-
-Premium
-
-Subscription Fields:
-
-institute_id
-
-plan_id
-
-amount_paid
-
-discount_amount
-
-payment_status
-
-subscription_start
-
-subscription_end
-
-Payment Flow:
-
-Create Razorpay order
-
-User completes payment
-
-Webhook verifies payment
-
-Store transaction
-
-Activate subscription
-
-✔ After Phase 9 → Revenue system ready
-
-📧 PHASE 10 – INVOICE & EMAIL SYSTEM
-Objective:
-
-Automate communication.
-
-Features:
-
-Welcome email
-
-Payment confirmation email
-
-Expiry reminder email
-
-Cancellation email
-
-Generate invoice PDF
-
-Store invoice record
-
-Templates:
-
-templates/
-
-welcome.template.js
-
-payment.template.js
-
-expiry.template.js
-
-cancel.template.js
-
-✔ After Phase 10 → Professional SaaS communication system ready
-
-📊 PHASE 11 – SUPER ADMIN ANALYTICS
-Objective:
-
-Provide business insights.
-
-Dashboard Includes:
-
-Total institutes
-
-Active subscriptions
-
-Monthly revenue
-
-Plan distribution
-
-Growth analytics
-
-Revenue Calculation:
-Subscription.sum("amount_paid", {
-  where: { payment_status: "paid" }
-});
-
-
-// ✔ After Phase 11 → Full SaaS analytics dashboard ready
-
-🔒 SECURITY STANDARDS
-
-JWT Authentication
-
-Role-based authorization
-
-SQL injection prevention
-
-Password hashing
-
-Subscription expiry middleware
-
-Institute-level data isolation
+## 🚀 Deployment Environment
+
+Based on the environment configuration, the project components are distributed across the following cloud providers:
+
+| Component | Provider / Platform | Details / URL |
+| :--- | :--- | :--- |
+| **Frontend (Web Dashboard)** | **Vercel** | Hosted via `vercel.json` |
+| **Backend (Node.js API)** | **Railway / Render** | Hosted via `railway.json` / Hostinger VPS |
+| **Database** | **Neon** | Serverless PostgreSQL (`neondb`) |
+| **Media / Storage** | **Cloudinary** | Image & asset storage |
+| **Emails** | **Brevo** | SMTP Relay (`smtp-relay.brevo.com`) |
+| **Payments** | **Razorpay** | SaaS subscription & fee collection |
+
+---
+
+## 🏗 Project Architecture
+
+The repository is structured as a monorepo, separating the frontend application, the backend API, and local agents.
+
+### **High-Level Directory Structure**
+```text
+zenithflows-ims/
+│
+├── backend/                  # Node.js + Express API
+│   ├── config/               # DB and third-party configs
+│   ├── controllers/          # Business logic
+│   ├── middlewares/          # Auth, roles, error handlers
+│   ├── migrations/           # Database schema migrations
+│   ├── models/               # Sequelize PostgreSQL models
+│   ├── routes/               # API endpoint definitions
+│   └── services/             # Reusable service classes/functions
+│
+├── frontend/                 # React.js + Vite Application
+│   ├── android/              # Capacitor Android project files
+│   ├── public/               # Static assets
+│   ├── scripts/              # Mobile build and patch scripts
+│   └── src/
+│       ├── components/       # Reusable UI components
+│       ├── pages/            # Page views (Admin, Student, Faculty)
+│       └── utils/            # API clients and helpers
+│
+└── gateway-agent/            # Local Node.js agent for Biometric devices
+    ├── config.json
+    └── agent.js
 ```
+
+### **System Data Flow**
+```mermaid
+graph TD;
+    Client[Web / Mobile App] -->|HTTPS REST API| API[Backend Node.js]
+    API -->|Sequelize ORM| DB[(Neon PostgreSQL)]
+    API -->|Uploads| Cloudinary[Cloudinary CDN]
+    API -->|Payments| Razorpay[Razorpay Gateway]
+    API -->|Emails| Brevo[Brevo SMTP]
+    Biometric[Biometric Machine] -->|TCP/IP| Gateway[Local Gateway Agent]
+    Gateway -->|Socket/HTTP| API
+```
+
+---
+
+## 💻 Local Development Setup
+
+### 1. Prerequisites
+- Node.js (v18 or higher)
+- PostgreSQL (Local or Neon URL)
+- Android Studio (For Capacitor mobile builds)
+
+### 2. Backend Setup
+```bash
+cd backend
+npm install
+# Configure your .env file
+npm run dev
+```
+
+### 3. Frontend Setup
+```bash
+cd frontend
+npm install
+# Configure your .env or .env.mobile.universal
+npm run dev
+```
+
+### 4. Database Migrations
+To run all startup migrations on a fresh database:
+```bash
+cd backend
+npm run migrate:safe
+```
+
+## 🔒 Security Standards Implemented
+- **Data Isolation:** All tenant queries enforce `where: { institute_id: req.user.institute_id }`.
+- **JWT & Role-based Authorization:** Strict middleware (`verifyToken`, `allowRoles`).
+- **SQL Injection Prevention:** Parametrized queries via Sequelize ORM.
+- **Rate Limiting & Helmet:** API endpoints secured against spam and common web vulnerabilities.

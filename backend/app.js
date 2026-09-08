@@ -318,6 +318,9 @@ if (!isCloudinaryReady) {
   console.log("ðŸ“‚ Serving local /uploads (Cloudinary not configured)");
 }
 
+// Serve the compiled Gateway Agent .exe so users can download it
+app.use("/gateway", express.static(path.join(__dirname, "../gateway-agent")));
+
 
 // Note: Basic request logging is handled by the performanceLogger middleware above.
 // It provides richer data: duration, status codes, slow-request warnings.
@@ -426,15 +429,23 @@ app.use("/api/notes", [verifyToken, tenantScope], require("./routes/note.routes"
 app.use("/api/assignments", [verifyToken, tenantScope], require("./routes/assignment.routes"));
 app.use("/api/performance", [verifyToken, tenantScope], require("./routes/performance.routes"));
 
-// Per-device biometric webhook (public — authenticated via device_token in URL)
+// --- Biometric Public Endpoints ---
+const biometricCtrl = require("./controllers/biometric.controller");
+
+// Gateway Agent Endpoints (Token Auth via x-device-token header, NO JWT)
+app.post("/api/biometric/gateway/punch", express.json(), biometricCtrl.gatewayBulkPunch);
+app.post("/api/biometric/gateway/heartbeat", express.json(), biometricCtrl.gatewayHeartbeat);
+app.get("/api/biometric/gateway/config/:token", biometricCtrl.gatewayConfig);
+
+// Per-device biometric webhook (public - authenticated via device_token in URL)
 // Must be mounted BEFORE the 404 handler and OUTSIDE the JWT-protected /api/biometric router
-// because physical devices don't carry a JWT token.
 app.post(
     "/api/biometric/webhook/:deviceToken",
     express.json(),
-    require("./controllers/biometric.controller").webhookReceiver
+    biometricCtrl.webhookReceiver
 );
 
+// --- JWT Protected Routes ---
 app.use("/api/biometric", [verifyToken, tenantScope], require("./routes/biometric.routes"));
 app.use("/api/mobile", [verifyToken, tenantScope], require("./routes/mobileDashboard.routes"));
 app.use("/api/notifications", [verifyToken, tenantScope], require("./routes/notification.routes"));
