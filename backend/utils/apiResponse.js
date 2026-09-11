@@ -32,6 +32,11 @@ const sendError = (res, message = 'An error occurred', statusCode = 400, errors 
     };
     if (errors) {
         response.errors = errors;
+        if (typeof errors === 'object' && !Array.isArray(errors) && errors !== null) {
+            if (errors.code) {
+                response.code = errors.code;
+            }
+        }
     }
     return res.status(statusCode).json(response);
 };

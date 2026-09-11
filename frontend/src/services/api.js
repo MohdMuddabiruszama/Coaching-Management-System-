@@ -71,7 +71,7 @@ const getBaseURL = () => {
  */
 const api = axios.create({
     baseURL: getBaseURL(),
-    timeout: 15000, // 15 s — fail fast on slow/dead connections
+    timeout: 30000, // 30 s — accommodates remote database latency and heavy queries
     headers: {
         "Content-Type": "application/json",
     },
@@ -81,15 +81,121 @@ const api = axios.create({
 });
 
 /**
- * 🔐 Request Interceptor (Attach Token + Timing)
+ * 🔑 Token Storage & Lifecycle Utilities
+ */
+const getActiveToken = () => sessionStorage.getItem("token") || localStorage.getItem("token");
+const getActiveRefreshToken = () => sessionStorage.getItem("refreshToken") || localStorage.getItem("refreshToken");
+
+const updateStoredTokens = (newToken) => {
+    sessionStorage.setItem("token", newToken);
+    if (localStorage.getItem("token") && !sessionStorage.getItem("original_session_token")) {
+        localStorage.setItem("token", newToken);
+    }
+};
+
+const clearStoredTokens = () => {
+    sessionStorage.clear();
+    localStorage.removeItem("token");
+    localStorage.removeItem("refreshToken");
+    localStorage.removeItem("user");
+};
+
+/**
+ * Check if a JWT is expiring within thresholdSeconds
+ */
+const isTokenExpiringSoon = (token, thresholdSeconds = 90) => {
+    if (!token) return false;
+    try {
+        const parts = token.split('.');
+        if (parts.length !== 3) return false;
+        const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')));
+        if (!payload.exp) return false;
+        return (payload.exp * 1000) - Date.now() < (thresholdSeconds * 1000);
+    } catch {
+        return false;
+    }
+};
+
+// ── Refresh Concurrency Mutex & Queue ──
+let isRefreshing = false;
+let failedQueue = [];
+
+const processQueue = (error, token = null) => {
+    failedQueue.forEach((prom) => {
+        if (error) {
+            prom.reject(error);
+        } else {
+            prom.resolve(token);
+        }
+    });
+    failedQueue = [];
+};
+
+const executeTokenRefresh = async () => {
+    const refreshToken = getActiveRefreshToken();
+    if (!refreshToken) {
+        throw new Error("No refresh token available");
+    }
+
+    const refreshResponse = await axios.post(
+        `${getBaseURL()}/auth/refresh`,
+        { refreshToken },
+        { headers: { "Content-Type": "application/json" } }
+    );
+
+    if (refreshResponse.data?.success && refreshResponse.data?.token) {
+        const newToken = refreshResponse.data.token;
+        updateStoredTokens(newToken);
+        return newToken;
+    } else {
+        throw new Error(refreshResponse.data?.message || "Token refresh failed");
+    }
+};
+
+/**
+ * 🔐 Request Interceptor (Attach Token + Timing + Proactive Refresh)
  */
 api.interceptors.request.use(
-    (config) => {
+    async (config) => {
         // Track request start time for slow API detection
         config.metadata = { startTime: Date.now() };
 
         try {
-            const token = sessionStorage.getItem("token");
+            let token = getActiveToken();
+
+            // Skip proactive refresh for auth/refresh endpoints
+            const url = config.url || '';
+            const isAuthRoute = (
+                url.includes("/auth/login") ||
+                url.includes("/auth/refresh") ||
+                url.includes("/auth/forgot-password") ||
+                url.includes("/auth/reset-password") ||
+                url.includes("/auth/register")
+            );
+
+            // Proactive Refresh: If token is expiring within 90s, refresh before sending
+            if (token && !isAuthRoute && isTokenExpiringSoon(token, 90)) {
+                if (!isRefreshing) {
+                    isRefreshing = true;
+                    try {
+                        const newToken = await executeTokenRefresh();
+                        token = newToken;
+                        processQueue(null, newToken);
+                    } catch (refreshErr) {
+                        processQueue(refreshErr, null);
+                    } finally {
+                        isRefreshing = false;
+                    }
+                } else {
+                    try {
+                        token = await new Promise((resolve, reject) => {
+                            failedQueue.push({ resolve, reject });
+                        });
+                    } catch {
+                        // Fall back to current token
+                    }
+                }
+            }
 
             if (token) {
                 config.headers.Authorization = `Bearer ${token}`;
@@ -100,8 +206,6 @@ api.interceptors.request.use(
             // === LIFETIME BYPASS: Lifetime members are never blocked ===
             const isLifetimeMember = sessionStorage.getItem("isLifetimeMember") === "true";
             if (isPlanExpired && !isLifetimeMember && config.method && config.method.toUpperCase() !== 'GET') {
-                const url = config.url || '';
-                // Whitelist routes that shouldn't be blocked even if expired (e.g. auth, upgrade)
                 const isWhitelisted = url.includes('/auth/') || url.includes('/login') || url.includes('/checkout') || url.includes('/verify') || url.includes('/payment');
                 
                 if (!isWhitelisted) {
@@ -157,10 +261,7 @@ api.interceptors.response.use(
             console.error("🚫 Network error:", error.message);
 
             // ── Gate: Only show "Platform Unreachable" when the user IS logged in.
-            // On a fresh install or after logout, there's no session — the error
-            // is expected (no profile to fetch) and must NOT block the login screen.
-            // This was the root cause of the permanent "Platform Unreachable" loop.
-            const hasSession = Boolean(sessionStorage.getItem("token"));
+            const hasSession = Boolean(getActiveToken());
             if (hasSession) {
                 window.dispatchEvent(new Event('offline_api_error'));
             }
@@ -170,42 +271,44 @@ api.interceptors.response.use(
 
         const status = response.status;
         const data = response.data;
+        const errorCode = data?.code || data?.errors?.code;
+        const errorMessage = (data?.message || data?.errors?.message || "").toLowerCase();
+        const isTokenExpired = errorCode === "TOKEN_EXPIRED" || errorMessage.includes("token expired");
 
-        // ✅ Phase 7: Auto-refresh on TOKEN_EXPIRED
-        if (status === 401 && data?.code === "TOKEN_EXPIRED" && !config._retry) {
-            config._retry = true; // Prevent infinite retry loops
-
-            const refreshToken = sessionStorage.getItem("refreshToken");
-            if (refreshToken) {
-                try {
-                    const refreshResponse = await axios.post(
-                        `${getBaseURL()}/auth/refresh`,
-                        { refreshToken },
-                        { headers: { "Content-Type": "application/json" } }
-                    );
-
-                    if (refreshResponse.data?.success && refreshResponse.data?.token) {
-                        const newToken = refreshResponse.data.token;
-                        sessionStorage.setItem("token", newToken);
-
-                        // If it's a native app or rememberMe was set (localStorage has the old token),
-                        // we must update localStorage so the app stays logged in across restarts.
-                        // BUT do NOT overwrite localStorage if we are impersonating (original_session_token exists).
-                        if (localStorage.getItem("token") && !sessionStorage.getItem("original_session_token")) {
-                            localStorage.setItem("token", newToken);
-                        }
-
-                        // Retry the original request with the new token
+        // ✅ Robust Token Refresh on 401 TOKEN_EXPIRED with Mutex & Queue
+        if (status === 401 && isTokenExpired && !config._retry) {
+            if (isRefreshing) {
+                // Another request is already refreshing the token — queue this request
+                return new Promise((resolve, reject) => {
+                    failedQueue.push({ resolve, reject });
+                })
+                    .then((newToken) => {
+                        config._retry = true;
                         config.headers.Authorization = `Bearer ${newToken}`;
                         return api(config);
-                    }
-                } catch (refreshError) {
-                    console.warn("🔑 Token refresh failed — logging out.");
-                    sessionStorage.clear();
-                    window.dispatchEvent(new CustomEvent('app_navigate', { detail: { path: '/login', clearSession: true } }));
-                    return Promise.reject(refreshError);
-                }
+                    })
+                    .catch((err) => Promise.reject(err));
             }
+
+            config._retry = true;
+            isRefreshing = true;
+
+            return new Promise(async (resolve, reject) => {
+                try {
+                    const newToken = await executeTokenRefresh();
+                    processQueue(null, newToken);
+                    config.headers.Authorization = `Bearer ${newToken}`;
+                    resolve(api(config));
+                } catch (refreshError) {
+                    processQueue(refreshError, null);
+                    console.warn("🔑 Token refresh failed — logging out:", refreshError.message);
+                    clearStoredTokens();
+                    window.dispatchEvent(new CustomEvent('app_navigate', { detail: { path: '/login', clearSession: true } }));
+                    reject(refreshError);
+                } finally {
+                    isRefreshing = false;
+                }
+            });
         }
 
         // 🛑 Backend/Database Down (5xx Errors)
@@ -221,25 +324,25 @@ api.interceptors.response.use(
             }
 
             // ⏳ Subscription Expired
-            if (status === 403 && data?.code === "SUBSCRIPTION_EXPIRED") {
+            if (status === 403 && (data?.code === "SUBSCRIPTION_EXPIRED" || data?.errors?.code === "SUBSCRIPTION_EXPIRED")) {
                 window.dispatchEvent(new CustomEvent('app_navigate', { detail: { path: '/renew-plan' } }));
             }
 
             // ⚠️ Suspended Institute Account
-            if (status === 403 && data?.code === "INSTITUTE_SUSPENDED") {
-                sessionStorage.clear();
+            if (status === 403 && (data?.code === "INSTITUTE_SUSPENDED" || data?.errors?.code === "INSTITUTE_SUSPENDED")) {
+                clearStoredTokens();
                 window.dispatchEvent(new CustomEvent('app_navigate', { detail: { path: '/suspended', clearSession: true } }));
                 return Promise.reject(error);
             }
 
             // 🚫 Account Blocked
-            if (status === 403 && data?.code === "ACCOUNT_BLOCKED") {
+            if (status === 403 && (data?.code === "ACCOUNT_BLOCKED" || data?.errors?.code === "ACCOUNT_BLOCKED")) {
                 handleBlockedAccount();
             }
 
-            // 🔑 Unauthorized (not TOKEN_EXPIRED) — hard logout
-            if (status === 401 && data?.code !== "TOKEN_EXPIRED" && window.location.pathname !== "/login") {
-                sessionStorage.clear();
+            // 🔑 Unauthorized (not TOKEN_EXPIRED and not the refresh endpoint itself) — hard logout
+            if (status === 401 && !isTokenExpired && !config.url?.includes("/auth/refresh") && window.location.pathname !== "/login") {
+                clearStoredTokens();
                 window.dispatchEvent(new CustomEvent('app_navigate', { detail: { path: '/login', clearSession: true } }));
             }
 

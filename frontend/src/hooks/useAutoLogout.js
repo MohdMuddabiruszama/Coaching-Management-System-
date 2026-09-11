@@ -1,25 +1,58 @@
 import { useState, useEffect, useCallback } from 'react';
 import api from '../services/api';
 
-export const useAutoLogout = (logoutCallback) => {
+export const useAutoLogout = (logoutCallback, enabled = true) => {
   const [showWarning, setShowWarning] = useState(false);
   const [countdown, setCountdown] = useState(60);
-  const [timeoutMinutes, setTimeoutMinutes] = useState(15);
+  const [timeoutMinutes, setTimeoutMinutes] = useState(30);
   const [lastActivity, setLastActivity] = useState(Date.now());
 
   // Fetch the global timeout setting from the server once on mount
   useEffect(() => {
+    let isMounted = true;
     const fetchSettings = async () => {
       try {
         const { data } = await api.get('/auth/system-settings');
-        if (data && data.settings && data.settings.autoLogoutTimer) {
-          setTimeoutMinutes(data.settings.autoLogoutTimer);
+        if (isMounted && data?.settings?.autoLogoutTimer !== undefined) {
+          const parsed = Number(data.settings.autoLogoutTimer);
+          const minutes = isNaN(parsed) ? 30 : parsed;
+          setTimeoutMinutes(minutes);
+          console.info(`🔒 [Auto-Logout] Initialized: policy is ${minutes > 0 ? `${minutes} min idle timeout` : 'DISABLED'}. Enabled for this user: ${enabled}`);
         }
       } catch (err) {
-        console.error("Failed to fetch auto-logout timer setting", err);
+        console.warn("Could not load auto-logout setting — default 30 min:", err.message);
       }
     };
     fetchSettings();
+    return () => { isMounted = false; };
+  }, [enabled]);
+
+  // Listen for real-time updates and manual test triggers
+  useEffect(() => {
+    const handleUpdate = (e) => {
+      if (e.detail?.timer !== undefined) {
+        const parsed = Number(e.detail.timer);
+        const minutes = isNaN(parsed) ? 30 : parsed;
+        setTimeoutMinutes(minutes);
+        setLastActivity(Date.now());
+        setShowWarning(false);
+        console.info(`🔒 [Auto-Logout] Settings dynamically updated to ${minutes} min.`);
+      }
+    };
+
+    const handleTest = () => {
+      console.info("🧪 [Auto-Logout] Manual test triggered: displaying warning modal.");
+      setShowWarning(true);
+      setCountdown(60);
+    };
+
+    window.addEventListener('auto_logout_setting_updated', handleUpdate);
+    window.addEventListener('trigger_auto_logout_test', handleTest);
+
+    return () => {
+      window.removeEventListener('auto_logout_setting_updated', handleUpdate);
+      window.removeEventListener('trigger_auto_logout_test', handleTest);
+    };
   }, []);
 
   const resetActivity = useCallback(() => {
@@ -30,18 +63,26 @@ export const useAutoLogout = (logoutCallback) => {
     }
   }, [showWarning]);
 
+  // Activity listeners (throttled to avoid performance impact)
   useEffect(() => {
-    const events = ['mousemove', 'keydown', 'scroll', 'touchstart', 'click'];
-    
-    // If the warning is showing, don't reset activity (user must click "Stay Logged In" button)
+    if (!enabled || timeoutMinutes <= 0) return;
+
+    const events = ['mousemove', 'mousedown', 'keydown', 'scroll', 'touchstart', 'click', 'wheel'];
+    let lastHandled = 0;
+
     const handleActivity = () => {
-      if (!showWarning) {
-        resetActivity();
+      const now = Date.now();
+      // Throttle activity updates to once every 2 seconds
+      if (now - lastHandled > 2000) {
+        lastHandled = now;
+        if (!showWarning) {
+          resetActivity();
+        }
       }
     };
 
     events.forEach(event => {
-      window.addEventListener(event, handleActivity);
+      window.addEventListener(event, handleActivity, { passive: true });
     });
 
     return () => {
@@ -49,32 +90,38 @@ export const useAutoLogout = (logoutCallback) => {
         window.removeEventListener(event, handleActivity);
       });
     };
-  }, [showWarning, resetActivity]);
+  }, [enabled, timeoutMinutes, showWarning, resetActivity]);
 
+  // Inactivity check interval
   useEffect(() => {
-    // Check activity every second
+    if (!enabled || timeoutMinutes <= 0) return;
+
     const interval = setInterval(() => {
       const now = Date.now();
       const inactiveDuration = now - lastActivity;
       const timeoutMs = timeoutMinutes * 60 * 1000;
 
       if (inactiveDuration >= timeoutMs && !showWarning) {
+        console.info(`⚠️ [Auto-Logout] User inactive for ${Math.round(inactiveDuration / 1000)}s >= ${timeoutMinutes * 60}s. Displaying countdown warning.`);
         setShowWarning(true);
         setCountdown(60);
       }
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [lastActivity, timeoutMinutes, showWarning]);
+  }, [enabled, lastActivity, timeoutMinutes, showWarning]);
 
-  // Countdown timer logic when warning is shown
+  // Countdown timer logic when warning modal is shown
   useEffect(() => {
+    if (!enabled || timeoutMinutes <= 0) return;
+
     let timer;
     if (showWarning) {
       timer = setInterval(() => {
         setCountdown((prev) => {
           if (prev <= 1) {
             clearInterval(timer);
+            console.warn("🚨 [Auto-Logout] Inactivity countdown reached 0. Logging out user.");
             logoutCallback();
             return 0;
           }
@@ -85,11 +132,12 @@ export const useAutoLogout = (logoutCallback) => {
     return () => {
       if (timer) clearInterval(timer);
     };
-  }, [showWarning, logoutCallback]);
+  }, [enabled, showWarning, timeoutMinutes, logoutCallback]);
 
   return {
     showWarning,
     countdown,
-    stayLoggedIn: resetActivity
+    stayLoggedIn: resetActivity,
+    timeoutMinutes,
   };
 };

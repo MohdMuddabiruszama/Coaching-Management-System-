@@ -20,7 +20,7 @@ function Settings() {
     const [otpModeFetched, setOtpModeFetched] = useState(false);
 
     // ── System Settings state ──
-    const [autoLogoutTimer, setAutoLogoutTimer] = useState(15);
+    const [autoLogoutTimer, setAutoLogoutTimer] = useState(30);
     const [savingSettings, setSavingSettings] = useState(false);
 
     useEffect(() => {
@@ -54,7 +54,7 @@ function Settings() {
     const fetchSystemSettings = async () => {
         try {
             const res = await api.get("/superadmin/system-settings");
-            if (res.data.settings?.autoLogoutTimer) {
+            if (res.data.settings?.autoLogoutTimer !== undefined) {
                 setAutoLogoutTimer(res.data.settings.autoLogoutTimer);
             }
         } catch (e) {
@@ -67,6 +67,7 @@ function Settings() {
         setMessage({ type: "", text: "" });
         try {
             await api.put("/superadmin/system-settings/auto-logout", { autoLogoutTimer });
+            window.dispatchEvent(new CustomEvent('auto_logout_setting_updated', { detail: { timer: autoLogoutTimer } }));
             setMessage({ type: "success", text: "System settings updated successfully" });
         } catch (err) {
             setMessage({ type: "error", text: err.response?.data?.message || "Failed to update system settings" });
@@ -269,29 +270,93 @@ function Settings() {
             )}
             
             {activeTab === "security" && (
-                <div className="card" style={{ maxWidth: "600px", padding: "2rem", marginTop: "2rem" }}>
-                    <h3 style={{ marginBottom: "1.5rem" }}>Auto-Logout Settings</h3>
+                <div className="card" style={{ maxWidth: "680px", padding: "2rem", marginTop: "2rem" }}>
+                    <h3 style={{ marginBottom: "0.5rem", display: "flex", alignItems: "center", gap: "8px" }}>
+                        🔒 Inactivity Auto-Logout Settings
+                    </h3>
+                    <p style={{ color: "#6b7280", marginBottom: "1.5rem", fontSize: "0.9rem" }}>
+                        Protect unattended computers by automatically logging out after prolonged inactivity. Active users will <strong>never</strong> be interrupted.
+                    </p>
+
+                    <div style={{
+                        background: Number(autoLogoutTimer) === 0 ? "#f3f4f6" : "#eff6ff",
+                        borderLeft: `4px solid ${Number(autoLogoutTimer) === 0 ? "#9ca3af" : "#3b82f6"}`,
+                        padding: "1rem",
+                        borderRadius: "0.375rem",
+                        marginBottom: "1.5rem",
+                        fontSize: "0.875rem",
+                        color: "#374151"
+                    }}>
+                        <strong>Current Policy: </strong>
+                        {Number(autoLogoutTimer) === 0 ? (
+                            <span style={{ color: "#6b7280", fontWeight: "600" }}>Disabled — Users remain logged in indefinitely until manual logout.</span>
+                        ) : (
+                            <span style={{ color: "#1d4ed8", fontWeight: "600" }}>
+                                Inactivity timer set to {autoLogoutTimer} minute{Number(autoLogoutTimer) > 1 ? "s" : ""}. A 60-second warning will appear before logout.
+                            </span>
+                        )}
+                    </div>
+
                     <div className="form-group" style={{ marginBottom: "1.5rem" }}>
-                        <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: "500" }}>Global Auto-Logout Timer (Minutes)</label>
+                        <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: "500" }}>
+                            Inactivity Timeout (Minutes)
+                        </label>
+                        <div style={{ display: "flex", gap: "8px", marginBottom: "0.75rem", flexWrap: "wrap" }}>
+                            {[
+                                { label: "Disabled (0)", val: 0 },
+                                { label: "15 min", val: 15 },
+                                { label: "30 min (Recommended)", val: 30 },
+                                { label: "60 min", val: 60 },
+                                { label: "120 min", val: 120 },
+                            ].map((preset) => (
+                                <button
+                                    key={preset.val}
+                                    type="button"
+                                    onClick={() => setAutoLogoutTimer(preset.val)}
+                                    className={`btn ${Number(autoLogoutTimer) === preset.val ? 'btn-primary' : 'btn-outline'}`}
+                                    style={{
+                                        padding: "0.4rem 0.8rem",
+                                        fontSize: "0.825rem",
+                                        borderRadius: "20px",
+                                        cursor: "pointer"
+                                    }}
+                                >
+                                    {preset.label}
+                                </button>
+                            ))}
+                        </div>
                         <input 
                             type="number" 
-                            min="1" 
+                            min="0" 
                             max="1440"
                             className="form-input"
                             value={autoLogoutTimer}
                             onChange={(e) => setAutoLogoutTimer(e.target.value)}
                             style={{ width: "100%", padding: "0.75rem", borderRadius: "0.375rem", border: "1px solid #d1d5db" }}
+                            placeholder="Enter 0 to disable"
                         />
-                        <p style={{ fontSize: "0.85rem", color: "#6b7280", marginTop: "0.5rem" }}>Users will be automatically logged out after this many minutes of inactivity.</p>
+                        <p style={{ fontSize: "0.825rem", color: "#6b7280", marginTop: "0.5rem" }}>
+                            💡 Enter <strong>0</strong> to completely disable idle auto-logout. Otherwise enter minutes (e.g. 30).
+                        </p>
                     </div>
-                    <button 
-                        className="btn btn-primary" 
-                        style={{ marginTop: "0.5rem" }}
-                        onClick={saveSystemSettings}
-                        disabled={savingSettings}
-                    >
-                        {savingSettings ? "Saving..." : "Save Auto-Logout Settings"}
-                    </button>
+
+                    <div style={{ display: "flex", gap: "10px", marginTop: "0.5rem", flexWrap: "wrap" }}>
+                        <button 
+                            className="btn btn-primary" 
+                            onClick={saveSystemSettings}
+                            disabled={savingSettings}
+                        >
+                            {savingSettings ? "Saving..." : "Save Auto-Logout Settings"}
+                        </button>
+                        <button 
+                            type="button"
+                            className="btn btn-outline" 
+                            onClick={() => window.dispatchEvent(new CustomEvent('trigger_auto_logout_test'))}
+                            title="Test how the warning popup looks and behaves right now"
+                        >
+                            🧪 Test Warning Popup Now
+                        </button>
+                    </div>
                 </div>
             )}
 

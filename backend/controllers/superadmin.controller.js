@@ -1301,7 +1301,7 @@ exports.getSystemLogs = async (req, res) => {
 exports.getSystemSettings = async (req, res) => {
     try {
         if (!fs.existsSync(SETTINGS_FILE_PATH)) {
-            return res.status(200).json({ success: true, settings: { autoLogoutTimer: 15 } });
+            return res.status(200).json({ success: true, settings: { autoLogoutTimer: 30 } });
         }
         const data = fs.readFileSync(SETTINGS_FILE_PATH, 'utf8');
         res.status(200).json({ success: true, settings: JSON.parse(data) });
@@ -1315,13 +1315,14 @@ exports.updateSystemSettings = async (req, res) => {
     try {
         const { autoLogoutTimer } = req.body;
         
-        let settings = { autoLogoutTimer: 15 };
+        let settings = { autoLogoutTimer: 30 };
         if (fs.existsSync(SETTINGS_FILE_PATH)) {
             settings = JSON.parse(fs.readFileSync(SETTINGS_FILE_PATH, 'utf8'));
         }
         
         if (autoLogoutTimer !== undefined) {
-            settings.autoLogoutTimer = parseInt(autoLogoutTimer, 10);
+            const parsed = parseInt(autoLogoutTimer, 10);
+            settings.autoLogoutTimer = isNaN(parsed) || parsed < 0 ? 30 : parsed;
         }
         
         fs.writeFileSync(SETTINGS_FILE_PATH, JSON.stringify(settings, null, 2));

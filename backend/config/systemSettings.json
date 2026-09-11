@@ -1,4 +1,4 @@
 {
-  "autoLogoutTimer": 15,
+  "autoLogoutTimer": 10,
   "minMobileVersion": "1.0.0"
 }

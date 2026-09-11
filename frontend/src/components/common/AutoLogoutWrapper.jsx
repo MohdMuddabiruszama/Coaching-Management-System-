@@ -11,10 +11,12 @@ const AutoLogoutWrapper = () => {
     window.location.href = '/login'; // Force redirect to login
   };
 
-  const { showWarning, countdown, stayLoggedIn } = useAutoLogout(handleLogout);
+  const isEnabled = Boolean(user && (user.role === 'admin' || user.role === 'super_admin'));
 
-  // Only apply auto-logout if the user is authenticated and is an admin or super admin
-  if (!user || (user.role !== 'admin' && user.role !== 'super_admin')) return null;
+  const { showWarning, countdown, stayLoggedIn } = useAutoLogout(handleLogout, isEnabled);
+
+  // Only apply auto-logout modal if enabled
+  if (!isEnabled) return null;
 
   return (
     <>

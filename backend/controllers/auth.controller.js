@@ -34,14 +34,14 @@ exports.getOtpMode = (req, res) => {
  */
 exports.getPublicSystemSettings = (req, res) => {
   try {
-    let settings = { autoLogoutTimer: 15 }; // default
+    let settings = { autoLogoutTimer: 30 }; // default 30 min (0 = disabled)
     if (fs.existsSync(SETTINGS_FILE_PATH)) {
       settings = JSON.parse(fs.readFileSync(SETTINGS_FILE_PATH, 'utf8'));
     }
     res.json({ success: true, settings });
   } catch (error) {
     console.error("Error reading system settings:", error);
-    res.json({ success: true, settings: { autoLogoutTimer: 15 } }); // fallback
+    res.json({ success: true, settings: { autoLogoutTimer: 30 } }); // fallback
   }
 };
 
@@ -857,7 +857,7 @@ exports.refreshAccessToken = catchAsync(async (req, res) => {
       include: [{
         model: require("../models").User,
         // ✅ Phase A: Include all fields needed for enriched JWT generation
-        attributes: ["id", "role", "institute_id", "status", "name", "email"],
+        attributes: ["id", "role", "institute_id", "status", "name", "email", "permissions"],
         include: [{ model: require("../models").Institute, attributes: ["name", "id_card_settings"] }]
       }]
     });
