@@ -1638,6 +1638,9 @@ exports.getPunchLogs = async (req, res) => {
 /**
  * Run every minute via Cron to auto-carry forward subject attendance
  */
+let cachedAutoSubjectSettings = null;
+let lastAutoSubjectCheck = 0;
+
 exports.processSubjectBasedAutoCarryForward = async () => {
     try {
         const now = new Date();
@@ -1647,10 +1650,20 @@ exports.processSubjectBasedAutoCarryForward = async () => {
         const dayName = now.toLocaleString("en-US", { weekday: "long" });
         const dateStr = now.toISOString().split("T")[0];
 
-        // 1. Find institutes that have subject_mode = "automatic"
-        const settings = await BiometricSettings.findAll({
-            where: { subject_mode: "automatic", attendance_mode: "subject_based" }
-        });
+        // 1. Find institutes that have subject_mode = "automatic" (cached for 5 min to protect Neon CU-hrs)
+        const nowMs = Date.now();
+        let settings = cachedAutoSubjectSettings;
+        if (!settings || (nowMs - lastAutoSubjectCheck > 300000)) {
+            settings = await BiometricSettings.findAll({
+                where: { subject_mode: "automatic", attendance_mode: "subject_based" }
+            });
+            cachedAutoSubjectSettings = settings;
+            lastAutoSubjectCheck = nowMs;
+        }
+
+        if (!settings || settings.length === 0) {
+            return; // No institutes configured with automatic subject attendance — 0 DB calls needed
+        }
 
         for (const setting of settings) {
             const institute_id = setting.institute_id;

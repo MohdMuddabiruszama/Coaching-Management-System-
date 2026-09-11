@@ -4,13 +4,19 @@ const { Op } = require("sequelize");
 const emailService = require("../services/email.service");
 const biometricCtrl = require("../controllers/biometric.controller");
 
-// Subject-Based Auto-Carry-Forward (Every Minute)
-cron.schedule("* * * * *", async () => {
+// Subject-Based Auto-Carry-Forward
+// ✅ NEON CU-HOURS OPTIMIZATION:
+// Only runs during institute operating hours (Mon-Sat, 7:00 AM to 7:59 PM IST).
+// Off-hours (8:00 PM - 6:59 AM) and all day Sunday, this cron does NOT run,
+// allowing Neon Serverless PostgreSQL to enter deep sleep (0.00 CU-hrs consumed all night).
+cron.schedule("* 7-19 * * 1-6", async () => {
     try {
         await biometricCtrl.processSubjectBasedAutoCarryForward();
     } catch (err) {
         console.error("❌ Auto carry-forward cron error:", err.message);
     }
+}, {
+    timezone: "Asia/Kolkata",
 });
 
 cron.schedule("0 0 * * *", async () => {
@@ -174,7 +180,7 @@ cron.schedule('0 20 * * *', async () => {
         const lowAttendanceStudents = await sequelize.query(`
             SELECT student_id, institute_id, 
                    SUM(CASE WHEN status = 'present' THEN 1 ELSE 0 END) * 100.0 / COUNT(id) as attendance_percent
-            FROM attendance
+            FROM attendances
             GROUP BY student_id, institute_id
             HAVING SUM(CASE WHEN status = 'present' THEN 1 ELSE 0 END) * 100.0 / COUNT(id) < 75
         `, { type: sequelize.QueryTypes.SELECT });

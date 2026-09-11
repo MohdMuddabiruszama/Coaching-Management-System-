@@ -21,7 +21,7 @@ const FeesStructure = sequelize.define("FeesStructure", {
     due_date: DataTypes.DATEONLY,
     description: DataTypes.TEXT,
 }, {
-    tableName:  'fee_structures',
+    tableName:  'fees_structures',
     timestamps: true,
     paranoid:   true,   // ✅ Soft delete
 });

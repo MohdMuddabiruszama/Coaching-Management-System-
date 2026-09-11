@@ -3,6 +3,8 @@ const sequelize = require("../config/database");
 const queries = [
     `ALTER TABLE students ADD COLUMN IF NOT EXISTS is_full_course BOOLEAN DEFAULT false;`,
     `ALTER TABLE student_fees ADD COLUMN IF NOT EXISTS reminder_date DATE;`,
+    `ALTER TABLE fee_structures ADD COLUMN IF NOT EXISTS subject_ids INTEGER[] DEFAULT NULL;`,
+    `ALTER TABLE fees_structures ADD COLUMN IF NOT EXISTS subject_ids INTEGER[] DEFAULT NULL;`,
     `ALTER TABLE subscriptions ADD COLUMN IF NOT EXISTS discount_amount DECIMAL(10,2) DEFAULT 0;`,
     `ALTER TABLE subscriptions ADD COLUMN IF NOT EXISTS tax_amount DECIMAL(10,2) DEFAULT 0;`,
 
@@ -55,10 +57,15 @@ const queries = [
     `CREATE INDEX IF NOT EXISTS idx_subjects_class_inst ON subjects(class_id, institute_id);`,
     `CREATE INDEX IF NOT EXISTS idx_faculty_inst ON faculty(institute_id);`,
     `CREATE INDEX IF NOT EXISTS idx_sfee_student ON student_fees(student_id, institute_id);`,
-    `CREATE INDEX IF NOT EXISTS idx_sfee_due ON student_fees(due_date, status);`,
+    `CREATE INDEX IF NOT EXISTS idx_sfee_inst_status ON student_fees(institute_id, status);`,
     `CREATE INDEX IF NOT EXISTS idx_exams_inst ON exams(institute_id, class_id);`,
     `CREATE INDEX IF NOT EXISTS idx_chat_messages_room_created ON chat_messages(room_id, created_at);`,
     `CREATE INDEX IF NOT EXISTS idx_chat_participants_user_room ON chat_participants(user_id, room_id);`,
+
+    `CREATE INDEX IF NOT EXISTS idx_users_inst_status ON users(institute_id, status);`,
+    `CREATE INDEX IF NOT EXISTS idx_users_inst_email ON users(institute_id, email);`,
+    `CREATE INDEX IF NOT EXISTS idx_classes_inst ON classes(institute_id);`,
+    `CREATE INDEX IF NOT EXISTS idx_att_inst_subj_date ON attendances(institute_id, subject_id, date);`,
 
     `ALTER TABLE institutes ADD COLUMN IF NOT EXISTS is_test_account BOOLEAN DEFAULT false;`,
     `ALTER TABLE subscriptions ADD COLUMN IF NOT EXISTS is_test BOOLEAN DEFAULT false;`,

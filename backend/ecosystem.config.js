@@ -57,8 +57,8 @@ module.exports = {
             },
             env_production: {
                 NODE_ENV:  "production",
-                PORT:      "8080",
-                // PM2_INSTANCES and PM2_MAX_MEMORY should be set in Render/server env
+                PORT:      process.env.PORT || "5000",
+                // PM2_INSTANCES and PM2_MAX_MEMORY can be set in server env
             },
 
             // ── Watch (dev only — disabled in production) ──────────────────

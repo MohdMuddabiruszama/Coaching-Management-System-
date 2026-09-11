@@ -4,6 +4,7 @@
  */
 
 import { useState, useEffect, useContext, useRef } from "react";
+import { useQuery } from "@tanstack/react-query";
 import ThemeSelector from "../../components/ThemeSelector";
 import { Link } from "react-router-dom";
 import api from "../../services/api";
@@ -383,9 +384,21 @@ function Students() {
         status: "active",
     });
 
+    // ✅ React Query: Classes cached globally with 5-min staleTime (0ms navigation, 0 redundant API calls)
+    const { data: cachedClasses } = useQuery({
+        queryKey: ["classes"],
+        queryFn: async () => {
+            const res = await api.get("/classes");
+            return res.data?.data || [];
+        },
+        staleTime: 5 * 60 * 1000,
+    });
+
     useEffect(() => {
-        fetchClasses();
-    }, []);
+        if (cachedClasses && cachedClasses.length > 0) {
+            setClasses(cachedClasses);
+        }
+    }, [cachedClasses]);
 
     useEffect(() => {
         const id = setTimeout(fetchStudents, 250);
@@ -438,13 +451,9 @@ function Students() {
             return;
         }
         try {
-            // Fetch subjects for each class and combine them
-            // Depending on the backend route implementation it might not accept multiple, so we do it iteratively
-            let allSubjects = [];
-            for (let id of classIds) {
-                const response = await api.get(`/subjects?class_id=${id}`);
-                allSubjects = [...allSubjects, ...(response.data.data || [])];
-            }
+            // ✅ Batch API Call: single HTTP request instead of N sequential loops
+            const response = await api.get(`/subjects?class_ids=${classIds.join(',')}`);
+            const allSubjects = response.data?.data || [];
 
             // Remove duplicates
             const uniqueSubjects = [];

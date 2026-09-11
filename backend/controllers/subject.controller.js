@@ -34,13 +34,21 @@ exports.createSubject = async (req, res) => {
 
 exports.getAllSubjects = async (req, res) => {
     try {
-        const { page = 1, limit = 100, class_id, search = "" } = req.query;
+        const { page = 1, limit = 100, class_id, class_ids, search = "" } = req.query;
         const institute_id = req.user.institute_id;
 
         const offset = (page - 1) * limit;
         const whereClause = { institute_id };
 
-        if (class_id) {
+        // Support single class_id or batch class_ids (comma-separated or array)
+        if (class_ids) {
+            const ids = Array.isArray(class_ids)
+                ? class_ids
+                : String(class_ids).split(',').map(id => id.trim()).filter(Boolean);
+            if (ids.length > 0) {
+                whereClause.class_id = { [Op.in]: ids };
+            }
+        } else if (class_id) {
             whereClause.class_id = class_id;
         }
 

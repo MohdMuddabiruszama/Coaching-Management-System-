@@ -51,7 +51,7 @@ class CronService {
                 const lowAttendanceStudents = await sequelize.query(`
                     SELECT student_id, institute_id, 
                            SUM(CASE WHEN status = 'present' THEN 1 ELSE 0 END) * 100.0 / COUNT(id) as attendance_percent
-                    FROM attendance
+                    FROM attendances
                     GROUP BY student_id, institute_id
                     HAVING SUM(CASE WHEN status = 'present' THEN 1 ELSE 0 END) * 100.0 / COUNT(id) < 75
                 `, { type: sequelize.QueryTypes.SELECT });
