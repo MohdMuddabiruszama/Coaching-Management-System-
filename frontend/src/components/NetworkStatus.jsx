@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { Capacitor } from "@capacitor/core";
 import { flushQueue } from "../services/offlineQueue";
+import { getBaseURL } from "../services/api";
 import "./NetworkStatus.css";
 
 const IS_NATIVE = Capacitor.isNativePlatform();
@@ -87,8 +88,8 @@ const NetworkStatus = () => {
                             onClick={async () => {
                                 setRetrying(true);
                                 try {
-                                    const baseURL = import.meta.env.VITE_API_URL || 'https://api.zenithflows.in/api';
-                                    const healthURL = baseURL.replace(/\/api$/, '/api/health');
+                                    const baseURL = getBaseURL();
+                                    const healthURL = `${baseURL.replace(/\/api$/, '')}/api/health`;
                                     await fetch(healthURL, { method: 'GET', cache: 'no-store' });
                                     setServerDown(false);
                                 } catch {

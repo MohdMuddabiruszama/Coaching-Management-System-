@@ -45,6 +45,7 @@ function Fees() {
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 10;
     const [success, setSuccess] = useState('');
+    const [fetchError, setFetchError] = useState('');
     const [showMoreFilters, setShowMoreFilters] = useState(false);
     const [filterFeeType, setFilterFeeType] = useState('');
     const [filterAssigned, setFilterAssigned] = useState('all');
@@ -138,22 +139,42 @@ function Fees() {
     const init = async () => {
         try {
             setLoading(true);
-            const [sfRes, cRes, pRes, dRes] = await Promise.all([
+            setFetchError('');
+            const [sfResult, cResult, pResult, dResult] = await Promise.allSettled([
                 api.get('/fees/student-fees'),
                 api.get('/classes'),
                 api.get('/fees/payments?limit=1000'),
                 api.get('/fees/discount-logs')
             ]);
-            setStudentFees(sfRes.data.data || []);
-            setClasses(cRes.data.data || []);
-            setPayments(pRes.data.data || []);
-            setDiscountLogs(dRes.data.data || []);
+
+            if (sfResult.status === 'fulfilled') {
+                setStudentFees(sfResult.value.data?.data || sfResult.value.data || []);
+            } else {
+                console.error("Failed to load student fees:", sfResult.reason);
+                setFetchError('Unable to load some fee records. Click "Retry" to refresh.');
+            }
+
+            if (cResult.status === 'fulfilled') {
+                setClasses(cResult.value.data?.data || cResult.value.data || []);
+            }
+            if (pResult.status === 'fulfilled') {
+                setPayments(pResult.value.data?.data || pResult.value.data || []);
+            }
+            if (dResult.status === 'fulfilled') {
+                setDiscountLogs(dResult.value.data?.data || dResult.value.data || []);
+            }
+
             if (isAdmin || hasPerm('fees', 'read')) {
-                const fRes = await api.get('/fees/structure');
-                setFeeStructures(fRes.data.data || []);
+                try {
+                    const fRes = await api.get('/fees/structure');
+                    setFeeStructures(fRes.data?.data || fRes.data || []);
+                } catch (fsErr) {
+                    console.error("Failed to load fee structures:", fsErr);
+                }
             }
         } catch (e) {
             console.error(e);
+            setFetchError('An error occurred while loading data.');
         } finally {
             setLoading(false);
         }
@@ -530,6 +551,37 @@ function Fees() {
                     display: 'flex', alignItems: 'center', gap: '0.5rem'
                 }}>
                     {success}
+                </div>
+            )}
+
+            {/* In-page fetch error notice */}
+            {fetchError && (
+                <div style={{
+                    background: 'linear-gradient(135deg,rgba(239,68,68,0.12),rgba(239,68,68,0.05))',
+                    border: '1.5px solid rgba(239,68,68,0.4)', borderRadius: '10px',
+                    padding: '0.85rem 1.25rem', marginBottom: '1.25rem',
+                    color: '#ef4444', fontWeight: '600', fontSize: '0.95rem',
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem'
+                }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <span>⚠️</span>
+                        <span>{fetchError}</span>
+                    </div>
+                    <button
+                        onClick={init}
+                        style={{
+                            background: '#ef4444',
+                            border: 'none',
+                            color: 'white',
+                            padding: '6px 14px',
+                            borderRadius: '8px',
+                            cursor: 'pointer',
+                            fontWeight: '600',
+                            fontSize: '0.85rem'
+                        }}
+                    >
+                        Retry
+                    </button>
                 </div>
             )}
 

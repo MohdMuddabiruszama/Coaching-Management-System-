@@ -213,6 +213,30 @@ api.interceptors.request.use(
                 }
             }
 
+            // ── Smart Adaptive Timeout by Workload ──
+            if (!config.timeout || config.timeout === 30000 || config.timeout === 15000) {
+                const reqUrl = config.url || '';
+                const params = config.params || {};
+                const isExport = params.export || reqUrl.includes('export') || reqUrl.includes('download');
+                const hasLargeLimit = params.limit && Number(params.limit) >= 500;
+                const isHeavyRoute = (
+                    reqUrl.includes('/fees/student-fees') ||
+                    reqUrl.includes('/fees/payments') ||
+                    reqUrl.includes('/reports') ||
+                    reqUrl.includes('/finance-analytics') ||
+                    reqUrl.includes('/students/export') ||
+                    reqUrl.includes('/attendance/bulk')
+                );
+
+                if (isExport) {
+                    config.timeout = 90000; // 90s for document/PDF/CSV exports
+                } else if (isHeavyRoute || hasLargeLimit) {
+                    config.timeout = 60000; // 60s for multi-table calculations and 500+ records
+                } else {
+                    config.timeout = 20000; // 20s standard responsive timeout
+                }
+            }
+
         } catch (err) {
             if (err.customName === "PLAN_EXPIRED_READONLY") {
                 return Promise.reject(err);
@@ -256,14 +280,60 @@ api.interceptors.response.use(
         
         const { response, config } = error;
 
-        // 🌐 Network error (Server Unreachable)
+        // 🌐 Network / Timeout error handling
         if (!response) {
-            console.error("🚫 Network error:", error.message);
+            console.error("🚫 Network/Timeout error:", error.message);
 
-            // ── Gate: Only show "Platform Unreachable" when the user IS logged in.
+            const isTimeout = (
+                error.code === "ECONNABORTED" ||
+                (error.message && error.message.toLowerCase().includes("timeout"))
+            );
+
+            // Case 1: Request Timeout due to large data or slow network
+            if (isTimeout) {
+                // NEVER declare the platform dead on timeout!
+                import("react-hot-toast").then((module) => {
+                    const toast = module.default || module.toast;
+                    toast.error(
+                        "The server is processing a large volume of data. Please wait a moment or refine your search filters.",
+                        { id: "api_timeout_notice", duration: 6000 }
+                    );
+                });
+                return Promise.reject(error);
+            }
+
+            // Case 2: Browser is truly offline
+            if (typeof navigator !== 'undefined' && !navigator.onLine) {
+                // NetworkStatus.jsx already shows the "No Internet Connection" banner
+                return Promise.reject(error);
+            }
+
+            // Case 3: Potential Server Down -> Verify via fast silent health-check gate!
             const hasSession = Boolean(getActiveToken());
             if (hasSession) {
-                window.dispatchEvent(new Event('offline_api_error'));
+                try {
+                    const baseURL = getBaseURL();
+                    const healthURL = `${baseURL.replace(/\/api$/, "")}/api/health`;
+
+                    fetch(healthURL, { method: 'GET', cache: 'no-store' })
+                        .then((healthRes) => {
+                            if (!healthRes.ok) {
+                                window.dispatchEvent(new Event('offline_api_error'));
+                            } else {
+                                // Server is alive! Just a transient network glitch on this single call
+                                import("react-hot-toast").then((module) => {
+                                    const toast = module.default || module.toast;
+                                    toast.error("Transient network glitch. Please retry your action.", { id: "transient_network_glitch" });
+                                });
+                            }
+                        })
+                        .catch(() => {
+                            // Health check actually failed: backend is truly down!
+                            window.dispatchEvent(new Event('offline_api_error'));
+                        });
+                } catch {
+                    window.dispatchEvent(new Event('offline_api_error'));
+                }
             }
 
             return Promise.reject(error);
@@ -399,4 +469,5 @@ function handleBlockedAccount() {
 }
 
 
+export { getBaseURL };
 export default api;
